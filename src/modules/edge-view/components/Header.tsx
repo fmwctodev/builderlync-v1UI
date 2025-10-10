@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, Home, History, ChevronDown, LogOut, Settings, CreditCard, User, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ThemeToggle } from './ThemeToggle';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -8,13 +9,13 @@ const Header: React.FC = () => {
   const isOrderPage = location.pathname === '/edge-view';
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="topbar shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link to="/edge-view/dashboard" className="flex items-center">
-                <span className="text-2xl font-semibold text-blue-600">
+                <span className="text-2xl font-semibold text-primary-600">
                   <Home className="inline-block mr-2" size={24} />
                   eagleview<span className="text-gray-400">®</span>
                 </span>
@@ -39,14 +40,16 @@ const Header: React.FC = () => {
               </Link>
               <button 
                 onClick={() => navigate(isOrderPage ? '/edge-view/order-history' : '/edge-view')}
-                className="text-blue-600 hover:text-blue-700 px-4 py-2 text-sm font-medium border border-blue-600 rounded-md transition-colors duration-150"
+                className="text-primary-600 hover:text-primary-700 px-4 py-2 text-sm font-medium border border-primary-600 rounded-md transition-colors duration-150"
               >
                 {isOrderPage ? 'Cancel Order' : 'Order'}
               </button>
 
+              <ThemeToggle />
+
               <div className="relative">
                 <button className="flex items-center">
-                  <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                  <span className="bg-primary-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
                     SR
                   </span>
                   <ChevronDown size={16} className="ml-1 text-gray-500" />

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  MessageSquare, 
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  MessageSquare,
   HardHat,
   Settings,
   ChevronLeft,
@@ -66,33 +66,31 @@ export function Sidebar({ className = '' }: SidebarProps) {
   };
 
   return (
-    <div 
+    <div
       className={`
-        ${collapsed ? 'w-20' : 'w-64'} 
-        bg-white dark:bg-gray-900 
-        border-r border-gray-200 dark:border-gray-800 
-        h-full flex flex-col transition-all duration-300 ease-in-out
+        ${collapsed ? 'w-20' : 'w-64'}
+bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-full flex flex-col transition-all duration-300 ease-in-out
         ${className}
       `}
     >
       <div className={`h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-800 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         {!collapsed && (
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
               <span className="text-white font-bold">CRM</span>
             </div>
             <h1 className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Contractor</h1>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
             <span className="text-white font-bold">C</span>
           </div>
         )}
-        <button 
+        <button
           onClick={toggleCollapsed}
           className={`
-            ${collapsed ? 'absolute -right-3 top-12' : 'mx-2'} 
+            ${collapsed ? 'absolute -right-3 top-12' : 'mx-2'}
             rounded-full w-6 h-6 bg-gray-200 dark:bg-gray-700 flex items-center justify-center
             hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors
           `}
@@ -111,14 +109,16 @@ export function Sidebar({ className = '' }: SidebarProps) {
                   to={item.href}
                   className={({ isActive }) => `
                     flex items-center px-3 py-2 rounded-md text-sm font-medium
-                    ${isActive 
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
+                    ${isActive
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                       : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
                     ${collapsed ? 'justify-center' : ''}
                     transition-colors duration-150
                   `}
                 >
+                  <div>
                   <Icon size={20} className={collapsed ? '' : 'mr-3'} />
+                  </div>
                   {!collapsed && <span>{item.title}</span>}
                 </NavLink>
               </li>

@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { ThemeToggle } from '../ThemeToggle';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -41,7 +42,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gray-800 border-b border-gray-700">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gray-800 dark:bg-gray-900 border-b border-gray-700 dark:border-gray-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -53,19 +54,19 @@ const Header: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/abc-supply/products" 
-              className="text-white hover:text-blue-400 transition"
+              className="text-white hover:text-primary-400 transition"
             >
               Products
             </Link>
             <Link 
               to="/abc-supply/branches" 
-              className="text-white hover:text-blue-400 transition"
+              className="text-white hover:text-primary-400 transition"
             >
               Branches
             </Link>
             <Link 
               to="/abc-supply/orders" 
-              className="text-white hover:text-blue-400 transition"
+              className="text-white hover:text-primary-400 transition"
             >
               Orders
             </Link>
@@ -92,7 +93,7 @@ const Header: React.FC = () => {
             >
               <ShoppingCart className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
               {items.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs">
+                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-primary-500 text-white text-xs">
                   {items.length}
                 </span>
               )}
@@ -102,7 +103,7 @@ const Header: React.FC = () => {
             <Link to="/abc-supply/notifications" className="relative p-2 hover:bg-gray-700 rounded-lg transition-colors">
               <Bell className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-xs">
+                <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-primary-500 text-white text-xs">
                   {unreadCount}
                 </span>
               )}
@@ -113,13 +114,15 @@ const Header: React.FC = () => {
               <User className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
             </Link>
 
+            <ThemeToggle />
+
             {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center focus:outline-none"
               >
-                <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                <div className="h-8 w-8 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400">
                   <span className="font-semibold">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>

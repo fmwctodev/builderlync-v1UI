@@ -1,97 +1,99 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        dark: {
-          sidebar: 'rgb(24, 28, 36)',
-          main: 'rgb(17, 24, 39)',
-          card: 'rgb(31, 41, 55)',
-          hover: 'rgb(42, 48, 65)'
+        primary: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#dc2626',
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+          950: '#450a0a',
         },
-        gray: {
-          50: '#f8f9fa',
-          100: '#f1f3f5',
-          200: '#e9ecef',
-          300: '#dee2e6',
-          400: '#ced4da',
-          500: '#adb5bd',
-          600: '#868e96',
-          700: '#495057',
-          750: '#343a40',
-          800: '#212529',
-          900: '#16191d'
+        secondary: {
+          50: '#F0FDFA',
+          100: '#CCFBF1',
+          500: '#14B8A6',
+          600: '#0D9488',
+          700: '#0F766E',
         },
-        blue: {
-          50: '#e7f5ff',
-          100: '#d0ebff',
-          200: '#a5d8ff',
-          300: '#74c0fc',
-          400: '#4dabf7',
-          500: '#339af0',
-          600: '#228be6',
-          700: '#1c7ed6',
-          800: '#1971c2',
-          900: '#1864ab'
+        accent: {
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          500: '#F97316',
+          600: '#EA580C',
+          700: '#C2410C',
         },
-        green: {
-          50: '#ebfbee',
-          100: '#d3f9d8',
-          200: '#b2f2bb',
-          300: '#8ce99a',
-          400: '#69db7c',
-          500: '#51cf66',
-          600: '#40c057',
-          700: '#37b24d',
-          800: '#2f9e44',
-          900: '#2b8a3e'
+        success: {
+          50: '#F0FDF4',
+          500: '#22C55E',
+          700: '#15803D',
         },
-        red: {
-          50: '#fff5f5',
-          100: '#ffe3e3',
-          200: '#ffc9c9',
-          300: '#ffa8a8',
-          400: '#ff8787',
-          500: '#ff6b6b',
-          600: '#fa5252',
-          700: '#f03e3e',
-          800: '#e03131',
-          900: '#c92a2a'
+        warning: {
+          50: '#FFFBEB',
+          500: '#F59E0B',
+          700: '#B45309',
         },
-        purple: {
-          50: '#f8f0fc',
-          100: '#f3d9fa',
-          200: '#eebefa',
-          300: '#e599f7',
-          400: '#da77f2',
-          500: '#cc5de8',
-          600: '#be4bdb',
-          700: '#ae3ec9',
-          800: '#9c36b5',
-          900: '#862e9c'
-        }
+        error: {
+          50: '#FEF2F2',
+          500: '#EF4444',
+          700: '#B91C1C',
+        },
+        sidebar: {
+          DEFAULT: '#1E293B',
+          hover: '#334155',
+          active: '#0F172A',
+        },
       },
-      boxShadow: {
-        'elevation-1': '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
-        'elevation-2': '0 8px 12px -2px rgba(0, 0, 0, 0.25)',
-        'elevation-3': '0 12px 16px -4px rgba(0, 0, 0, 0.3)',
-        'elevation-4': '0 16px 24px -6px rgba(0, 0, 0, 0.35)',
-        'elevation-5': '0 20px 28px -8px rgba(0, 0, 0, 0.4)'
+      height: {
+        'topbar': '64px',
       },
-      fontFamily: {
-        sans: [
-          'Inter',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'sans-serif'
-        ]
-      }
-    }
+      width: {
+        'sidebar': '240px',
+        'sidebar-collapsed': '80px',
+      },
+      transitionProperty: {
+        'width': 'width',
+      },
+      spacing: {
+        'page': '40px',
+        'gutter': '20px',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+    },
   },
-  plugins: []
+  plugins: [
+    function({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-thin': {
+          'scrollbar-width': 'thin',
+        },
+        '.scrollbar-thumb-gray-300': {
+          'scrollbar-color': '#d1d5db transparent',
+        },
+        '.scrollbar-thumb-gray-600': {
+          'scrollbar-color': '#4b5563 transparent',
+        },
+        '.scrollbar-track-transparent': {
+          'scrollbar-track-color': 'transparent',
+        },
+        '.hover\\:scrollbar-thumb-gray-400:hover': {
+          'scrollbar-color': '#9ca3af transparent',
+        },
+        '.dark\\:hover\\:scrollbar-thumb-gray-500:hover': {
+          'scrollbar-color': '#6b7280 transparent',
+        },
+      });
+    },
+  ],
 };

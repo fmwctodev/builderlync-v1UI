@@ -4,7 +4,7 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../../../shared/context/ThemeContext';
 import { Avatar } from '../ui/Avatar';
 import { currentUser, notifications } from '../../lib/dummy-data';
 import { timeAgo, getNotificationColor } from '../../lib/utils';

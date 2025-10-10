@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navigation } from './shared/components/Navigation';
 import { Dashboard } from './shared/components/Dashboard';
+import { ThemeProvider } from './shared/context/ThemeContext';
 
 // Module imports
 import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
@@ -13,24 +14,20 @@ import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <main className="pt-16">
-              <Dashboard />
-            </main>
-          </div>
-        } />
-        <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
-        <Route path="/crm/*" element={<CRMModule />} />
-        <Route path="/marketing/*" element={<MarketingModule />} />
-        <Route path="/project-management/*" element={<ProjectManagementModule />} />
-        <Route path="/edge-view/*" element={<EdgeViewModule />} />
-        <Route path="/roof-runner/*" element={<RoofRunnerModule />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        <Router>
+          <Routes>
+            <Route path="/*" element={<RoofRunnerModule />} />
+            <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
+            <Route path="/crm/*" element={<CRMModule />} />
+            <Route path="/marketing/*" element={<MarketingModule />} />
+            <Route path="/project-management/*" element={<ProjectManagementModule />} />
+            <Route path="/edge-view/*" element={<EdgeViewModule />} />
+          </Routes>
+        </Router>
+      </div>
+    </ThemeProvider>
   );
 }
 
