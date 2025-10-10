@@ -5,6 +5,9 @@ import BlankPage from './pages/BlankPage';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
 import MaterialOrders from './pages/MaterialOrders';
+import Calendars from './pages/Calendars';
+import Jobs from './pages/Jobs';
+import Payments from './pages/Payments';
 
 export function RoofRunnerModule() {
   return (
@@ -13,10 +16,10 @@ export function RoofRunnerModule() {
         <Route index element={<Dashboard />} />
 
         <Route path="conversations" element={<BlankPage title="Conversations" />} />
-        <Route path="calendars" element={<BlankPage title="Calendars" />} />
+        <Route path="calendars" element={<Calendars />} />
         <Route path="contacts" element={<BlankPage title="Contacts" />} />
-        <Route path="jobs" element={<BlankPage title="Jobs" />} />
-        <Route path="payments" element={<BlankPage title="Payments" />} />
+        <Route path="jobs" element={<Jobs />} />
+        <Route path="payments" element={<Payments />} />
         <Route path="ai-agents" element={<BlankPage title="AI Agents" />} />
         <Route path="job-cam" element={<BlankPage title="Job Cam" />} />
         <Route path="instant-estimator" element={<BlankPage title="Instant Estimator" />} />

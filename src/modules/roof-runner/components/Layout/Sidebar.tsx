@@ -95,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
               <Zap size={20} />
             </div>
             {!collapsed && (
-              <h1 className="font-bold text-lg text-gray-900 dark:text-white">Roof Runner</h1>
+              <h1 className="font-bold text-lg text-gray-900 dark:text-white">BuilderLync</h1>
             )}
           </div>
         </div>
