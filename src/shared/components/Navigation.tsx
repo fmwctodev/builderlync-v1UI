@@ -6,7 +6,8 @@ import {
   TrendingUp, 
   FolderKanban, 
   Eye, 
-  Zap
+  Zap,
+  Bot
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Project Management', href: '/project-management', icon: FolderKanban },
   { name: 'Edge View', href: '/edge-view', icon: Eye },
   { name: 'Roof Runner', href: '/roof-runner', icon: Zap },
+  { name: 'AI Agents', href: '/ai-agents', icon: Bot },
 ];
 
 export function Navigation() {

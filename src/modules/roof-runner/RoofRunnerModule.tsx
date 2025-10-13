@@ -10,6 +10,7 @@ import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
 import Conversations from './pages/Conversations';
+import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
 import WorkOrders from './pages/WorkOrders';
 
@@ -24,7 +25,7 @@ export function RoofRunnerModule() {
         <Route path="contacts" element={<Contacts />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="payments" element={<Payments />} />
-        <Route path="ai-agents" element={<BlankPage title="AI Agents" />} />
+        <Route path="ai-agents/*" element={<AIAgentsModule />} />
         <Route path="job-cam" element={<BlankPage title="Job Cam" />} />
         <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="measurements" element={<Measurements />} />

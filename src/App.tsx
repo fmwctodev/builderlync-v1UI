@@ -11,6 +11,7 @@ import { MarketingModule } from './modules/marketing/MarketingModule';
 import { ProjectManagementModule } from './modules/project-management/ProjectManagementModule';
 import { EdgeViewModule } from './modules/edge-view/EdgeViewModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
+import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/marketing/*" element={<MarketingModule />} />
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
             <Route path="/edge-view/*" element={<EdgeViewModule />} />
+            <Route path="/ai-agents/*" element={<AIAgentsModule />} />
           </Routes>
         </Router>
       </div>
