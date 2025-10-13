@@ -11,6 +11,7 @@ import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
 import Conversations from './pages/Conversations';
 import Contacts from './pages/Contacts';
+import WorkOrders from './pages/WorkOrders';
 
 export function RoofRunnerModule() {
   return (
@@ -29,7 +30,7 @@ export function RoofRunnerModule() {
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />
-        <Route path="work-orders" element={<BlankPage title="Work Orders" />} />
+        <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<BlankPage title="Automation" />} />
         <Route path="opportunities" element={<BlankPage title="Opportunities" />} />
         <Route path="marketing" element={<BlankPage title="Marketing" />} />

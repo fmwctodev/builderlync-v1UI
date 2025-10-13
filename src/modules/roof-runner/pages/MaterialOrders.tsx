@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Plus, Search, Filter, Eye, MoreVertical, X, MapPin, Phone, Mail } from 'lucide-react';
+import ABCSupplyView from '../components/ABCSupplyView';
 
 export default function MaterialOrders() {
-  const [activeTab, setActiveTab] = useState('Orders');
+  const [activeTab, setActiveTab] = useState('ABC Supply');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
   const [showStatusFilter, setShowStatusFilter] = useState(false);
@@ -70,34 +71,11 @@ export default function MaterialOrders() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-6">
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
-              <button 
-                onClick={() => setActiveTab('Orders')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'Orders' 
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400' 
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Orders
-              </button>
-              <button 
-                onClick={() => setActiveTab('Supplier')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'Supplier' 
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400' 
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Supplier
-              </button>
-            </div>
-          </div>
-        </div>
+
         
-        {activeTab === 'Orders' && (
+        <div className="p-6">
+          <ABCSupplyView />
+        </div>
           <>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -234,139 +212,10 @@ export default function MaterialOrders() {
               </table>
             </div>
           </>
-        )}
-        
-        {activeTab === 'Supplier' && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'SRS', account: 'TARRYTOWN ROOFING LLC - 1', type: 'Integrated' },
-                { name: 'Homedepot', account: '5129253451', type: 'Manual' },
-                { name: 'ABC Supply', account: '1174368', type: 'Integrated' },
-                { name: 'Beacon', account: '646920', type: 'Manual' },
-                { name: 'ABC', account: null, type: 'Manual' },
-                { name: 'SRS', account: 'S055053', type: 'Manual' }
-              ].map((supplier, index) => (
-                <div key={index} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-900 dark:text-white">{supplier.name}</h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      supplier.type === 'Integrated' 
-                        ? 'bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-300'
-                        : 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
-                      {supplier.type}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {supplier.account ? (
-                        <span>Account {supplier.account}</span>
-                      ) : (
-                        <span>No account number <button className="text-primary-600 hover:text-primary-700 ml-1">Add</button></span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No metrics yet</div>
-                  </div>
-                  
-                  <button 
-                    onClick={() => {
-                      setSelectedSupplier(supplier);
-                      setShowSupplierModal(true);
-                    }}
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                  >
-                    View branches
-                  </button>
-                </div>
-              ))}
-              
-              <div className="bg-white dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 flex flex-col items-center justify-center hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer transition-colors">
-                <Plus size={32} className="text-gray-400 dark:text-gray-500 mb-2" />
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Add new supplier</span>
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
 
-      {showSupplierModal && selectedSupplier && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {selectedSupplier.name} - {selectedSupplier.account}
-              </h3>
-              <button onClick={() => setShowSupplierModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X size={20} />
-              </button>
-            </div>
 
-            <div className="p-6">
-              <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">Branch Locations</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {[
-                  { name: 'SRS BUILDING PRODUCTS - AUSTIN CD', address: '8319 North Lamar Boulevard, Austin, TX 78753', contact: 'Trevor Ashmore', email: 'Trevor.Ashmore@srsbuildingproducts.com', phone: '(972) 429-5002' },
-                  { name: 'SRS BUILDING PRODUCTS - BELTON', address: '2121 Industrial Park Road, Belton, TX 76513', contact: 'Trevor Ashmore', email: 'Trevor.Ashmore@srsbuildingproducts.com', phone: '(972) 429-5002' },
-                  { name: 'SRS BUILDING PRODUCTS - CENTRAL SAN ANTONIO', address: '309 Clarence Tinker Drive, San Antonio, TX 78226', contact: 'Trevor Ashmore', email: 'Trevor.Ashmore@srsbuildingproducts.com', phone: '(972) 429-5002' },
-                  { name: 'SRS BUILDING PRODUCTS - COLLEGE STATION', address: '4700 Elmo Weedon Road, College Station, TX 77845', contact: 'Trevor Ashmore', email: 'Trevor.Ashmore@srsbuildingproducts.com', phone: '(972) 429-5002' }
-                ].map((branch, index) => (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">{branch.name}</h5>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <MapPin size={14} />
-                        <span>{branch.address}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Mail size={14} />
-                        <span>{branch.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Phone size={14} />
-                        <span>{branch.phone}</span>
-                      </div>
-                      <div className="text-gray-700 dark:text-gray-300 font-medium">{branch.contact}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <h4 className="text-md font-medium text-gray-900 dark:text-white mb-4">Orders by Branch</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-2 text-gray-700 dark:text-gray-300">Branch Name</th>
-                      <th className="text-left py-2 text-gray-700 dark:text-gray-300">Total Orders</th>
-                      <th className="text-left py-2 text-gray-700 dark:text-gray-300">Recent Order</th>
-                      <th className="text-left py-2 text-gray-700 dark:text-gray-300">This Month</th>
-                      <th className="text-left py-2 text-gray-700 dark:text-gray-300">Total Spent</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      'SRS BUILDING PRODUCTS - AUSTIN CD',
-                      'SRS BUILDING PRODUCTS - BELTON', 
-                      'SRS BUILDING PRODUCTS - CENTRAL SAN ANTONIO',
-                      'SRS BUILDING PRODUCTS - COLLEGE STATION'
-                    ].map((branchName, index) => (
-                      <tr key={index} className="border-b border-gray-100 dark:border-gray-700">
-                        <td className="py-2 text-gray-900 dark:text-white">{branchName}</td>
-                        <td className="py-2 text-gray-600 dark:text-gray-400">-</td>
-                        <td className="py-2 text-gray-600 dark:text-gray-400">-</td>
-                        <td className="py-2 text-gray-600 dark:text-gray-400">-</td>
-                        <td className="py-2 text-gray-600 dark:text-gray-400">-</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
