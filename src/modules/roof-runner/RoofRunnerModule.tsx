@@ -8,6 +8,8 @@ import MaterialOrders from './pages/MaterialOrders';
 import Calendars from './pages/Calendars';
 import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
+import InstantEstimator from './pages/InstantEstimator';
+import Conversations from './pages/Conversations';
 
 export function RoofRunnerModule() {
   return (
@@ -15,14 +17,14 @@ export function RoofRunnerModule() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
 
-        <Route path="conversations" element={<BlankPage title="Conversations" />} />
+        <Route path="conversations" element={<Conversations />} />
         <Route path="calendars" element={<Calendars />} />
         <Route path="contacts" element={<BlankPage title="Contacts" />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="payments" element={<Payments />} />
         <Route path="ai-agents" element={<BlankPage title="AI Agents" />} />
         <Route path="job-cam" element={<BlankPage title="Job Cam" />} />
-        <Route path="instant-estimator" element={<BlankPage title="Instant Estimator" />} />
+        <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />
