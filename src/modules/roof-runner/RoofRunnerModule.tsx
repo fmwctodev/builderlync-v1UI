@@ -13,6 +13,9 @@ import Conversations from './pages/Conversations';
 import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
 import WorkOrders from './pages/WorkOrders';
+import Automations from './pages/Automations';
+import Opportunities from './pages/Opportunities';
+import FileManager from './pages/FileManager';
 
 export function RoofRunnerModule() {
   return (
@@ -32,10 +35,10 @@ export function RoofRunnerModule() {
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />
         <Route path="work-orders" element={<WorkOrders />} />
-        <Route path="automation" element={<BlankPage title="Automation" />} />
-        <Route path="opportunities" element={<BlankPage title="Opportunities" />} />
+        <Route path="automation" element={<Automations />} />
+        <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<BlankPage title="Marketing" />} />
-        <Route path="file-manager" element={<BlankPage title="File Manager" />} />
+        <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<BlankPage title="Reputation" />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
         <Route path="sites" element={<BlankPage title="Sites" />} />

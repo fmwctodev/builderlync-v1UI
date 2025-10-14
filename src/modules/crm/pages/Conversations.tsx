@@ -1,24 +1,19 @@
-import React from 'react';
-import { Card } from '../components/ui/Card';
-import { EmptyState } from '../components/ui/EmptyState';
-import { MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { ConversationsList } from '../components/conversations/ConversationsList';
+import { ChatArea } from '../components/conversations/ChatArea';
+import { ContactDetails } from '../components/conversations/ContactDetails';
 
 export function Conversations() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Conversations</h1>
+  const [selectedConversation, setSelectedConversation] = useState<string | null>('1');
 
-      <Card>
-        <EmptyState
-          title="No Conversations"
-          description="Start engaging with your contacts through messages, calls, and emails"
-          icon={<MessageSquare className="w-12 h-12 mb-4 text-gray-400" />}
-          action={{
-            label: "Start Conversation",
-            onClick: () => console.log("Start conversation")
-          }}
-        />
-      </Card>
+  return (
+    <div className="-m-4 md:-m-6 h-[calc(100vh-120px)] flex bg-white dark:bg-gray-900">
+      <ConversationsList 
+        selectedConversation={selectedConversation}
+        onSelectConversation={setSelectedConversation}
+      />
+      <ChatArea conversationId={selectedConversation} />
+      <ContactDetails conversationId={selectedConversation} />
     </div>
   );
 }

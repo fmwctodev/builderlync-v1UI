@@ -8,7 +8,7 @@ const tabs = [
   { name: 'Conversation AI', href: '/ai-agents/conversation-ai' },
   { name: 'Knowledge Base', href: '/ai-agents/knowledge-base' },
   { name: 'Agent Templates', href: '/ai-agents/agent-templates' },
-  { name: 'Content AI', href: '/ai-agents/content-ai' },
+  // { name: 'Content AI', href: '/ai-agents/content-ai' },
 ];
 
 
@@ -22,8 +22,8 @@ export function AITopBar() {
 
   return (
     <div className="bg-white mt-4 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-    
-      
+
+
       <div className="px-4">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
