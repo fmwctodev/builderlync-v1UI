@@ -63,7 +63,7 @@ const ABCSupplyView: React.FC = () => {
     return 'Good evening';
   };
 
-  return (
+  const renderDashboard = () => (
     <div className="space-y-6">
       {/* Welcome Section */}
       <section className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 md:p-8">

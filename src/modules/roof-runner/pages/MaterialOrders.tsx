@@ -63,7 +63,7 @@ export default function MaterialOrders() {
           </nav>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Material Orders</h1>
         </div>
-        
+
         <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
           <Plus size={16} />
           <span>Create Material Order</span>
@@ -72,11 +72,11 @@ export default function MaterialOrders() {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
 
-        
+
         <div className="p-6">
           <ABCSupplyView />
         </div>
-          <>
+          {/* <>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="relative">
@@ -87,10 +87,10 @@ export default function MaterialOrders() {
                     className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
-                
+
                 <div className="flex gap-2">
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setShowStatusFilter(!showStatusFilter)}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
                     >
@@ -101,7 +101,7 @@ export default function MaterialOrders() {
                       <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                         <div className="py-1">
                           {['All Status', 'Draft', 'Ready to send', 'Sent', 'Confirmed', 'Rejected', 'Delivered'].map((status) => (
-                            <button 
+                            <button
                               key={status}
                               onClick={() => { setStatusFilter(status); setShowStatusFilter(false); }}
                               className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
@@ -115,9 +115,9 @@ export default function MaterialOrders() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setShowSupplierFilter(!showSupplierFilter)}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
                     >
@@ -128,7 +128,7 @@ export default function MaterialOrders() {
                       <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                         <div className="py-1">
                           {['All Suppliers', 'SRS', 'Home Depot', 'ABC Supply', 'Beacon', 'ABC'].map((supplier) => (
-                            <button 
+                            <button
                               key={supplier}
                               onClick={() => { setSupplierFilter(supplier); setShowSupplierFilter(false); }}
                               className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
@@ -145,7 +145,7 @@ export default function MaterialOrders() {
                 </div>
               </div>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
@@ -211,7 +211,7 @@ export default function MaterialOrders() {
                 </tbody>
               </table>
             </div>
-          </>
+          </> */}
 
       </div>
 
