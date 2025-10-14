@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import ReviewsAITab from './settings/ReviewsAITab';
 import ReviewLinkTab from './settings/ReviewLinkTab';
 import SMSRequestsTab from './settings/SMSRequestsTab';
+import EmailRequestsTab from './settings/EmailRequestsTab';
+import WhatsAppRequestsTab from './settings/WhatsAppRequestsTab';
+import ReviewsQRTab from './settings/ReviewsQRTab';
+import SpamReviewsTab from './settings/SpamReviewsTab';
+import IntegrationsTab from './settings/IntegrationsTab';
 
 const SettingsTab: React.FC = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('reviews-ai');
@@ -25,6 +30,16 @@ const SettingsTab: React.FC = () => {
         return <ReviewLinkTab />;
       case 'sms-requests':
         return <SMSRequestsTab />;
+      case 'email-requests':
+        return <EmailRequestsTab />;
+      case 'whatsapp-requests':
+        return <WhatsAppRequestsTab />;
+      case 'reviews-qr':
+        return <ReviewsQRTab />;
+      case 'spam-reviews':
+        return <SpamReviewsTab />;
+      case 'integrations':
+        return <IntegrationsTab />;
       default:
         return (
           <div className="p-6 text-center text-gray-500">
@@ -50,7 +65,7 @@ const SettingsTab: React.FC = () => {
                   onClick={() => setActiveSettingsTab(tab.id)}
                   className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                     activeSettingsTab === tab.id
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                      ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                       : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                 >

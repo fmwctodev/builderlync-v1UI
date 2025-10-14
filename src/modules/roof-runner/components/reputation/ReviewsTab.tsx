@@ -102,47 +102,66 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
         </div>
 
         <div className="grid grid-cols-4 gap-6">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">AI Summary (Default)</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Customers find the fanpage content lacking and unengaging. However, they appreciate the potential of the{' '}
-              <span className="text-blue-600 cursor-pointer">See More</span>
-            </p>
-            
-            <div className="space-y-2 mb-4">
-              <div className="text-xs text-gray-500">content quality</div>
-              <div className="text-xs text-gray-500">video creation</div>
-              <div className="text-xs text-gray-500">high resolution</div>
-              <div className="text-xs text-gray-500">ease of use</div>
-              <div className="text-xs text-gray-500">trial offer</div>
-            </div>
-
-            <div className="flex gap-2 mb-4">
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Google</span>
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Facebook</span>
-            </div>
-
-            <div className="text-xs text-gray-500 mb-4">From 1 Reviews</div>
-
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Average Reviews</h4>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">5.0/5</div>
-              <div className="text-xs text-gray-500">(1 Reviews)</div>
-            </div>
-
-            <div className="space-y-1">
-              {[5, 4, 3, 2, 1].map((rating, index) => (
-                <div key={rating} className="flex items-center gap-2 text-xs">
-                  <span>{rating}</span>
-                  <div className="flex-1 bg-gray-200 dark:bg-gray-600 h-2 rounded">
-                    <div 
-                      className="bg-yellow-400 h-2 rounded" 
-                      style={{ width: index === 0 ? '100%' : '0%' }}
-                    ></div>
-                  </div>
-                  <span>{index === 0 ? '100%' : '0%'}</span>
+          <div className="space-y-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="text-purple-600">✨</div>
+                  <h3 className="font-medium text-purple-700">AI Summary (Default)</h3>
                 </div>
-              ))}
+                <button className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+              
+              <p className="text-sm text-gray-700 mb-4">
+                The reviews indicate highly positive feedback on video content quality and creation speed, while also{' '}
+                <span className="text-blue-600 cursor-pointer font-medium">See More</span>
+              </p>
+              
+              <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  video content
+                </div>
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  high quality
+                </div>
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  easy to use
+                </div>
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  diverse content
+                </div>
+                <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  sparse fanpage
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">G</div>
+                  <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">f</div>
+                </div>
+                <span>From 1 Reviews</span>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Average Reviews</h4>
+              <div className="text-4xl font-bold text-gray-900 mb-2">5.0/5</div>
+              <div className="flex justify-center mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} size={20} className="text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <div className="text-sm text-gray-500">(1 Reviews)</div>
             </div>
           </div>
 
