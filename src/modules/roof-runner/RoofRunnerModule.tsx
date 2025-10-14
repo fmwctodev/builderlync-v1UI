@@ -41,7 +41,7 @@ export function RoofRunnerModule() {
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<BlankPage title="Reputation" />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
-        <Route path="sites" element={<BlankPage title="Sites" />} />
+        {/* <Route path="sites" element={<BlankPage title="Sites" />} /> */}
         <Route path="support" element={<BlankPage title="Support" />} />
         <Route path="settings" element={<BlankPage title="Settings" />} />
       </Route>

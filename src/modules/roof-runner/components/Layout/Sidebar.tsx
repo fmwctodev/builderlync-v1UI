@@ -38,7 +38,7 @@ const navItems = {
     { name: 'File Manager', icon: FolderOpen, path: '/file-manager' },
     { name: 'Reputation', icon: Star, path: '/reputation' },
     { name: 'Reporting', icon: BarChart2, path: '/reporting' },
-    { name: 'Sites', icon: Globe, path: '/sites' },
+    // { name: 'Sites', icon: Globe, path: '/sites' },
   ],
   system: [
     { name: 'Support', icon: LifeBuoy, path: '/support' },
