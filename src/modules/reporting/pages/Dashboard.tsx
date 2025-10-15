@@ -26,11 +26,11 @@ export function Dashboard() {
               <h2 className="text-4xl font-bold mb-8">
                 Report for <span className="text-green-400">Free!</span>
               </h2>
-              
+
               <button className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-colors">
                 Generate Report Now
               </button>
-              
+
               <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
                   <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
@@ -38,7 +38,7 @@ export function Dashboard() {
                   </div>
                   <span className="text-lg font-medium">View Reviews Information</span>
                 </div>
-                
+
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-2xl">🎯</span>
@@ -46,7 +46,7 @@ export function Dashboard() {
                   <span className="text-lg font-medium">View Website Performance Score</span>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-6 max-w-6xl mx-auto">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
                   <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -54,14 +54,14 @@ export function Dashboard() {
                   </div>
                   <span className="text-lg font-medium">Check Your GBP Health</span>
                 </div>
-                
+
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
                   <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                     <span className="text-red-600 text-2xl">🔍</span>
                   </div>
                   <span className="text-lg font-medium">View SEO Score</span>
                 </div>
-                
+
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
                   <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
                     <span className="text-pink-600 text-2xl">📋</span>
@@ -98,7 +98,7 @@ export function Dashboard() {
                 </button>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Booked</h3>
@@ -117,7 +117,7 @@ export function Dashboard() {
                 <div className="text-4xl font-bold text-gray-900 dark:text-white">0</div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Showed</h3>
@@ -136,7 +136,7 @@ export function Dashboard() {
                 <div className="text-4xl font-bold text-gray-900 dark:text-white">0</div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-8 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-4">
@@ -152,7 +152,7 @@ export function Dashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Source</h3>
                 <div className="h-48 flex items-center justify-center">
@@ -165,7 +165,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-8 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top 5 Appointment Owners</h3>
@@ -178,7 +178,7 @@ export function Dashboard() {
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Most Popular Days (No of Appointments Booked Day Wise)</h3>
                 <div className="h-48 flex items-center justify-center">
@@ -191,7 +191,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-8 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top 5 Calendars with Cancellations</h3>
@@ -204,7 +204,7 @@ export function Dashboard() {
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top 5 Calendars with Reschedules</h3>
                 <div className="h-48 flex items-center justify-center">
@@ -217,7 +217,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-end">
                 <div className="flex space-x-2">
@@ -250,7 +250,7 @@ export function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
-                      <td colSpan="13" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={13} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                         <div className="flex flex-col items-center">
                           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4">
                             <span className="text-gray-400 dark:text-gray-500 text-2xl">📅</span>
@@ -286,14 +286,14 @@ export function Dashboard() {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4 mb-8">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-500 rounded"></div>
                 <span className="text-sm text-gray-600 dark:text-gray-400">Outgoing</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-8 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Call by Status</h3>
@@ -314,7 +314,7 @@ export function Dashboard() {
                   <span>Total call duration: 0s</span>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">First-time calls by status</h3>
                 <div className="flex justify-center mb-6">
@@ -335,7 +335,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">Top Call Sources</h3>
@@ -359,9 +359,9 @@ export function Dashboard() {
                     </div>
                     <div className="mt-4 text-center text-gray-500 dark:text-gray-400">No Data Found</div>
                   </div>
-                  
+
                   <div className="w-px bg-gray-200 dark:bg-gray-700 mx-8"></div>
-                  
+
                   <div className="flex-1">
                     <div className="h-48 flex flex-col justify-center items-center">
                       <div className="grid grid-cols-4 gap-8 text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-8">
@@ -381,7 +381,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <div className="flex space-x-4">
@@ -417,7 +417,7 @@ export function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
-                      <td colSpan="14" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={14} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                         <div className="flex flex-col items-center">
                           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4">
                             <span className="text-gray-400 dark:text-gray-500 text-2xl">📞</span>
@@ -451,7 +451,7 @@ export function Dashboard() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">Last Attribution</span>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-6 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
@@ -462,7 +462,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">A$0.00</div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
@@ -472,7 +472,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
@@ -483,7 +483,7 @@ export function Dashboard() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <div className="flex items-center space-x-4">
@@ -508,7 +508,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-900 dark:text-white">Session Events</span>
@@ -621,7 +621,7 @@ export function Dashboard() {
                 You're viewing sample data. Click here to integrate your Facebook account and select the Facebook Ad Account ID for which you want to see the data.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-6 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
@@ -644,7 +644,7 @@ export function Dashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
@@ -661,7 +661,7 @@ export function Dashboard() {
                   </svg>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
@@ -679,7 +679,7 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-6 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Client Spends</div>
@@ -694,7 +694,7 @@ export function Dashboard() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">$0.29</div>
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <input type="text" placeholder="Type to search" className="w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
@@ -990,7 +990,7 @@ export function Dashboard() {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
-          
+
           <div className="flex space-x-1">
             {tabs.map((tab) => (
               <button
