@@ -16,6 +16,7 @@ import WorkOrders from './pages/WorkOrders';
 import Automations from './pages/Automations';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
+import Reputation from './pages/Reputation';
 
 export function RoofRunnerModule() {
   return (
@@ -39,7 +40,7 @@ export function RoofRunnerModule() {
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<BlankPage title="Marketing" />} />
         <Route path="file-manager" element={<FileManager />} />
-        <Route path="reputation" element={<BlankPage title="Reputation" />} />
+        <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
         {/* <Route path="sites" element={<BlankPage title="Sites" />} /> */}
         <Route path="support" element={<BlankPage title="Support" />} />
