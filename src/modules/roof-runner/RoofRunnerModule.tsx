@@ -17,10 +17,16 @@ import Automations from './pages/Automations';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import ForgotPassword from './pages/auth/ForgotPassword';
 
 export function RoofRunnerModule() {
   return (
     <Routes>
+      <Route path="auth/login" element={<Login />} />
+      <Route path="auth/signup" element={<Signup />} />
+      <Route path="auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
 
