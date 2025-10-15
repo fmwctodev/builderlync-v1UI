@@ -7,6 +7,8 @@ import { Opportunities } from './pages/Opportunities';
 import { Reputation } from './pages/Reputation';
 import { Sites } from './pages/Sites';
 import { Reports } from './pages/Reports';
+import { GBPOptimization } from './pages/GBPOptimization';
+import { Integrations } from './pages/Integrations';
 
 export function MarketingModule() {
   return (
@@ -19,6 +21,8 @@ export function MarketingModule() {
           <Route path="/reputation" element={<Reputation />} />
           <Route path="/sites" element={<Sites />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/gbp-optimization" element={<GBPOptimization />} />
+          <Route path="/integrations" element={<Integrations />} />
         </Routes>
       </MainLayout>
     </ThemeProvider>

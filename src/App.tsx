@@ -12,12 +12,13 @@ import { ProjectManagementModule } from './modules/project-management/ProjectMan
 import { EdgeViewModule } from './modules/edge-view/EdgeViewModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
+import { ReportingModule } from './modules/reporting/ReportingModule';
 
 function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/*" element={<RoofRunnerModule />} />
             <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
@@ -26,6 +27,7 @@ function App() {
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
             <Route path="/edge-view/*" element={<EdgeViewModule />} />
             <Route path="/ai-agents/*" element={<AIAgentsModule />} />
+            <Route path="/reporting/*" element={<ReportingModule />} />
           </Routes>
         </Router>
       </div>
