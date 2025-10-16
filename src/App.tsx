@@ -23,7 +23,6 @@ function App() {
             <Route path="/*" element={<RoofRunnerModule />} />
             <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
             <Route path="/crm/*" element={<CRMModule />} />
-            <Route path="/marketing/*" element={<MarketingModule />} />
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
             <Route path="/edge-view/*" element={<EdgeViewModule />} />
             <Route path="/ai-agents/*" element={<AIAgentsModule />} />

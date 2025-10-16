@@ -22,12 +22,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
   
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/marketing', icon: 'LayoutDashboard' },
+    { name: 'Analytics', href: '/marketing/analytics', icon: 'BarChart' },
     { name: 'Campaigns', href: '/marketing/campaigns', icon: 'Megaphone' },
+    { name: 'Ads Manager', href: '/marketing/ads-manager', icon: 'Zap' },
+    { name: 'Social Planner', href: '/marketing/social-planner', icon: 'Globe' },
     { name: 'Reputation', href: '/marketing/reputation', icon: 'Star' },
-    { name: 'Opportunities', href: '/marketing/opportunities', icon: 'Award' },
-    { name: 'Automation', href: '/marketing/automation', icon: 'Zap' },
-    { name: 'Sites', href: '/marketing/sites', icon: 'Globe' },
-    { name: 'Reports', href: '/marketing/reports', icon: 'BarChart' }
+    { name: 'Opportunities', href: '/marketing/opportunities', icon: 'Award' }
   ];
 
   const getIcon = (iconName: string, active: boolean = false) => {

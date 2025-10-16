@@ -108,7 +108,7 @@ const Conversations: React.FC = () => {
     }
   ];
 
-  const channels = ['SMS', 'WhatsApp', 'Email', 'Yelp'];
+  const channels = ['SMS', 'Google Business', 'Email', 'Yelp'];
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -149,44 +149,18 @@ const Conversations: React.FC = () => {
           >
             Snippets
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowTriggerDropdown(!showTriggerDropdown)}
-              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'links' || activeTab === 'analyze'
-                  ? 'text-red-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              style={activeTab === 'links' || activeTab === 'analyze' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
-            >
-              <span>Trigger Links</span>
-              <ChevronDown size={16} />
-            </button>
-            {showTriggerDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setActiveTab('links');
-                      setShowTriggerDropdown(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Links
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('analyze');
-                      setShowTriggerDropdown(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Analyze
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setActiveTab('team-messaging')}
+            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'team-messaging'
+                ? 'text-red-700'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            style={activeTab === 'team-messaging' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
+          >
+            Team Messaging
+          </button>
+
         </div>
       </div>
 
@@ -394,9 +368,14 @@ const Conversations: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  <button className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                    Internal Comment
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                      Internal Comment
+                    </button>
+                    <button className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                      Team Message
+                    </button>
+                  </div>
                 </div>
 
                 {/* Email Form */}
@@ -811,76 +790,85 @@ const Conversations: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'links' && (
+        {activeTab === 'team-messaging' && (
           <div className="flex-1 p-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Link</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Team Messaging</h2>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Trigger links allow you to put links inside SMS messages and emails...
+                    Send messages to your team members or broadcast to groups
                   </p>
                 </div>
-                <button 
-                  onClick={() => setShowAddLinkModal(true)}
-                  className="px-4 py-2 text-white rounded-lg" 
-                  style={{backgroundColor: '#dc2626'}}
-                >
-                  Add Link
+                <button className="px-4 py-2 text-white rounded-lg" style={{backgroundColor: '#dc2626'}}>
+                  New Message
                 </button>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trigger Link</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link URL</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="px-6 py-4 text-sm text-gray-900">DEMO</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">DEMO</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">https://demo.com</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <button 
-                          onClick={() => setShowEditLinkModal(true)}
-                          className="text-blue-600 hover:underline mr-2"
-                        >
-                          Edit
-                        </button>
-                        |
-                        <button 
-                          onClick={() => setShowDeleteLinkModal(true)}
-                          className="text-red-600 hover:underline ml-2"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'analyze' && (
-          <div className="flex-1 p-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Analyze</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Trigger links allow you to put links inside SMS messages and emails...
-              </p>
-              <div className="text-center py-8">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  You do not have any trigger link yet.
-                </p>
-                <button className="text-blue-600 hover:underline">
-                  Click here to create your first trigger link
-                </button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                      Message Type
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <option>Individual Message</option>
+                      <option>Sales Team Broadcast</option>
+                      <option>All Team Broadcast</option>
+                      <option>Manager Notification</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                      Recipients
+                    </label>
+                    <select multiple className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 h-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <option>John Smith - Sales Rep</option>
+                      <option>Sarah Johnson - Sales Rep</option>
+                      <option>Mike Wilson - Project Manager</option>
+                      <option>Lisa Davis - Admin</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                      Message
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Type your message..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  
+                  <button className="w-full px-4 py-2 text-white rounded-lg" style={{backgroundColor: '#dc2626'}}>
+                    Send Message
+                  </button>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Team Messages</h3>
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">Sales Team Broadcast</span>
+                        <span className="text-xs text-gray-500">2 hours ago</span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">New leads came in from Facebook campaign. Please follow up within 1 hour.</p>
+                      <div className="mt-2 text-xs text-gray-500">Sent to: Sales Team (4 members)</div>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">Individual Message</span>
+                        <span className="text-xs text-gray-500">1 day ago</span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Great job on closing the Johnson project!</p>
+                      <div className="mt-2 text-xs text-gray-500">Sent to: John Smith</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -56,24 +56,6 @@ export default function Dashboard() {
 
       {/* Dashboard Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Contacts Widget */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Contacts</h3>
-          </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">1,247</div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total contacts</p>
-        </div>
-
-        {/* Opportunities Widget */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Opportunities</h3>
-          </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,230</div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Pipeline value</p>
-        </div>
-
         {/* Jobs Widget */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -91,20 +73,75 @@ export default function Dashboard() {
           <div className="text-3xl font-bold text-gray-900 dark:text-white">$12,450</div>
           <p className="text-sm text-gray-500 dark:text-gray-400">This month</p>
         </div>
+
+        {/* Opportunities Widget */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Opportunities</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,230</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Pipeline value</p>
+        </div>
+
+        {/* Contacts Widget */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Contacts</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">1,247</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total contacts</p>
+        </div>
+
+        {/* Customer Acquisition Cost */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Customer Acquisition Cost</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">$333</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Per closed job</p>
+        </div>
+
+        {/* Average Job Cost */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Average Job Cost</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">$8,750</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Last 30 days</p>
+        </div>
+
+        {/* Lead Conversion Rate */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Lead Conversion</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">18.5%</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Leads to jobs</p>
+        </div>
+
+        {/* Custom Marketing Analytics */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Marketing ROI</h3>
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">4.2x</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Return on ad spend</p>
+        </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* User-Specific Activity and Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">My Recent Activity</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Your recent actions</p>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 mt-2 bg-error-500 rounded-full"></div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">New job created</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">You created a new job</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Roof repair for Johnson residence</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">2 hours ago</p>
                 </div>
@@ -112,7 +149,7 @@ export default function Dashboard() {
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 mt-2 bg-success-500 rounded-full"></div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Payment received</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">You updated payment status</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">$2,500 from Smith Construction</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">4 hours ago</p>
                 </div>
@@ -120,7 +157,7 @@ export default function Dashboard() {
               <div className="flex items-start space-x-3">
                 <div className="w-2 h-2 mt-2 bg-primary-500 rounded-full"></div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">New contact added</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">You added a new contact</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Mike Wilson - Homeowner</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">6 hours ago</p>
                 </div>
@@ -131,7 +168,8 @@ export default function Dashboard() {
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Upcoming Tasks</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">My Upcoming Tasks</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Tasks assigned to you</p>
           </div>
           <div className="p-6">
             <div className="space-y-4">

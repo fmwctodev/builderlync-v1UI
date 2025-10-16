@@ -27,12 +27,20 @@ const Calendars: React.FC = () => {
     endDate: '',
     endTime: '',
     job: '',
+    teamMember: '',
+    clientName: '',
+    clientEmail: '',
     guests: [] as string[],
     description: ''
   });
 
-  const jobs = ['Job 1 - Main Street Roof', 'Job 2 - Oak Avenue Repair', 'Job 3 - Pine Street Installation'];
-  const guests = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson'];
+  const jobs = [
+    { id: '1', name: 'Job 1 - Main Street Roof', client: { name: 'John Smith', email: 'john.smith@email.com' } },
+    { id: '2', name: 'Job 2 - Oak Avenue Repair', client: { name: 'Sarah Johnson', email: 'sarah.j@email.com' } },
+    { id: '3', name: 'Job 3 - Pine Street Installation', client: { name: 'Mike Wilson', email: 'mike.w@email.com' } }
+  ];
+  const teamMembers = ['John Doe - Sales Rep', 'Jane Smith - Project Manager', 'Mike Johnson - Installer', 'Sarah Wilson - Admin'];
+  const guests = ['Additional Guest 1', 'Additional Guest 2', 'Contractor Partner'];
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -69,6 +77,9 @@ const Calendars: React.FC = () => {
       endDate: '',
       endTime: '',
       job: '',
+      teamMember: '',
+      clientName: '',
+      clientEmail: '',
       guests: [],
       description: ''
     });
@@ -192,8 +203,8 @@ const Calendars: React.FC = () => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+      {/* Calendar Grid - Wider Layout */}
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col" style={{minHeight: '600px'}}>
         {/* Day Headers */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex-shrink-0">
           {dayNames.map(day => (
@@ -324,29 +335,83 @@ const Calendars: React.FC = () => {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Associated Job</label>
                 <select
                   value={formData.job}
-                  onChange={(e) => setFormData({...formData, job: e.target.value})}
+                  onChange={(e) => {
+                    const selectedJob = jobs.find(job => job.id === e.target.value);
+                    setFormData({
+                      ...formData, 
+                      job: e.target.value,
+                      clientName: selectedJob?.client.name || '',
+                      clientEmail: selectedJob?.client.email || ''
+                    });
+                  }}
                   className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">🏠 Select a job (optional)</option>
                   {jobs.map(job => (
-                    <option key={job} value={job}>🔨 {job}</option>
+                    <option key={job.id} value={job.id}>🔨 {job.name}</option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Invite Guests</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Assign Team Member</label>
+                <select
+                  value={formData.teamMember}
+                  onChange={(e) => setFormData({...formData, teamMember: e.target.value})}
+                  className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="">👥 Select team member</option>
+                  {teamMembers.map(member => (
+                    <option key={member} value={member}>👤 {member}</option>
+                  ))}
+                </select>
+              </div>
+
+              {formData.job && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 space-y-4">
+                  <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    Client Information (Auto-filled)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-blue-600 dark:text-blue-400">Client Name</label>
+                      <input
+                        type="text"
+                        value={formData.clientName}
+                        onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                        className="input w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Client name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-blue-600 dark:text-blue-400">Client Email</label>
+                      <input
+                        type="email"
+                        value={formData.clientEmail}
+                        onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
+                        className="input w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="client@email.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Additional Guests (Optional)</label>
                 <select
                   multiple
                   value={formData.guests}
                   onChange={(e) => setFormData({...formData, guests: Array.from(e.target.selectedOptions, option => option.value)})}
-                  className="input w-full h-28 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="input w-full h-24 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   {guests.map(guest => (
                     <option key={guest} value={guest} className="py-2">👤 {guest}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple guests</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple additional guests</p>
               </div>
 
               <div className="space-y-2">

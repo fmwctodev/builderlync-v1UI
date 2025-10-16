@@ -3,40 +3,63 @@ import { Search, Star } from 'lucide-react';
 export function AgentTemplates() {
   const agents = [
     {
-      name: 'PetSafe',
-      subtitle: 'PetSafe Ai',
-      installs: '7.7K',
-      author: 'CRM Pros',
-      description: 'Life-saving guidance, just a click away.',
-      rating: 0,
-      price: 'Free'
-    },
-    {
-      name: 'FrontDoor AI',
-      subtitle: 'FrontDoor AI',
-      installs: '6.2K',
-      author: 'DELLWING ONLINE GmbH',
-      description: 'AI Voice Receptionist that books appointments, qualifies leads & updates CRM automatically.',
-      rating: 0,
-      price: 'Free'
-    },
-    {
-      name: 'Self Demoing Voice AI Agent Rachel',
-      subtitle: '#1 AI Sales, Receptionist & AfterHours Voice Agent',
-      installs: '4.1K',
-      author: 'Extendly',
-      description: 'The #1 SaaS Self Demoing and Sales Agent, Receptionist and After Hours Agents',
+      name: 'Inbound Roofing Agent',
+      subtitle: 'Roofing Lead Qualification & Appointment Booking',
+      installs: '8.2K',
+      author: 'BuilderLync',
+      description: 'AI agent specialized in qualifying roofing leads, scheduling inspections, and handling storm damage inquiries.',
       rating: 5,
-      reviews: 1,
+      reviews: 47,
       price: 'Free'
     },
     {
-      name: 'Justin',
-      subtitle: 'Justin - Your Unbreakable Voice Assistant',
-      installs: '2.6K',
-      author: 'BeVisible Online Solutions Ltd.',
-      description: 'An Unbreakable Voice Assistant Built for Service Businesses',
-      rating: 0,
+      name: 'Outbound Roofing Agent',
+      subtitle: 'Proactive Roofing Sales & Follow-up',
+      installs: '6.8K',
+      author: 'BuilderLync',
+      description: 'Automated outbound calling for roofing prospects, follow-ups on estimates, and re-engagement campaigns.',
+      rating: 4,
+      reviews: 32,
+      price: 'Free'
+    },
+    {
+      name: 'Inbound Solar Agent',
+      subtitle: 'Solar Lead Qualification & Energy Assessment',
+      installs: '5.4K',
+      author: 'BuilderLync',
+      description: 'Specialized AI for solar inquiries, energy bill analysis, and solar consultation scheduling.',
+      rating: 5,
+      reviews: 28,
+      price: 'Free'
+    },
+    {
+      name: 'Outbound Solar Agent',
+      subtitle: 'Solar Sales & Energy Savings Outreach',
+      installs: '4.1K',
+      author: 'BuilderLync',
+      description: 'Proactive solar sales agent for energy savings consultations and solar proposal follow-ups.',
+      rating: 4,
+      reviews: 19,
+      price: 'Free'
+    },
+    {
+      name: 'Construction Support Agent',
+      subtitle: 'General Construction & Contractor Services',
+      installs: '3.2K',
+      author: 'BuilderLync',
+      description: 'Multi-purpose construction AI for general contracting, home improvement, and service inquiries.',
+      rating: 4,
+      reviews: 15,
+      price: 'Free'
+    },
+    {
+      name: 'Emergency Response Agent',
+      subtitle: 'Storm Damage & Emergency Roofing Services',
+      installs: '2.8K',
+      author: 'BuilderLync',
+      description: 'Specialized agent for handling emergency roofing calls, storm damage assessments, and urgent repairs.',
+      rating: 5,
+      reviews: 12,
       price: 'Free'
     }
   ];
@@ -46,7 +69,7 @@ export function AgentTemplates() {
       <div>
         <p className="text-gray-600 dark:text-gray-400 mb-4">Agency View</p>
         <p className="text-gray-600 dark:text-gray-400">
-          Get more out of your CRM. Explore apps & integrate them with your account seamlessly.
+          Specialized AI agents for roofing, solar, and construction businesses. Deploy intelligent voice assistants to handle leads, book appointments, and qualify prospects 24/7.
         </p>
       </div>
 

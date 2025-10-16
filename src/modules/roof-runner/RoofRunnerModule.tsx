@@ -17,6 +17,9 @@ import Automations from './pages/Automations';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
+import Marketing from './pages/Marketing';
+import Settings from './pages/Settings';
+import Support from './pages/Support';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -44,13 +47,12 @@ export function RoofRunnerModule() {
         <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<Automations />} />
         <Route path="opportunities" element={<Opportunities />} />
-        <Route path="marketing" element={<BlankPage title="Marketing" />} />
+        <Route path="marketing" element={<Marketing />} />
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
-        {/* <Route path="sites" element={<BlankPage title="Sites" />} /> */}
-        <Route path="support" element={<BlankPage title="Support" />} />
-        <Route path="settings" element={<BlankPage title="Settings" />} />
+        <Route path="support" element={<Support />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );

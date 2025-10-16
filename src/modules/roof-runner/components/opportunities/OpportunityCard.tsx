@@ -12,11 +12,16 @@ interface Opportunity {
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  onDragStart?: (e: React.DragEvent, opportunity: Opportunity) => void;
 }
 
-export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, onDragStart }: OpportunityCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 relative hover:shadow-md transition-shadow cursor-grab">
+    <div 
+      className="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 relative hover:shadow-md transition-shadow cursor-grab"
+      draggable
+      onDragStart={(e) => onDragStart?.(e, opportunity)}
+    >
       {/* Avatar/Initials */}
       <div className="absolute top-3 right-3">
         {opportunity.initials ? (
