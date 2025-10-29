@@ -1,23 +1,48 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { loginRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import Toast from '../../../../shared/components/Toast';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const successMessage = location.state?.message;
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (successMessage) {
+      setToast({message: successMessage, type: 'success'});
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      setToast({message: error, type: 'error'});
+    }
+  }, [error]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/');
-    }, 1000);
+    dispatch(loginRequest({ email, password }));
   };
 
   return (
@@ -91,13 +116,15 @@ const Login: React.FC = () => {
             </Link>
           </div>
 
+
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loading}
             className="w-full text-white py-3 px-4 rounded-lg hover:opacity-90 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             style={{backgroundColor: '#dc2626', '--tw-ring-color': '#dc2626'} as React.CSSProperties}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
@@ -110,6 +137,15 @@ const Login: React.FC = () => {
           </p>
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

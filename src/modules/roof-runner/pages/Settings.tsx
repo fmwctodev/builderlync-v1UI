@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Building, Users, Calendar, Mail, Phone, CreditCard, 
+import {
+  Building, Users, Calendar, Mail, Phone, CreditCard,
   Zap, Database, Shield, FileText, Palette, Settings as SettingsIcon,
   Plus, ExternalLink, Check, X, AlertTriangle
 } from 'lucide-react';
+import { AddEditStaffModal, DeleteConfirmModal } from '../components/StaffModals';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('business');
@@ -172,10 +173,10 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
             <h4 className="text-xl font-bold text-gray-900 dark:text-white">Professional Plan</h4>
             <p className="text-gray-600 dark:text-gray-400">$99/month • Billed monthly</p>
           </div>
-          <button 
+          <button
             className={`px-4 py-2 rounded-lg ${
-              userRole === 'Owner' 
-                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+              userRole === 'Owner'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             disabled={userRole !== 'Owner'}
@@ -197,10 +198,10 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
               <p className="text-sm text-gray-600 dark:text-gray-400">Expires 12/25</p>
             </div>
           </div>
-          <button 
+          <button
             className={`px-4 py-2 rounded-lg ${
-              userRole === 'Owner' 
-                ? 'text-blue-600 hover:underline dark:text-blue-400' 
+              userRole === 'Owner'
+                ? 'text-blue-600 hover:underline dark:text-blue-400'
                 : 'text-gray-400 cursor-not-allowed'
             }`}
             disabled={userRole !== 'Owner'}
@@ -215,6 +216,34 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
 
 const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
   const canManageStaff = userRole === 'Owner' || userRole === 'Admin';
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+
+  const handleAddMember = (member: any) => {
+    console.log('Adding member:', member);
+  };
+
+  const handleEditMember = (member: any) => {
+    console.log('Editing member:', member);
+  };
+
+  const handleDeleteMember = () => {
+    console.log('Deleting member:', selectedMember);
+    setShowDeleteModal(false);
+    setSelectedMember(null);
+  };
+
+  const openEditModal = (member: any) => {
+    setSelectedMember(member);
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (member: any) => {
+    setSelectedMember(member);
+    setShowDeleteModal(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -224,7 +253,10 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
           <p className="text-gray-600 dark:text-gray-400">Manage team members and their roles</p>
         </div>
         {canManageStaff && (
-          <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
             <Plus size={16} />
             <span>Add Staff Member</span>
           </button>
@@ -270,13 +302,23 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <button 
+                  <button
+                    onClick={() => openEditModal({ firstName: 'John', lastName: 'Smith', email: 'john@builderlync.com', phone: '555-0123', extension: '101' })}
                     className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
                       !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                     disabled={!canManageStaff}
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={() => openDeleteModal({ firstName: 'John', lastName: 'Smith' })}
+                    className={`text-red-600 hover:underline text-sm dark:text-red-400 ${
+                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={!canManageStaff}
+                  >
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -294,7 +336,8 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <button 
+                  <button
+                    onClick={() => openEditModal({ firstName: 'Sarah', lastName: 'Johnson', email: 'sarah@builderlync.com', phone: '555-0124', extension: '102' })}
                     className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
                       !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
@@ -302,12 +345,42 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
                   >
                     Edit
                   </button>
+                  <button
+                    onClick={() => openDeleteModal({ firstName: 'Sarah', lastName: 'Johnson' })}
+                    className={`text-red-600 hover:underline text-sm dark:text-red-400 ${
+                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={!canManageStaff}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <AddEditStaffModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddMember}
+      />
+      
+      <AddEditStaffModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleEditMember}
+        member={selectedMember}
+        isEdit={true}
+      />
+      
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteMember}
+        memberName={selectedMember ? `${selectedMember.firstName} ${selectedMember.lastName}` : ''}
+      />
     </div>
   );
 };
@@ -333,7 +406,7 @@ const CalendarTab: React.FC = () => {
             </div>
             <button className="text-red-600 hover:underline dark:text-red-400">Disconnect</button>
           </div>
-          
+
           <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-600">
             <div className="flex items-center space-x-3">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -438,8 +511,8 @@ const IntegrationsTab: React.FC = () => {
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{integration.description}</p>
             <button className={`w-full px-4 py-2 rounded-lg ${
-              integration.connected 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400' 
+              integration.connected
+                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}>
               {integration.connected ? 'Disconnect' : 'Connect'}
@@ -683,7 +756,7 @@ const BrandBoardTab: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Description</label>
             <textarea
@@ -692,7 +765,7 @@ const BrandBoardTab: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Brand Voice & Tone</label>
             <textarea
@@ -701,7 +774,7 @@ const BrandBoardTab: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Audience</label>
             <textarea
@@ -724,7 +797,7 @@ const BrandBoardTab: React.FC = () => {
               <button className="text-blue-600 hover:underline dark:text-blue-400">Choose File</button>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Brand Colors</label>
             <div className="space-y-3">
