@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { registerRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import Toast from '../../../../shared/components/Toast';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    company: '',
+    companyName: '',
     password: '',
     confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -23,20 +28,33 @@ const Signup: React.FC = () => {
     }));
   };
 
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      setToast({message: error, type: 'error'});
+    }
+  }, [error]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setToast({message: 'Passwords do not match', type: 'error'});
       return;
     }
 
-    setIsLoading(true);
-
-    // Simulate signup process
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/auth/login');
-    }, 1000);
+    const { confirmPassword, ...registerData } = formData;
+    dispatch(registerRequest(registerData));
   };
 
   return (
@@ -119,16 +137,16 @@ const Signup: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
               Company Name
             </label>
             <div className="relative">
               <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
-                id="company"
-                name="company"
+                id="companyName"
+                name="companyName"
                 type="text"
-                value={formData.company}
+                value={formData.companyName}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
                 style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
@@ -205,13 +223,15 @@ const Signup: React.FC = () => {
             </span>
           </div>
 
+
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loading}
             className="w-full text-white py-3 px-4 rounded-lg hover:opacity-90 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             style={{backgroundColor: '#dc2626', '--tw-ring-color': '#dc2626'} as React.CSSProperties}
           >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
@@ -224,6 +244,15 @@ const Signup: React.FC = () => {
           </p>
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

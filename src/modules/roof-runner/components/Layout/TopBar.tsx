@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Bell, Calendar, ChevronDown, HelpCircle, Menu, Search, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../../../shared/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { logout } from '../../../../shared/store/slices/authSlice';
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -13,6 +15,8 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -79,7 +83,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
               className="flex items-center gap-2"
             >
               <div className="h-8 w-8 rounded-full overflow-hidden bg-primary-600 flex items-center justify-center text-white font-medium">
-                RR
+                {user?.firstName?.[0]}{user?.lastName?.[0] || 'U'}
               </div>
               <ChevronDown size={16} className="text-gray-500" />
             </button>
@@ -91,7 +95,10 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
                   <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</button>
                   <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                   <button
-                    onClick={() => navigate('/auth/login')}
+                    onClick={() => {
+                      dispatch(logout());
+                      navigate('/auth/login');
+                    }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Logout
