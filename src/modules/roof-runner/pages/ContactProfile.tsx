@@ -123,7 +123,7 @@ const ContactProfile: React.FC = () => {
 
   const handleEditClick = () => {
     setFormData({
-      fullName: contact.full_name || '',
+      fullName: contact.fullName || '',
       type: contact.type || 'customer',
       labelRole: contact.label_or_role || '',
       email: contact.email || '',
@@ -288,7 +288,7 @@ const ContactProfile: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {contact.full_name}
+              {contact.fullName}
             </h1>
             <button
               onClick={handleEditClick}
@@ -359,14 +359,14 @@ const ContactProfile: React.FC = () => {
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Created</h4>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                <p className="text-gray-900 dark:text-white">{new Date(contact.created_at).toLocaleDateString()}</p>
+                <p className="text-gray-900 dark:text-white">{new Date(contact.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</h4>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                <p className="text-gray-900 dark:text-white">{new Date(contact.updated_at).toLocaleDateString()}</p>
+                <p className="text-gray-900 dark:text-white">{new Date(contact.updatedAt).toLocaleDateString()}</p>
               </div>
             </div>
              {contact.address && (

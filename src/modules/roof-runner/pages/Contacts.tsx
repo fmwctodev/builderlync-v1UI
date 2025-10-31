@@ -306,7 +306,7 @@ const Contacts: React.FC = () => {
   const handleEdit = (contact: any) => {
     setEditingContact(contact);
     setFormData({
-      fullName: contact.full_name || '',
+      fullName: contact.fullName || '',
       type: contact.type || 'customer',
       labelRole: contact.label_or_role || '',
       email: contact.email || '',
