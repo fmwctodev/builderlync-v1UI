@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
+import { getJobs, Job } from '../../../shared/store/services/jobsApi';
+import { createJobEvent, getAllEvents, Event } from '../../../shared/store/services/eventsApi';
 
-interface Event {
+interface CalendarEvent {
   id: string;
-  title: string;
   type: string;
+  title: string;
   startDate: string;
   startTime: string;
   endDate: string;
   endTime: string;
-  job: string;
-  guests: string[];
+  allDay: boolean;
+  location: string;
+  invitees: string[];
   description: string;
+  teamMember: string;
 }
 
 const Calendars: React.FC = () => {
@@ -19,6 +24,10 @@ const Calendars: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
   const [formData, setFormData] = useState({
     type: '',
     title: '',
@@ -26,21 +35,42 @@ const Calendars: React.FC = () => {
     startTime: '',
     endDate: '',
     endTime: '',
+    allDay: false,
+    location: '',
     job: '',
     teamMember: '',
-    clientName: '',
-    clientEmail: '',
-    guests: [] as string[],
+    invitees: [] as string[],
     description: ''
   });
 
-  const jobs = [
-    { id: '1', name: 'Job 1 - Main Street Roof', client: { name: 'John Smith', email: 'john.smith@email.com' } },
-    { id: '2', name: 'Job 2 - Oak Avenue Repair', client: { name: 'Sarah Johnson', email: 'sarah.j@email.com' } },
-    { id: '3', name: 'Job 3 - Pine Street Installation', client: { name: 'Mike Wilson', email: 'mike.w@email.com' } }
-  ];
-  const teamMembers = ['John Doe - Sales Rep', 'Jane Smith - Project Manager', 'Mike Johnson - Installer', 'Sarah Wilson - Admin'];
-  const guests = ['Additional Guest 1', 'Additional Guest 2', 'Contractor Partner'];
+  const fetchStaff = async () => {
+    try {
+      const response = await getStaff(1, 100);
+      setStaff(response.data.data || []);
+    } catch (error: any) {
+      console.error('Error fetching staff:', error);
+      setToast({ message: 'Failed to load staff', type: 'error' });
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await getJobs(1, 100);
+      setJobs(response.data.data || []);
+    } catch (error: any) {
+      console.error('Error fetching jobs:', error);
+      setToast({ message: 'Failed to load jobs', type: 'error' });
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const response = await getAllEvents();
+      setEvents(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching events:', error);
+    }
+  };
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -52,23 +82,77 @@ const Calendars: React.FC = () => {
 
   const handleDateClick = (day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    setSelectedDate(clickedDate);
-    setFormData({
-      ...formData,
-      startDate: clickedDate.toISOString().split('T')[0],
-      endDate: clickedDate.toISOString().split('T')[0]
+    const dayEvents = events.filter(event => {
+      const eventDate = new Date(event.start_date);
+      return eventDate.getDate() === day &&
+             eventDate.getMonth() === currentDate.getMonth() &&
+             eventDate.getFullYear() === currentDate.getFullYear();
     });
+
+    setSelectedDate(clickedDate);
+    
+    if (dayEvents.length > 0) {
+      const event = dayEvents[0];
+      const selectedJob = jobs.find(job => job.id === event.job_id);
+      setFormData({
+        type: 'meeting',
+        title: event.title,
+        startDate: event.start_date,
+        startTime: event.start_time,
+        endDate: event.end_date,
+        endTime: event.end_time,
+        allDay: false,
+        location: event.location || '',
+        job: selectedJob?.name || '',
+        teamMember: '',
+        invitees: [],
+        description: event.description || ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        startDate: clickedDate.toISOString().split('T')[0],
+        endDate: clickedDate.toISOString().split('T')[0]
+      });
+    }
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newEvent: Event = {
-      id: Date.now().toString(),
-      ...formData
-    };
-    setEvents([...events, newEvent]);
-    setShowModal(false);
+    setLoading(true);
+    
+    try {
+      const selectedJob = jobs.find(job => job.name === formData.job);
+      const jobId = selectedJob ? selectedJob.id : 1; // Default job ID if none selected
+
+      await createJobEvent(jobId, {
+        type: formData.type,
+        title: formData.title,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        endDate: formData.endDate,
+        endTime: formData.endTime,
+        allDay: formData.allDay,
+        location: formData.location,
+        invitees: formData.invitees,
+        description: formData.description,
+        createdBy: 1,
+        createdByName: 'Current User'
+      });
+      
+      setToast({ message: 'Event created successfully!', type: 'success' });
+      setShowModal(false);
+      resetForm();
+      fetchEvents();
+    } catch (error) {
+      setToast({ message: 'Failed to create event', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
       type: '',
       title: '',
@@ -76,14 +160,58 @@ const Calendars: React.FC = () => {
       startTime: '',
       endDate: '',
       endTime: '',
+      allDay: false,
+      location: '',
       job: '',
       teamMember: '',
-      clientName: '',
-      clientEmail: '',
-      guests: [],
+      invitees: [],
       description: ''
     });
   };
+
+  useEffect(() => {
+    fetchStaff();
+    fetchJobs();
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    if (showModal) {
+      const timer = setTimeout(() => {
+        initAutocomplete();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showModal]);
+
+  const initAutocomplete = () => {
+    if (window.google?.maps?.places) {
+      const input = document.getElementById('location-input') as HTMLInputElement;
+      if (input) {
+        const autocomplete = new window.google.maps.places.Autocomplete(input);
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.formatted_address) {
+            setFormData(prev => ({...prev, location: place.formatted_address}));
+          }
+        });
+      }
+    } else {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.onload = () => {
+        setTimeout(initAutocomplete, 100);
+      };
+      document.head.appendChild(script);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentDate);
@@ -98,7 +226,7 @@ const Calendars: React.FC = () => {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.startDate);
+        const eventDate = new Date(event.start_date);
         return eventDate.getDate() === day &&
                eventDate.getMonth() === currentDate.getMonth() &&
                eventDate.getFullYear() === currentDate.getFullYear();
@@ -161,6 +289,16 @@ const Calendars: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
+
       {/* Calendar Header */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <div className="flex items-center justify-between">
@@ -331,24 +469,40 @@ const Calendars: React.FC = () => {
                 </div>
               </div>
 
+              <div className="flex items-center space-x-4 mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.allDay}
+                    onChange={(e) => setFormData({...formData, allDay: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">All Day Event</span>
+                </label>
+              </div>
+
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Associated Job</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Location</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter event location..."
+                  id="location-input"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Associated Job (Optional)</label>
                 <select
                   value={formData.job}
-                  onChange={(e) => {
-                    const selectedJob = jobs.find(job => job.id === e.target.value);
-                    setFormData({
-                      ...formData, 
-                      job: e.target.value,
-                      clientName: selectedJob?.client.name || '',
-                      clientEmail: selectedJob?.client.email || ''
-                    });
-                  }}
+                  onChange={(e) => setFormData({...formData, job: e.target.value})}
                   className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">🏠 Select a job (optional)</option>
                   {jobs.map(job => (
-                    <option key={job.id} value={job.id}>🔨 {job.name}</option>
+                    <option key={job.id} value={job.name}>🔨 {job.name}</option>
                   ))}
                 </select>
               </div>
@@ -362,8 +516,10 @@ const Calendars: React.FC = () => {
                   required
                 >
                   <option value="">👥 Select team member</option>
-                  {teamMembers.map(member => (
-                    <option key={member} value={member}>👤 {member}</option>
+                  {staff.map(member => (
+                    <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
+                      👤 {member.first_name} {member.last_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -400,18 +556,20 @@ const Calendars: React.FC = () => {
               )}
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Additional Guests (Optional)</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Invitees (Optional)</label>
                 <select
                   multiple
-                  value={formData.guests}
-                  onChange={(e) => setFormData({...formData, guests: Array.from(e.target.selectedOptions, option => option.value)})}
+                  value={formData.invitees}
+                  onChange={(e) => setFormData({...formData, invitees: Array.from(e.target.selectedOptions, option => option.value)})}
                   className="input w-full h-24 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  {guests.map(guest => (
-                    <option key={guest} value={guest} className="py-2">👤 {guest}</option>
+                  {staff.map(member => (
+                    <option key={member.id} value={member.email} className="py-2">
+                      👤 {member.first_name} {member.last_name} ({member.email})
+                    </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple additional guests</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple invitees</p>
               </div>
 
               <div className="space-y-2">
@@ -434,9 +592,10 @@ const Calendars: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Event
+                  {loading ? 'Creating...' : 'Create Event'}
                 </button>
               </div>
             </form>

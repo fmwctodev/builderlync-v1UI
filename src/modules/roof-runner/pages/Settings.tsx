@@ -220,33 +220,126 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
 
-  const handleAddMember = (member: any) => {
-    console.log('Adding member:', member);
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      const { getStaff } = await import('../../../shared/store/services/staffApi');
+      const response = await getStaff(1, 50);
+      setStaff(response.data.data || []);
+    } catch (error: any) {
+      console.error('Error fetching staff:', error);
+      setToast({ message: 'Failed to load staff members', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditMember = (member: any) => {
-    console.log('Editing member:', member);
+  const handleAddMember = async (member: any) => {
+    try {
+      const { createStaff } = await import('../../../shared/store/services/staffApi');
+      await createStaff({
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email,
+        phone: member.phone,
+        extension: member.extension,
+        password: member.password || 'defaultPassword123',
+        image: member.image
+      });
+      setToast({ message: 'Staff member added successfully!', type: 'success' });
+      setShowAddModal(false);
+      fetchStaff();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to add staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
   };
 
-  const handleDeleteMember = () => {
-    console.log('Deleting member:', selectedMember);
-    setShowDeleteModal(false);
-    setSelectedMember(null);
+  const handleEditMember = async (member: any) => {
+    if (!selectedMember) return;
+    try {
+      const { updateStaff } = await import('../../../shared/store/services/staffApi');
+      await updateStaff(selectedMember.id, {
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email,
+        phone: member.phone,
+        extension: member.extension,
+        password: member.password,
+        image: member.image
+      });
+      setToast({ message: 'Staff member updated successfully!', type: 'success' });
+      setShowEditModal(false);
+      setSelectedMember(null);
+      fetchStaff();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    if (!selectedMember) return;
+    try {
+      const { deleteStaff } = await import('../../../shared/store/services/staffApi');
+      await deleteStaff(selectedMember.id);
+      setToast({ message: 'Staff member deleted successfully!', type: 'success' });
+      setShowDeleteModal(false);
+      setSelectedMember(null);
+      fetchStaff();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
   };
 
   const openEditModal = (member: any) => {
-    setSelectedMember(member);
+    setSelectedMember({
+      id: member.id,
+      firstName: member.first_name,
+      lastName: member.last_name,
+      email: member.email,
+      phone: member.phone,
+      extension: member.extension
+    });
     setShowEditModal(true);
   };
 
   const openDeleteModal = (member: any) => {
-    setSelectedMember(member);
+    setSelectedMember({
+      id: member.id,
+      firstName: member.first_name,
+      lastName: member.last_name
+    });
     setShowDeleteModal(true);
   };
 
+  React.useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  React.useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Staff Management</h2>
@@ -282,80 +375,64 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-              <tr>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">John Smith</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">john@builderlync.com</td>
-                <td className="px-6 py-4">
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs dark:bg-red-900 dark:text-red-200">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs dark:bg-green-900 dark:text-green-200">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => openEditModal({ firstName: 'John', lastName: 'Smith', email: 'john@builderlync.com', phone: '555-0123', extension: '101' })}
-                    className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
-                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={!canManageStaff}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal({ firstName: 'John', lastName: 'Smith' })}
-                    className={`text-red-600 hover:underline text-sm dark:text-red-400 ${
-                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={!canManageStaff}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">Sarah Johnson</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">sarah@builderlync.com</td>
-                <td className="px-6 py-4">
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-blue-900 dark:text-blue-200">
-                    Admin
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs dark:bg-green-900 dark:text-green-200">
-                    Active
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => openEditModal({ firstName: 'Sarah', lastName: 'Johnson', email: 'sarah@builderlync.com', phone: '555-0124', extension: '102' })}
-                    className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
-                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={!canManageStaff}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal({ firstName: 'Sarah', lastName: 'Johnson' })}
-                    className={`text-red-600 hover:underline text-sm dark:text-red-400 ${
-                      !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    disabled={!canManageStaff}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
+                  </td>
+                </tr>
+              ) : staff.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No staff members found
+                  </td>
+                </tr>
+              ) : (
+                staff.map((member) => (
+                  <tr key={member.id}>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                      {member.first_name} {member.last_name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.email}</td>
+                    {/* <td className="px-6 py-4">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-blue-900 dark:text-blue-200">
+                        Staff
+                      </span>
+                    </td> */}
+                    <td className="px-6 py-4">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs dark:bg-green-900 dark:text-green-200">
+                        Active
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => openEditModal(member)}
+                        className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
+                          !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={!canManageStaff}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(member)}
+                        className={`text-red-600 hover:underline text-sm dark:text-red-400 ${
+                          !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={!canManageStaff}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

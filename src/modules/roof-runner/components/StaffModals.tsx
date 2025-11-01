@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 
 interface StaffMember {
-  id?: string;
+  id?: number;
   firstName: string;
   lastName: string;
   email: string;
@@ -10,6 +10,7 @@ interface StaffMember {
   extension: string;
   password?: string;
   profileImage?: string;
+  image?: File;
 }
 
 interface AddEditStaffModalProps {
@@ -35,14 +36,38 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   isEdit = false
 }) => {
   const [formData, setFormData] = useState<StaffMember>({
-    firstName: member?.firstName || '',
-    lastName: member?.lastName || '',
-    email: member?.email || '',
-    phone: member?.phone || '',
-    extension: member?.extension || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    extension: '',
     password: '',
-    profileImage: member?.profileImage || ''
+    profileImage: ''
   });
+
+  React.useEffect(() => {
+    if (member && isEdit) {
+      setFormData({
+        firstName: member.firstName || '',
+        lastName: member.lastName || '',
+        email: member.email || '',
+        phone: member.phone || '',
+        extension: member.extension || '',
+        password: '',
+        profileImage: member.profileImage || ''
+      });
+    } else {
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        extension: '',
+        password: '',
+        profileImage: ''
+      });
+    }
+  }, [member, isEdit, isOpen]);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -69,8 +94,11 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+    const submitData = { ...formData };
+    if (imageFile) {
+      submitData.image = imageFile;
+    }
+    onSave(submitData);
   };
 
   if (!isOpen) return null;
