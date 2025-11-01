@@ -3,6 +3,8 @@ import createSagaMiddleware from 'redux-saga';
 import { all } from 'redux-saga/effects';
 import { authReducer } from './slices/authSlice';
 import { contactsReducer } from './slices/contactsSlice';
+import tasksReducer, { tasksSaga } from './slices/tasksSlice';
+import notesReducer, { notesSaga } from './slices/notesSlice';
 import { watchAuthSagas } from './sagas/authSaga';
 import { default as contactsSaga } from './sagas/contactsSaga';
 
@@ -12,6 +14,8 @@ function* rootSaga() {
   yield all([
     watchAuthSagas(),
     contactsSaga(),
+    tasksSaga(),
+    notesSaga(),
   ]);
 }
 
@@ -19,6 +23,8 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     contacts: contactsReducer,
+    tasks: tasksReducer,
+    notes: notesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

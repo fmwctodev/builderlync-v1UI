@@ -11,6 +11,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { NavItem } from '../../types';
+import Logo from '../../../../shared/components/Logo';
 
 interface SidebarProps {
   className?: string;
@@ -69,31 +70,21 @@ export function Sidebar({ className = '' }: SidebarProps) {
     <div
       className={`
         ${collapsed ? 'w-20' : 'w-64'}
-bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-full flex flex-col transition-all duration-300 ease-in-out
+bg-dark dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-full flex flex-col transition-all duration-300 ease-in-out
         ${className}
       `}
     >
       <div className={`h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-800 ${collapsed ? 'justify-center' : 'justify-between'}`}>
-        {!collapsed && (
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
-              <span className="text-white font-bold">CRM</span>
-            </div>
-            <h1 className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Contractor</h1>
+        <div className="flex items-center">
+          <Logo type="light" className="h-20 w-auto dark:hidden" />
+          <div className="hidden dark:block bg-dark rounded-lg p-2">
+            <Logo type="dark" className="h-16 w-auto" />
           </div>
-        )}
-        {collapsed && (
-          <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
-            <span className="text-white font-bold">C</span>
-          </div>
-        )}
+        </div>
+
         <button
           onClick={toggleCollapsed}
-          className={`
-            ${collapsed ? 'absolute -right-3 top-12' : 'mx-2'}
-            rounded-full w-6 h-6 bg-gray-200 dark:bg-gray-700 flex items-center justify-center
-            hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors
-          `}
+          className="mx-2 rounded-full w-6 h-6 bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

@@ -102,7 +102,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                   />
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
-                  {contact.createdByName}
+                  {contact.fullName}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-2">

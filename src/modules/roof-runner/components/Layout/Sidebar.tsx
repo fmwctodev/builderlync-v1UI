@@ -5,8 +5,9 @@ import {
   MessageSquare, Users, Briefcase, DollarSign, Bot, Megaphone,
   Zap, Globe, FolderOpen, Star, BarChart2, Ruler, FileCheck,
   Package, Clipboard, LifeBuoy, Settings, ChevronLeft, ChevronRight,
-  Camera
+  Camera, UserCheck
 } from 'lucide-react';
+import Logo from '../../../../shared/components/Logo';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -91,12 +92,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className="flex flex-col h-full">
         <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center">
-            <div className="text-white bg-primary-600 h-8 w-8 flex items-center justify-center rounded-md mr-3">
-              <Zap size={20} />
+            <Logo type="light" className="h-20 w-auto dark:hidden" />
+            <div className="hidden dark:block bg-white rounded-lg p-2">
+              <Logo type="dark" className="h-16 w-auto" />
             </div>
-            {!collapsed && (
-              <h1 className="font-bold text-lg text-gray-900 dark:text-white">BuilderLync</h1>
-            )}
           </div>
         </div>
 
