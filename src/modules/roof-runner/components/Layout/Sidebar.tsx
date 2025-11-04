@@ -24,7 +24,7 @@ const navItems = {
     { name: 'Payments', icon: CreditCard, path: '/payments' },
   ],
   tools: [
-    { name: 'AI Agents', icon: Bot, path: '/ai-agents' },
+    { name: 'Sierra AI', icon: Bot, path: '/ai-agents' },
     { name: 'Job Cam', icon: Camera, path: '/job-cam' },
     { name: 'Instant Estimator', icon: DollarSign, path: '/instant-estimator' },
     { name: 'Measurements', icon: Ruler, path: '/measurements' },
@@ -92,10 +92,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className="flex flex-col h-full">
         <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center">
-            <Logo type="light" className="h-20 w-auto dark:hidden" />
-            <div className="hidden dark:block bg-white rounded-lg p-2">
-              <Logo type="dark" className="h-16 w-auto" />
-            </div>
+            {collapsed ? (
+              <Logo type="icon" size="md" />
+            ) : (
+              <>
+                <Logo type="light" className="h-20 w-auto dark:hidden" />
+                <div className="hidden dark:block bg-white rounded-lg p-2">
+                  <Logo type="dark" className="h-16 w-auto" />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
