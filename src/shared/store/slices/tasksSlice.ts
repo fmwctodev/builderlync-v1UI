@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { call, put, takeEvery } from 'redux-saga/effects';
-import { createTask, getTasks, getTaskById, updateTask, deleteTask, CreateTaskRequest, TaskResponse } from '../services/tasksApi';
+import { createJobTask, getJobTasks, updateJobTask, deleteJobTask, CreateTaskRequest, Task } from '../services/tasksApi';
 
 interface Task {
   id: number;
@@ -129,20 +129,9 @@ const tasksSlice = createSlice({
 // Sagas
 function* createTaskSaga(action: PayloadAction<CreateTaskRequest>) {
   try {
-    const response: TaskResponse = yield call(createTask, action.payload);
-    const task: Task = {
-      id: response.data.id,
-      title: response.data.title,
-      description: response.data.description,
-      dueDate: response.data.due_date,
-      dueTime: response.data.due_time,
-      isRecurring: response.data.is_recurring,
-      assignedTo: response.data.assigned_to,
-      contactId: response.data.contact_id,
-      createdAt: response.data.created_at,
-      updatedAt: response.data.updated_at,
-    };
-    yield put(tasksSlice.actions.createTaskSuccess(task));
+    yield call(createJobTask, 1, action.payload);
+    // Refetch tasks after creation
+    yield put(tasksSlice.actions.getTasksRequest({ contactId: 1 }));
   } catch (error: any) {
     yield put(tasksSlice.actions.createTaskFailure(error.response?.data?.message || 'Failed to create task'));
   }
@@ -150,23 +139,12 @@ function* createTaskSaga(action: PayloadAction<CreateTaskRequest>) {
 
 function* getTasksSaga(action: PayloadAction<{ contactId?: number; page?: number; limit?: number }>) {
   try {
-    const response = yield call(getTasks, action.payload.contactId, action.payload.page, action.payload.limit);
-    const tasks: Task[] = response.data.map((task: any) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      dueDate: task.due_date,
-      dueTime: task.due_time,
-      isRecurring: task.is_recurring,
-      assignedTo: task.assigned_to,
-      contactId: task.contact_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at,
-    }));
+    const response = yield call(getJobTasks, 1, action.payload.page, action.payload.limit);
+    const tasks: Task[] = response.data.data || [];
     yield put(tasksSlice.actions.getTasksSuccess({
       tasks,
-      totalPages: response.totalPages || 1,
-      currentPage: response.currentPage || 1,
+      totalPages: response.data.pagination?.totalPages || 1,
+      currentPage: response.data.pagination?.page || 1,
     }));
   } catch (error: any) {
     yield put(tasksSlice.actions.getTasksFailure(error.response?.data?.message || 'Failed to fetch tasks'));
@@ -175,20 +153,14 @@ function* getTasksSaga(action: PayloadAction<{ contactId?: number; page?: number
 
 function* getTaskByIdSaga(action: PayloadAction<number>) {
   try {
-    const response: TaskResponse = yield call(getTaskById, action.payload);
-    const task: Task = {
-      id: response.data.id,
-      title: response.data.title,
-      description: response.data.description,
-      dueDate: response.data.due_date,
-      dueTime: response.data.due_time,
-      isRecurring: response.data.is_recurring,
-      assignedTo: response.data.assigned_to,
-      contactId: response.data.contact_id,
-      createdAt: response.data.created_at,
-      updatedAt: response.data.updated_at,
-    };
-    yield put(tasksSlice.actions.getTaskByIdSuccess(task));
+    // Since we don't have getTaskById API, we'll fetch all tasks and find the one
+    const response = yield call(getJobTasks, 1);
+    const task = response.data.data.find((t: Task) => t.id === action.payload);
+    if (task) {
+      yield put(tasksSlice.actions.getTaskByIdSuccess(task));
+    } else {
+      yield put(tasksSlice.actions.getTaskByIdFailure('Task not found'));
+    }
   } catch (error: any) {
     yield put(tasksSlice.actions.getTaskByIdFailure(error.response?.data?.message || 'Failed to fetch task'));
   }
@@ -196,20 +168,9 @@ function* getTaskByIdSaga(action: PayloadAction<number>) {
 
 function* updateTaskSaga(action: PayloadAction<{ id: number; taskData: CreateTaskRequest }>) {
   try {
-    const response: TaskResponse = yield call(updateTask, action.payload.id, action.payload.taskData);
-    const task: Task = {
-      id: response.data.id,
-      title: response.data.title,
-      description: response.data.description,
-      dueDate: response.data.due_date,
-      dueTime: response.data.due_time,
-      isRecurring: response.data.is_recurring,
-      assignedTo: response.data.assigned_to,
-      contactId: response.data.contact_id,
-      createdAt: response.data.created_at,
-      updatedAt: response.data.updated_at,
-    };
-    yield put(tasksSlice.actions.updateTaskSuccess(task));
+    yield call(updateJobTask, 1, action.payload.id, action.payload.taskData);
+    // Refetch tasks after update
+    yield put(tasksSlice.actions.getTasksRequest({ contactId: 1 }));
   } catch (error: any) {
     yield put(tasksSlice.actions.updateTaskFailure(error.response?.data?.message || 'Failed to update task'));
   }
@@ -217,7 +178,7 @@ function* updateTaskSaga(action: PayloadAction<{ id: number; taskData: CreateTas
 
 function* deleteTaskSaga(action: PayloadAction<number>) {
   try {
-    yield call(deleteTask, action.payload);
+    yield call(deleteJobTask, 1, action.payload);
     yield put(tasksSlice.actions.deleteTaskSuccess(action.payload));
   } catch (error: any) {
     yield put(tasksSlice.actions.deleteTaskFailure(error.response?.data?.message || 'Failed to delete task'));

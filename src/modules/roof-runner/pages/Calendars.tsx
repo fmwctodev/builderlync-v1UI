@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { getJobs, Job } from '../../../shared/store/services/jobsApi';
-import { createJobEvent, getAllEvents, Event } from '../../../shared/store/services/eventsApi';
+import { createJobEvent, getAllEvents, updateJobEvent, Event } from '../../../shared/store/services/eventsApi';
 
 interface CalendarEvent {
   id: string;
@@ -28,6 +28,7 @@ const Calendars: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
     type: '',
     title: '',
@@ -40,13 +41,16 @@ const Calendars: React.FC = () => {
     job: '',
     teamMember: '',
     invitees: [] as string[],
-    description: ''
+    description: '',
+    clientName: '',
+    clientEmail: ''
   });
 
   const fetchStaff = async () => {
     try {
       const response = await getStaff(1, 100);
-      setStaff(response.data.data || []);
+      console.log("fetch staff", response.data);
+      setStaff(response.data as any|| []);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
       setToast({ message: 'Failed to load staff', type: 'error' });
@@ -82,39 +86,56 @@ const Calendars: React.FC = () => {
 
   const handleDateClick = (day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dayEvents = events.filter(event => {
-      const eventDate = new Date(event.start_date);
-      return eventDate.getDate() === day &&
-             eventDate.getMonth() === currentDate.getMonth() &&
-             eventDate.getFullYear() === currentDate.getFullYear();
-    });
-
+    const localDate = new Date(clickedDate.getTime() - clickedDate.getTimezoneOffset() * 60000);
     setSelectedDate(clickedDate);
-    
-    if (dayEvents.length > 0) {
-      const event = dayEvents[0];
-      const selectedJob = jobs.find(job => job.id === event.job_id);
-      setFormData({
-        type: 'meeting',
-        title: event.title,
-        startDate: event.start_date,
-        startTime: event.start_time,
-        endDate: event.end_date,
-        endTime: event.end_time,
-        allDay: false,
-        location: event.location || '',
-        job: selectedJob?.name || '',
-        teamMember: '',
-        invitees: [],
-        description: event.description || ''
-      });
-    } else {
-      setFormData({
-        ...formData,
-        startDate: clickedDate.toISOString().split('T')[0],
-        endDate: clickedDate.toISOString().split('T')[0]
-      });
-    }
+    setEditingEvent(null);
+    setFormData({
+      type: '',
+      title: '',
+      startDate: localDate.toISOString().split('T')[0],
+      startTime: '',
+      endDate: localDate.toISOString().split('T')[0],
+      endTime: '',
+      allDay: false,
+      location: '',
+      job: '',
+      teamMember: '',
+      invitees: [],
+      description: '',
+      clientName: '',
+      clientEmail: ''
+    });
+    setShowModal(true);
+  };
+
+  const handleEventClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('Event data:', event);
+    console.log('Staff list:', staff);
+    const selectedJob = jobs.find(job => job.id === (event as any).job_id);
+    // Since event doesn't have createdBy/createdByName, use first staff member as default
+    const defaultStaff = staff.length > 0 ? staff[0] : null;
+    console.log('Default staff:', defaultStaff);
+    console.log('Event invitees:', event.invitees);
+    setEditingEvent(event);
+    const formDataToSet = {
+      type: event.type || 'meeting',
+      title: event.title,
+      startDate: (event as any).start_date || event.startDate,
+      startTime: (event as any).start_time || event.startTime,
+      endDate: (event as any).end_date || event.endDate,
+      endTime: (event as any).end_time || event.endTime,
+      allDay: event.allDay || false,
+      location: event.location || '',
+      job: selectedJob?.name || '',
+      teamMember: defaultStaff ? `${defaultStaff.first_name} ${defaultStaff.last_name}` : '',
+      invitees: event.invitees ? (Array.isArray(event.invitees) ? event.invitees : [event.invitees]) : [],
+      description: event.description || '',
+      clientName: '',
+      clientEmail: ''
+    };
+    console.log('Form data being set:', formDataToSet);
+    setFormData(formDataToSet);
     setShowModal(true);
   };
 
@@ -124,9 +145,9 @@ const Calendars: React.FC = () => {
     
     try {
       const selectedJob = jobs.find(job => job.name === formData.job);
-      const jobId = selectedJob ? selectedJob.id : 1; // Default job ID if none selected
+      const jobId = selectedJob ? selectedJob.id : 1;
 
-      await createJobEvent(jobId, {
+      const eventData = {
         type: formData.type,
         title: formData.title,
         startDate: formData.startDate,
@@ -139,14 +160,22 @@ const Calendars: React.FC = () => {
         description: formData.description,
         createdBy: 1,
         createdByName: 'Current User'
-      });
+      };
+
+      if (editingEvent) {
+        await updateJobEvent(jobId, editingEvent.id!, eventData);
+        setToast({ message: 'Event updated successfully!', type: 'success' });
+      } else {
+        await createJobEvent(jobId, eventData);
+        setToast({ message: 'Event created successfully!', type: 'success' });
+      }
       
-      setToast({ message: 'Event created successfully!', type: 'success' });
       setShowModal(false);
       resetForm();
+      setEditingEvent(null);
       fetchEvents();
     } catch (error) {
-      setToast({ message: 'Failed to create event', type: 'error' });
+      setToast({ message: editingEvent ? 'Failed to update event' : 'Failed to create event', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -165,8 +194,11 @@ const Calendars: React.FC = () => {
       job: '',
       teamMember: '',
       invitees: [],
-      description: ''
+      description: '',
+      clientName: '',
+      clientEmail: ''
     });
+    setEditingEvent(null);
   };
 
   useEffect(() => {
@@ -192,7 +224,7 @@ const Calendars: React.FC = () => {
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
           if (place.formatted_address) {
-            setFormData(prev => ({...prev, location: place.formatted_address}));
+            setFormData(prev => ({...prev, location: place.formatted_address || ''}));
           }
         });
       }
@@ -226,7 +258,7 @@ const Calendars: React.FC = () => {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.start_date);
+        const eventDate = new Date((event as any).start_date || event.startDate);
         return eventDate.getDate() === day &&
                eventDate.getMonth() === currentDate.getMonth() &&
                eventDate.getFullYear() === currentDate.getFullYear();
@@ -258,7 +290,8 @@ const Calendars: React.FC = () => {
             {dayEvents.slice(0, 3).map(event => (
               <div
                 key={event.id}
-                className="text-xs bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-md px-2 py-1 truncate shadow-sm hover:shadow-md transition-shadow"
+                onClick={(e) => handleEventClick(event, e)}
+                className="text-xs bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-md px-2 py-1 truncate shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 title={event.title}
               >
                 {event.title}
@@ -329,7 +362,23 @@ const Calendars: React.FC = () => {
             <button
               onClick={() => {
                 setSelectedDate(new Date());
-                setFormData({...formData, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0]});
+                setEditingEvent(null);
+                setFormData({
+                  type: '',
+                  title: '',
+                  startDate: new Date().toISOString().split('T')[0],
+                  startTime: '',
+                  endDate: new Date().toISOString().split('T')[0],
+                  endTime: '',
+                  allDay: false,
+                  location: '',
+                  job: '',
+                  teamMember: '',
+                  invitees: [],
+                  description: '',
+                  clientName: '',
+                  clientEmail: ''
+                });
                 setShowModal(true);
               }}
               className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
@@ -370,7 +419,7 @@ const Calendars: React.FC = () => {
                 <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
                   <CalendarIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Event</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{editingEvent ? 'Edit Event' : 'New Event'}</h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -595,7 +644,7 @@ const Calendars: React.FC = () => {
                   disabled={loading}
                   className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Creating...' : 'Create Event'}
+                  {loading ? (editingEvent ? 'Updating...' : 'Creating...') : (editingEvent ? 'Update Event' : 'Create Event')}
                 </button>
               </div>
             </form>

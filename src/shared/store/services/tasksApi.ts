@@ -1,40 +1,56 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+
+export interface Task {
+  id?: number;
+  text: string;
+  assignee: string;
+  dueDate: string;
+  blocking: boolean;
+  completed: boolean;
+  createdBy: number;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface CreateTaskRequest {
-  title: string;
-  description?: string;
-  dueDate?: string;
-  dueTime?: string;
-  isRecurring: boolean;
-  assignedTo?: string;
-  contactId: number;
+  text: string;
+  assignee: string;
+  dueDate: string;
+  blocking: boolean;
+  completed: boolean;
+  createdBy: number;
+  createdByName: string;
 }
 
-export interface TaskResponse {
+export interface TasksResponse {
   success: boolean;
-  message: string;
-  data: {
-    id: number;
-    title: string;
-    description: string;
-    due_date: string;
-    due_time: string;
-    is_recurring: boolean;
-    assigned_to: string;
-    contact_id: number;
-    created_at: string;
-    updated_at: string;
-    created_by: null;
-  };
+  data: Task[];
 }
 
-export const createTask = async (taskData: CreateTaskRequest): Promise<TaskResponse> => {
+export const getJobTasks = async (jobId: number, page: number = 1, limit: number = 10): Promise<TasksResponse> => {
   const token = localStorage.getItem('token');
 
-  const response = await axios.post<TaskResponse>(
-    `${API_BASE_URL}/tasks`,
+  const response = await axios.get<TasksResponse>(
+    `${API_BASE_URL}/jobs/${jobId}/tasks?page=${page}&limit=${limit}`,
+    {
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+
+  return response.data;
+};
+
+export const createJobTask = async (jobId: number, taskData: CreateTaskRequest): Promise<{ success: boolean; message: string }> => {
+  const token = localStorage.getItem('token');
+
+  const response = await axios.post(
+    `${API_BASE_URL}/jobs/${jobId}/tasks`,
     taskData,
     {
       headers: {
@@ -48,48 +64,11 @@ export const createTask = async (taskData: CreateTaskRequest): Promise<TaskRespo
   return response.data;
 };
 
-export const getTasks = async (contactId?: number, page: number = 1, limit: number = 10) => {
+export const updateJobTask = async (jobId: number, taskId: number, taskData: CreateTaskRequest): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
 
-  const params = new URLSearchParams();
-  if (contactId) params.append('contactId', contactId.toString());
-  params.append('page', page.toString());
-  params.append('limit', limit.toString());
-
-  const response = await axios.get(
-    `${API_BASE_URL}/tasks?${params.toString()}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const getTaskById = async (id: number): Promise<TaskResponse> => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.get<TaskResponse>(
-    `${API_BASE_URL}/tasks/${id}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const updateTask = async (id: number, taskData: CreateTaskRequest): Promise<TaskResponse> => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.put<TaskResponse>(
-    `${API_BASE_URL}/tasks/${id}`,
+  const response = await axios.put(
+    `${API_BASE_URL}/jobs/${jobId}/tasks/${taskId}`,
     taskData,
     {
       headers: {
@@ -103,11 +82,11 @@ export const updateTask = async (id: number, taskData: CreateTaskRequest): Promi
   return response.data;
 };
 
-export const deleteTask = async (taskId: number) => {
+export const deleteJobTask = async (jobId: number, taskId: number): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
 
   const response = await axios.delete(
-    `${API_BASE_URL}/tasks/${taskId}`,
+    `${API_BASE_URL}/jobs/${jobId}/tasks/${taskId}`,
     {
       headers: {
         'accept': 'application/json',
