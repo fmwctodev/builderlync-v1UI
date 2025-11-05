@@ -164,7 +164,10 @@ export default function EadgeView() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">You have no recent orders at this time</p>
-            <button className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <button 
+              onClick={() => setActiveTab('Order')}
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
               <Plus size={16} className="inline mr-2" />
               Start New Order
             </button>
