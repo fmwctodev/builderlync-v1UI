@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
 export interface Job {
   id: number;
@@ -13,6 +13,7 @@ export interface Job {
   jobValue: number;
   source: string;
   details: string;
+  createdBy: number;
   insuranceEnabled: boolean;
   insuranceCompany: string;
   policyAccountNumber: string;
@@ -22,12 +23,20 @@ export interface Job {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: number;
-  createdByName: string;
-  editedBy: number;
-  editedByName: string;
+  measurementsId: number | null;
+  proposalsId: number | null;
+  pdfSignerId: number | null;
+  materialOrdersId: number | null;
+  workOrdersId: number | null;
+  invoiceId: number | null;
+  jobCostingsId: number | null;
+  attachmentsId: number | null;
+  instantEstimateId: number | null;
+  integrationsId: number | null;
   createdAt: string;
   updatedAt: string;
+  createdByName: string;
+  editedByName: string | null;
 }
 
 export interface JobsResponse {
@@ -49,7 +58,7 @@ export interface CreateJobRequest {
   assignees: string[];
   jobOwner: string;
   workflowStages: string;
-  closeDate: string;
+  closeDate?: string;
   jobValue: number;
   source: string;
   details: string;
@@ -57,7 +66,7 @@ export interface CreateJobRequest {
   insuranceCompany: string;
   policyAccountNumber: string;
   claimNumber: string;
-  dateOfLoss: string;
+  dateOfLoss?: string;
   typeOfDamage: string;
   claimAmount: number;
   deductible: number;
@@ -86,10 +95,14 @@ export const getJobs = async (page: number = 1, limit: number = 10): Promise<Job
 
 export const createJob = async (jobData: CreateJobRequest) => {
   const token = localStorage.getItem('token');
+  
+  const payload: any = { ...jobData };
+  if (!payload.closeDate) delete payload.closeDate;
+  if (!payload.dateOfLoss) delete payload.dateOfLoss;
 
   const response = await axios.post(
     `${API_BASE_URL}/jobs`,
-    jobData,
+    payload,
     {
       headers: {
         'accept': 'application/json',
@@ -104,10 +117,14 @@ export const createJob = async (jobData: CreateJobRequest) => {
 
 export const updateJob = async (id: number, jobData: CreateJobRequest) => {
   const token = localStorage.getItem('token');
+  
+  const payload: any = { ...jobData };
+  if (!payload.closeDate) delete payload.closeDate;
+  if (!payload.dateOfLoss) delete payload.dateOfLoss;
 
   const response = await axios.put(
     `${API_BASE_URL}/jobs/${id}`,
-    jobData,
+    payload,
     {
       headers: {
         'accept': 'application/json',

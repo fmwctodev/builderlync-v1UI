@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Camera, ChevronDown, Edit } from 'lucide-react';
+import { getCompanies, Company } from '../../../../shared/store/services/companiesApi';
 
 interface ContactDetailsPanelProps {
   contact: any;
@@ -18,6 +19,43 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
   onCompanySearchChange,
   onAddCompany
 }) => {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+
+  const fetchCompanies = async () => {
+    console.log('Fetching companies...');
+    setLoading(true);
+    try {
+      const response = await getCompanies();
+      console.log('Companies response:', response);
+      setCompanies(response.data || []);
+      setFilteredCompanies(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch companies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log('Company tab useEffect triggered, activeTab:', activeTab);
+    if (activeTab === 'company') {
+      fetchCompanies();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (companySearch) {
+      const filtered = companies.filter(company => 
+        company.name.toLowerCase().includes(companySearch.toLowerCase()) ||
+        (company.email && company.email.toLowerCase().includes(companySearch.toLowerCase()))
+      );
+      setFilteredCompanies(filtered);
+    } else {
+      setFilteredCompanies(companies);
+    }
+  }, [companySearch, companies]);
   return (
     <div className="w-1/2 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
       <div className="p-6">
@@ -199,31 +237,50 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
                 </svg>
               </div>
 
-              <div className="text-center py-8">
-                <div className="w-8 h-8 mx-auto mb-3 text-gray-400">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">No results found</p>
+              ) : filteredCompanies.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {filteredCompanies.map(company => (
+                    <div key={company.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                      <h4 className="font-medium text-gray-900 dark:text-white">{company.name}</h4>
+                      {company.email && <p className="text-sm text-gray-500">{company.email}</p>}
+                      {company.phone && <p className="text-sm text-gray-500">{company.phone}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 mx-auto mb-3 text-gray-400">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No companies found</p>
 
+                  <button
+                    onClick={onAddCompany}
+                    className="flex items-center gap-2 text-red-600 hover:text-red-700 mx-auto"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add New Company
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6">
                 <button
                   onClick={onAddCompany}
-                  className="flex items-center gap-2 text-red-600 hover:text-red-700 mx-auto"
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Add New Company
-                </button>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                  Cancel
-                </button>
-                <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                  Apply
+                  Add Company
                 </button>
               </div>
             </div>

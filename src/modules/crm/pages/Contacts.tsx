@@ -6,12 +6,16 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Contact, ContactFormData, ContactFilters } from '../types/contacts';
 import { contactsApi } from '../lib/contacts';
 import { mockUsers } from '../lib/dummy-data';
-import { Users, Plus, Search } from 'lucide-react';
+import { Users, Plus, Search, Calendar } from 'lucide-react';
+import { BookAppointmentModal } from '../components/contacts/BookAppointmentModal';
 
 export function Contacts() {
+  console.log('Contacts component loaded');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     loadContacts();
@@ -97,6 +101,9 @@ export function Contacts() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -128,6 +135,19 @@ export function Contacts() {
                         {contact.status}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          alert('Button clicked!');
+                          setSelectedContact(contact);
+                          setShowBookModal(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400"
+                        title="Book Appointment"
+                      >
+                        <Calendar size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -135,6 +155,37 @@ export function Contacts() {
           </div>
         )}
       </Card>
+      
+      <BookAppointmentModal
+        isOpen={showBookModal}
+        onClose={() => {
+          setShowBookModal(false);
+          setSelectedContact(null);
+        }}
+        onSubmit={async (data) => {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/contacts/${selectedContact?.id}/book-appointment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) throw new Error('Failed to book appointment');
+            
+            const result = await response.json();
+            console.log('Appointment booked:', result);
+          } catch (error) {
+            console.error('Error booking appointment:', error);
+            throw error;
+          }
+        }}
+        contactName={selectedContact ? `${selectedContact.first_name} ${selectedContact.last_name}` : ''}
+        contactEmail={selectedContact?.emails[0]?.email || ''}
+        contactId={selectedContact?.id ? parseInt(selectedContact.id) : 0}
+      />
     </div>
   );
 }
