@@ -19,7 +19,7 @@ const initialState: RoofRunnerState = {
 };
 
 const roofRunnerSlice = createSlice({
-  name: 'roofRunner',
+  name: 'BuilderLync',
   initialState,
   reducers: {
     setLoading: (state, action: PayloadAction<boolean>) => {
