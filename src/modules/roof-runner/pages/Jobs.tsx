@@ -19,7 +19,7 @@ const Jobs: React.FC = () => {
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [jobAddress, setJobAddress] = useState('');
   const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
-  const [jobCards, setJobCards] = useState<{[key: string]: any[]}>({});
+
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('default');
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,7 +54,7 @@ const Jobs: React.FC = () => {
     editedBy: 1,
     editedByName: 'Current User'
   });
-  
+
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
@@ -71,8 +71,8 @@ const Jobs: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await getStaff(1, 100);
-      setStaff(response.data.data || []);
+      const response:any = await getStaff(1, 100);
+      setStaff(response.data || []);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
     }
@@ -203,13 +203,23 @@ const Jobs: React.FC = () => {
         <div className="flex-1 overflow-hidden">
           {activeView === 'board' && (
             <JobsBoardView
-              jobCards={jobCards}
-              setJobCards={setJobCards}
+              jobs={jobs}
               draggedCard={draggedCard}
               setDraggedCard={setDraggedCard}
+              onUpdateJobStage={async (jobId: number, newStage: string) => {
+                try {
+                  const job = jobs.find(j => j.id === jobId);
+                  if (job) {
+                    await updateJob(jobId, { ...job, workflowStages: newStage });
+                    fetchJobs();
+                  }
+                } catch (error) {
+                  console.error('Error updating job stage:', error);
+                }
+              }}
             />
           )}
-          
+
           {activeView === 'list' && (
             <JobsTable
               jobs={jobs}
@@ -218,7 +228,7 @@ const Jobs: React.FC = () => {
               onDelete={handleDelete}
             />
           )}
-          
+
           {activeView === 'settings' && <JobsSettings />}
         </div>
 

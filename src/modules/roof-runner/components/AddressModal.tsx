@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
@@ -19,6 +19,8 @@ const AddressModal: React.FC<AddressModalProps> = ({
   onContinue,
   onCreateFromCompanyCam
 }) => {
+  const [isAddressFromAutocomplete, setIsAddressFromAutocomplete] = useState(false);
+  
   if (!isOpen) return null;
 
   return (
@@ -29,17 +31,27 @@ const AddressModal: React.FC<AddressModalProps> = ({
           <p className="text-gray-600 dark:text-gray-400 mb-6">Job address</p>
           
           <div className="space-y-4">
-            <GooglePlacesAutocomplete
-              value={jobAddress}
-              onChange={(address: string, lat: number, lng: number) => setJobAddress(address, lat, lng)}
-              placeholder="Enter address and select"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div>
+              <GooglePlacesAutocomplete
+                value={jobAddress}
+                onChange={(address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
+                  setJobAddress(address, lat, lng);
+                  setIsAddressFromAutocomplete(isFromAutocomplete);
+                }}
+                placeholder="Enter address and select"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              />
+              {jobAddress && !isAddressFromAutocomplete && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2 text-left">
+                  Please select an address from the dropdown suggestions
+                </p>
+              )}
+            </div>
             
             <div className="flex flex-col space-y-3">
               <button
                 onClick={onContinue}
-                disabled={!jobAddress.trim()}
+                disabled={!jobAddress.trim() || (jobAddress && !isAddressFromAutocomplete)}
                 className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-all duration-200"
               >
                 Continue
