@@ -24,11 +24,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   loading
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
-  
+
   if (!isOpen) return null;
 
+  console.log('Staff data in modal:', staff);
+
   const stages = [
-    'New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
+    'Default','New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
     'Adjuster Meeting Complete', 'Under Service Agreement/Contin', 'Estimate Received',
     'Proposal sent/presented', 'Proposal follow-up', 'Reinspection', 'Public Adjuster',
     'Proposal signed/Pre-Production', 'Supplementing', 'Pre-production', 'Materials Ordered',
@@ -53,7 +55,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </button>
               </div>
             </div>
-            
+
             <div className="p-4 space-y-2 overflow-y-auto flex-1">
               {[
                 'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals', 'PDF Signer',
@@ -65,7 +67,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   onClick={() => setActiveTab(item)}
                   className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
                     activeTab === item
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -74,7 +76,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               ))}
             </div>
           </div>
-          
+
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto">
@@ -92,21 +94,27 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       <p className="text-sm text-green-600 dark:text-green-400 mt-1">Changes auto-saved</p>
                     </div>
                   </div>
-                  
+
                   <form onSubmit={onSubmit} className="space-y-6 pb-20">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <option>Unassigned</option>
-                      {staff.map(member => (
+                    <select
+                      value={formData.assignees[0] || ''}
+                      onChange={(e) => setFormData({...formData, assignees: e.target.value ? [e.target.value] : []})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="">Unassigned</option>
+                      {staff && staff.length > 0 ? staff.map(member => (
                         <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
                           {member.first_name} {member.last_name}
                         </option>
-                      ))}
+                      )) : (
+                        <option disabled>Loading staff...</option>
+                      )}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
                     <select
@@ -114,23 +122,22 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       onChange={(e) => setFormData({...formData, jobOwner: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <option value="">Vijender Singh</option>
-                      {staff.map(member => (
+                      <option value="">Select Job Owner</option>
+                      {staff && staff.length > 0 ? staff.map(member => (
                         <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
                           {member.first_name} {member.last_name}
                         </option>
-                      ))}
+                      )) : (
+                        <option disabled>Loading staff...</option>
+                      )}
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Workflow & stages</label>
                     <div className="space-y-2">
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>Default</option>
-                      </select>
                       <select
                         value={formData.workflowStages}
                         onChange={(e) => setFormData({...formData, workflowStages: e.target.value})}
@@ -143,7 +150,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       </select>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Close date</label>
                     <input
@@ -155,7 +162,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job value</label>
@@ -166,7 +173,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source</label>
                     <input
@@ -178,7 +185,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
                   <textarea
@@ -189,9 +196,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="flex items-center">
+                  <label className="flex items-center mb-4">
                     <input
                       type="checkbox"
                       checked={formData.insuranceEnabled}
@@ -200,15 +207,105 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Insurance</span>
                   </label>
+
+                  {formData.insuranceEnabled && (
+                    <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance Company</label>
+                          <input
+                            type="text"
+                            value={formData.insuranceCompany}
+                            onChange={(e) => setFormData({...formData, insuranceCompany: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
+                          <input
+                            type="text"
+                            value={formData.policyAccountNumber}
+                            onChange={(e) => setFormData({...formData, policyAccountNumber: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Number</label>
+                          <input
+                            type="text"
+                            value={formData.claimNumber}
+                            onChange={(e) => setFormData({...formData, claimNumber: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Loss</label>
+                          <input
+                            type="date"
+                            value={formData.dateOfLoss}
+                            onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type of Damage</label>
+                          <input
+                            type="text"
+                            value={formData.typeOfDamage}
+                            onChange={(e) => setFormData({...formData, typeOfDamage: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Amount</label>
+                          <input
+                            type="number"
+                            value={formData.claimAmount}
+                            onChange={(e) => setFormData({...formData, claimAmount: Number(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deductible</label>
+                          <input
+                            type="number"
+                            value={formData.deductible}
+                            onChange={(e) => setFormData({...formData, deductible: Number(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Details</label>
+                        <textarea
+                          value={formData.claimDetails}
+                          onChange={(e) => setFormData({...formData, claimDetails: e.target.value})}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Additional claim information..."
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
+
 
                   </form>
                 </div>
               )}
-              
+
               {activeTab === 'Tasks' && <TasksTab />}
-              
+
               {activeTab !== 'Job details' && activeTab !== 'Tasks' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeTab}</h2>
@@ -216,7 +313,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </div>
               )}
             </div>
-            
+
             {/* Fixed Footer - Only show for Job details tab */}
             {activeTab === 'Job details' && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-800">
