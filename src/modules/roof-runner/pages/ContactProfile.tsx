@@ -107,7 +107,7 @@ const ContactProfile: React.FC = () => {
           <div className="p-6">
             <RightPanelTabs
               activeTab={rightPanelView}
-              onTabChange={setRightPanelView}
+              onTabChange={(tab: string) => setRightPanelView(tab as RightPanelView)}
             />
 
             <RightPanelContent
@@ -119,7 +119,7 @@ const ContactProfile: React.FC = () => {
               onAddNote={() => setShowAddNoteModal(true)}
               onAddAppointment={() => setShowAddAppointmentModal(true)}
               onAddDocument={() => setShowAddDocumentModal(true)}
-              onDocumentsFilterChange={setDocumentsFilter}
+              onDocumentsFilterChange={(filter: string) => setDocumentsFilter(filter as DocumentsFilter)}
               onPaymentActionsToggle={() => setShowPaymentActions(!showPaymentActions)}
             />
           </div>
@@ -133,8 +133,12 @@ const ContactProfile: React.FC = () => {
         onSave={(taskData: CreateTaskData) => {
           if (contact) {
             dispatch(createTaskRequest({
-              ...taskData,
-              contactId: parseInt(contact.id)
+              text: taskData.title,
+              assignee: taskData.assignedTo || '',
+              blocking: false,
+              completed: false,
+              contactId: parseInt(contact.id),
+              dueDate: taskData.dueDate || ''
             }));
           }
           setShowAddTaskModal(false);
@@ -164,7 +168,7 @@ const ContactProfile: React.FC = () => {
       <AddDocumentModal
         isOpen={showAddDocumentModal}
         onClose={() => setShowAddDocumentModal(false)}
-        onSave={(documentData) => {
+        onSave={(documentData: any) => {
           console.log('Document saved:', documentData);
           setShowAddDocumentModal(false);
         }}
@@ -173,7 +177,7 @@ const ContactProfile: React.FC = () => {
       <AddAppointmentModal
         isOpen={showAddAppointmentModal}
         onClose={() => setShowAddAppointmentModal(false)}
-        onSave={(appointmentData) => {
+        onSave={(appointmentData: any) => {
           console.log('Appointment saved:', appointmentData);
           setShowAddAppointmentModal(false);
         }}
@@ -182,7 +186,7 @@ const ContactProfile: React.FC = () => {
       <AddCompanyModal
         isOpen={showAddCompanyModal}
         onClose={() => setShowAddCompanyModal(false)}
-        onSave={(companyData) => {
+        onSave={(companyData: any) => {
           console.log('Company saved:', companyData);
           setShowAddCompanyModal(false);
         }}

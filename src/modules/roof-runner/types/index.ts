@@ -137,3 +137,26 @@ export interface AddCompanyModalProps {
   onClose: () => void;
   onSave: (data: CreateCompanyData) => void;
 }
+
+// Instant Estimator Types
+export interface InstantEstimator {
+  id: number;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateInstantEstimatorData {
+  name: string;
+}
+
+export interface RenameInstantEstimatorData {
+  name: string;
+}
+
+export interface InstantEstimatorsResponse {
+  data: InstantEstimator[];
+  total: number;
+  page: number;
+  limit: number;
+}
