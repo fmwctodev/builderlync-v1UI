@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { InstantEstimatorsResponse, CreateInstantEstimatorData, RenameInstantEstimatorData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -7,6 +8,15 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Add token to requests
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const apiService = {
@@ -42,6 +52,32 @@ export const apiService = {
 
   deleteJob: async (id: string) => {
     const response = await apiClient.delete(`/jobs/${id}`);
+    return response.data;
+  },
+
+  // Instant Estimators API
+  getInstantEstimators: async (page: number = 1, limit: number = 10) => {
+    const response = await apiClient.get(`/instant-estimators?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  createInstantEstimator: async (data: { name: string }) => {
+    const response = await apiClient.post('/instant-estimators', data);
+    return response.data;
+  },
+
+  renameInstantEstimator: async (id: number, data: { name: string }) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/rename`, data);
+    return response.data;
+  },
+
+  duplicateInstantEstimator: async (id: number) => {
+    const response = await apiClient.post(`/instant-estimators/${id}/duplicate`);
+    return response.data;
+  },
+
+  deleteInstantEstimator: async (id: number) => {
+    const response = await apiClient.delete(`/instant-estimators/${id}`);
     return response.data;
   },
 };

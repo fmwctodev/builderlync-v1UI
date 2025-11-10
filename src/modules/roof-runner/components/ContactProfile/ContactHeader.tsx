@@ -22,7 +22,7 @@ const ContactHeader: React.FC<ContactHeaderProps> = ({ contactName, onBack }) =>
           </h1>
           {/* <span className="text-sm text-gray-500">1 of 808 selected</span> */}
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
             <Clock className="w-4 h-4 text-gray-400" />
           </button>
@@ -38,7 +38,7 @@ const ContactHeader: React.FC<ContactHeaderProps> = ({ contactName, onBack }) =>
           <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
             <DollarSign className="w-4 h-4 text-gray-400" />
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -5,10 +5,11 @@ import { getStaff, StaffMember } from '../../../../shared/store/services/staffAp
 import { TaskModal } from './TaskModal';
 
 interface TasksTabProps {
-  contactId: number;
+  contactId?: number;
+  onAddTask?: () => void;
 }
 
-const TasksTab: React.FC<TasksTabProps> = ({ contactId }) => {
+const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -69,8 +70,12 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId }) => {
   };
 
   const handleAddTask = () => {
-    setEditingTask(null);
-    setShowModal(true);
+    if (onAddTask) {
+      onAddTask();
+    } else {
+      setEditingTask(null);
+      setShowModal(true);
+    }
   };
 
   const handleModalSuccess = () => {
