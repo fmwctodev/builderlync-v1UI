@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
         <p className="mt-2 text-gray-400">
           Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
         </p>
-        
+
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             to="/abc-supply/products"
@@ -37,7 +37,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-400">Search our catalog</p>
             </div>
           </Link>
-          
+
           <Link
             to="/abc-supply/branches"
             className="bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-600 transition group"
@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-400">Locate nearest stores</p>
             </div>
           </Link>
-          
+
           <Link
             to="/abc-supply/orders"
             className="bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-600 transition group"
@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
-          
+
           <div className="p-6">
             <div className="text-center py-6">
               <p className="text-gray-400">No recent orders found.</p>
@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
-            
+
             <div className="p-4">
               <div className="grid grid-cols-1 gap-3">
                 <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
-            
+
             <div className="p-4">
               <div className="space-y-3">
                 <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">

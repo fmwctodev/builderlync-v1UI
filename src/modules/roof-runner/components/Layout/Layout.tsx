@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import TopBar from './TopBar';
 import Sidebar from './Sidebar';
+import { useAutoLogout } from '../../../../shared/utils/autoLogout';
 
 const Layout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  useAutoLogout();
   
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);

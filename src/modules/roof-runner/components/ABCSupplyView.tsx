@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
@@ -9,6 +9,8 @@ const ABCSupplyView: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
   const [recentOrders, setRecentOrders] = useState([
     {
       id: '1',
@@ -67,15 +69,54 @@ const ABCSupplyView: React.FC = () => {
     <div className="space-y-6">
       {/* Welcome Section */}
       <section className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 md:p-8">
-        <h1 className="text-3xl font-bold text-white">
-          {getGreeting()}, Contractor
-        </h1>
-        <p className="mt-2 text-gray-400">
-          Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
-        </p>
-        
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              {getGreeting()}, Contractor
+            </h1>
+            <p className="mt-2 text-gray-400">
+              Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
+            </p>
+          </div>
+          
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
+            >
+              {selectedSupplier}
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </button>
+            
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => { setSelectedSupplier('ABC Supply'); setDropdownOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    ABC Supply
+                  </button>
+                  <button
+                    disabled
+                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
+                  >
+                    SRS
+                  </button>
+                  <button
+                    disabled
+                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
+                  >
+                    QXcel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div 
+          <div
             onClick={() => setCurrentView('products')}
             className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
           >
@@ -87,8 +128,8 @@ const ABCSupplyView: React.FC = () => {
               <p className="text-sm text-gray-400">Search our catalog</p>
             </div>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setCurrentView('branches')}
             className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
           >
@@ -100,8 +141,8 @@ const ABCSupplyView: React.FC = () => {
               <p className="text-sm text-gray-400">Locate nearest stores</p>
             </div>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setCurrentView('orders')}
             className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
           >
@@ -125,7 +166,7 @@ const ABCSupplyView: React.FC = () => {
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </button>
           </div>
-          
+
           <div className="p-6">
             {recentOrders.length > 0 ? (
               <div className="space-y-4">
@@ -192,7 +233,7 @@ const ABCSupplyView: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="grid grid-cols-1 gap-3">
                 {featuredProducts.map((product) => (
@@ -227,7 +268,7 @@ const ABCSupplyView: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="space-y-3">
                 {nearestBranches.map((branch) => (
