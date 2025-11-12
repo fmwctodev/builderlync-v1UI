@@ -66,18 +66,11 @@ export function AgentTemplates() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">Agency View</p>
-        <p className="text-gray-600 dark:text-gray-400">
-          Specialized AI agents for roofing, solar, and construction businesses. Deploy intelligent voice assistants to handle leads, book appointments, and qualify prospects 24/7.
-        </p>
-      </div>
-
       <div className="flex space-x-4 mb-6">
-        <button className="px-4 py-2 bg-red-600 text-white rounded-md">All Apps</button>
-        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">Installed Apps</button>
-        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">App Reselling</button>
-        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">AI Agents</button>
+        <button className="px-4 py-2 bg-red-600 text-white rounded-md">All</button>
+        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">Roofing</button>
+        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">Solar</button>
+        <button className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">Siding</button>
       </div>
 
       <div className="flex items-center space-x-4 mb-6">
@@ -106,7 +99,7 @@ export function AgentTemplates() {
             </div>
           </div>
         </div>
-        
+
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {agents.map((agent, index) => (
             <div key={index} className="p-6">
@@ -117,7 +110,7 @@ export function AgentTemplates() {
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{agent.installs}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">By <span className="font-medium">{agent.author}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{agent.description}</p>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                       {agent.rating > 0 ? (

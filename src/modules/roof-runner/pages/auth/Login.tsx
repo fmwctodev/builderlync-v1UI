@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loginRequest, clearError } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
+import { useAutoLogout } from '../../../../shared/utils/autoLogout';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +16,8 @@ const Login: React.FC = () => {
   const { loading, error, user } = useAppSelector((state) => state.auth);
   const successMessage = location.state?.message;
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  
+  useAutoLogout();
 
   useEffect(() => {
     if (user) {
