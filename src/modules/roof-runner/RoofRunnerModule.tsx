@@ -12,6 +12,8 @@ import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
 import InstantEstimatorManage from './pages/InstantEstimatorManage';
+import ManageQuestions from './pages/ManageQuestions';
+import NewMaterial from './pages/NewMaterial';
 import Conversations from './pages/Conversations';
 import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
@@ -50,6 +52,8 @@ export function RoofRunnerModule() {
         <Route path="job-cam" element={<BlankPage title="Job Cam" />} />
         <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
+        <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
+        <Route path="instant-estimator/:id/manage/materials/new" element={<NewMaterial />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />

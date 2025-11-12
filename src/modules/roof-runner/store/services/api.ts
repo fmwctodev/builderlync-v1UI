@@ -80,4 +80,9 @@ export const apiService = {
     const response = await apiClient.delete(`/instant-estimators/${id}`);
     return response.data;
   },
+
+  getInstantEstimator: async (id: number) => {
+    const response = await apiClient.get(`/instant-estimators/${id}`);
+    return response.data;
+  },
 };

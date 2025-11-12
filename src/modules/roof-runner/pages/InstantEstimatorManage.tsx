@@ -1,46 +1,115 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Edit, ExternalLink, Copy, QrCode, Code, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Edit, ExternalLink, Copy, QrCode, Code, Plus, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { apiService } from '../store/services/api';
 
 const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [estimatorName] = useState('test');
+  const [estimatorName, setEstimatorName] = useState('');
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameName, setRenameName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [restrictMaterials, setRestrictMaterials] = useState(false);
+  const [pricingType, setPricingType] = useState('per-square-foot');
+  const [showPriceRange, setShowPriceRange] = useState(false);
+  const [showFinancing, setShowFinancing] = useState(false);
+  const [lowerRange, setLowerRange] = useState('0');
+  const [upperRange, setUpperRange] = useState('0');
+  const [termLength, setTermLength] = useState('1');
+  const [interestRate, setInterestRate] = useState('0');
+  const [showProjectShowcase, setShowProjectShowcase] = useState(false);
+  const [showSocialMedia, setShowSocialMedia] = useState(false);
+
+  useEffect(() => {
+    fetchEstimatorData();
+  }, [id]);
+
+  const fetchEstimatorData = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const response = await apiService.getInstantEstimator(parseInt(id));
+      if (response && response.name) {
+        setEstimatorName(response.name);
+      } else {
+        setEstimatorName('Estimator Not Found');
+      }
+    } catch (error) {
+      console.error('Failed to fetch estimator:', error);
+      // Fallback to fetching from list
+      try {
+        const listResponse = await apiService.getInstantEstimators();
+        const responseData = listResponse.data || listResponse;
+        const estimators = Array.isArray(responseData.data) ? responseData.data : responseData;
+        const estimator = estimators.find((est: any) => est.id.toString() === id);
+        if (estimator) {
+          setEstimatorName(estimator.name);
+        } else {
+          setEstimatorName('Estimator Not Found');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback fetch failed:', fallbackError);
+        setEstimatorName('Error Loading Estimator');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRename = async () => {
+    if (!renameName.trim() || !id) return;
+    try {
+      await apiService.renameInstantEstimator(parseInt(id), { name: renameName.trim() });
+      setEstimatorName(renameName.trim());
+      setShowRenameModal(false);
+      setRenameName('');
+    } catch (error) {
+      console.error('Failed to rename estimator:', error);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/instant-estimator')}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to all estimators
-            </button>
-          </div>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-            <ExternalLink className="w-4 h-4" />
-            Preview
-          </button>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
+        <button
+          onClick={() => navigate('/instant-estimator')}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to all estimators
+        </button>
+
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
+            {loading ? 'Loading...' : estimatorName || 'Estimator'}
+          </h1>
+          {!loading && (
+            <Edit
+              className="w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600"
+              onClick={() => {
+                setRenameName(estimatorName);
+                setShowRenameModal(true);
+              }}
+            />
+          )}
         </div>
-        
-        <div className="flex items-center gap-2 mt-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{estimatorName}</h1>
-          <Edit className="w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600" />
-        </div>
+
+        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+          <ExternalLink className="w-4 h-4" />
+          Preview
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-4xl mx-auto space-y-8">
-          
+
           {/* Share and embed */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Share and embed</h2>
-            
+
             <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
               <input
                 type="text"
@@ -55,15 +124,15 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
 
             <div className="flex gap-4">
-              <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm">
+              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
                 <Edit className="w-4 h-4" />
                 Edit link
               </button>
-              <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm">
+              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
                 <QrCode className="w-4 h-4" />
                 QR code
               </button>
-              <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm">
+              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
                 <Code className="w-4 h-4" />
                 Embed code
               </button>
@@ -74,11 +143,14 @@ const InstantEstimatorManage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lead questionnaire</h2>
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage/questions`)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
                 Manage questions
               </button>
             </div>
-            
+
             <div className="mb-2">
               <span className="text-sm font-medium text-gray-900 dark:text-white">Questions (9)</span>
             </div>
@@ -93,10 +165,13 @@ const InstantEstimatorManage: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Add the materials you offer along with their approximate prices, which should include tear-off, waste, and markup costs. Your customers will have the option to choose the materials they want and will receive estimates based on the information you provide below.
             </p>
-            
+
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400 italic mb-4">No materials added</p>
-              <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mx-auto">
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mx-auto"
+              >
                 <Plus className="w-4 h-4" />
                 Add
               </button>
@@ -106,52 +181,127 @@ const InstantEstimatorManage: React.FC = () => {
           {/* Pricing settings */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Pricing settings</h2>
-            
+
             <div className="space-y-6">
-              <div>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Restrict customer to the materials I've configured pricing for
-                  </span>
-                </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={restrictMaterials}
+                  onChange={(e) => setRestrictMaterials(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Restrict customer to the materials I've configured pricing for
+                </span>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                   Choose how you would like to specify your pricing
                 </p>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input type="radio" name="pricing" defaultChecked />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Per square foot</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" name="pricing" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Per square</span>
-                  </label>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setPricingType('per-square-foot')}
+                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square-foot'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                      }`}
+                  >
+                    Per square foot
+                  </button>
+                  <button
+                    onClick={() => setPricingType('per-square')}
+                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                      }`}
+                  >
+                    Per square
+                  </button>
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={showPriceRange}
+                    onChange={(e) => setShowPriceRange(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 rounded"
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Show prices as range</span>
-                </label>
+                </div>
+                {showPriceRange && (
+                  <div className="grid grid-cols-2 gap-4 ml-7">
+                    <div>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Lower range (-%)</label>
+                      <input
+                        type="number"
+                        value={lowerRange}
+                        onChange={(e) => setLowerRange(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Upper range (+%)</label>
+                      <input
+                        type="number"
+                        value={upperRange}
+                        onChange={(e) => setUpperRange(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={showFinancing}
+                    onChange={(e) => setShowFinancing(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 rounded"
+                  />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Show financing options</span>
-                </label>
-                <div className="ml-6 mt-2">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Add financing link</p>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm">Add link</button>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Provide a link to your financing page that will appear alongside each estimate
-                  </p>
                 </div>
+                {showFinancing && (
+                  <div className="ml-7 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Term length (months)</label>
+                        <input
+                          type="number"
+                          value={termLength}
+                          onChange={(e) => setTermLength(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Interest rate (%)</label>
+                        <input
+                          type="number"
+                          value={interestRate}
+                          onChange={(e) => setInterestRate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+  
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Add financing link</label>
+                <input
+                  type="text"
+                  placeholder="Add link"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Provide a link to your financing page that will appear alongside each estimate
+                </p>
               </div>
             </div>
           </div>
@@ -162,7 +312,7 @@ const InstantEstimatorManage: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               The default assignee will be assigned to every new lead that is created from this estimator
             </p>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Default job owner
@@ -179,63 +329,144 @@ const InstantEstimatorManage: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Select a user profile to populate the contact card. To update your contact information please edit your profile in setting. Other users will need to edit their own profile if changes are required.
             </p>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Point of contact
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                  <option>None</option>
-                </select>
-              </div>
 
-              <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Select a user to add their contact card or add scheduling
-                </p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Contact Profile
+              </label>
+              <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option>James Wolfgang Kuntz</option>
+              </select>
             </div>
           </div>
 
           {/* Scheduling */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Scheduling</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Add a link to your calendar. Customers will be directed from the link in your contact card.
-            </p>
-            
-            <button className="text-blue-600 hover:text-blue-700 text-sm">Add a scheduling link</button>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Add a link from Calendly, Google Calendar, Doodle, etc
-            </p>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Scheduling</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Add a link to your calendar. Customers will be directed from the link in your contact card.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Add a scheduling link
+                </label>
+                <input
+                  type="text"
+                  placeholder="Add a link from Calendly, Google Calendar, Doodle, etc"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Additional content */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Additional content</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Tell your customers more about your business with additional content that can help build trust. Manage the content in Instant Estimator settings.
-            </p>
-            
-            <div className="space-y-3">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Show CompanyCam Project Showcase</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Show social media links</span>
-              </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
-                Manage social media links in profile & branding settings
-              </p>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Additional content</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Tell your customers more about your business with additional content that can help build trust. Manage the content in <a href="#" className="text-blue-600 hover:text-blue-700">Instant Estimator settings</a>.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show CompanyCam Project Showcase</span>
+                  <button
+                    onClick={() => setShowProjectShowcase(!showProjectShowcase)}
+                    className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
+                      showProjectShowcase ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      showProjectShowcase ? 'translate-x-5' : 'translate-x-1'
+                    }`}></div>
+                  </button>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Show social media links</span>
+                    <button
+                      onClick={() => setShowSocialMedia(!showSocialMedia)}
+                      className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
+                        showSocialMedia ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        showSocialMedia ? 'translate-x-5' : 'translate-x-1'
+                      }`}></div>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Manage social media links in <a href="#" className="text-blue-600 hover:text-blue-700">profile & branding settings</a>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* Rename Modal */}
+      {showRenameModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rename Instant Estimator</h3>
+                <button
+                  onClick={() => {
+                    setShowRenameModal(false);
+                    setRenameName('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={renameName}
+                  onChange={(e) => setRenameName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter new name"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && renameName.trim()) {
+                      handleRename();
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowRenameModal(false);
+                    setRenameName('');
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRename}
+                  disabled={!renameName.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Rename
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
