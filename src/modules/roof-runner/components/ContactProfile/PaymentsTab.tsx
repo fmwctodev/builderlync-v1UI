@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import AddCardModal from './AddCardModal';
+import ChargeNowModal from './ChargeNowModal';
+import CreateSubscriptionModal from './CreateSubscriptionModal';
+import CreateInvoiceModal from './CreateInvoiceModal';
+import ManageCardsModal from './ManageCardsModal';
+import CreateEstimateModal from './CreateEstimateModal';
 
 interface PaymentsTabProps {
   showActions: boolean;
@@ -7,6 +13,12 @@ interface PaymentsTabProps {
 }
 
 const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle }) => {
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showChargeNowModal, setShowChargeNowModal] = useState(false);
+  const [showCreateSubscriptionModal, setShowCreateSubscriptionModal] = useState(false);
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
+  const [showManageCardsModal, setShowManageCardsModal] = useState(false);
+  const [showCreateEstimateModal, setShowCreateEstimateModal] = useState(false);
   const paymentActions = [
     'Add Card on File',
     'Charge Now',
@@ -59,6 +71,29 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle 
                   {paymentActions.map((action) => (
                     <button 
                       key={action}
+                      onClick={() => {
+                        onActionsToggle();
+                        switch (action) {
+                          case 'Add Card on File':
+                            setShowAddCardModal(true);
+                            break;
+                          case 'Charge Now':
+                            setShowChargeNowModal(true);
+                            break;
+                          case 'Create Subscription':
+                            setShowCreateSubscriptionModal(true);
+                            break;
+                          case 'Create Invoice':
+                            setShowCreateInvoiceModal(true);
+                            break;
+                          case 'Manage Cards':
+                            setShowManageCardsModal(true);
+                            break;
+                          case 'Create Estimate':
+                            setShowCreateEstimateModal(true);
+                            break;
+                        }
+                      }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       {action}
@@ -74,6 +109,42 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle 
         <PaymentSection title="Subscriptions" />
         <PaymentSection title="Invoices" />
       </div>
+
+      <AddCardModal
+        isOpen={showAddCardModal}
+        onClose={() => setShowAddCardModal(false)}
+        onSave={() => setShowAddCardModal(false)}
+      />
+      
+      <ChargeNowModal
+        isOpen={showChargeNowModal}
+        onClose={() => setShowChargeNowModal(false)}
+        onSave={() => setShowChargeNowModal(false)}
+      />
+      
+      <CreateSubscriptionModal
+        isOpen={showCreateSubscriptionModal}
+        onClose={() => setShowCreateSubscriptionModal(false)}
+        onSave={() => setShowCreateSubscriptionModal(false)}
+      />
+      
+      <CreateInvoiceModal
+        isOpen={showCreateInvoiceModal}
+        onClose={() => setShowCreateInvoiceModal(false)}
+        onSave={() => setShowCreateInvoiceModal(false)}
+      />
+      
+      <ManageCardsModal
+        isOpen={showManageCardsModal}
+        onClose={() => setShowManageCardsModal(false)}
+        onSave={() => setShowManageCardsModal(false)}
+      />
+      
+      <CreateEstimateModal
+        isOpen={showCreateEstimateModal}
+        onClose={() => setShowCreateEstimateModal(false)}
+        onSave={() => setShowCreateEstimateModal(false)}
+      />
     </>
   );
 };

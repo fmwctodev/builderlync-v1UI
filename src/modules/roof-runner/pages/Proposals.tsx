@@ -149,7 +149,7 @@ export default function Proposals() {
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {measurement.version} Roofr Report{measurement.latest ? ' - Latest' : ''}
+                        {measurement.version} BuilderLync Report{measurement.latest ? ' - Latest' : ''}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
                     </div>

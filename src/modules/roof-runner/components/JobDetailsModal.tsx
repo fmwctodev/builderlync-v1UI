@@ -3,6 +3,16 @@ import { X } from 'lucide-react';
 import { CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import TasksTab from './TasksTab';
+import CalendarTab from './CalendarTab';
+import MeasurementsTab from './MeasurementsTab';
+import PDFSignerTab from './PDFSignerTab';
+import MaterialOrdersTab from './MaterialOrdersTab';
+import WorkOrdersTab from './WorkOrdersTab';
+import InvoicesTab from './InvoicesTab';
+import JobCostingTab from './JobCostingTab';
+import AttachmentsTab from './AttachmentsTab';
+import InstantEstimateTab from './InstantEstimateTab';
+import IntegrationsTab from './IntegrationsTab';
 
 interface JobDetailsModalProps {
   isOpen: boolean;
@@ -306,7 +316,27 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
               {activeTab === 'Tasks' && <TasksTab />}
 
-              {activeTab !== 'Job details' && activeTab !== 'Tasks' && (
+              {activeTab === 'Calendar' && <CalendarTab />}
+
+              {activeTab === 'Measurements' && <MeasurementsTab />}
+
+              {activeTab === 'PDF Signer' && <PDFSignerTab />}
+
+              {activeTab === 'Material orders' && <MaterialOrdersTab />}
+
+              {activeTab === 'Work orders' && <WorkOrdersTab />}
+
+              {activeTab === 'Invoices' && <InvoicesTab />}
+
+              {activeTab === 'Job costing' && <JobCostingTab />}
+
+              {activeTab === 'Attachments' && <AttachmentsTab />}
+
+              {activeTab === 'Instant Estimate' && <InstantEstimateTab />}
+
+              {activeTab === 'Integration' && <IntegrationsTab />}
+
+              {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'PDF Signer' && activeTab !== 'Material orders' && activeTab !== 'Work orders' && activeTab !== 'Invoices' && activeTab !== 'Job costing' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && activeTab !== 'Integration' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeTab}</h2>
                   <p className="text-gray-600 dark:text-gray-400">Content for {activeTab} will be implemented here.</p>

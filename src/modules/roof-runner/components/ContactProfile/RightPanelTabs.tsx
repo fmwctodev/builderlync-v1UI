@@ -14,7 +14,7 @@ const RightPanelTabs: React.FC<RightPanelTabsProps> = ({ activeTab, onTabChange 
     { id: 'appointments', icon: Calendar },
     { id: 'documents', icon: Building },
     { id: 'payments', icon: DollarSign },
-    { id: 'related', icon: null }
+    // { id: 'related', icon: null }
   ];
 
   return (
