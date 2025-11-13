@@ -1,289 +1,355 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Filter, RefreshCw, Info, List, Search, MoreHorizontal, Folder, ExternalLink } from "lucide-react";
 import AutomationModal from '../components/AutomationModal';
 import AutomationEditor from '../components/AutomationEditor';
-
-interface Automation {
-  id: number;
-  name: string;
-  enabled: boolean;
-  condition: string;
-  action: string;
-  frequency: string;
-}
+import WorkflowBuilder from './WorkflowBuilder';
 
 export default function Automations() {
-  const [automations, setAutomations] = useState<Automation[]>([
-    { 
-      id: 1, 
-      name: "Adjuster Meeting Details Follow Up", 
-      enabled: false,
-      condition: "Job stage changes to Payments/Invoicing and workflow is Default",
-      action: "Create tasks Depreciation Released/Final Payment Collection",
-      frequency: "Every time"
-    },
-    { 
-      id: 2, 
-      name: "Depreciation/Final Payment Collection", 
-      enabled: true,
-      condition: "Job stage changes to Payments/Invoicing",
-      action: "Send email to customer",
-      frequency: "Once per job"
-    },
-    { 
-      id: 3, 
-      name: "Reconciliation Kirk Automation", 
-      enabled: true,
-      condition: "Job completed for 7 days",
-      action: "Generate reconciliation report",
-      frequency: "Every time"
-    },
-  ]);
+  const [activeTab, setActiveTab] = useState('All Workflows');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [currentView, setCurrentView] = useState('list');
 
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [editing, setEditing] = useState<Automation | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showBrowseEditor, setShowBrowseEditor] = useState(false);
+  const workflows = [
+    {
+      id: 1,
+      name: 'Onboarding Automations',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Jul 24 2025, 2:53 PM',
+      createdOn: 'Jul 24 2025, 2:53 PM',
+      isFolder: true
+    },
+    {
+      id: 2,
+      name: 'Social Workflows',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Jun 12 2024, 11:03 PM',
+      createdOn: 'Jun 12 2024, 11:03 PM',
+      isFolder: true
+    },
+    {
+      id: 3,
+      name: '4. New Sale - Send Review Request',
+      status: 'Published',
+      totalEnrolled: 12,
+      activeEnrolled: 0,
+      lastUpdated: 'Dec 30 2024, 12:06 AM',
+      createdOn: 'Jun 07 2024, 1:21 AM',
+      isFolder: false,
+      hasExternal: true
+    },
+    {
+      id: 4,
+      name: 'CUSTOM VALUE UPDATER',
+      status: 'Draft',
+      totalEnrolled: 0,
+      activeEnrolled: 0,
+      lastUpdated: 'Dec 29 2024, 6:22 PM',
+      createdOn: 'Nov 19 2024, 7:34 PM',
+      isFolder: false,
+      hasExternal: true
+    },
+    {
+      id: 5,
+      name: 'New Client (remove from all WF)',
+      status: 'Published',
+      totalEnrolled: 6,
+      activeEnrolled: 0,
+      lastUpdated: 'Dec 29 2024, 11:56 PM',
+      createdOn: 'Jun 12 2024, 10:27 PM',
+      isFolder: false,
+      hasExternal: true
+    },
+    {
+      id: 6,
+      name: 'New Workflow : 1762888972865',
+      status: 'Draft',
+      totalEnrolled: 0,
+      activeEnrolled: 0,
+      lastUpdated: 'Nov 11 2025, 2:22 PM',
+      createdOn: 'Nov 11 2025, 2:22 PM',
+      isFolder: false,
+      hasExternal: true
+    }
+  ];
 
-  const toggleAutomation = (id: number) => {
-    setAutomations((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
-    );
-  };
-
-  const toggleExpanded = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  if (currentView === 'builder') {
+    return <WorkflowBuilder onBack={() => setCurrentView('list')} />;
+  }
 
   return (
-    <div className="p-6 w-full">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Automations</h1>
-        <div className="space-x-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Workflow List</h1>
+        <div className="flex gap-3">
           <button 
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-lg bg-[#dc2626] text-white hover:bg-red-700"
+            onClick={() => setShowFolderModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            Create custom
+            <Folder className="w-4 h-4" />
+            Create Folder
           </button>
-          <button 
-            onClick={() => setShowBrowseEditor(true)}
-            className="px-4 py-2 rounded-lg bg-red-100 text-[#dc2626] hover:bg-red-200 dark:bg-red-900 dark:text-red-300"
-          >
-            Browse automations
-          </button>
-        </div>
-      </div>
-
-      <p className="text-gray-500 dark:text-gray-400 mb-6">
-        Automatically trigger actions to happen based on certain conditions being met
-      </p>
-
-      <div className="space-y-3">
-        {automations.map((automation) => (
-          <div
-            key={automation.id}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm overflow-hidden"
-          >
-            {/* Header */}
-            <div className="p-4 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => toggleExpanded(automation.id)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  {expandedId === automation.id ? (
-                    <ChevronDown className="w-5 h-5" />
-                  ) : (
-                    <ChevronRight className="w-5 h-5" />
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => toggleAutomation(automation.id)}
-                  className={`${
-                    automation.enabled ? "bg-[#dc2626]" : "bg-gray-300 dark:bg-gray-600"
-                  } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-                >
-                  <span
-                    className={`${
-                      automation.enabled ? "translate-x-6" : "translate-x-1"
-                    } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-                  />
-                </button>
-                
-                <span
-                  className={`${
-                    !automation.enabled ? "text-gray-400" : "text-gray-800 dark:text-gray-200"
-                  } font-medium`}
-                >
-                  {automation.name}
-                </span>
-                
-                {!automation.enabled && (
-                  <span className="text-sm text-gray-400">(disabled)</span>
-                )}
-              </div>
-
-              <button 
-                onClick={() => setEditing(automation)}
-                className="text-[#dc2626] hover:underline text-sm"
-              >
-                Edit
-              </button>
-            </div>
-
-            {/* Expanded Content */}
-            {expandedId === automation.id && (
-              <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                <div className="pt-4 space-y-4">
-                  {/* If Section */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">If...</h4>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Job stage changes to</span>
-                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
-                        Payments/Invoicing
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">and workflow is</span>
-                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium">
-                        Default
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Then Section */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Then...</h4>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-xs font-medium">
-                        Create tasks
-                      </span>
-                      <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium">
-                        Depreciation Released/Final Payment Collection
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Frequency */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Frequency</h4>
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
-                      Every time
-                    </span>
-                  </div>
+          <div className="relative">
+            <button 
+              onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              <span className="text-lg">+</span>
+              Create Workflow
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            
+            {showCreateDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => { 
+                      setShowCreateDropdown(false); 
+                      setCurrentView('builder');
+                    }}
+                    className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Start from Scratch
+                  </button>
+                  <button
+                    onClick={() => { setShowCreateDropdown(false); }}
+                    className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Select from Template
+                  </button>
                 </div>
               </div>
             )}
           </div>
-        ))}
+        </div>
       </div>
 
-      {editing && <EditModal automation={editing} onClose={() => setEditing(null)} />}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10"
-            >
-              <X size={20} />
-            </button>
-            <div className="p-6">
-              <AutomationModal onClose={() => setShowCreateModal(false)} />
-            </div>
-          </div>
-        </div>
-      )}
-      {showBrowseEditor && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-4xl h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={() => setShowBrowseEditor(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10"
-            >
-              <X size={20} />
-            </button>
-            <div className="p-6">
-              <AutomationEditor 
-                selectedAutomation={null} 
-                onClose={() => setShowBrowseEditor(false)} 
-                onSave={() => setShowBrowseEditor(false)} 
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EditModal({
-  automation,
-  onClose,
-}: {
-  automation: Automation;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-2xl w-full p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      {/* Tabs */}
+      <div className="flex items-center gap-6 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <button 
+          onClick={() => setActiveTab('All Workflows')}
+          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+            activeTab === 'All Workflows' 
+              ? 'border-primary-600 text-primary-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
         >
-          <X size={20} />
+          All Workflows
         </button>
+        <button 
+          onClick={() => setActiveTab('Needs Review')}
+          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+            activeTab === 'Needs Review' 
+              ? 'border-primary-600 text-primary-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
+        >
+          Needs Review (0)
+        </button>
+        <button 
+          onClick={() => setActiveTab('Deleted')}
+          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+            activeTab === 'Deleted' 
+              ? 'border-primary-600 text-primary-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+          }`}
+        >
+          Deleted
+        </button>
+       
+      </div>
 
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{automation.name}</h2>
-
-        {/* Condition Block */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
-          <h3 className="text-gray-700 dark:text-gray-300 font-semibold mb-3">If...</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Job stage changes to</span>
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
-              Payments/Invoicing
-            </span>
-            <span className="text-sm text-gray-600 dark:text-gray-400">and workflow is</span>
-            <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium">
-              Default
-            </span>
+      {/* Controls */}
+      <div className="flex justify-between items-center mb-6">
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+        >
+          <Filter className="w-4 h-4" />
+          Advanced Filters
+        </button>
+        
+        <div className="flex items-center gap-3">
+          <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <Info className="w-4 h-4" />
+          </button>
+          <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <List className="w-4 h-4" />
+          </button>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search" 
+              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 w-64"
+            />
           </div>
-        </div>
-
-        {/* Action Block */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
-          <h3 className="text-gray-700 dark:text-gray-300 font-semibold mb-3">Then...</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-xs font-medium">
-              Create tasks
-            </span>
-            <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium">
-              Depreciation Released/Final Payment Collection
-            </span>
-          </div>
-        </div>
-
-        {/* Frequency */}
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
-          <h3 className="text-gray-700 dark:text-gray-300 font-semibold mb-3">Frequency</h3>
-          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
-            Every time
-          </span>
-        </div>
-
-        <div className="flex justify-between mt-6">
-          <button className="text-red-500 hover:underline">Delete</button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-[#dc2626] text-white rounded-md hover:bg-red-700"
-          >
-            Save automation
+          <button className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <span className="text-sm">Customize List</span>
           </button>
         </div>
       </div>
+
+      {/* Breadcrumb */}
+      <div className="mb-4">
+        <span className="text-gray-500 dark:text-gray-400 text-sm">Home</span>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        {/* Table Header */}
+        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="col-span-1">
+            <input type="checkbox" className="rounded" />
+          </div>
+          <div className="col-span-3 flex items-center gap-1">
+            Name
+            <ChevronDown className="w-3 h-3" />
+          </div>
+          <div className="col-span-1">Status</div>
+          <div className="col-span-1">Total Enrolled</div>
+          <div className="col-span-1">Active Enrolled</div>
+          <div className="col-span-2">Last Updated</div>
+          <div className="col-span-2">Created On</div>
+          <div className="col-span-1 flex items-center gap-1">
+            Stats
+            <Info className="w-3 h-3" />
+          </div>
+        </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-gray-200 dark:divide-gray-600">
+          {workflows.map((workflow) => (
+            <div key={workflow.id} className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+              <div className="col-span-1">
+                <input type="checkbox" className="rounded" />
+              </div>
+              <div className="col-span-3 flex items-center gap-2">
+                {workflow.isFolder ? (
+                  <Folder className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <div className="w-4 h-4" />
+                )}
+                <span className="text-gray-900 dark:text-white">{workflow.name}</span>
+                {workflow.hasExternal && (
+                  <ExternalLink className="w-3 h-3 text-gray-400" />
+                )}
+              </div>
+              <div className="col-span-1">
+                {workflow.status && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    workflow.status === 'Published' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {workflow.status}
+                  </span>
+                )}
+              </div>
+              <div className="col-span-1">
+                {workflow.totalEnrolled !== null && (
+                  <span className="text-primary-600 dark:text-primary-400">{workflow.totalEnrolled}</span>
+                )}
+              </div>
+              <div className="col-span-1">
+                {workflow.activeEnrolled !== null && (
+                  <span className="text-primary-600 dark:text-primary-400">{workflow.activeEnrolled}</span>
+                )}
+              </div>
+              <div className="col-span-2 text-gray-600 dark:text-gray-400">
+                {workflow.lastUpdated}
+              </div>
+              <div className="col-span-2 text-gray-600 dark:text-gray-400">
+                {workflow.createdOn}
+              </div>
+              <div className="col-span-1 flex items-center justify-between">
+                {!workflow.isFolder && (
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                )}
+                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded">
+                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-6">
+        <div></div>
+        <div className="flex items-center gap-2">
+          <button className="px-3 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            Previous
+          </button>
+          <button className="px-3 py-2 bg-primary-600 text-white rounded">
+            1
+          </button>
+          <button className="px-3 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            2
+          </button>
+          <button className="px-3 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            Next
+          </button>
+          <span className="text-gray-500 dark:text-gray-400 text-sm ml-4">10 / page</span>
+        </div>
+      </div>
+
+      {/* Create Folder Modal */}
+      {showFolderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create Folder</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Folder Name
+              </label>
+              <input
+                type="text"
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Enter folder name"
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowFolderModal(false);
+                  setFolderName('');
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Creating folder:', folderName);
+                  setShowFolderModal(false);
+                  setFolderName('');
+                }}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!folderName.trim()}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

@@ -89,13 +89,13 @@ export function AgentTemplates() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Agents</h3>
             <div className="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
-              <span>Categories</span>
+              {/* <span>Categories</span>
               <span>Use Cases</span>
               <span>Business Niche</span>
               <span>Pricing</span>
               <span>Actions</span>
               <span>Agent Contains</span>
-              <span>Who can install the app?</span>
+              <span>Who can install the app?</span> */}
             </div>
           </div>
         </div>
