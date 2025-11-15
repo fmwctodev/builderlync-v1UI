@@ -68,7 +68,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
 
   const renderNewOrderTab = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
         <div className="flex items-center gap-3 mb-4">
           <Camera className="w-8 h-8" />
           <div>
@@ -81,7 +81,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Ruler className="w-6 h-6 text-blue-600" />
+            <Ruler className="w-6 h-6 text-primary-600" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Roof Measurements</h3>
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -139,7 +139,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-gray-900 dark:text-white">{report.name}</h4>
-                <span className="text-lg font-bold text-blue-600">{report.price}</span>
+                {/* <span className="text-lg font-bold text-blue-600">{report.price}</span> */}
               </div>
               <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                 {report.features.map((feature, idx) => (
@@ -159,7 +159,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">EagleView Reports</h2>
         <button
           onClick={() => setActiveTab('new-order')}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
         >
           New Order
         </button>
@@ -246,7 +246,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             onClick={() => setActiveTab('new-order')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'new-order'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -256,7 +256,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             onClick={() => setActiveTab('reports')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'reports'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >

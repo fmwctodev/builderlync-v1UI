@@ -63,7 +63,7 @@ const SMSRequestsTab: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400">View and manage all your SMS templates</p>
             </div>
             <div className="flex gap-2">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+              <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors">
                 Set SMS Templates
               </button>
               <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">

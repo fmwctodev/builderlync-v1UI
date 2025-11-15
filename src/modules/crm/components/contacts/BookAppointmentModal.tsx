@@ -29,7 +29,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
     internalNotes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [appointmentTypes] = useState([
     'Christmas Light Booking',
     'Consultation',
@@ -37,10 +37,10 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
     'Site Visit',
     'Project Review'
   ]);
-  const [availableSlots, setAvailableSlots] = useState([]);
-  const [timezones, setTimezones] = useState([]);
-  const [calendarSettings, setCalendarSettings] = useState(null);
-  const [internalNotes, setInternalNotes] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [timezones, setTimezones] = useState<string[]>([]);
+  const [calendarSettings, setCalendarSettings] = useState<any>(null);
+  const [internalNotes, setInternalNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
 
@@ -217,7 +217,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
               <select
                 value={formData.appointmentType}
                 onChange={(e) => setFormData({ ...formData, appointmentType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">Select appointment type</option>
                 {appointmentTypes.map(type => (
@@ -235,12 +235,12 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                 placeholder={`Appointment with ${contactName}`}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
             <div>
-              <button className="text-blue-600 text-sm font-medium">Add Description</button>
+              <button className="text-primary-600 text-sm font-medium">Add Description</button>
             </div>
 
             <div>
@@ -250,7 +250,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
               <select
                 value={formData.teamMember}
                 onChange={(e) => setFormData({ ...formData, teamMember: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">Calendar Default</option>
                 {teamMembers.length === 0 ? (
@@ -277,7 +277,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                   <select
                     value={formData.timezone}
                     onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
                     <option value="">Select timezone</option>
                     {timezones.length === 0 ? (
@@ -291,7 +291,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                 </div>
 
                 <div className="flex space-x-2 border-b">
-                  <button className="px-4 py-2 text-blue-600 border-b-2 border-blue-600 font-medium">Default</button>
+                  <button className="px-4 py-2 text-primary-600 border-b-2 border-primary-600 font-medium">Default</button>
                   <button className="px-4 py-2 text-gray-600">Custom</button>
                 </div>
 
@@ -302,7 +302,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                   <div>
@@ -315,7 +315,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                           setFormData({ ...formData, startTime: start, endTime: end });
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="">Select time slot</option>
                       {availableSlots.map((slot: any) => (
@@ -371,7 +371,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="confirmed">Confirmed</option>
                   <option value="pending">Pending</option>
@@ -465,7 +465,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
                   <div className="flex space-x-2">
                     <button
                       onClick={addInternalNote}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                      className="px-3 py-1 bg-primary-600 text-white rounded text-sm"
                     >
                       Save
                     </button>
@@ -483,7 +483,7 @@ export function BookAppointmentModal({ isOpen, onClose, onSubmit, contactName, c
               ) : (
                 <button 
                   onClick={() => setShowNoteInput(true)}
-                  className="flex items-center space-x-2 text-blue-600 text-sm"
+                  className="flex items-center space-x-2 text-primary-600 text-sm"
                 >
                   <span>+</span>
                   <span>Add Internal Note</span>

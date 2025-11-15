@@ -164,7 +164,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, jobId, editingTask }: Ta
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
             >
               {loading ? 'Saving...' : (editingTask ? 'Update' : 'Create')}
             </button>

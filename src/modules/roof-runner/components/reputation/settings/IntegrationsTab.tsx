@@ -8,28 +8,28 @@ const IntegrationsTab: React.FC = () => {
     { name: 'AliExpress', icon: '📦', color: 'bg-orange-50' },
     { name: 'Angi', icon: 'A', color: 'bg-red-50' },
     { name: 'Amazon', icon: 'a', color: 'bg-yellow-50' },
-    { name: 'Agoda', icon: '🏨', color: 'bg-blue-50' },
-    { name: 'Apple App Store', icon: '🍎', color: 'bg-blue-50' },
+    { name: 'Agoda', icon: '🏨', color: 'bg-primary-50' },
+    { name: 'Apple App Store', icon: '🍎', color: 'bg-primary-50' },
     { name: 'Avvo', icon: 'A', color: 'bg-gray-50' },
-    { name: 'Better Business Bureau', icon: '$', color: 'bg-blue-50' },
-    { name: 'Booking.com', icon: 'B', color: 'bg-blue-600 text-white' },
+    { name: 'Better Business Bureau', icon: '$', color: 'bg-primary-50' },
+    { name: 'Booking.com', icon: 'B', color: 'bg-primary-600 text-white' },
     { name: 'Capterra', icon: '🚀', color: 'bg-orange-50' },
-    { name: 'CarGurus', icon: 'CG', color: 'bg-blue-50' },
+    { name: 'CarGurus', icon: 'CG', color: 'bg-primary-50' },
     { name: 'Caring.com', icon: '💜', color: 'bg-purple-50' },
     { name: 'Cars.com', icon: '🚗', color: 'bg-purple-600 text-white' },
     { name: 'Citysearch', icon: '🔍', color: 'bg-gray-50' },
-    { name: 'Consumer Affairs', icon: '⭐', color: 'bg-blue-50' },
+    { name: 'Consumer Affairs', icon: '⭐', color: 'bg-primary-50' },
     { name: 'DealerRater', icon: '📊', color: 'bg-orange-50' },
     { name: 'Doordash', icon: '🍕', color: 'bg-red-50' },
-    { name: 'Ebay', icon: 'ebay', color: 'bg-blue-50' },
-    { name: 'Expedia', icon: 'e', color: 'bg-blue-600 text-white' }
+    { name: 'Ebay', icon: 'ebay', color: 'bg-primary-50' },
+    { name: 'Expedia', icon: 'e', color: 'bg-primary-600 text-white' }
   ];
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Integrations</h3>
-        <p className="text-blue-600 dark:text-blue-400">
+        <p className="text-primary-600 dark:text-primary-400">
           Add review platforms by entering the page link to import reviews.
         </p>
       </div>
@@ -66,7 +66,7 @@ const IntegrationsTab: React.FC = () => {
                 Add Platform
               </button>
             ) : (
-              <button className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 py-2 px-4 rounded text-sm transition-colors">
+              <button className="w-full bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-600 dark:text-primary-400 py-2 px-4 rounded text-sm transition-colors">
                 Integrate
               </button>
             )}

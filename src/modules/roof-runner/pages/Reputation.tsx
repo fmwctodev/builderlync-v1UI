@@ -72,7 +72,7 @@ const Reputation: React.FC = () => {
               </p>
               <button 
                 onClick={() => navigate('/marketing/integrations')}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Integrate GBP

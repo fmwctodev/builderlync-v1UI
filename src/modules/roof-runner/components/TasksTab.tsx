@@ -26,7 +26,7 @@ const TasksTab: React.FC = () => {
               <span className="text-gray-900 dark:text-white">Prepare to Generate CompanyCam photos</span>
             </div>
             <div className="flex items-center space-x-2">
-              <button className="p-1 text-gray-400 hover:text-blue-600">
+              <button className="p-1 text-gray-400 hover:text-primary-600">
                 <Edit className="w-4 h-4" />
               </button>
               <button className="p-1 text-gray-400 hover:text-red-600">
@@ -40,7 +40,7 @@ const TasksTab: React.FC = () => {
         <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-gray-500 dark:text-gray-400">What needs to get done?</span>
-            <button className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+            <button className="flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm">
               <Plus className="w-4 h-4" />
               <span>Task</span>
             </button>

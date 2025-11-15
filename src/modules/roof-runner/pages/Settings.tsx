@@ -141,7 +141,7 @@ const BusinessInfoTab: React.FC = () => {
               <h4 className="font-medium text-gray-900 dark:text-white">Main Office</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">123 Main Street, Austin, TX 78701</p>
             </div>
-            <button className="text-blue-600 hover:underline dark:text-blue-400">Edit</button>
+            <button className="text-primary-600 hover:underline dark:text-primary-400">Edit</button>
           </div>
         </div>
       </div>
@@ -176,7 +176,7 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
           <button
             className={`px-4 py-2 rounded-lg ${
               userRole === 'Owner'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             disabled={userRole !== 'Owner'}
@@ -190,7 +190,7 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Method</h3>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-12 h-8 bg-primary-600 rounded flex items-center justify-center text-white text-xs font-bold">
               VISA
             </div>
             <div>
@@ -201,7 +201,7 @@ const BillingTab: React.FC<{ userRole: string }> = ({ userRole }) => {
           <button
             className={`px-4 py-2 rounded-lg ${
               userRole === 'Owner'
-                ? 'text-blue-600 hover:underline dark:text-blue-400'
+                ? 'text-primary-600 hover:underline dark:text-primary-400'
                 : 'text-gray-400 cursor-not-allowed'
             }`}
             disabled={userRole !== 'Owner'}
@@ -401,7 +401,7 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.email}</td>
                     {/* <td className="px-6 py-4">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-blue-900 dark:text-blue-200">
+                      <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-primary-200">
                         Staff
                       </span>
                     </td> */}
@@ -413,7 +413,7 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => openEditModal(member)}
-                        className={`text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400 ${
+                        className={`text-primary-600 hover:underline text-sm mr-2 dark:text-primary-400 ${
                           !canManageStaff ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                         disabled={!canManageStaff}
@@ -492,7 +492,7 @@ const CalendarTab: React.FC = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Not connected</p>
               </div>
             </div>
-            <button className="text-blue-600 hover:underline dark:text-blue-400">Connect</button>
+            <button className="text-primary-600 hover:underline dark:text-primary-400">Connect</button>
           </div>
         </div>
       </div>
@@ -590,7 +590,7 @@ const IntegrationsTab: React.FC = () => {
             <button className={`w-full px-4 py-2 rounded-lg ${
               integration.connected
                 ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
             }`}>
               {integration.connected ? 'Disconnect' : 'Connect'}
             </button>
@@ -637,7 +637,7 @@ const CustomFieldsTab: React.FC = () => {
                   <Check className="w-4 h-4 text-green-500" />
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-blue-600 hover:underline text-sm mr-2 dark:text-blue-400">Edit</button>
+                  <button className="text-primary-600 hover:underline text-sm mr-2 dark:text-primary-400">Edit</button>
                   <button className="text-red-600 hover:underline text-sm dark:text-red-400">Delete</button>
                 </td>
               </tr>
@@ -871,7 +871,7 @@ const BrandBoardTab: React.FC = () => {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center dark:border-gray-600">
               <div className="w-12 h-12 mx-auto mb-4 bg-gray-200 rounded dark:bg-gray-700"></div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload your logo</p>
-              <button className="text-blue-600 hover:underline dark:text-blue-400">Choose File</button>
+              <button className="text-primary-600 hover:underline dark:text-primary-400">Choose File</button>
             </div>
           </div>
 

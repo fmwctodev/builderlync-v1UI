@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Paperclip, Smile, DollarSign, Archive, Trash2, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Paperclip, Smile, DollarSign, Archive, Trash2, ChevronDown, Edit } from 'lucide-react';
+import { getContacts } from '../../../shared/store/services/contactsApi';
+import { getStaff } from '../../../shared/store/services/staffApi';
 
 const Conversations: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState(0);
@@ -27,7 +29,22 @@ const Conversations: React.FC = () => {
   const [linkUrl, setLinkUrl] = useState('');
   const [showDeleteLinkModal, setShowDeleteLinkModal] = useState(false);
   const [showEditLinkModal, setShowEditLinkModal] = useState(false);
-
+  const [showCreateMessageModal, setShowCreateMessageModal] = useState(false);
+  const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedContactForMessage, setSelectedContactForMessage] = useState<any>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showGroupMessageModal, setShowGroupMessageModal] = useState(false);
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const [groupSearchResults, setGroupSearchResults] = useState<any[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<any[]>([]);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
+  const [contactsList, setContactsList] = useState<any[]>([]);
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+console.log("phoneNumber", phoneNumber);
   const contacts = [
     {
       id: 1,
@@ -110,6 +127,30 @@ const Conversations: React.FC = () => {
 
   const channels = ['SMS', 'Google Business', 'Email', 'Yelp'];
 
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const response = await getStaff();
+        setStaffMembers(response.data?.data || []);
+      } catch (error) {
+        console.error('Failed to fetch staff:', error);
+      }
+    };
+    
+    const fetchContacts = async () => {
+      try {
+        const response = await getContacts();
+        console.log("response", response);
+        setContactsList(response.data?.contacts || []);
+      } catch (error) {
+        console.error('Failed to fetch contacts:', error);
+      }
+    };
+    
+    fetchStaff();
+    fetchContacts();
+  }, []);
+
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Tabs */}
@@ -187,6 +228,12 @@ const Conversations: React.FC = () => {
                     <button className="p-1 text-gray-400 hover:text-gray-600">
                       <MoreHorizontal size={16} />
                     </button>
+                    <button 
+                      onClick={() => setShowCreateMessageModal(true)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <Edit size={16} />
+                    </button>
                   </div>
                 </div>
 
@@ -198,7 +245,7 @@ const Conversations: React.FC = () => {
                       onClick={() => setInboxTab(tab.toLowerCase())}
                       className={`px-3 py-1 text-sm rounded transition-colors ${
                         inboxTab === tab.toLowerCase()
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                           : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                       }`}
                     >
@@ -214,7 +261,7 @@ const Conversations: React.FC = () => {
                     <input
                       type="text"
                       placeholder="Search"
-                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                   <button className="p-2 text-gray-400 hover:text-gray-600">
@@ -223,7 +270,7 @@ const Conversations: React.FC = () => {
                 </div>
 
                 <div className="mt-3 text-xs text-gray-500">
-                  <span className="bg-blue-600 text-white px-2 py-1 rounded dark:bg-blue-700">NEW RESULTS</span>
+                  <span className="bg-red-600 text-white px-2 py-1 rounded dark:bg-red-700">NEW RESULTS</span>
                 </div>
               </div>
 
@@ -234,7 +281,7 @@ const Conversations: React.FC = () => {
                     key={contact.id}
                     onClick={() => setSelectedContact(index)}
                     className={`p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                      selectedContact === index ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      selectedContact === index ? 'bg-red-50 dark:bg-red-900/20' : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -256,7 +303,7 @@ const Conversations: React.FC = () => {
                         </p>
                       </div>
                       {contact.unread && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full dark:bg-blue-500"></div>
+                        <div className="w-2 h-2 bg-red-600 rounded-full dark:bg-red-500"></div>
                       )}
                     </div>
                   </div>
@@ -270,7 +317,7 @@ const Conversations: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium dark:bg-blue-700">
+                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-medium dark:bg-red-700">
                       TT
                     </div>
                     <div>
@@ -297,26 +344,26 @@ const Conversations: React.FC = () => {
                   <div key={msg.id}>
                     {msg.type === 'system' && (
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center dark:bg-blue-900">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full dark:bg-blue-400"></div>
+                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center dark:bg-red-900">
+                          <div className="w-2 h-2 bg-red-600 rounded-full dark:bg-red-400"></div>
                         </div>
                         <div className="flex-1">
-                          <div className="bg-blue-50 p-3 rounded-lg dark:bg-blue-900/20">
-                            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                          <div className="bg-red-50 p-3 rounded-lg dark:bg-red-900/20">
+                            <p className="text-sm font-medium text-red-900 dark:text-red-200">
                               {msg.content}
                             </p>
-                            <p className="text-sm text-blue-700 mt-1 dark:text-blue-300">
+                            <p className="text-sm text-red-700 mt-1 dark:text-red-300">
                               {msg.subContent}
                             </p>
                             {msg.showMore && (
-                              <button className="text-sm text-blue-600 hover:text-blue-800 mt-1 dark:text-blue-400 dark:hover:text-blue-300">
+                              <button className="text-sm text-red-600 hover:text-red-800 mt-1 dark:text-red-400 dark:hover:text-red-300">
                                 Show more
                               </button>
                             )}
                           </div>
                           <p className="text-xs text-gray-500 mt-1">{msg.time}</p>
                         </div>
-                        <button className="text-blue-600 text-sm hover:underline dark:text-blue-400">
+                        <button className="text-red-600 text-sm hover:underline dark:text-red-400">
                           View opportunity
                         </button>
                       </div>
@@ -339,7 +386,7 @@ const Conversations: React.FC = () => {
                     {msg.type === 'sent' && (
                       <div className="flex items-start justify-end space-x-3">
                         <div className="flex-1 flex justify-end">
-                          <div className="bg-blue-600 text-white p-3 rounded-lg max-w-md dark:bg-blue-700">
+                          <div className="bg-red-600 text-white p-3 rounded-lg max-w-md dark:bg-red-700">
                             <p className="text-sm">{msg.content}</p>
                           </div>
                         </div>
@@ -386,7 +433,7 @@ const Conversations: React.FC = () => {
                       <input
                         type="text"
                         value="Vijender Singh"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                     <div>
@@ -394,7 +441,7 @@ const Conversations: React.FC = () => {
                       <input
                         type="email"
                         value="vijendersingh2507@gmail.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                   </div>
@@ -403,7 +450,7 @@ const Conversations: React.FC = () => {
                     <div className="flex-1">
                       <label className="block text-sm text-gray-600 mb-1">To:</label>
                       <div className="flex items-center space-x-2">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm dark:bg-blue-900 dark:text-blue-200">
+                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm dark:bg-red-900 dark:text-red-200">
                           ttran@caretrusteit.com (Primary)
                         </span>
                       </div>
@@ -419,7 +466,7 @@ const Conversations: React.FC = () => {
                     <input
                       type="text"
                       placeholder="Type a message"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -431,7 +478,7 @@ const Conversations: React.FC = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type a message"
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
@@ -456,7 +503,7 @@ const Conversations: React.FC = () => {
                     <button className="px-3 py-1 text-gray-600 hover:text-gray-800">
                       Clear
                     </button>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 dark:bg-blue-700 dark:hover:bg-blue-600">
+                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 dark:bg-red-700 dark:hover:bg-red-600">
                       <span>Send</span>
                       <Send size={16} />
                     </button>
@@ -472,7 +519,7 @@ const Conversations: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Tri Tran C/o Care Trust REIT
                   </h3>
-                  <button className="text-blue-600 hover:text-blue-800">
+                  <button className="text-primary-600 hover:text-primary-800">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
@@ -486,7 +533,7 @@ const Conversations: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-400">Email</span>
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button className="text-primary-600 hover:text-primary-800">
                           <Plus size={16} />
                         </button>
                       </div>
@@ -496,7 +543,7 @@ const Conversations: React.FC = () => {
                       
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-sm text-gray-600 dark:text-gray-400">Phone</span>
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button className="text-primary-600 hover:text-primary-800">
                           <Plus size={16} />
                         </button>
                       </div>
@@ -532,7 +579,7 @@ const Conversations: React.FC = () => {
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Tags</span>
-                      <button className="text-blue-600 hover:text-blue-800">
+                      <button className="text-primary-600 hover:text-primary-800">
                         <Plus size={16} />
                       </button>
                     </div>
@@ -566,7 +613,7 @@ const Conversations: React.FC = () => {
 
                   {/* Add opportunity by zapier */}
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <button className="text-sm text-blue-600 hover:text-blue-800">
+                    <button className="text-sm text-primary-600 hover:text-primary-800">
                       Add opportunity by zapier
                     </button>
                     <p className="text-xs text-gray-500 mt-1">
@@ -988,7 +1035,7 @@ const Conversations: React.FC = () => {
                       value={snippetUrl}
                       onChange={(e) => setSnippetUrl(e.target.value)}
                       placeholder="Enter URL"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     <button className="px-4 py-2 text-white rounded" style={{backgroundColor: '#dc2626'}}>
                       + Add
@@ -1436,6 +1483,365 @@ const Conversations: React.FC = () => {
                 style={{backgroundColor: '#dc2626'}}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create New Message Modal */}
+      {showCreateMessageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[600px] dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New Message</h3>
+              <button
+                onClick={() => setShowCreateMessageModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div 
+                onClick={() => {
+                  setShowCreateMessageModal(false);
+                  setShowDirectMessageModal(true);
+                }}
+                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-blue-500"
+              >
+                <div className="text-center">
+                  <div className="mb-4">
+                    <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Direct Message</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Send direct message to a contact</p>
+                </div>
+              </div>
+              
+              <div 
+                onClick={() => {
+                  setShowCreateMessageModal(false);
+                  setShowGroupMessageModal(true);
+                }}
+                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-blue-500"
+              >
+                <div className="text-center">
+                  <div className="mb-4">
+                    <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Group Message</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Send group SMS to contacts</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowCreateMessageModal(false)}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Message Modal */}
+      {showDirectMessageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create new message</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDirectMessageModal(false);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setSelectedContactForMessage(null);
+                  setShowContactDropdown(false);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Contact <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onClick={() => setShowContactDropdown(!showContactDropdown)}
+                  readOnly
+                  placeholder="Select name, email or phone"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                />
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Contact Dropdown */}
+                {showContactDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
+                    {contactsList.map((contact) => (
+                      <div
+                        key={contact.id}
+                        onClick={() => {
+                          setSelectedContactForMessage(contact);
+                          setSearchQuery(`${contact.full_name} (${contact.email})`);
+                          setShowContactDropdown(false);
+                        }}
+                        className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            {contact.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {contact.full_name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {contact.email} • {contact.phone}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDirectMessageModal(false);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setSelectedContactForMessage(null);
+                  setShowContactDropdown(false);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!selectedContactForMessage}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Message Modal */}
+      {showGroupMessageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[500px] dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New Group Chat</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowGroupMessageModal(false);
+                  setGroupSearchQuery('');
+                  setGroupSearchResults([]);
+                  setSelectedParticipants([]);
+                  setPhoneNumber('');
+                  setShowPhoneDropdown(false);
+                  setShowContactDropdown(false);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Start a group chat with up to 10 participants, including yourself. Creating a group chat will allow all participants to see each other's phone numbers.
+            </p>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select your phone number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={phoneNumber}
+                    onClick={() => setShowPhoneDropdown(!showPhoneDropdown)}
+                    readOnly
+                    placeholder="Phone number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
+                  {/* Phone Number Dropdown */}
+                  {showPhoneDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
+                      {staffMembers.map((staff) => (
+                        <div
+                          key={staff.id}
+                          onClick={() => {
+                            setPhoneNumber(`${staff.first_name} ${staff.last_name} - ${staff.phone}`);
+                            setShowPhoneDropdown(false);
+                          }}
+                          className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                              {staff.first_name?.charAt(0)?.toUpperCase()}{staff.last_name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {staff.first_name} {staff.last_name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {staff.phone}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select participants <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={groupSearchQuery}
+                    onClick={() => setShowContactDropdown(!showContactDropdown)}
+                    readOnly
+                    placeholder="Search by contact name or number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
+                  {/* Contact Dropdown */}
+                  {showContactDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
+                      {contactsList.map((contact) => (
+                        <div
+                          key={contact.id}
+                          onClick={() => {
+                            if (!selectedParticipants.find(p => p.id === contact.id)) {
+                              setSelectedParticipants([...selectedParticipants, contact]);
+                            }
+                            setShowContactDropdown(false);
+                          }}
+                          className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                              {contact.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {contact.full_name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {contact.phone}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Selected Participants */}
+                {selectedParticipants.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {selectedParticipants.map((participant) => (
+                      <div key={participant.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg dark:bg-gray-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                            {participant.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {participant.full_name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {participant.phone}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedParticipants(selectedParticipants.filter(p => p.id !== participant.id));
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowGroupMessageModal(false);
+                  setGroupSearchQuery('');
+                  setGroupSearchResults([]);
+                  setSelectedParticipants([]);
+                  setPhoneNumber('');
+                  setShowPhoneDropdown(false);
+                  setShowContactDropdown(false);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!phoneNumber || selectedParticipants.length === 0}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Group
               </button>
             </div>
           </div>
