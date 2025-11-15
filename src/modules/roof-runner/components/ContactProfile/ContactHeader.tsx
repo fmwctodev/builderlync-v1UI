@@ -1,12 +1,13 @@
 import React from 'react';
-import { ArrowLeft, Clock, Edit, FileText, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, Clock, Edit, FileText, Calendar, DollarSign, Briefcase } from 'lucide-react';
 
 interface ContactHeaderProps {
   contactName: string;
   onBack: () => void;
+  onCreateJob?: () => void;
 }
 
-const ContactHeader: React.FC<ContactHeaderProps> = ({ contactName, onBack }) => {
+const ContactHeader: React.FC<ContactHeaderProps> = ({ contactName, onBack, onCreateJob }) => {
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -22,23 +23,15 @@ const ContactHeader: React.FC<ContactHeaderProps> = ({ contactName, onBack }) =>
           </h1>
           {/* <span className="text-sm text-gray-500">1 of 808 selected</span> */}
         </div>
-        {/* <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <Clock className="w-4 h-4 text-gray-400" />
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={onCreateJob}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            <Briefcase className="w-4 h-4" />
+            Create Job
           </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <Edit className="w-4 h-4 text-gray-400" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <FileText className="w-4 h-4 text-gray-400" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <Calendar className="w-4 h-4 text-gray-400" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <DollarSign className="w-4 h-4 text-gray-400" />
-          </button>
-        </div> */}
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { store } from './store';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BlankPage from './pages/BlankPage';
+import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
 import MaterialOrders from './pages/MaterialOrders';
@@ -49,7 +50,7 @@ export function RoofRunnerModule() {
         <Route path="jobs" element={<Jobs />} />
         <Route path="payments" element={<Payments />} />
         <Route path="ai-agents/*" element={<AIAgentsModule />} />
-        <Route path="job-cam" element={<BlankPage title="Job Cam" />} />
+        <Route path="job-cam" element={<JobCam />} />
         <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
         <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />

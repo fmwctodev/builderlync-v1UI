@@ -7,7 +7,7 @@ import {
   CreateTaskData,
   CreateNoteData,
   CreateDocumentData
-} from '../../types';
+} from '../../../types';
 
 export { AddAppointmentModal } from './AddAppointmentModal';
 export { AddCompanyModal } from './AddCompanyModal';
@@ -147,7 +147,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                     <X className="w-3 h-3" />
                   </button>
                 </span>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <button className="text-primary-600 hover:text-primary-800 text-sm font-medium">
                   + Add
                 </button>
               </div>

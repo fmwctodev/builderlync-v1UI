@@ -119,7 +119,7 @@ const ReviewsAITab: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setIsStarterAgentsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Create Starter Agents
             </button>

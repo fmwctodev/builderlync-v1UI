@@ -123,11 +123,11 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
         propertyType={propertyType}
       />
 
-      <OrderSummary
+      {/* <OrderSummary
         totalCost={calculateTotalCost()}
         onNext={handleNext}
         disabled={!address || Object.keys(selectedProducts).length === 0}
-      />
+      /> */}
     </div>
   );
 };

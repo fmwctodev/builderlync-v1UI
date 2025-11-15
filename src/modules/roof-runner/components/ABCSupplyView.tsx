@@ -68,7 +68,7 @@ const ABCSupplyView: React.FC = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <section className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 md:p-8">
+      <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-white">
@@ -82,7 +82,7 @@ const ABCSupplyView: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
+              className="flex items-center px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-700 transition"
             >
               {selectedSupplier}
               <ChevronDown className="ml-2 h-4 w-4" />
@@ -107,7 +107,7 @@ const ABCSupplyView: React.FC = () => {
                     disabled
                     className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
                   >
-                    QXcel
+                    QXO
                   </button>
                 </div>
               </div>
@@ -118,40 +118,40 @@ const ABCSupplyView: React.FC = () => {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             onClick={() => setCurrentView('products')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-blue-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <ShoppingBag className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-blue-400 transition">Browse Products</h3>
-              <p className="text-sm text-gray-400">Search our catalog</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Browse Products</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Search our catalog</p>
             </div>
           </div>
 
           <div
             onClick={() => setCurrentView('branches')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-green-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-green-400 transition">Find Branches</h3>
-              <p className="text-sm text-gray-400">Locate nearest stores</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Find Branches</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Locate nearest stores</p>
             </div>
           </div>
 
           <div
             onClick={() => setCurrentView('orders')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-purple-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <ClipboardList className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-purple-400 transition">View Orders</h3>
-              <p className="text-sm text-gray-400">Check status and history</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">View Orders</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Check status and history</p>
             </div>
           </div>
         </div>

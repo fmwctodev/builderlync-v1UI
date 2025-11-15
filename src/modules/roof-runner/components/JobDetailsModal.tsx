@@ -5,6 +5,8 @@ import { StaffMember } from '../../../shared/store/services/staffApi';
 import TasksTab from './TasksTab';
 import CalendarTab from './CalendarTab';
 import MeasurementsTab from './MeasurementsTab';
+import ProposalsTab from './ProposalsTab';
+import ProposalEditor from './ProposalEditor';
 import PDFSignerTab from './PDFSignerTab';
 import MaterialOrdersTab from './MaterialOrdersTab';
 import WorkOrdersTab from './WorkOrdersTab';
@@ -34,6 +36,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   loading
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
+  const [showProposalEditor, setShowProposalEditor] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
 
   if (!isOpen) return null;
 
@@ -75,13 +79,22 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 <button
                   key={item}
                   onClick={() => setActiveTab(item)}
-                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors relative ${
                     activeTab === item
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : item === 'Instant Estimate'
+                      ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  {item}
+                  <div className="flex items-center justify-between">
+                    <span>{item}</span>
+                    {item === 'Instant Estimate' && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+                        NEW
+                      </span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
@@ -320,6 +333,15 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
+              {activeTab === 'Proposals' && (
+                <ProposalsTab 
+                  onOpenProposalEditor={(templateId) => {
+                    setSelectedTemplateId(templateId);
+                    setShowProposalEditor(true);
+                  }}
+                />
+              )}
+
               {activeTab === 'PDF Signer' && <PDFSignerTab />}
 
               {activeTab === 'Material orders' && <MaterialOrdersTab />}
@@ -369,6 +391,15 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           </div>
         </div>
       </div>
+
+      <ProposalEditor
+        isOpen={showProposalEditor}
+        onClose={() => {
+          setShowProposalEditor(false);
+          setSelectedTemplateId(undefined);
+        }}
+        templateId={selectedTemplateId}
+      />
     </div>
   );
 };

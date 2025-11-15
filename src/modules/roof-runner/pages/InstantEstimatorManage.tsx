@@ -75,7 +75,7 @@ const InstantEstimatorManage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
         <button
           onClick={() => navigate('/instant-estimator')}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
+          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to all estimators
@@ -96,7 +96,7 @@ const InstantEstimatorManage: React.FC = () => {
           )}
         </div>
 
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+        <button className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
           <ExternalLink className="w-4 h-4" />
           Preview
         </button>
@@ -117,7 +117,7 @@ const InstantEstimatorManage: React.FC = () => {
                 readOnly
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
-              <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm">
+              <button className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm">
                 <Copy className="w-4 h-4" />
                 Copy link
               </button>
@@ -145,7 +145,7 @@ const InstantEstimatorManage: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lead questionnaire</h2>
               <button
                 onClick={() => navigate(`/instant-estimator/${id}/manage/questions`)}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
               >
                 Manage questions
               </button>
@@ -170,7 +170,7 @@ const InstantEstimatorManage: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400 italic mb-4">No materials added</p>
               <button
                 onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mx-auto"
+                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg mx-auto"
               >
                 <Plus className="w-4 h-4" />
                 Add
@@ -188,7 +188,7 @@ const InstantEstimatorManage: React.FC = () => {
                   type="checkbox"
                   checked={restrictMaterials}
                   onChange={(e) => setRestrictMaterials(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
+                  className="w-5 h-5 text-primary-600 rounded"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Restrict customer to the materials I've configured pricing for
@@ -203,7 +203,7 @@ const InstantEstimatorManage: React.FC = () => {
                   <button
                     onClick={() => setPricingType('per-square-foot')}
                     className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square-foot'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
                       }`}
                   >
@@ -212,7 +212,7 @@ const InstantEstimatorManage: React.FC = () => {
                   <button
                     onClick={() => setPricingType('per-square')}
                     className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
                       }`}
                   >
@@ -227,7 +227,7 @@ const InstantEstimatorManage: React.FC = () => {
                     type="checkbox"
                     checked={showPriceRange}
                     onChange={(e) => setShowPriceRange(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
+                    className="w-5 h-5 text-primary-600 rounded"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Show prices as range</span>
                 </div>
@@ -261,7 +261,7 @@ const InstantEstimatorManage: React.FC = () => {
                     type="checkbox"
                     checked={showFinancing}
                     onChange={(e) => setShowFinancing(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
+                    className="w-5 h-5 text-primary-600 rounded"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Show financing options</span>
                 </div>
@@ -368,7 +368,7 @@ const InstantEstimatorManage: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Additional content</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Tell your customers more about your business with additional content that can help build trust. Manage the content in <a href="#" className="text-blue-600 hover:text-blue-700">Instant Estimator settings</a>.
+                  Tell your customers more about your business with additional content that can help build trust. Manage the content in <a href="#" className="text-primary-600 hover:text-primary-700">Instant Estimator settings</a>.
                 </p>
               </div>
               <div className="space-y-4">
@@ -377,7 +377,7 @@ const InstantEstimatorManage: React.FC = () => {
                   <button
                     onClick={() => setShowProjectShowcase(!showProjectShowcase)}
                     className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
-                      showProjectShowcase ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                      showProjectShowcase ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
@@ -391,7 +391,7 @@ const InstantEstimatorManage: React.FC = () => {
                     <button
                       onClick={() => setShowSocialMedia(!showSocialMedia)}
                       className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
-                        showSocialMedia ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                        showSocialMedia ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     >
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
@@ -400,7 +400,7 @@ const InstantEstimatorManage: React.FC = () => {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Manage social media links in <a href="#" className="text-blue-600 hover:text-blue-700">profile & branding settings</a>
+                    Manage social media links in <a href="#" className="text-primary-600 hover:text-primary-700">profile & branding settings</a>
                   </p>
                 </div>
               </div>
@@ -435,7 +435,7 @@ const InstantEstimatorManage: React.FC = () => {
                   type="text"
                   value={renameName}
                   onChange={(e) => setRenameName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter new name"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && renameName.trim()) {
@@ -458,7 +458,7 @@ const InstantEstimatorManage: React.FC = () => {
                 <button
                   onClick={handleRename}
                   disabled={!renameName.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Rename
                 </button>

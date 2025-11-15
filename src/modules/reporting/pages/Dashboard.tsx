@@ -19,7 +19,7 @@ export function Dashboard() {
       case 'audit':
         return (
           <div className="p-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-12 text-center text-white">
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-12 text-center text-white">
               <h1 className="text-4xl font-bold mb-4">
                 Generate Marketing Audit
               </h1>
@@ -27,7 +27,7 @@ export function Dashboard() {
                 Report for <span className="text-green-400">Free!</span>
               </h2>
 
-              <button className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-colors">
+              <button className="bg-primary-700 hover:bg-primary-800 text-white px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-colors">
                 Generate Report Now
               </button>
 
@@ -40,8 +40,8 @@ export function Dashboard() {
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-2xl">🎯</span>
+                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-600 text-2xl">🎯</span>
                   </div>
                   <span className="text-lg font-medium">View Website Performance Score</span>
                 </div>
@@ -145,8 +145,8 @@ export function Dashboard() {
                 </div>
                 <div className="h-48 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-blue-600 dark:text-blue-400">🔍</span>
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-primary-600 dark:text-primary-400">🔍</span>
                     </div>
                     <span className="text-gray-500 dark:text-gray-400">No Data Found</span>
                   </div>
@@ -157,8 +157,8 @@ export function Dashboard() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Source</h3>
                 <div className="h-48 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-blue-600 dark:text-blue-400">🔍</span>
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-primary-600 dark:text-primary-400">🔍</span>
                     </div>
                     <span className="text-gray-500 dark:text-gray-400">No Data Found</span>
                   </div>
@@ -172,7 +172,7 @@ export function Dashboard() {
                 <div className="h-48 flex items-center justify-center">
                   <div className="flex space-x-2">
                     {[...Array(10)].map((_, i) => (
-                      <div key={i} className={`w-6 bg-blue-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
+                      <div key={i} className={`w-6 bg-primary-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
                     ))}
                   </div>
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
@@ -184,7 +184,7 @@ export function Dashboard() {
                 <div className="h-48 flex items-center justify-center">
                   <div className="flex space-x-2">
                     {[...Array(10)].map((_, i) => (
-                      <div key={i} className={`w-6 bg-blue-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
+                      <div key={i} className={`w-6 bg-primary-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
                     ))}
                   </div>
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
@@ -198,7 +198,7 @@ export function Dashboard() {
                 <div className="h-48 flex items-center justify-center">
                   <div className="flex space-x-2">
                     {[...Array(10)].map((_, i) => (
-                      <div key={i} className={`w-6 bg-blue-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
+                      <div key={i} className={`w-6 bg-primary-400 rounded-t ${i % 3 === 0 ? 'h-16' : i % 3 === 1 ? 'h-20' : 'h-12'}`}></div>
                     ))}
                   </div>
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
@@ -210,7 +210,7 @@ export function Dashboard() {
                 <div className="h-48 flex items-center justify-center">
                   <div className="flex space-x-2">
                     {[...Array(10)].map((_, i) => (
-                      <div key={i} className={`w-6 bg-blue-400 rounded-t ${i % 3 === 1 ? 'h-16' : i % 3 === 2 ? 'h-20' : 'h-12'}`}></div>
+                      <div key={i} className={`w-6 bg-primary-400 rounded-t ${i % 3 === 1 ? 'h-16' : i % 3 === 2 ? 'h-20' : 'h-12'}`}></div>
                     ))}
                   </div>
                   <div className="ml-8 text-gray-500 dark:text-gray-400">No Data Found</div>
@@ -289,7 +289,7 @@ export function Dashboard() {
 
             <div className="flex items-center space-x-4 mb-8">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <div className="w-3 h-3 bg-primary-500 rounded"></div>
                 <span className="text-sm text-gray-600 dark:text-gray-400">Outgoing</span>
               </div>
             </div>
@@ -345,15 +345,15 @@ export function Dashboard() {
                   <div className="flex-1">
                     <div className="h-48 flex items-end justify-start space-x-8 pl-8">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-24 bg-blue-400 rounded-t mb-2"></div>
+                        <div className="w-12 h-24 bg-primary-400 rounded-t mb-2"></div>
                         <span className="text-xs text-gray-500 dark:text-gray-400">Source 1</span>
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-32 bg-blue-500 rounded-t mb-2"></div>
+                        <div className="w-12 h-32 bg-primary-500 rounded-t mb-2"></div>
                         <span className="text-xs text-gray-500 dark:text-gray-400">Source 2</span>
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-20 bg-blue-300 rounded-t mb-2"></div>
+                        <div className="w-12 h-20 bg-primary-300 rounded-t mb-2"></div>
                         <span className="text-xs text-gray-500 dark:text-gray-400">Source 3</span>
                       </div>
                     </div>
@@ -489,7 +489,7 @@ export function Dashboard() {
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">Revenue Generated</span>
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <div className="w-3 h-3 bg-primary-500 rounded"></div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">Leads</span>
                   </div>
                 </div>
@@ -500,8 +500,8 @@ export function Dashboard() {
               <div className="p-6">
                 <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded">
                   <div className="text-center">
-                    <div className="h-32 bg-blue-100 dark:bg-blue-900 rounded mb-4 flex items-end justify-center">
-                      <div className="w-full h-8 bg-blue-200 dark:bg-blue-800 rounded-b"></div>
+                    <div className="h-32 bg-primary-100 dark:bg-primary-900 rounded mb-4 flex items-end justify-center">
+                      <div className="w-full h-8 bg-primary-200 dark:bg-primary-800 rounded-b"></div>
                     </div>
                     <span className="text-gray-500 dark:text-gray-400">No Data Found</span>
                   </div>
@@ -544,7 +544,7 @@ export function Dashboard() {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">page_visit</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">DIRECT TRAFFIC</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">DIRECT TRAFFIC</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
@@ -552,12 +552,12 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">🔗</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">🔗</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white text-sm">Oct 08 2023<br/>04:24 AM</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">page_visit</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">DIRECT TRAFFIC</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">DIRECT TRAFFIC</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
@@ -565,12 +565,12 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">🔗</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">🔗</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white text-sm">Oct 08 2023<br/>04:22 AM</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">page_visit</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">DIRECT TRAFFIC</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">DIRECT TRAFFIC</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
@@ -578,12 +578,12 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">🔗</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">🔗</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white text-sm">Oct 08 2023<br/>04:22 AM</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">page_visit</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">DIRECT TRAFFIC</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">DIRECT TRAFFIC</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
@@ -591,12 +591,12 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">🔗</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">🔗</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white text-sm">Oct 08 2023<br/>04:21 AM</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">page_visit</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">DIRECT TRAFFIC</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">DIRECT TRAFFIC</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
@@ -604,7 +604,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
                       <td className="px-4 py-4 text-gray-500 dark:text-gray-400">-</td>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400">🔗</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400">🔗</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white text-sm">Oct 08 2023<br/>04:21 AM</td>
                     </tr>
                   </tbody>
@@ -616,8 +616,8 @@ export function Dashboard() {
       case 'facebook-ads':
         return (
           <div className="p-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 dark:text-blue-200 text-sm">
+            <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4 mb-6">
+              <p className="text-primary-800 dark:text-primary-200 text-sm">
                 You're viewing sample data. Click here to integrate your Facebook account and select the Facebook Ad Account ID for which you want to see the data.
               </p>
             </div>
@@ -632,7 +632,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">175,235</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">-7%</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,60 Q75,20 150,40 T300,45" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,60 Q75,20 150,40 T300,45 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -647,14 +647,14 @@ export function Dashboard() {
 
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-blue-600 dark:text-blue-400 text-sm">👆</span>
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-primary-600 dark:text-primary-400 text-sm">👆</span>
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Clicks</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">21,138</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">7.5%</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,70 Q75,30 150,25 T300,50" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,70 Q75,30 150,25 T300,50 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -671,7 +671,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">7,125</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">4%</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,65 Q75,35 150,30 T300,40" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,65 Q75,35 150,30 T300,40 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -721,7 +721,7 @@ export function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Lawn Space Gardening</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Lawn Space Gardening</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">5,010</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$210.41</td>
@@ -737,7 +737,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$44.76</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Furniture Logistics</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Furniture Logistics</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">4,833</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$581.97</td>
@@ -753,7 +753,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$46.26</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Interior Design: High-end Residential</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Interior Design: High-end Residential</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">3,852</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$627.00</td>
@@ -769,7 +769,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$42.49</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Interior Design: Retail</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Interior Design: Retail</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">3,878</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$195.03</td>
@@ -785,7 +785,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$37.54</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Planning and Trimming</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Planning and Trimming</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">3,635</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$272.99</td>
@@ -821,7 +821,7 @@ export function Dashboard() {
                   <span className="text-sm text-gray-600 dark:text-gray-400">Impressions</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">175,235</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,60 Q75,20 150,40 T300,45" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,60 Q75,20 150,40 T300,45 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -830,13 +830,13 @@ export function Dashboard() {
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-blue-600 dark:text-blue-400 text-sm">👆</span>
+                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-primary-600 dark:text-primary-400 text-sm">👆</span>
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Clicks</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">21,138</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,70 Q75,30 150,25 T300,50" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,70 Q75,30 150,25 T300,50 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -851,7 +851,7 @@ export function Dashboard() {
                   <span className="text-sm text-gray-600 dark:text-gray-400">Conversions</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">7,125</div>
-                <div className="h-20 bg-blue-100 dark:bg-blue-900 rounded relative overflow-hidden">
+                <div className="h-20 bg-primary-100 dark:bg-primary-900 rounded relative overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 300 80">
                     <path d="M0,65 Q75,35 150,30 T300,40" stroke="#3B82F6" strokeWidth="2" fill="none"/>
                     <path d="M0,65 Q75,35 150,30 T300,40 L300,80 L0,80 Z" fill="#93C5FD" opacity="0.3"/>
@@ -897,7 +897,7 @@ export function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Lawn Space Gardening</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Lawn Space Gardening</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">5,010</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$210.41</td>
@@ -907,7 +907,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">0.00%</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Furniture Logistics</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Furniture Logistics</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">4,833</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$581.97</td>
@@ -917,7 +917,7 @@ export function Dashboard() {
                       <td className="px-4 py-4 text-gray-900 dark:text-white">0.00%</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 text-blue-600 dark:text-blue-400 underline">Interior Design: High-end Residential</td>
+                      <td className="px-4 py-4 text-primary-600 dark:text-primary-400 underline">Interior Design: High-end Residential</td>
                       <td className="px-4 py-4"><span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">●</span></td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">3,852</td>
                       <td className="px-4 py-4 text-gray-900 dark:text-white">$627.00</td>
@@ -960,13 +960,13 @@ export function Dashboard() {
                   <span className="text-gray-700 dark:text-gray-300">Add Reports Insights</span>
                 </div>
               </div>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8">
+              <button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8">
                 <Plus className="w-4 h-4 mr-2" />
                 New Report
               </button>
               <div className="text-gray-600 dark:text-gray-400">
                 <p className="mb-2">Looking to Track Key Client Metrics at a glance?</p>
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Try Dashboards</a>
+                <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">Try Dashboards</a>
               </div>
             </div>
             <div className="flex-1 p-6">
@@ -975,7 +975,7 @@ export function Dashboard() {
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Sales report 2023</h3>
                   <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
                     <p className="text-gray-600 dark:text-gray-400 mb-4">Let's enhance this report by adding a widget</p>
-                    <button className="text-blue-600 hover:text-blue-700 font-medium">+ Add a widget</button>
+                    <button className="text-primary-600 hover:text-primary-700 font-medium">+ Add a widget</button>
                   </div>
                 </div>
               </div>

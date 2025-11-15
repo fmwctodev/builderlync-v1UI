@@ -112,7 +112,7 @@ const Support: React.FC = () => {
 
       {/* Support Options */}
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Start Chat */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -145,7 +145,7 @@ const Support: React.FC = () => {
           </div>
 
           {/* Phone Support */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Phone className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
@@ -156,7 +156,7 @@ const Support: React.FC = () => {
             <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
               Call Now
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Chat Interface */}

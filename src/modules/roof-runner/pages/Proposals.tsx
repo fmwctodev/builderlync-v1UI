@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { Plus, Search, X } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
+import ProposalEditor from '../components/ProposalEditor';
 
 export default function Proposals() {
   const [activeTab, setActiveTab] = useState('Proposals');
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+  const [showProposalEditor, setShowProposalEditor] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
 
   const proposals = [
@@ -256,7 +259,15 @@ export default function Proposals() {
                   'Service Agreement',
                   'Shingle Coatings'
                 ].map((template, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTemplateId(template);
+                      setShowTemplateModal(false);
+                      setShowProposalEditor(true);
+                    }}
+                  >
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 dark:text-white text-sm">{template}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Template cover image</div>
@@ -270,7 +281,13 @@ export default function Proposals() {
               <button className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
                 Create without template
               </button>
-              <button className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+              <button 
+                onClick={() => {
+                  setShowTemplateModal(false);
+                  setShowProposalEditor(true);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              >
                 Use this template
               </button>
             </div>
@@ -281,6 +298,15 @@ export default function Proposals() {
       {showTemplateBuilder && (
         <TemplateBuilder onClose={() => setShowTemplateBuilder(false)} />
       )}
+
+      <ProposalEditor
+        isOpen={showProposalEditor}
+        onClose={() => {
+          setShowProposalEditor(false);
+          setSelectedTemplateId(undefined);
+        }}
+        templateId={selectedTemplateId}
+      />
     </div>
   );
 }

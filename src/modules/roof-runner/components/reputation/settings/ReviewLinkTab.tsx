@@ -183,7 +183,7 @@ const ReviewLinkTab: React.FC = () => {
         <button className="px-6 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
           Cancel
         </button>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+        <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
           Save
         </button>
       </div>

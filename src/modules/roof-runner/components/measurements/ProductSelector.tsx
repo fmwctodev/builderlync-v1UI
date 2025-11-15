@@ -19,11 +19,11 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const getCategoryIcon = (categoryId: string) => {
     switch (categoryId) {
-      case 'full-house': return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'roof': return <Cloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'solar': return <Sun className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'walls': return <Layout className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      default: return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
+      case 'full-house': return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'roof': return <Cloud className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'solar': return <Sun className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'walls': return <Layout className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      default: return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
     }
   };
 
@@ -36,7 +36,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const handleProductSelect = (categoryId: string, productId: string, productName: string) => {
     const isSelected = selectedProducts[productId];
-    let newSelected;
+    let newSelected:any;
     
     if (categoryId === 'walls') {
       // Walls can have multiple selections (checkbox behavior)
@@ -147,9 +147,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                               <span className="text-gray-800 dark:text-gray-200 font-medium">{product.name}</span>
                               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{product.description}</p>
                             </div>
-                            <div className="text-gray-700 dark:text-gray-300 font-medium ml-4">
+                            {/* <div className="text-gray-700 dark:text-gray-300 font-medium ml-4">
                               ${product.price.toFixed(2)}
-                            </div>
+                            </div> */}
                           </div>
 
                           {/* Hover tooltip */}
@@ -174,7 +174,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                             )}
                           </div>
 
-                          {isSelected && product.deliveryOptions && product.deliveryOptions.length > 1 && (
+                          {/* {isSelected && product.deliveryOptions && product.deliveryOptions.length > 1 && (
                             <div className="mt-4 flex items-center justify-between">
                               <span className="text-gray-800 dark:text-gray-200 font-medium">Delivery:</span>
                               <select
@@ -189,7 +189,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                                 ))}
                               </select>
                             </div>
-                          )}
+                          )} */}
 
                           {selectedDeliveryModes[product.id] === "3 Hours" && (
                             <div className="mt-3 flex gap-3 bg-blue-50 dark:bg-blue-900/20 items-start p-3 rounded-lg">

@@ -24,7 +24,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ filter, onFilterChange, onA
           </div>
           <button 
             onClick={onAddDocument}
-            className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded text-sm font-medium flex items-center gap-1"
+            className="px-3 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded text-sm font-medium flex items-center gap-1"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -38,7 +38,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ filter, onFilterChange, onA
               onClick={() => onFilterChange(filterOption)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 filter === filterOption
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
