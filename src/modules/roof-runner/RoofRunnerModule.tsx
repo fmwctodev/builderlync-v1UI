@@ -27,6 +27,7 @@ import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
+import QuickBooksCallback from './pages/QuickBooksCallback';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -66,7 +67,8 @@ export function RoofRunnerModule() {
         <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
         <Route path="support" element={<Support />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings/*" element={<Settings />} />
+        <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
       </Route>
       </Routes>
     </Provider>

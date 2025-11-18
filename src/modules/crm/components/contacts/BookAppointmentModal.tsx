@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, User, Clock, MapPin, Calendar } from 'lucide-react';
+import { X, Users, User, Clock, MapPin } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface BookAppointmentModalProps {
