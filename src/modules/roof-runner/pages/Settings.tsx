@@ -7,6 +7,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { AddEditStaffModal, DeleteConfirmModal } from '../components/StaffModals';
+import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../shared/store/services/quickbooksApi';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('business');
@@ -571,28 +572,13 @@ const IntegrationsTab: React.FC = () => {
 
   React.useEffect(() => {
     fetchQuickBooksStatus();
-
-    // Handle QuickBooks callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const quickbooksParam = urlParams.get('quickbooks');
-    if (quickbooksParam === 'connected') {
-      fetchQuickBooksStatus();
-      // Remove the parameter from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
   }, []);
 
   const fetchQuickBooksStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/quickbooks/status', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setQuickbooksStatus(data.data);
+      const response = await getQuickBooksStatus();
+      if (response.success) {
+        setQuickbooksStatus(response.data);
       }
     } catch (error) {
       console.error('Error fetching QuickBooks status:', error);
@@ -602,16 +588,9 @@ const IntegrationsTab: React.FC = () => {
   const handleQuickBooksConnect = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/quickbooks/connect', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        window.location.href = data.data.authUrl;
+      const response = await connectQuickBooks();
+      if (response.success) {
+        window.location.href = response.data.authUrl;
       }
     } catch (error) {
       console.error('Error connecting to QuickBooks:', error);
@@ -623,15 +602,8 @@ const IntegrationsTab: React.FC = () => {
   const handleQuickBooksDisconnect = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/quickbooks/disconnect', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
+      const response = await disconnectQuickBooks();
+      if (response.success) {
         setQuickbooksStatus({ connected: false, companyInfo: null });
       }
     } catch (error) {
