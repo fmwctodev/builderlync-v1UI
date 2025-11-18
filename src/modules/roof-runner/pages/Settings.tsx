@@ -339,14 +339,14 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
           {toast.message}
         </div>
       )}
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Staff Management</h2>
           <p className="text-gray-600 dark:text-gray-400">Manage team members and their roles</p>
         </div>
         {canManageStaff && (
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
           >
@@ -443,7 +443,7 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
         onClose={() => setShowAddModal(false)}
         onSave={handleAddMember}
       />
-      
+
       <AddEditStaffModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
@@ -451,7 +451,7 @@ const StaffManagementTab: React.FC<{ userRole: string }> = ({ userRole }) => {
         member={selectedMember}
         isEdit={true}
       />
-      
+
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -558,13 +558,89 @@ const CommunicationsTab: React.FC = () => {
 };
 
 const IntegrationsTab: React.FC = () => {
+  const [quickbooksStatus, setQuickbooksStatus] = React.useState({ connected: false, companyInfo: null });
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    fetchQuickBooksStatus();
+    
+    // Handle QuickBooks callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const quickbooksParam = urlParams.get('quickbooks');
+    if (quickbooksParam === 'connected') {
+      fetchQuickBooksStatus();
+      // Remove the parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const fetchQuickBooksStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/quickbooks/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setQuickbooksStatus(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching QuickBooks status:', error);
+    }
+  };
+
+  const handleQuickBooksConnect = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/quickbooks/connect', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.href = data.data.authUrl;
+      }
+    } catch (error) {
+      console.error('Error connecting to QuickBooks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickBooksDisconnect = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/quickbooks/disconnect', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setQuickbooksStatus({ connected: false, companyInfo: null });
+      }
+    } catch (error) {
+      console.error('Error disconnecting QuickBooks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const integrations = [
-    { name: 'QuickBooks', description: '2-way sync for customers and payments', connected: true, type: 'Accounting' },
-    { name: 'Google Analytics', description: 'Website traffic and conversion tracking', connected: true, type: 'Analytics' },
-    { name: 'Meta/Facebook', description: 'Social media and advertising', connected: true, type: 'Marketing' },
-    { name: 'Google Business', description: 'Business profile and reviews', connected: false, type: 'Marketing' },
-    { name: 'Yelp', description: 'Review management and messaging', connected: false, type: 'Reputation' },
-    { name: 'TikTok Ads', description: 'Social media advertising', connected: false, type: 'Marketing' },
+    { 
+      name: 'QuickBooks', 
+      description: '2-way sync for customers and payments', 
+      connected: quickbooksStatus.connected, 
+      type: 'Accounting',
+      companyInfo: quickbooksStatus.companyInfo
+    },
   ];
 
   return (
@@ -586,14 +662,33 @@ const IntegrationsTab: React.FC = () => {
                 {integration.type}
               </span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{integration.description}</p>
-            <button className={`w-full px-4 py-2 rounded-lg ${
-              integration.connected
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-primary-600 text-white hover:bg-primary-700'
-            }`}>
-              {integration.connected ? 'Disconnect' : 'Connect'}
-            </button>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{integration.description}</p>
+            {integration.name === 'QuickBooks' && integration.connected && integration.companyInfo && (
+              <p className="text-xs text-green-600 dark:text-green-400 mb-4">
+                Connected to: {integration.companyInfo.Name}
+              </p>
+            )}
+            {integration.name === 'QuickBooks' ? (
+              <button 
+                onClick={integration.connected ? handleQuickBooksDisconnect : handleQuickBooksConnect}
+                disabled={loading}
+                className={`w-full px-4 py-2 rounded-lg disabled:opacity-50 ${
+                  integration.connected
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {loading ? 'Processing...' : (integration.connected ? 'Disconnect' : 'Connect')}
+              </button>
+            ) : (
+              <button className={`w-full px-4 py-2 rounded-lg ${
+                integration.connected
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400'
+                  : 'bg-primary-600 text-white hover:bg-primary-700'
+              }`}>
+                {integration.connected ? 'Disconnect' : 'Connect'}
+              </button>
+            )}
           </div>
         ))}
       </div>
