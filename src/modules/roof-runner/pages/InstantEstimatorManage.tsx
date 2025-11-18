@@ -113,7 +113,7 @@ const InstantEstimatorManage: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
               <input
                 type="text"
-                value="https://app.roofr.com/instant-estimator/eebbc217-988d-4b00-a877-65433879db57/TarrytownRoofingLLC"
+                value="https://app.builderLync.com/instant-estimator/eebbc217-988d-4b00-a877-65433879db57/TarrytownRoofingLLC"
                 readOnly
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
