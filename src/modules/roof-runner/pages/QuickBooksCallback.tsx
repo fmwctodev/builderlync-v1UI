@@ -10,7 +10,7 @@ const QuickBooksCallback: React.FC = () => {
 
     // Redirect to settings after 3 seconds
     const timer = setTimeout(() => {
-      window.location.href = '/settings';
+      window.location.href = '/settings/integrations';
     }, 3000);
 
     return () => clearTimeout(timer);
