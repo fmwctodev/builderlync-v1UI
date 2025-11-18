@@ -67,7 +67,7 @@ export function RoofRunnerModule() {
         <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
         <Route path="support" element={<Support />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings/*" element={<Settings />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
       </Route>
       </Routes>

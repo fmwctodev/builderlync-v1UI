@@ -67,3 +67,14 @@ export const disconnectQuickBooks = async (): Promise<QuickBooksResponse> => {
   );
   return response.data;
 };
+
+export const processQuickBooksCallback = async (code: string, state: string, realmId: string): Promise<QuickBooksResponse> => {
+  const response = await axios.post<QuickBooksResponse>(
+    `${API_BASE_URL}/quickbooks/process-callback`,
+    { code, state, realmId },
+    {
+      headers: getAuthHeaders()
+    }
+  );
+  return response.data;
+};
