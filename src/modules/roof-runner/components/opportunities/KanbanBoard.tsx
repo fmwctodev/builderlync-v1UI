@@ -2,14 +2,15 @@ import { useState } from 'react';
 import KanbanColumn from './KanbanColumn';
 
 const opportunityStages = [
-  { id: 'inspection-scheduled', title: 'Inspection/Estimate Scheduled', opportunitiesCount: 7, value: 0.00, color: 'border-[#dc2626]' },
-  { id: 'inspection-completed', title: 'Inspection Completed', opportunitiesCount: 0, value: 0.00, color: 'border-blue-500' },
-  { id: 'proposal-sent', title: 'Proposal Sent', opportunitiesCount: 0, value: 0.00, color: 'border-yellow-500' },
-  { id: 'proposal-signed', title: 'Proposal Signed', opportunitiesCount: 0, value: 0.00, color: 'border-green-500' },
-  { id: 'job-scheduled', title: 'Job Scheduled', opportunitiesCount: 0, value: 0.00, color: 'border-purple-500' },
-  { id: 'job-completed', title: 'Job Completed', opportunitiesCount: 0, value: 0.00, color: 'border-emerald-500' },
-  { id: 'closed-won', title: 'Closed Won', opportunitiesCount: 0, value: 0.00, color: 'border-green-600' },
-  { id: 'closed-lost', title: 'Closed Lost', opportunitiesCount: 0, value: 0.00, color: 'border-red-500' },
+  { id: 'new-lead', title: 'New Lead', opportunitiesCount: 0, value: 0.00, color: 'border-[#dc2626]' },
+  { id: 'follow-up-1', title: 'Follow-Up 1', opportunitiesCount: 0, value: 0.00, color: 'border-blue-500' },
+  { id: 'follow-up-2', title: 'Follow-Up 2', opportunitiesCount: 0, value: 0.00, color: 'border-yellow-500' },
+  { id: 'follow-up-3', title: 'Follow-Up 3', opportunitiesCount: 0, value: 0.00, color: 'border-green-500' },
+  { id: 'long-term-follow-up', title: 'Long Term Follow Up', opportunitiesCount: 0, value: 0.00, color: 'border-purple-500' },
+  { id: 'in-convo', title: 'In Convo', opportunitiesCount: 0, value: 0.00, color: 'border-emerald-500' },
+  { id: 'inspection-booked', title: 'Inspection/Estimate Booked (Creates Job)', opportunitiesCount: 0, value: 0.00, color: 'border-green-600' },
+  { id: 'job-qualified', title: 'Job Qualified', opportunitiesCount: 0, value: 0.00, color: 'border-indigo-500' },
+  { id: 'job-unqualified', title: 'Job Unqualified', opportunitiesCount: 0, value: 0.00, color: 'border-red-500' },
 ];
 
 const opportunities = [
@@ -84,7 +85,11 @@ export default function KanbanBoard() {
         >
           <KanbanColumn
             stage={stage}
-            opportunities={opportunitiesList.filter(opp => opp.stage === stage.id)}
+            opportunities={stage.id === 'new-lead' 
+              ? [...opportunitiesList.filter(opp => opp.stage === stage.id), 
+                 ...opportunitiesList.filter(opp => !opportunityStages.some(s => s.id === opp.stage))]
+              : opportunitiesList.filter(opp => opp.stage === stage.id)
+            }
             onDragStart={handleDragStart}
           />
         </div>

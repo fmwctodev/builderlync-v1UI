@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { apiService } from '../store/services/api';
 
 const NewMaterial: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [selectedMaterial, setSelectedMaterial] = useState('Add custom offering');
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>(['Add custom offering']);
+  const [existingMaterials, setExistingMaterials] = useState<string[]>([]);
 
   const materials = [
     { id: 'custom', name: 'Add custom offering', icon: <Plus className="w-8 h-8 text-blue-600" />, selected: true },
@@ -19,6 +21,57 @@ const NewMaterial: React.FC = () => {
     { id: 'pitched', name: 'Other - Pitched', icon: <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center"><span className="text-gray-600">?</span></div> },
     { id: 'flat', name: 'Other - Flat', icon: <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center"><span className="text-gray-600">?</span></div> }
   ];
+
+  useEffect(() => {
+    fetchExistingMaterials();
+  }, [id]);
+
+  const fetchExistingMaterials = async () => {
+    if (!id) return;
+    try {
+      const response = await apiService.getInstantEstimator(parseInt(id));
+      const currentMaterials = response?.data?.materials || [];
+      const materialNames = currentMaterials.map((m: any) => m.name);
+      setExistingMaterials(materialNames);
+      setSelectedMaterials([...materialNames]);
+    } catch (error) {
+      console.error('Failed to fetch existing materials:', error);
+    }
+  };
+
+  const toggleMaterial = (materialName: string) => {
+    setSelectedMaterials(prev => 
+      prev.includes(materialName)
+        ? prev.filter(m => m !== materialName)
+        : [...prev, materialName]
+    );
+  };
+
+  const handleContinue = async () => {
+    if (!id) return;
+    try {
+      console.log('Updating materials for ID:', id);
+      const materialsData = selectedMaterials
+        .filter(name => name !== 'Add custom offering') // Remove the custom option
+        .map((name, index) => ({
+          id: (Date.now() + index).toString(),
+          name,
+          description: `${name} roofing material`,
+          price: 0,
+          unit: 'sq ft',
+          category: 'Roofing'
+        }));
+      console.log('Materials data:', materialsData);
+      
+      const result = await apiService.updateInstantEstimatorMaterials(parseInt(id), materialsData);
+      console.log('Update result:', result);
+      alert('Material added successfully!');
+      navigate(`/instant-estimator/${id}/manage`);
+    } catch (error) {
+      console.error('Failed to add material:', error);
+      alert('Failed to add material: ' + error);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -39,23 +92,23 @@ const NewMaterial: React.FC = () => {
             {materials.map((material) => (
               <div
                 key={material.id}
-                onClick={() => setSelectedMaterial(material.name)}
+                onClick={() => toggleMaterial(material.name)}
                 className={`relative border-2 rounded-lg p-6 cursor-pointer transition-all ${
-                  selectedMaterial === material.name
+                  selectedMaterials.includes(material.name)
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                {/* Radio button */}
+                {/* Checkbox */}
                 <div className="absolute top-3 right-3">
-                  <div className={`w-5 h-5 rounded-full border-2 ${
-                    selectedMaterial === material.name
+                  <div className={`w-5 h-5 rounded border-2 ${
+                    selectedMaterials.includes(material.name)
                       ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}>
-                    {selectedMaterial === material.name && (
-                      <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                    {selectedMaterials.includes(material.name) && (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white"></div>
                       </div>
                     )}
                   </div>
@@ -84,7 +137,7 @@ const NewMaterial: React.FC = () => {
         >
           Back
         </button>
-        <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+        <button onClick={handleContinue} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
           Continue
         </button>
       </div>

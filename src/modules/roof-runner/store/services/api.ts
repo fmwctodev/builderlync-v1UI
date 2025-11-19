@@ -85,4 +85,29 @@ export const apiService = {
     const response = await apiClient.get(`/instant-estimators/${id}`);
     return response.data;
   },
+
+  updateInstantEstimatorQuestions: async (id: number, questions: any[]) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/questions`, { questions });
+    return response.data;
+  },
+
+  updateInstantEstimatorMaterials: async (id: number, materials: any[]) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/materials`, { materials });
+    return response.data;
+  },
+
+  updateInstantEstimatorPricingSettings: async (id: number, pricingSettings: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/pricing-settings`, pricingSettings);
+    return response.data;
+  },
+
+  updateInstantEstimatorAdditionalSettings: async (id: number, additionalSettings: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/additional-settings`, additionalSettings);
+    return response.data;
+  },
+
+  getInstantEstimatorByPublicUrl: async (publicUrl: string) => {
+    const response = await apiClient.get(`/instant-estimators/public/${publicUrl}`);
+    return response.data;
+  },
 };

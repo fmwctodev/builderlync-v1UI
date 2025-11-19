@@ -210,7 +210,7 @@ const Jobs: React.FC = () => {
                 try {
                   const job = jobs.find(j => j.id === jobId);
                   if (job) {
-                    await updateJob(jobId, { ...job, workflowStages: newStage });
+                    await updateJob(jobId, { ...job, workflowStages: newStage, editedBy: 1, editedByName: job.editedByName ?? 'Current User' });
                     fetchJobs();
                   }
                 } catch (error) {
