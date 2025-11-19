@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText } from 'lucide-react';
+import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2 } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -23,6 +23,7 @@ interface ContactsTableProps {
   onViewProfile: (contact: Contact) => void;
   onViewJob: (contact: Contact) => void;
   onEdit: (contact: Contact) => void;
+  onDelete: (contact: Contact) => void;
 }
 
 const ContactsTable: React.FC<ContactsTableProps> = ({
@@ -36,6 +37,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
   onViewProfile,
   onViewJob,
   onEdit,
+  onDelete,
 }) => {
   return (
     <div className="flex-1 overflow-auto">
@@ -164,6 +166,13 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                           >
                             <Edit className="w-4 h-4" />
                             Edit
+                          </button>
+                          <button
+                            onClick={() => onDelete(contact)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
                           </button>
                         </div>
                       </div>

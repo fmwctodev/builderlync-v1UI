@@ -15,6 +15,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
 
   const tabs = [
     { id: 'business-info', label: 'Business Info', icon: Building, path: '/settings/business-info' },
+    { id: 'profile', label: 'Profile', icon: Users, path: '/settings/profile' },
     { id: 'billing', label: 'Billing', icon: CreditCard, path: '/settings/billing' },
     { id: 'staff', label: 'Staff Management', icon: Users, path: '/settings/staff' },
     { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/settings/calendar' },

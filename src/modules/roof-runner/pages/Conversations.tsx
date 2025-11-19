@@ -3,6 +3,27 @@ import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Papercli
 import { getContacts } from '../../../shared/store/services/contactsApi';
 import { getStaff } from '../../../shared/store/services/staffApi';
 
+interface Contact {
+  id: number;
+  name: string;
+  initials: string;
+  lastMessage: string;
+  time: string;
+  unread: boolean;
+  avatar: string;
+}
+
+interface Message {
+  id: number;
+  type: 'system' | 'received' | 'sent';
+  content: string;
+  subContent?: string;
+  time: string;
+  date?: string;
+  showMore?: boolean;
+  sender?: string;
+}
+
 const Conversations: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState(0);
   const [activeTab, setActiveTab] = useState('conversations');
@@ -44,7 +65,7 @@ const Conversations: React.FC = () => {
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
   const [contactsList, setContactsList] = useState<any[]>([]);
   const [showContactDropdown, setShowContactDropdown] = useState(false);
-console.log("phoneNumber", phoneNumber);
+
   const contacts = [
     {
       id: 1,
@@ -93,37 +114,84 @@ console.log("phoneNumber", phoneNumber);
     }
   ];
 
-  const messages = [
-    {
-      id: 1,
-      type: 'system',
-      content: 'Opportunity created',
-      subContent: 'Tri Tran c/o Care Trust REIT created in stage Proposal Sent',
-      time: '02:20 AM',
-      date: 'Oct 18, 2025, 2:16 AM'
-    },
-    {
-      id: 2,
-      type: 'system',
-      content: 'Opportunity updated',
-      subContent: 'Tri Tran c/o Care Trust REIT moved from...',
-      time: '02:25 AM',
-      showMore: true
-    },
-    {
-      id: 3,
-      type: 'received',
-      content: "Let's do that, talk in the morning. Thanks Jeffery and enjoy dinner with family! 😊",
-      time: 'Oct 16, 2025, 6:23 AM',
-      sender: 'Tri Tran C/o Ca...'
-    },
-    {
-      id: 4,
-      type: 'sent',
-      content: 'Orchard Park Kyle - Tarrytown Inspection & Proposal',
-      time: 'Oct 18, 2025, 2:16 AM'
-    }
-  ];
+  const contactMessages: Record<number, Message[]> = {
+    1: [
+      {
+        id: 1,
+        type: 'system',
+        content: 'Opportunity created',
+        subContent: 'Tri Tran c/o Care Trust REIT created in stage Proposal Sent',
+        time: '02:20 AM',
+        date: 'Oct 18, 2025, 2:16 AM'
+      },
+      {
+        id: 2,
+        type: 'system',
+        content: 'Opportunity updated',
+        subContent: 'Tri Tran c/o Care Trust REIT moved from...',
+        time: '02:25 AM',
+        showMore: true
+      },
+      {
+        id: 3,
+        type: 'received',
+        content: "Let's do that, talk in the morning. Thanks Jeffery and enjoy dinner with family! 😊",
+        time: 'Oct 16, 2025, 6:23 AM',
+        sender: 'Tri Tran C/o Ca...'
+      },
+      {
+        id: 4,
+        type: 'sent',
+        content: 'Orchard Park Kyle - Tarrytown Inspection & Proposal',
+        time: 'Oct 18, 2025, 2:16 AM'
+      }
+    ],
+    2: [
+      {
+        id: 1,
+        type: 'received',
+        content: 'Hi there 🙂 Getting 25+ roofing quotes for our properties',
+        time: 'Oct 18, 2025, 4:13 AM',
+        sender: 'Mountain Solutions'
+      },
+      {
+        id: 2,
+        type: 'sent',
+        content: 'Great! We\'d love to help with your roofing needs. Can you tell me more about the properties?',
+        time: 'Oct 18, 2025, 4:15 AM'
+      }
+    ],
+    3: [
+      {
+        id: 1,
+        type: 'received',
+        content: 'Hey Answered A Call Terry Your',
+        time: 'Oct 18, 2025, 12:53 AM',
+        sender: '(512) 632-1109'
+      }
+    ],
+    4: [
+      {
+        id: 1,
+        type: 'received',
+        content: 'Hi Cal',
+        time: 'Oct 17, 2025, 12:51 AM',
+        sender: 'Barla Diane'
+      }
+    ],
+    5: [
+      {
+        id: 1,
+        type: 'received',
+        content: 'Hi Cal',
+        time: 'Oct 14, 2025, 10:30 AM',
+        sender: 'Kelsey Kearny'
+      }
+    ]
+  };
+
+  const currentMessages = contactMessages[contacts[selectedContact]?.id] || [];
+  const currentContact = contacts[selectedContact];
 
   const channels = ['SMS', 'Google Business', 'Email', 'Yelp'];
 
@@ -317,14 +385,23 @@ console.log("phoneNumber", phoneNumber);
               <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-medium dark:bg-red-700">
-                      TT
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+                      style={{ backgroundColor: currentContact?.avatar || '#3B82F6' }}
+                    >
+                      {currentContact?.initials || 'U'}
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Tri Tran C/o Care Trust REIT
+                        {currentContact?.name || 'Select a contact'}
                       </h3>
-                      <p className="text-sm text-gray-500">ttran@caretrusteit.com</p>
+                      <p className="text-sm text-gray-500">
+                        {currentContact?.id === 1 ? 'ttran@caretrusteit.com' : 
+                         currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                         currentContact?.id === 3 ? '(512) 632-1109' :
+                         currentContact?.id === 4 ? 'barla.diane@email.com' :
+                         currentContact?.id === 5 ? 'kelsey.kearny@email.com' : ''}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -340,7 +417,7 @@ console.log("phoneNumber", phoneNumber);
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg) => (
+                {currentMessages.map((msg: Message) => (
                   <div key={msg.id}>
                     {msg.type === 'system' && (
                       <div className="flex items-center space-x-3">
@@ -371,8 +448,11 @@ console.log("phoneNumber", phoneNumber);
                     
                     {msg.type === 'received' && (
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium dark:bg-orange-600">
-                          TT
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                          style={{ backgroundColor: currentContact?.avatar || '#3B82F6' }}
+                        >
+                          {currentContact?.initials || 'U'}
                         </div>
                         <div className="flex-1">
                           <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-3 rounded-lg max-w-md">
@@ -426,50 +506,57 @@ console.log("phoneNumber", phoneNumber);
                 </div>
 
                 {/* Email Form */}
-                <div className="space-y-3 mb-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">From Name:</label>
-                      <input
-                        type="text"
-                        value="Vijender Singh"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">From email:</label>
-                      <input
-                        type="email"
-                        value="vijendersingh2507@gmail.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-1">
-                      <label className="block text-sm text-gray-600 mb-1">To:</label>
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm dark:bg-red-900 dark:text-red-200">
-                          ttran@caretrusteit.com (Primary)
-                        </span>
+                {/* {activeChannel === 'Email' && ( */}
+                  <div className="space-y-3 mb-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">From Name:</label>
+                        <input
+                          type="text"
+                          value=""
+                          placeholder="Enter Full Name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">From email:</label>
+                        <input
+                          type="email"
+                          placeholder="Enter Email Address"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button className="text-sm text-gray-600 hover:text-gray-800">CC</button>
-                      <button className="text-sm text-gray-600 hover:text-gray-800">BCC</button>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-1">
+                        <label className="block text-sm text-gray-600 mb-1">To:</label>
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm dark:bg-red-900 dark:text-red-200">
+                            {currentContact?.id === 1 ? 'ttran@caretrusteit.com (Primary)' : 
+                             currentContact?.id === 2 ? 'info@mountainsolutions.com (Primary)' :
+                             currentContact?.id === 3 ? '(512) 632-1109 (Primary)' :
+                             currentContact?.id === 4 ? 'barla.diane@email.com (Primary)' :
+                             currentContact?.id === 5 ? 'kelsey.kearny@email.com (Primary)' : 'No email'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button className="text-sm text-gray-600 hover:text-gray-800">CC</button>
+                        <button className="text-sm text-gray-600 hover:text-gray-800">BCC</button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Subject:</label>
+                      <input
+                        type="text"
+                        placeholder="Type a message"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Subject:</label>
-                    <input
-                      type="text"
-                      placeholder="Type a message"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
+                {/* )} */}
 
                 {/* Message Input */}
                 <div className="relative">
@@ -517,7 +604,7 @@ console.log("phoneNumber", phoneNumber);
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Tri Tran C/o Care Trust REIT
+                    {currentContact?.name || 'Select a contact'}
                   </h3>
                   <button className="text-primary-600 hover:text-primary-800">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -538,7 +625,11 @@ console.log("phoneNumber", phoneNumber);
                         </button>
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        ttran@caretrusteit.com
+                        {currentContact?.id === 1 ? 'ttran@caretrusteit.com' : 
+                         currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                         currentContact?.id === 3 ? '(512) 632-1109' :
+                         currentContact?.id === 4 ? 'barla.diane@email.com' :
+                         currentContact?.id === 5 ? 'kelsey.kearny@email.com' : 'No email'}
                       </p>
                       
                       <div className="flex items-center justify-between mt-3">
@@ -548,7 +639,11 @@ console.log("phoneNumber", phoneNumber);
                         </button>
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        (714) 280-2680
+                        {currentContact?.id === 1 ? '(714) 280-2680' : 
+                         currentContact?.id === 2 ? '(555) 123-4567' :
+                         currentContact?.id === 3 ? '(512) 632-1109' :
+                         currentContact?.id === 4 ? '(555) 987-6543' :
+                         currentContact?.id === 5 ? '(555) 456-7890' : 'No phone'}
                       </p>
                     </div>
                   </div>

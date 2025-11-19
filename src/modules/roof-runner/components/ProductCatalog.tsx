@@ -22,17 +22,17 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <button 
               onClick={onBack}
-              className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+              className="text-white hover:text-white text-sm mb-2"
             >
               ← Back to Dashboard
             </button>
             <h1 className="text-2xl font-bold text-white">Product Catalog</h1>
-            <p className="text-gray-400 mt-1">Browse our complete selection of construction materials</p>
+            <p className="text-white mt-1">Browse our complete selection of construction materials</p>
           </div>
 
           <form className="flex gap-2">
@@ -42,7 +42,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="pl-10 pr-4 py-2 w-full bg-primary-800 dark:bg-primary-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
@@ -58,7 +58,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-64 flex-shrink-0">
-          <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">Filters</h2>
               <Filter className="h-5 w-5 text-gray-400" />
@@ -93,7 +93,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
         </div>
 
         <div className="flex-1">
-          <div className="bg-gray-900 dark:bg-gray-800 rounded-lg overflow-hidden">
+          <div className="bg-primary-700 dark:bg-primary-600 rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-700">
               <thead>
                 <tr>
@@ -112,7 +112,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                     product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
                   )
                   .map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-800 dark:hover:bg-gray-700">
+                    <tr key={product.id} className="hover:bg-primary-800 dark:hover:bg-primary-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{product.sku}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{product.manufacturer}</td>
                       <td className="px-6 py-4 text-sm text-gray-300">

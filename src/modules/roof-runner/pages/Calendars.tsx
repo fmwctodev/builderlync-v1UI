@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { getJobs, Job } from '../../../shared/store/services/jobsApi';
-import { createJobEvent, getAllEvents, updateJobEvent, Event } from '../../../shared/store/services/eventsApi';
+import { createJobEvent, getAllEvents, updateJobEvent, deleteJobEvent, Event } from '../../../shared/store/services/eventsApi';
 
 interface CalendarEvent {
   id: string;
@@ -29,6 +29,7 @@ const Calendars: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     type: '',
     title: '',
@@ -176,6 +177,27 @@ const Calendars: React.FC = () => {
       fetchEvents();
     } catch (error) {
       setToast({ message: editingEvent ? 'Failed to update event' : 'Failed to create event', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingEvent) return;
+    
+    setLoading(true);
+    try {
+      const selectedJob = jobs.find(job => job.name === formData.job);
+      const jobId = selectedJob ? selectedJob.id : 1;
+      
+      await deleteJobEvent(jobId, editingEvent.id!);
+      setToast({ message: 'Event deleted successfully!', type: 'success' });
+      setShowModal(false);
+      setShowDeleteConfirm(false);
+      resetForm();
+      fetchEvents();
+    } catch (error) {
+      setToast({ message: 'Failed to delete event', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -631,23 +653,65 @@ const Calendars: React.FC = () => {
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div>
+                  {editingEvent && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      Delete Event
+                    </button>
+                  )}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (editingEvent ? 'Updating...' : 'Creating...') : (editingEvent ? 'Update Event' : 'Create Event')}
+                  </button>
+                </div>
+              </div>
+            </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Event</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{editingEvent?.title}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
                 <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-6 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  onClick={handleDelete}
                   disabled={loading}
-                  className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (editingEvent ? 'Updating...' : 'Creating...') : (editingEvent ? 'Update Event' : 'Create Event')}
+                  {loading ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
-            </form>
             </div>
           </div>
         </div>

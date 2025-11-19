@@ -15,7 +15,7 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ isOpen, onClose }) => {
     'Hayley Parks', 'JEFFREY JONES', 'Jacob Cox', 'Jake Webb', 'James Wolfgang Kuntz',
     'Joey G', 'Kirk White', 'Lexus Oliver', 'Luis Torres', 'Nicholas Wnukowski',
     'Nick X', 'Ralph Nevarez', 'Ray Aguilus', 'Richard Endruschat', 'Sean Richard',
-    'Vijender Singh', 'Willy Hill'
+    'Willy Hill'
   ];
 
   const stages = [

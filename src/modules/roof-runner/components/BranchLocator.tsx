@@ -43,10 +43,10 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
         <button 
           onClick={onBack}
-          className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+          className="text-white hover:text-white text-sm mb-2"
         >
           ← Back to Dashboard
         </button>
@@ -61,13 +61,13 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
             placeholder="Enter your location"
             value={searchLocation}
             onChange={(e) => setSearchLocation(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none"
+            className="w-full px-4 py-2 bg-primary-800 dark:bg-primary-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none"
           />
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-        <div className="h-[400px] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-6 relative overflow-hidden">
+      <div className="bg-white dark:bg-primary-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+        <div className="h-[400px] bg-primary-100 dark:bg-primary-700 rounded-lg flex items-center justify-center mb-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900">
             {/* Simulated map with branch markers */}
             <div className="absolute top-1/4 left-1/3 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
@@ -84,7 +84,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
             </div>
           </div>
           
-          <div className="absolute bottom-2 left-2 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-400">
+          <div className="absolute bottom-2 left-2 bg-white dark:bg-primary-800 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-400">
             Interactive Map
           </div>
         </div>
@@ -92,7 +92,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nearby Branches</h2>
         <div className="space-y-4">
           {branches.map((branch) => (
-            <div key={branch.id} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+            <div key={branch.id} className="bg-primary-50 dark:bg-primary-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-primary-100 dark:hover:bg-primary-600 transition">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-medium text-gray-900 dark:text-white">{branch.name}</h3>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{branch.distance} away</span>
