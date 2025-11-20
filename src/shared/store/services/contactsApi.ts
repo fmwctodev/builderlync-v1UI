@@ -108,6 +108,22 @@ export const updateContact = async (id: number, contactData: CreateContactReques
   return response.data;
 };
 
+export const deleteContact = async (id: number): Promise<{ success: boolean; message: string }> => {
+  const token = localStorage.getItem('token');
+
+  const response = await axios.delete(
+    `${API_BASE_URL}/contacts/${id}`,
+    {
+      headers: {
+        'accept': '*/*',
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+
+  return response.data;
+};
+
 export const uploadContactsCsv = async (file: File) => {
   const token = localStorage.getItem('token');
   const formData = new FormData();

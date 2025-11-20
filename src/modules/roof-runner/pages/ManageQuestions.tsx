@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, X, Lock, GripVertical } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { apiService } from '../store/services/api';
 
 const ManageQuestions: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,14 @@ const ManageQuestions: React.FC = () => {
     'Contact form'
   ]);
 
-  const availableQuestions = [
+  const allPossibleQuestions = [
+    'Get started',
+    'Address & slope', 
+    'Building type',
+    'Current material',
+    'Desired material',
+    'Timeline',
+    'Contact form',
     'Multi-story building',
     'Roof age',
     'Leaks and damages',
@@ -26,6 +34,8 @@ const ManageQuestions: React.FC = () => {
     'Project details',
     'Financing'
   ];
+
+  const availableQuestions = allPossibleQuestions.filter(q => !selectedQuestions.includes(q));
 
   const addQuestion = (question: string) => {
     if (!selectedQuestions.includes(question)) {
@@ -40,6 +50,44 @@ const ManageQuestions: React.FC = () => {
 
   const isLocked = (question: string) => {
     return ['Get started', 'Contact form'].includes(question);
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [id]);
+
+  const fetchQuestions = async () => {
+    if (!id) return;
+    try {
+      const response = await apiService.getInstantEstimator(parseInt(id));
+      if (response?.data?.questions) {
+        const savedQuestions = response.data.questions.map((q: any) => q.name || q);
+        if (savedQuestions.length > 0) {
+          setSelectedQuestions(savedQuestions);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch questions:', error);
+    }
+  };
+
+  const saveQuestions = async () => {
+    if (!id) return;
+    try {
+      console.log('Saving questions for ID:', id);
+      const questionsData = selectedQuestions.map((name, index) => ({
+        id: (index + 1).toString(),
+        name,
+        selected: true
+      }));
+      console.log('Questions data:', questionsData);
+      const result = await apiService.updateInstantEstimatorQuestions(parseInt(id), questionsData);
+      console.log('Save result:', result);
+      alert('Questions saved successfully!');
+    } catch (error) {
+      console.error('Failed to save questions:', error);
+      alert('Failed to save questions: ' + error);
+    }
   };
 
   return (
@@ -58,7 +106,7 @@ const ManageQuestions: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 text-sm">Choose which questions you'd like to be displayed in your instant estimator</p>
           </div>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+        <button onClick={saveQuestions} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
           Save
         </button>
       </div>
@@ -95,8 +143,8 @@ const ManageQuestions: React.FC = () => {
             <div className="relative">
               {/* Dropdown Menu */}
               {showDropdown && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
-                  {availableQuestions.filter(q => !selectedQuestions.includes(q)).map((question) => (
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {availableQuestions.map((question) => (
                     <button
                       key={question}
                       onClick={() => addQuestion(question)}

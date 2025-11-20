@@ -15,15 +15,19 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
   onUpdateJobStage
 }) => {
   const stages = [
-    'Default', 'New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
-    'Adjuster Meeting Complete', 'Under Service Agreement/Contin', 'Estimate Received',
-    'Proposal sent/presented', 'Proposal follow-up', 'Reinspection', 'Public Adjuster',
-    'Proposal signed/Pre-Production', 'Supplementing', 'Pre-production', 'Materials Ordered',
-    'Production', 'Post-production', 'Payments/Invoicing', 'Post-job completion follow-up',
-    'Job completed', 'Lost', 'Unqualified'
+    'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted', 'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract', 'Invoice Sent', '⁠Invoice Paid', 'Job Scheduled','Materials Ordered', 'Job Started', 'Job Complete'
   ];
 
-  const getJobsByStage = (stage: string) => jobs.filter(job => job.workflowStages === stage);
+  const getJobsByStage = (stage: string) => {
+    if (stage === 'Inspection/Estimate Booked') {
+      // Include jobs that don't match any stage in the first stage
+      const matchedJobs = jobs.filter(job => stages.includes(job.workflowStages));
+      const unmatchedJobs = jobs.filter(job => !stages.includes(job.workflowStages));
+      const stageJobs = jobs.filter(job => job.workflowStages === stage);
+      return [...stageJobs, ...unmatchedJobs];
+    }
+    return jobs.filter(job => job.workflowStages === stage);
+  };
   const getStageValue = (stage: string) => {
     const stageJobs = getJobsByStage(stage);
     return stageJobs.reduce((sum, job) => sum + job.jobValue, 0);

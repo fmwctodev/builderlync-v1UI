@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, Upload } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
+import { Search, Filter, Plus, Upload, Download } from "lucide-react";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
@@ -44,6 +44,8 @@ const Contacts: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<any>(null);
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -321,6 +323,30 @@ const Contacts: React.FC = () => {
     setActiveDropdown(null);
   };
 
+  const handleDelete = (contact: any) => {
+    setContactToDelete(contact);
+    setShowDeleteConfirm(true);
+    setActiveDropdown(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!contactToDelete) return;
+    
+    setIsLoading(true);
+    try {
+      await deleteContact(contactToDelete.id);
+      setToast({ message: 'Contact deleted successfully!', type: 'success' });
+      setShowDeleteConfirm(false);
+      setContactToDelete(null);
+      fetchContacts();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete contact';
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -328,6 +354,13 @@ const Contacts: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Contacts</h1>
           <div className="flex gap-3">
+            <button
+              // onClick={() => setShowCsvModal(true)}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
             <button
               onClick={() => setShowCsvModal(true)}
               className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -429,6 +462,7 @@ const Contacts: React.FC = () => {
         onViewProfile={handleViewProfile}
         onViewJob={handleViewJob}
         onEdit={handleEdit}
+        onDelete={handleDelete}
       />
 
       <Pagination
@@ -478,6 +512,38 @@ const Contacts: React.FC = () => {
         onFileSelect={handleFileSelect}
         onUpload={handleCsvUpload}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contact</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{contactToDelete?.fullName}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setContactToDelete(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

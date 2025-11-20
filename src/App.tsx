@@ -13,6 +13,7 @@ import { EdgeViewModule } from './modules/edge-view/EdgeViewModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 import { ReportingModule } from './modules/reporting/ReportingModule';
+import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
+            <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
             <Route path="/*" element={<RoofRunnerModule />} />
             <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
             <Route path="/crm/*" element={<CRMModule />} />

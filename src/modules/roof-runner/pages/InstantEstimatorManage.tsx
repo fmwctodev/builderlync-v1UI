@@ -7,9 +7,12 @@ const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [estimatorName, setEstimatorName] = useState('');
+  const [publicUrl, setPublicUrl] = useState('');
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameName, setRenameName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedQuestions, setSelectedQuestions] = useState<any[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [restrictMaterials, setRestrictMaterials] = useState(false);
   const [pricingType, setPricingType] = useState('per-square-foot');
   const [showPriceRange, setShowPriceRange] = useState(false);
@@ -30,8 +33,27 @@ const InstantEstimatorManage: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiService.getInstantEstimator(parseInt(id));
-      if (response && response.name) {
-        setEstimatorName(response.name);
+      if (response && response.data) {
+        setEstimatorName(response.data.name);
+        setPublicUrl(response.data.public_url || '');
+        setSelectedQuestions(response.data.questions || []);
+        setSelectedMaterials(response.data.materials || []);
+        
+        // Load pricing settings if they exist
+        const pricingSettings = response.data.pricing_settings || {};
+        setRestrictMaterials(pricingSettings.restrict_materials || false);
+        setPricingType(pricingSettings.pricing_type || 'per-square-foot');
+        setShowPriceRange(pricingSettings.show_price_range || false);
+        setShowFinancing(pricingSettings.show_financing || false);
+        setLowerRange(pricingSettings.lower_range || '0');
+        setUpperRange(pricingSettings.upper_range || '0');
+        setTermLength(pricingSettings.term_length || '1');
+        setInterestRate(pricingSettings.interest_rate || '0');
+        
+        // Load additional settings
+        const additionalSettings = response.data.additional_settings || {};
+        setShowProjectShowcase(additionalSettings.show_project_showcase || false);
+        setShowSocialMedia(additionalSettings.show_social_media || false);
       } else {
         setEstimatorName('Estimator Not Found');
       }
@@ -69,6 +91,34 @@ const InstantEstimatorManage: React.FC = () => {
     }
   };
 
+  const saveAllSettings = async () => {
+    if (!id) return;
+    try {
+      // Save pricing settings
+      await apiService.updateInstantEstimatorPricingSettings(parseInt(id), {
+        restrict_materials: restrictMaterials,
+        pricing_type: pricingType,
+        show_price_range: showPriceRange,
+        show_financing: showFinancing,
+        lower_range: lowerRange,
+        upper_range: upperRange,
+        term_length: termLength,
+        interest_rate: interestRate
+      });
+      
+      // Save additional settings
+      await apiService.updateInstantEstimatorAdditionalSettings(parseInt(id), {
+        show_project_showcase: showProjectShowcase,
+        show_social_media: showSocialMedia
+      });
+      
+      alert('Settings saved successfully!');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      alert('Failed to save settings');
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -96,10 +146,15 @@ const InstantEstimatorManage: React.FC = () => {
           )}
         </div>
 
-        <button className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
-          <ExternalLink className="w-4 h-4" />
-          Preview
-        </button>
+        <div className="flex items-center gap-2">
+          {/* <button className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            <ExternalLink className="w-4 h-4" />
+            Preview
+          </button> */}
+          <button onClick={saveAllSettings} className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+            Save All
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -113,11 +168,14 @@ const InstantEstimatorManage: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
               <input
                 type="text"
-                value="https://app.builderLync.com/instant-estimator/eebbc217-988d-4b00-a877-65433879db57/TarrytownRoofingLLC"
+                value={`${window.location.origin}/estimator/${publicUrl}`}
                 readOnly
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
-              <button className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm">
+              <button 
+                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/estimator/${publicUrl}`)}
+                className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm"
+              >
                 <Copy className="w-4 h-4" />
                 Copy link
               </button>
@@ -152,10 +210,13 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
 
             <div className="mb-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Questions (9)</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Questions ({selectedQuestions.length})</span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Get started, Address & slope, Building type, Current material, Desired material, Timeline, Financing, Project details, Contact form
+              {selectedQuestions.length > 0 
+                ? selectedQuestions.map(q => q.name || q).join(', ')
+                : 'No questions selected'
+              }
             </p>
           </div>
 
@@ -167,7 +228,12 @@ const InstantEstimatorManage: React.FC = () => {
             </p>
 
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 italic mb-4">No materials added</p>
+              <p className="text-gray-500 dark:text-gray-400 italic mb-4">
+                {selectedMaterials.length > 0 
+                  ? `${selectedMaterials.length} materials added: ${selectedMaterials.map(m => m.name).join(', ')}`
+                  : 'No materials added'
+                }
+              </p>
               <button
                 onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
                 className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg mx-auto"

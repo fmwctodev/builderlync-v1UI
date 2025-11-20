@@ -45,7 +45,7 @@ export default function SettingsPanel() {
             </label>
             <input
               type="text"
-              defaultValue="Vijender Singh"
+              defaultValue="John Doe's"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -55,8 +55,8 @@ export default function SettingsPanel() {
               Below is how your signature will appear on documents to customers
             </p>
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-4">
-              <div className="text-lg font-script text-gray-900 dark:text-white mb-1">Vijender Singh</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Vijender Singh</div>
+              <div className="text-lg font-script text-gray-900 dark:text-white mb-1">John Doe's</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">John Doe's</div>
             </div>
           </div>
 
