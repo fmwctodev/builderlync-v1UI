@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { apiService } from '../store/services/api';
+import Toast from '../../../shared/components/Toast';
 
 const NewMaterial: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(['Add custom offering']);
   const [existingMaterials, setExistingMaterials] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const materials = [
     { id: 'custom', name: 'Add custom offering', icon: <Plus className="w-8 h-8 text-blue-600" />, selected: true },
@@ -65,11 +67,11 @@ const NewMaterial: React.FC = () => {
       
       const result = await apiService.updateInstantEstimatorMaterials(parseInt(id), materialsData);
       console.log('Update result:', result);
-      alert('Material added successfully!');
-      navigate(`/instant-estimator/${id}/manage`);
+      setToast({ message: 'Material added successfully!', type: 'success' });
+      setTimeout(() => navigate(`/instant-estimator/${id}/manage`), 1000);
     } catch (error) {
       console.error('Failed to add material:', error);
-      alert('Failed to add material: ' + error);
+      setToast({ message: 'Failed to add material', type: 'error' });
     }
   };
 
@@ -141,6 +143,13 @@ const NewMaterial: React.FC = () => {
           Continue
         </button>
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

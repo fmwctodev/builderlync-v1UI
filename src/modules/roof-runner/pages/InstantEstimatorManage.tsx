@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, ExternalLink, Copy, QrCode, Code, Plus, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
+import Toast from '../../../shared/components/Toast';
 
 const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const InstantEstimatorManage: React.FC = () => {
   const [interestRate, setInterestRate] = useState('0');
   const [showProjectShowcase, setShowProjectShowcase] = useState(false);
   const [showSocialMedia, setShowSocialMedia] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     fetchEstimatorData();
@@ -112,10 +114,10 @@ const InstantEstimatorManage: React.FC = () => {
         show_social_media: showSocialMedia
       });
       
-      alert('Settings saved successfully!');
+      setToast({ message: 'Settings saved successfully!', type: 'success' });
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('Failed to save settings');
+      setToast({ message: 'Failed to save settings', type: 'error' });
     }
   };
 
@@ -173,7 +175,22 @@ const InstantEstimatorManage: React.FC = () => {
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
               <button 
-                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/estimator/${publicUrl}`)}
+                onClick={async () => {
+                  const url = `${window.location.origin}/estimator/${publicUrl}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                  } catch (err) {
+                    // Fallback for browsers that don't support clipboard API
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                  }
+                }}
                 className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm"
               >
                 <Copy className="w-4 h-4" />
@@ -532,6 +549,13 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );
