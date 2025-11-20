@@ -9,7 +9,7 @@ export function GettingStarted() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Getting Started</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Hey Vijender, here are few things you can get started with
+          Hey Sean, here are few things you can get started with
         </p>
       </div>
 
