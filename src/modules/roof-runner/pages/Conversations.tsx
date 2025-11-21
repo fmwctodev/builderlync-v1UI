@@ -193,7 +193,7 @@ const Conversations: React.FC = () => {
   const currentMessages = contactMessages[contacts[selectedContact]?.id] || [];
   const currentContact = contacts[selectedContact];
 
-  const channels = ['SMS', 'Google Business', 'Email', 'Yelp'];
+  const channels = ['SMS', 'Email'];
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -487,9 +487,6 @@ const Conversations: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
                       Internal Comment
-                    </button>
-                    <button className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                      Team Message
                     </button>
                   </div>
                 </div>
