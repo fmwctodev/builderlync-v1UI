@@ -15,26 +15,86 @@ export default function Automations() {
   const workflows = [
     {
       id: 1,
-      name: 'Onboarding Automations',
+      name: '00. A2P',
       status: null,
       totalEnrolled: null,
       activeEnrolled: null,
-      lastUpdated: 'Jul 24 2025, 2:53 PM',
-      createdOn: 'Jul 24 2025, 2:53 PM',
+      lastUpdated: 'Sep 25 2024, 9:41 AM',
+      createdOn: 'Sep 25 2024, 9:41 AM',
       isFolder: true
     },
     {
       id: 2,
-      name: 'Social Workflows',
+      name: '000a. Sierra-AI Caller',
       status: null,
       totalEnrolled: null,
       activeEnrolled: null,
-      lastUpdated: 'Jun 12 2024, 11:03 PM',
-      createdOn: 'Jun 12 2024, 11:03 PM',
+      lastUpdated: 'Aug 07 2025, 1:32 AM',
+      createdOn: 'Jul 20 2025, 9:15 PM',
       isFolder: true
     },
     {
       id: 3,
+      name: '000b. Sierra-AI-JobWorkflows',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Aug 07 2025, 1:33 AM',
+      createdOn: 'Jul 30 2025, 9:26 PM',
+      isFolder: true
+    },
+    {
+      id: 4,
+      name: '01. Residential Sales Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Dec 26 2024, 3:52 PM',
+      createdOn: 'Dec 20 2024, 3:26 PM',
+      isFolder: true
+    },
+    {
+      id: 5,
+      name: '02. Commercial Sales Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 29 2025, 11:59 PM',
+      createdOn: 'Sep 29 2025, 11:59 PM',
+      isFolder: true
+    },
+    {
+      id: 6,
+      name: '02. Subcontractor Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:14 AM',
+      createdOn: 'Jan 14 2025, 8:14 AM',
+      isFolder: true
+    },
+    {
+      id: 7,
+      name: '03. New Employee Application',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:15 AM',
+      createdOn: 'Jan 29 2025, 2:26 PM',
+      isFolder: true
+    },
+    {
+      id: 8,
+      name: '08. Request review',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:57 AM',
+      createdOn: 'Nov 22 2024, 10:45 AM',
+      isFolder: true
+    },
+    {
+      id: 9,
       name: '4. New Sale - Send Review Request',
       status: 'Published',
       totalEnrolled: 12,
@@ -45,7 +105,7 @@ export default function Automations() {
       hasExternal: true
     },
     {
-      id: 4,
+      id: 10,
       name: 'CUSTOM VALUE UPDATER',
       status: 'Draft',
       totalEnrolled: 0,
@@ -56,7 +116,7 @@ export default function Automations() {
       hasExternal: true
     },
     {
-      id: 5,
+      id: 11,
       name: 'New Client (remove from all WF)',
       status: 'Published',
       totalEnrolled: 6,
@@ -67,7 +127,7 @@ export default function Automations() {
       hasExternal: true
     },
     {
-      id: 6,
+      id: 12,
       name: 'New Workflow : 1762888972865',
       status: 'Draft',
       totalEnrolled: 0,
