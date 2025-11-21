@@ -13,7 +13,6 @@ import { EdgeViewModule } from './modules/edge-view/EdgeViewModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 import { ReportingModule } from './modules/reporting/ReportingModule';
-import { PaymentsModule } from './modules/payments/PaymentsModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
 
 function App() {
@@ -30,7 +29,6 @@ function App() {
             <Route path="/edge-view/*" element={<EdgeViewModule />} />
             <Route path="/ai-agents/*" element={<AIAgentsModule />} />
             <Route path="/reporting/*" element={<ReportingModule />} />
-            <Route path="/payments/*" element={<PaymentsModule />} />
           </Routes>
         </Router>
       </div>
