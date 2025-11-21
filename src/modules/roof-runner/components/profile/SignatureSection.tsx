@@ -86,7 +86,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
   if (!editor) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-red-600" />
       </div>
     );
   }
@@ -114,7 +114,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
               type="checkbox"
               checked={enableSignature}
               onChange={(e) => setEnableSignature(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-gray-300 text-red-600 focus:ring-red-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Enable signature on all outgoing messages
@@ -268,7 +268,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
               type="checkbox"
               checked={includeInReplies}
               onChange={(e) => setIncludeInReplies(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-gray-300 text-red-600 focus:ring-red-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Include this signature before quoted text in replies
@@ -280,7 +280,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>Update Profile</span>

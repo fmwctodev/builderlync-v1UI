@@ -128,7 +128,7 @@ const EmailSyncSection: React.FC = () => {
 
         <a
           href="#"
-          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 mt-4 inline-block"
+          className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 mt-4 inline-block"
         >
           Learn More
         </a>
@@ -137,7 +137,7 @@ const EmailSyncSection: React.FC = () => {
       <div className="flex justify-end">
         <button
           type="button"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2"
         >
           <span>Update Availability</span>
         </button>

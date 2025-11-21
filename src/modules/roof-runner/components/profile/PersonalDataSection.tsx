@@ -174,9 +174,9 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
               </div>
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 p-2 bg-white border border-gray-300 rounded-full cursor-pointer hover:bg-gray-50 transition-colors shadow-md"
+                className="absolute bottom-0 right-0 p-2 bg-red-600 rounded-full cursor-pointer hover:bg-red-700 transition-colors shadow-md"
               >
-                <Camera className="w-5 h-5 text-gray-700" />
+                <Camera className="w-5 h-5 text-white" />
                 <input
                   id="avatar-upload"
                   type="file"
@@ -207,7 +207,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.first_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -221,7 +221,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.last_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -236,7 +236,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 onChange={handleInputChange}
                 required
                 placeholder="sean@autom8ionlab.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -251,7 +251,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="+1 689-310-2712"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
 
@@ -265,7 +265,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                   value={formData.extension}
                   onChange={handleInputChange}
                   placeholder="Extension"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
             </div>
@@ -280,7 +280,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.calendar_name}
                 onChange={handleInputChange}
                 placeholder="Book With..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -292,7 +292,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 name="platform_language"
                 value={formData.platform_language}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="en-US">English (United States)</option>
                 <option value="es-ES">Spanish (Spain)</option>
@@ -306,7 +306,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Update Profile</span>

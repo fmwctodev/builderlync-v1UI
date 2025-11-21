@@ -210,7 +210,7 @@ const AvailabilitySection: React.FC = () => {
             <select
               value={meetingLocation}
               onChange={(e) => setMeetingLocation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="google_meet">Google Meet</option>
               <option value="zoom">Zoom</option>
@@ -223,7 +223,7 @@ const AvailabilitySection: React.FC = () => {
               value={customLocation}
               onChange={(e) => setCustomLocation(e.target.value)}
               placeholder="Meeting Location"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </div>
@@ -235,7 +235,7 @@ const AvailabilitySection: React.FC = () => {
           <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white md:w-1/2"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white md:w-1/2"
           >
             <option value="America/New_York">GMT-05:00 America/New_York (EST)</option>
             <option value="America/Chicago">GMT-06:00 America/Chicago (CST)</option>
@@ -266,7 +266,7 @@ const AvailabilitySection: React.FC = () => {
               key={index}
               className={`inline-flex items-center px-4 py-2 border-2 rounded-lg cursor-pointer transition-colors ${
                 schedule[index]?.enabled
-                  ? 'bg-blue-600 text-white border-blue-600'
+                  ? 'bg-red-600 text-white border-red-600'
                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
@@ -289,7 +289,7 @@ const AvailabilitySection: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => copyToAllDays(day.day)}
-                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center space-x-1"
+                  className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center space-x-1"
                 >
                   <Copy className="w-4 h-4" />
                   <span>Copy to all days</span>
@@ -303,14 +303,14 @@ const AvailabilitySection: React.FC = () => {
                       type="time"
                       value={slot.start}
                       onChange={(e) => updateTimeSlot(day.day, slotIndex, 'start', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     <span className="text-gray-500 dark:text-gray-400">to</span>
                     <input
                       type="time"
                       value={slot.end}
                       onChange={(e) => updateTimeSlot(day.day, slotIndex, 'end', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     {day.slots.length > 1 && (
                       <button
@@ -336,7 +336,7 @@ const AvailabilitySection: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => addTimeSlot(day.day)}
-                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center space-x-1"
+                  className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center space-x-1"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add time</span>
@@ -350,7 +350,7 @@ const AvailabilitySection: React.FC = () => {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>Save</span>

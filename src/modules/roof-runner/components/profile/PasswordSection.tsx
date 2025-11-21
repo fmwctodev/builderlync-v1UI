@@ -127,7 +127,7 @@ const PasswordSection: React.FC = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="••••••••"
-                className="w-full px-3 py-2 pr-10 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
@@ -151,7 +151,7 @@ const PasswordSection: React.FC = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="Password"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
@@ -175,7 +175,7 @@ const PasswordSection: React.FC = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="Confirm Password"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
@@ -191,7 +191,7 @@ const PasswordSection: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Update Password</span>

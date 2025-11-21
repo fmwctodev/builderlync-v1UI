@@ -52,7 +52,7 @@ const CalendarSettingsSection: React.FC = () => {
               onClick={() => setActiveTab('calendars')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'calendars'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-red-600 text-red-600'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
@@ -62,7 +62,7 @@ const CalendarSettingsSection: React.FC = () => {
               onClick={() => setActiveTab('video')}
               className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'video'
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-red-600 text-red-600'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
@@ -79,7 +79,7 @@ const CalendarSettingsSection: React.FC = () => {
                   <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     Connected Calendars
                   </h3>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                  <button className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
                     <Plus className="w-4 h-4" />
                     <span>Add New</span>
                   </button>
@@ -93,7 +93,7 @@ const CalendarSettingsSection: React.FC = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-white rounded flex items-center justify-center shadow-sm">
-                          <Calendar className="w-6 h-6 text-blue-600" />
+                          <Calendar className="w-6 h-6 text-red-600" />
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
@@ -127,7 +127,7 @@ const CalendarSettingsSection: React.FC = () => {
                   <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
-                        <Calendar className="w-10 h-10 text-blue-600 mt-1" />
+                        <Calendar className="w-10 h-10 text-red-600 mt-1" />
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                             Linked Calendar
@@ -136,7 +136,7 @@ const CalendarSettingsSection: React.FC = () => {
                             Sync bookings with your linked calendar
                           </p>
                           <div className="flex items-center space-x-2 text-sm">
-                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <Calendar className="w-4 h-4 text-red-600" />
                             <span className="text-gray-900 dark:text-white">{linkedCalendar.email}</span>
                           </div>
                           <div className="flex items-center space-x-2 text-sm mt-1">
@@ -145,11 +145,11 @@ const CalendarSettingsSection: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium">
+                      <button className="text-red-600 hover:text-red-700 dark:text-red-400 text-sm font-medium">
                         Edit
                       </button>
                     </div>
-                    <button className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm mt-4">
+                    <button className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 text-sm mt-4">
                       <Settings className="w-4 h-4" />
                       <span>Advanced Settings</span>
                     </button>
@@ -158,7 +158,7 @@ const CalendarSettingsSection: React.FC = () => {
                   <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
-                        <Calendar className="w-10 h-10 text-blue-600 mt-1" />
+                        <Calendar className="w-10 h-10 text-red-600 mt-1" />
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                             Conflict Calendars
@@ -167,7 +167,7 @@ const CalendarSettingsSection: React.FC = () => {
                             Add additional calendars to be checked to prevent double bookings
                           </p>
                           <div className="flex items-center space-x-2 text-sm">
-                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <Calendar className="w-4 h-4 text-red-600" />
                             <span className="text-gray-900 dark:text-white">{conflictCalendars[0]}</span>
                           </div>
                           <ul className="list-disc list-inside mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -177,7 +177,7 @@ const CalendarSettingsSection: React.FC = () => {
                           </ul>
                         </div>
                       </div>
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium">
+                      <button className="text-red-600 hover:text-red-700 dark:text-red-400 text-sm font-medium">
                         Edit
                       </button>
                     </div>
@@ -220,7 +220,7 @@ const CalendarSettingsSection: React.FC = () => {
                   onChange={(e) => setHideEventDetails(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
                 <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                   Hide event details
                 </span>
@@ -239,7 +239,7 @@ const CalendarSettingsSection: React.FC = () => {
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="America/New_York">GMT-05:00 America/New_York (EST)</option>
                 <option value="America/Chicago">GMT-06:00 America/Chicago (CST)</option>
@@ -259,7 +259,7 @@ const CalendarSettingsSection: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>Save</span>
