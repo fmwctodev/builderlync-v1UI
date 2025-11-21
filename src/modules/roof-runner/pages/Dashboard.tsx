@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, Plus, Share2, Copy, Settings } from 'lucide-react';
+import { RefreshCw, Plus, Copy } from 'lucide-react';
 
 export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -21,7 +21,7 @@ export default function Dashboard() {
         </div>
         
         <div className="flex gap-2">
-          <button 
+          <button
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 ${
               isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
             }`}
@@ -33,18 +33,8 @@ export default function Dashboard() {
           </button>
 
           <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
-            <Share2 size={16} />
-            <span>Share</span>
-          </button>
-
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
             <Copy size={16} />
             <span>Clone</span>
-          </button>
-
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
-            <Settings size={16} />
-            <span>Webhooks</span>
           </button>
 
           <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
