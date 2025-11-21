@@ -84,16 +84,20 @@ const ContactModal: React.FC<ContactModalProps> = ({
               {isEdit ? (
                 <input
                   type="text"
-                  value={formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
+                  value={formData.type.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('-')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 />
               ) : (
                 <CustomDropdown
                   options={[
+                    { value: 'lead', label: 'Lead' },
                     { value: 'customer', label: 'Customer' },
-                    { value: 'insurance', label: 'Insurance' },
-                    { value: 'vendor', label: 'Vendor' }
+                    { value: 'vendor', label: 'Vendor' },
+                    { value: 'sub-contractor', label: 'Sub-Contractor' },
+                    { value: 'adjuster', label: 'Adjuster' },
+                    { value: 'staff', label: 'Staff' },
+                    { value: 'other', label: 'Other' }
                   ]}
                   value={formData.type}
                   onChange={(value) => onFormDataChange({...formData, type: value})}
