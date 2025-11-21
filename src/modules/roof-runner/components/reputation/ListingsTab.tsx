@@ -58,7 +58,7 @@ const ListingsTab: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-8 rounded-lg mb-8 text-center">
+        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-8 rounded-lg mb-8 text-center">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Unlock Your Business's Potential
           </h3>
@@ -94,8 +94,8 @@ const ListingsTab: React.FC = () => {
             </div>
 
             <div className="text-center p-4">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                <RefreshCw size={32} className="text-purple-600" />
+              <div className="w-16 h-16 bg-primary-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <RefreshCw size={32} className="text-primary-600" />
               </div>
               <h4 className="font-medium text-gray-900 dark:text-white">Sync Functionality</h4>
             </div>

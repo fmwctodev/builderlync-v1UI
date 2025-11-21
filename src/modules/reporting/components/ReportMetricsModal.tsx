@@ -112,8 +112,8 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
           </div>
 
           {selectedMetrics.length > 0 && (
-            <div className="mt-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="mt-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-blue-800">
+              <p className="text-sm text-primary-800 dark:text-blue-200">
                 {selectedMetrics.length} metric{selectedMetrics.length !== 1 ? 's' : ''} selected
               </p>
             </div>

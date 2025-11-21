@@ -38,7 +38,7 @@ export default function Header({
               onClick={() => onViewChange('pipelines')}
               className={`px-6 py-2 text-sm font-medium rounded-t-md transition-colors ${
                 activeView === 'pipelines'
-                  ? 'bg-cyan-500 text-white'
+                  ? 'bg-primary-500 text-white'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >

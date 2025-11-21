@@ -498,7 +498,7 @@ const SocialPlannerTab: React.FC = () => {
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Winter roof maintenance tips...</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">Scheduled for Dec 15, 2024 at 9:00 AM</p>
                 <div className="flex space-x-2 mt-2">
-                  <span className="bg-primary-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">Facebook</span>
+                  <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">Facebook</span>
                   <span className="bg-pink-100 text-pink-800 px-2 py-1 rounded text-xs dark:bg-pink-900 dark:text-pink-200">Instagram</span>
                 </div>
               </div>

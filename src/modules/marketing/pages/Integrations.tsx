@@ -4,18 +4,18 @@ export function Integrations() {
   const integrations = [
     { name: 'Google Calendar', logo: '📅', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Google My Business', logo: '🏢', color: 'bg-red-500', status: 'Connect', featured: true },
-    { name: 'Microsoft Teams', logo: '👥', color: 'bg-purple-500', status: 'Connect' },
+    { name: 'Microsoft Teams', logo: '👥', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Facebook & Instagram', logo: '📱', color: 'bg-primary-600', status: 'Connect' },
     { name: 'QuickBooks', logo: 'qb', color: 'bg-green-500', status: 'Connect' },
     { name: 'Xero', logo: 'xero', color: 'bg-blue-400', status: 'Connect' },
     { name: 'Wave', logo: 'wave', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Veem', logo: '✓', color: 'bg-primary-500', status: 'Connect' },
-    { name: 'Stripe', logo: 'stripe', color: 'bg-purple-600', status: 'Connect' },
+    { name: 'Stripe', logo: 'stripe', color: 'bg-primary-600', status: 'Connect' },
     { name: 'Shopify', logo: '🛍️', color: 'bg-green-600', status: 'Connect' },
     { name: 'TikTok', logo: '🎵', color: 'bg-black', status: 'Connect' },
     { name: 'LinkedIn', logo: 'in', color: 'bg-blue-700', status: 'Connect' },
-    { name: 'Slack', logo: 'slack', color: 'bg-purple-500', status: 'Connect' },
-    { name: 'WooCommerce', logo: 'woo', color: 'bg-purple-600', status: 'Connect' },
+    { name: 'Slack', logo: 'slack', color: 'bg-primary-500', status: 'Connect' },
+    { name: 'WooCommerce', logo: 'woo', color: 'bg-primary-600', status: 'Connect' },
     { name: 'ClickUp', logo: 'clickup', color: 'bg-pink-500', status: 'Connect' }
   ];
 

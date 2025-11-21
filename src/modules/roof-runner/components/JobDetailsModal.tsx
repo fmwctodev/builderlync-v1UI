@@ -83,14 +83,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     activeTab === item
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                       : item === 'Instant Estimate'
-                      ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700'
+                      ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border border-primary-200 dark:border-primary-700'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{item}</span>
                     {item === 'Instant Estimate' && (
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full">
                         NEW
                       </span>
                     )}

@@ -114,7 +114,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose }) => {
             >
               Cancel
             </button>
-            <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
+            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
               Summarize
             </button>
           </div>

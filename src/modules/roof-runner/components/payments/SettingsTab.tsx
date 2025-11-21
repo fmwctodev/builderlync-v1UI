@@ -37,7 +37,7 @@ const SettingsTab: React.FC = () => {
                 onClick={() => setActiveCategory(category.id)}
                 className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   activeCategory === category.id
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-blue-300'
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >

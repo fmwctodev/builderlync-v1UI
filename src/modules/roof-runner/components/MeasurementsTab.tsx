@@ -19,7 +19,7 @@ const MeasurementsTab: React.FC = () => {
         </div>
       </div>
       <div className="flex-1 p-6">
-        <div className="bg-primary-50 dark:bg-primary-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-blue-800 rounded-lg p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3">
               <Home className="w-5 h-5 text-orange-500 mt-1" />
@@ -30,7 +30,7 @@ const MeasurementsTab: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Order a measurement report right here in the job record!
                 </p>
-                <button className="flex items-center space-x-2 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg border border-blue-200 dark:border-primary-600">
+                <button className="flex items-center space-x-2 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-primary-600 dark:text-primary-400 px-6 py-3 rounded-lg border border-primary-200 dark:border-primary-600">
                   <Box className="w-4 h-4" />
                   <span>Order a BuilderLync Measurement</span>
                 </button>

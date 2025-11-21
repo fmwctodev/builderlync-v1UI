@@ -89,7 +89,7 @@ function PurchaseOrderRow() {
       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">2024-01-15</td>
       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
         <div className="flex items-center gap-2">
-          <button className="text-primary-600 hover:text-blue-900 dark:text-primary-400 dark:hover:text-blue-300">View</button>
+          <button className="text-primary-600 hover:text-blue-900 dark:text-primary-400 dark:hover:text-primary-300">View</button>
           <div className="relative">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}

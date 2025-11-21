@@ -225,7 +225,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
                 ))}
               </div>
 
-              <div className="bg-primary-50 dark:bg-primary-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-6">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-blue-800 rounded-lg p-4 mt-6">
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   By connecting a cloud drive, you authorize BuilderLynk to access and sync files from your selected cloud storage provider. You can disconnect at any time. Your files remain in your cloud storage and are not transferred to our servers.
                 </p>

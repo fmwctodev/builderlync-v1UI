@@ -55,7 +55,7 @@ export function Dashboard() {
           value="$24,500" 
           change="+18%" 
           timeframe="This Month"
-          icon={<DollarSign className="w-10 h-10 text-purple-500 dark:text-purple-400" />} 
+          icon={<DollarSign className="w-10 h-10 text-primary-500 dark:text-purple-400" />} 
         />
         <StatCard 
           title="Conversion Rate" 
@@ -89,7 +89,7 @@ export function Dashboard() {
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h3>
-            <button className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-blue-300">
+            <button className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all
             </button>
           </div>

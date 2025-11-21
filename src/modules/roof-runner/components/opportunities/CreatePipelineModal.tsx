@@ -152,7 +152,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
                 </h3>
                 <button
                   onClick={addStage}
-                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-blue-300 flex items-center"
+                  className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Stage

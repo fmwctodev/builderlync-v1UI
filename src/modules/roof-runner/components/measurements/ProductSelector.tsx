@@ -167,7 +167,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                             {product.reportOptions?.warningText && (
                               <div className="flex gap-2 bg-primary-50 dark:bg-primary-900/20 items-start p-2 rounded">
                                 <Info className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
-                                <p className="text-blue-800 dark:text-blue-200 text-xs">
+                                <p className="text-primary-800 dark:text-blue-200 text-xs">
                                   {product.reportOptions.warningText}
                                 </p>
                               </div>
@@ -194,7 +194,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                           {selectedDeliveryModes[product.id] === "3 Hours" && (
                             <div className="mt-3 flex gap-3 bg-primary-50 dark:bg-primary-900/20 items-start p-3 rounded-lg">
                               <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
-                              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                              <p className="text-primary-800 dark:text-blue-200 text-sm">
                                 Note: If we need assistance locating the property, we will contact you by phone and/or email. 
                                 The 3 hour delivery time starts once the structure has been identified.
                               </p>

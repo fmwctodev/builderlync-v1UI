@@ -94,7 +94,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
               onClick={() => setSelectedInbox(key as any)}
               className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm ${
                 selectedInbox === key
-                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900 dark:text-blue-300'
+                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900 dark:text-primary-300'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >

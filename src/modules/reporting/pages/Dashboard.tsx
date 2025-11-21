@@ -64,8 +64,8 @@ export function Dashboard() {
 
               <div className="grid grid-cols-3 gap-6 max-w-6xl mx-auto">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-purple-600 text-2xl">✓</span>
+                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-600 text-2xl">✓</span>
                   </div>
                   <span className="text-lg font-medium">Check Your GBP Health</span>
                 </div>

@@ -85,7 +85,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({ isOpen, onClose }) 
                     <h4 className="font-medium text-gray-900 dark:text-white">{template.name}</h4>
                     {template.tone && (
                       <div className="flex gap-2 mt-1">
-                        <span className="text-xs bg-primary-100 text-blue-800 px-2 py-1 rounded">{template.tone}</span>
+                        <span className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">{template.tone}</span>
                         {template.tone2 && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">{template.tone2}</span>
                         )}

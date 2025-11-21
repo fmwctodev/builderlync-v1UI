@@ -15,9 +15,9 @@ function SimpleDashboard() {
             <h3 className="font-semibold">Active Jobs</h3>
             <p className="text-2xl font-bold text-green-600">12</p>
           </div>
-          <div className="bg-purple-50 p-4 rounded">
+          <div className="bg-primary-50 p-4 rounded">
             <h3 className="font-semibold">Revenue</h3>
-            <p className="text-2xl font-bold text-purple-600">$24,500</p>
+            <p className="text-2xl font-bold text-primary-600">$24,500</p>
           </div>
         </div>
       </div>

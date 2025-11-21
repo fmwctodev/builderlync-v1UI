@@ -106,8 +106,8 @@ const Measurements = () => {
 
               {/* Manual Measurements Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg mb-4">
-                  <Ruler className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-purple-900/20 rounded-lg mb-4">
+                  <Ruler className="w-6 h-6 text-primary-600 dark:text-purple-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Manual Measurements</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Record and manage manual measurements</p>

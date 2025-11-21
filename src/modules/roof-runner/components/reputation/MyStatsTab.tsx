@@ -16,7 +16,7 @@ const MyStatsTab: React.FC = () => {
               onClick={() => setSelectedFilter(filter)}
               className={`px-3 py-1 text-sm rounded-full transition-colors ${
                 selectedFilter === filter
-                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900/30 dark:text-blue-300'
+                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900/30 dark:text-primary-300'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
               }`}
             >

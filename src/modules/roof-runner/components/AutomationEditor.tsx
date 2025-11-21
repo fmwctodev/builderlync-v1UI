@@ -103,7 +103,7 @@ export default function AutomationEditor({ selectedAutomation, onClose, onSave }
                   </div>
                 </div>
                 {index === 0 && (
-                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
                     When
                   </span>
                 )}

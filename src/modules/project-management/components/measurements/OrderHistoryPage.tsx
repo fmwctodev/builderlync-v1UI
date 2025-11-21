@@ -95,7 +95,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
     return parts.map((part, index) => {
       if (regex.test(part)) {
         return (
-          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-blue-800 dark:text-blue-200 font-medium">
+          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-primary-800 dark:text-blue-200 font-medium">
             {part}
           </span>
         );
@@ -107,7 +107,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-cyan-600 dark:bg-cyan-700 rounded-lg p-6 text-white">
+      <div className="bg-primary-600 dark:bg-cyan-700 rounded-lg p-6 text-white">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={onBack}
@@ -129,7 +129,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
               placeholder="Search by order #, product, or address..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full bg-cyan-700 border border-cyan-500 rounded-lg text-white placeholder-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300"
+              className="pl-10 pr-4 py-2 w-full bg-cyan-700 border border-primary-500 rounded-lg text-white placeholder-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-cyan-200" />
           </div>
@@ -137,7 +137,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-cyan-700 border border-cyan-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300"
+            className="px-3 py-2 bg-cyan-700 border border-primary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300"
           >
             <option value="all">All Status</option>
             <option value="created">Created</option>
@@ -148,7 +148,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
           
           <button
             onClick={onPlaceNewOrder}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-cyan-600 rounded-lg hover:bg-gray-50 font-medium"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-50 font-medium"
           >
             <Plus className="w-4 h-4" />
             New Order

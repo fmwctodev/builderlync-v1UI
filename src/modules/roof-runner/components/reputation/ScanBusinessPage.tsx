@@ -71,7 +71,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-lg mb-6">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-6 rounded-lg mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Activate Listings
               </h3>
@@ -85,8 +85,8 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
                   <span className="text-gray-700 dark:text-gray-300">Listing Management</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                    <RefreshCw size={12} className="text-purple-600" />
+                  <div className="w-6 h-6 bg-primary-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                    <RefreshCw size={12} className="text-primary-600" />
                   </div>
                   <span className="text-gray-700 dark:text-gray-300">Sync Functionality</span>
                 </div>

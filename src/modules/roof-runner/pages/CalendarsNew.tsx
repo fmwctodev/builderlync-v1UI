@@ -31,7 +31,7 @@ const CalendarsNew: React.FC = () => {
             onClick={() => setActiveView('calendar')}
             className={`px-6 py-3 font-medium transition-all relative ${
               activeView === 'calendar'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-t-lg'
+                ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
             }`}
           >
@@ -41,7 +41,7 @@ const CalendarsNew: React.FC = () => {
             onClick={() => setActiveView('appointments')}
             className={`px-6 py-3 font-medium transition-all relative ${
               activeView === 'appointments'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-t-lg'
+                ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
             }`}
           >

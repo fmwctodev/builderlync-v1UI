@@ -68,7 +68,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
 
       <div className="bg-white dark:bg-primary-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
         <div className="h-[400px] bg-primary-100 dark:bg-primary-700 rounded-lg flex items-center justify-center mb-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900 dark:to-teal-900">
             {/* Simulated map with branch markers */}
             <div className="absolute top-1/4 left-1/3 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
             <div className="absolute top-2/3 left-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>

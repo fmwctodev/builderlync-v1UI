@@ -23,7 +23,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
           <div className="flex gap-2">
             <button
               onClick={() => setIsAIModalOpen(true)}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Bot size={16} />
               AI Summary
@@ -103,11 +103,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
 
         <div className="grid grid-cols-4 gap-6">
           <div className="space-y-4">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="text-purple-600">✨</div>
-                  <h3 className="font-medium text-purple-700">AI Summary (Default)</h3>
+                  <div className="text-primary-600">✨</div>
+                  <h3 className="font-medium text-primary-700">AI Summary (Default)</h3>
                 </div>
                 <button className="text-gray-400 hover:text-gray-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

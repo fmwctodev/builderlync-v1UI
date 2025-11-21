@@ -99,7 +99,7 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
       case 'user':
         return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
       default:
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
+        return 'bg-primary-100 text-primary-700 dark:bg-purple-900/20 dark:text-purple-400';
     }
   };
 

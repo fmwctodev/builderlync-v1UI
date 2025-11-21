@@ -206,11 +206,11 @@ const IntegrationsTab: React.FC = () => {
           })}
         </div>
 
-        <div className="mt-8 bg-primary-50 dark:bg-primary-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+        <div className="mt-8 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-blue-800 rounded-lg p-6">
           <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
             Need help with integrations?
           </h4>
-          <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+          <p className="text-sm text-primary-800 dark:text-blue-200 mb-4">
             Check our documentation or contact support for assistance setting up your payment
             integrations.
           </p>

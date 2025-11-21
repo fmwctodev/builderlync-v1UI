@@ -95,7 +95,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
     return parts.map((part, index) => {
       if (regex.test(part)) {
         return (
-          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-blue-800 dark:text-blue-200 font-medium">
+          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-primary-800 dark:text-blue-200 font-medium">
             {part}
           </span>
         );

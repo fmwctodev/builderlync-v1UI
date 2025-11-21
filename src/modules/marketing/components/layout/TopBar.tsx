@@ -109,7 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             }}
             className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-1"
           >
-            <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold">
+            <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
               {user.name.split(' ').map(n => n[0]).join('')}
             </div>
             <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" />

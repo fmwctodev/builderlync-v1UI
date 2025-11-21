@@ -123,7 +123,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
                     onClick={() => setActiveMode(mode.id)}
                     className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                       activeMode === mode.id
-                        ? 'bg-primary-50 text-blue-700 border-b-2 border-blue-700 dark:bg-primary-900/30 dark:text-blue-300'
+                        ? 'bg-primary-50 text-blue-700 border-b-2 border-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                   >

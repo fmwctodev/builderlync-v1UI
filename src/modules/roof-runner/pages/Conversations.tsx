@@ -1014,7 +1014,7 @@ const Conversations: React.FC = () => {
                             <td className="px-4 py-3 text-sm text-gray-600">{snippet.body}</td>
                             <td className="px-4 py-3 text-sm">
                               {snippet.folder && (
-                                <span className="bg-primary-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">
+                                <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">
                                   {snippet.folder}
                                 </span>
                               )}

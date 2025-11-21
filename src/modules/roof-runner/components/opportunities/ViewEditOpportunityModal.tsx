@@ -260,7 +260,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('opportunity-details')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'opportunity-details'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('project-details')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'project-details'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -280,7 +280,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('tasks')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'tasks'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -290,7 +290,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('notes')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'notes'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -300,7 +300,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('appointments')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'appointments'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -310,7 +310,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('photos')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'photos'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -320,7 +320,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('payments')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'payments'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -510,7 +510,7 @@ export default function ViewEditOpportunityModal({
                             {formData.follower_ids?.map((followerId) => (
                               <span
                                 key={followerId}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 dark:bg-primary-900 text-blue-800 dark:text-blue-200"
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-blue-200"
                               >
                                 Follower
                                 <button

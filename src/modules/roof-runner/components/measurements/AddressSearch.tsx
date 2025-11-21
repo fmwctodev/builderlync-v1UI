@@ -144,7 +144,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
               <MapPin className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <p className="text-sm text-blue-700 dark:text-primary-300">
                 Check that the address is accurate, then drag the marker over the correct structure.
               </p>
             </div>

@@ -181,8 +181,8 @@ const Integrations: React.FC = () => {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       'Accounting': 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
-      'Communication': 'bg-primary-100 text-blue-800 dark:bg-primary-900/20 dark:text-blue-300',
-      'Supply Chain': 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+      'Communication': 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300',
+      'Supply Chain': 'bg-primary-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
       'Imaging': 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300',
       'Marketing': 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-300',
       'Productivity': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300',

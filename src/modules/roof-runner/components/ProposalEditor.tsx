@@ -39,7 +39,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
         
         <div className="flex items-center">
           <span className="text-gray-900 dark:text-white font-medium mr-4">503 Westmorland Drive, Austin, TX 78745</span>
-          <button className="flex items-center px-3 py-1 text-primary-600 hover:text-primary-700 border border-blue-200 rounded mr-2">
+          <button className="flex items-center px-3 py-1 text-primary-600 hover:text-primary-700 border border-primary-200 rounded mr-2">
             <Send className="w-4 h-4 mr-1" />
             Send
           </button>
@@ -89,7 +89,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                   onClick={() => setActiveSection(section)}
                   className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                     activeSection === section
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300'
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >

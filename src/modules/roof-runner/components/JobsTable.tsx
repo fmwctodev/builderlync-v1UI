@@ -56,7 +56,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onEdit, onDelete }
                       ${job.jobValue?.toLocaleString() || '0'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                      <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-primary-300 px-2 py-1 rounded">
                         🏠 {job.workflowStages}
                       </span>
                     </td>

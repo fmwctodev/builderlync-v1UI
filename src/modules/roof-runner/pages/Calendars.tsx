@@ -597,7 +597,7 @@ const Calendars: React.FC = () => {
 
               {formData.job && (
                 <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 space-y-4">
-                  <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center">
+                  <h4 className="text-sm font-semibold text-blue-700 dark:text-primary-300 flex items-center">
                     <div className="w-2 h-2 bg-primary-500 rounded-full mr-2"></div>
                     Client Information (Auto-filled)
                   </h4>
