@@ -15,7 +15,7 @@ export const WidgetComponents: Record<string, React.FC> = {
     <DashboardWidgetCard
       title="Revenue"
       value="$12,450"
-      subtitle="This mont"
+      subtitle="This month"
       icon="DollarSign"
       trend={{ value: 12, isPositive: true }}
     />
