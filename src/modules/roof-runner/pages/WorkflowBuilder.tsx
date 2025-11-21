@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Edit,
@@ -28,12 +28,14 @@ import {
   Zap,
   Grid
 } from "lucide-react";
+import { WorkflowTemplate } from '../../../shared/store/services/workflowTemplateApi';
 
 interface WorkflowBuilderProps {
   onBack?: () => void;
+  initialTemplate?: WorkflowTemplate | null;
 }
 
-export default function WorkflowBuilder({ onBack }: WorkflowBuilderProps) {
+export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBuilderProps) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarType, setSidebarType] = useState<'trigger' | 'action'>('trigger');
   const [selectedItem, setSelectedItem] = useState('');
@@ -71,6 +73,38 @@ export default function WorkflowBuilder({ onBack }: WorkflowBuilderProps) {
     { id: 'add-notes', name: 'Add To Notes', icon: FileText, category: 'contact' },
     { id: 'copy-contact', name: 'Copy Contact', icon: Star, category: 'contact', starred: true }
   ];
+
+  useEffect(() => {
+    if (initialTemplate) {
+      const templateSteps: any[] = [];
+
+      if (initialTemplate.trigger_config && initialTemplate.trigger_config.type) {
+        const triggerOption = triggerOptions.find(t => t.id === initialTemplate.trigger_config.type);
+        if (triggerOption) {
+          templateSteps.push({
+            type: 'trigger',
+            ...triggerOption,
+            name: initialTemplate.trigger_config.name || triggerOption.name
+          });
+        }
+      }
+
+      if (initialTemplate.actions_config && Array.isArray(initialTemplate.actions_config)) {
+        initialTemplate.actions_config.forEach((actionConfig: any) => {
+          const actionOption = actionOptions.find(a => a.id === actionConfig.id);
+          if (actionOption) {
+            templateSteps.push({
+              type: 'action',
+              ...actionOption,
+              name: actionConfig.name || actionOption.name
+            });
+          }
+        });
+      }
+
+      setSteps(templateSteps);
+    }
+  }, [initialTemplate]);
 
   const handleOpenSidebar = (type: 'trigger' | 'action') => {
     setSidebarType(type);

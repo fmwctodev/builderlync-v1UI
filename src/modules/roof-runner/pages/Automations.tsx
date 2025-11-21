@@ -3,14 +3,18 @@ import { ChevronDown, ChevronRight, X, Filter, RefreshCw, Info, List, Search, Mo
 import AutomationModal from '../components/AutomationModal';
 import AutomationEditor from '../components/AutomationEditor';
 import WorkflowBuilder from './WorkflowBuilder';
+import WorkflowTemplateLibraryModal from '../components/WorkflowTemplateLibraryModal';
+import { WorkflowTemplate } from '../../../shared/store/services/workflowTemplateApi';
 
 export default function Automations() {
   const [activeTab, setActiveTab] = useState('All Workflows');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [currentView, setCurrentView] = useState('list');
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
 
   const workflows = [
     {
@@ -95,8 +99,22 @@ export default function Automations() {
     }
   ];
 
+  const handleSelectTemplate = (template: WorkflowTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplateModal(false);
+    setCurrentView('builder');
+  };
+
   if (currentView === 'builder') {
-    return <WorkflowBuilder onBack={() => setCurrentView('list')} />;
+    return (
+      <WorkflowBuilder
+        onBack={() => {
+          setCurrentView('list');
+          setSelectedTemplate(null);
+        }}
+        initialTemplate={selectedTemplate}
+      />
+    );
   }
 
   return (
@@ -135,7 +153,10 @@ export default function Automations() {
                     Start from Scratch
                   </button>
                   <button
-                    onClick={() => { setShowCreateDropdown(false); }}
+                    onClick={() => {
+                      setShowCreateDropdown(false);
+                      setShowTemplateModal(true);
+                    }}
                     className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     Select from Template
@@ -366,6 +387,13 @@ export default function Automations() {
           </div>
         </div>
       )}
+
+      {/* Template Library Modal */}
+      <WorkflowTemplateLibraryModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </div>
   );
 }
