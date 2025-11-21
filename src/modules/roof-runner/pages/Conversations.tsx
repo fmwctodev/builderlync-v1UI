@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Paperclip, Smile, DollarSign, Archive, Trash2, ChevronDown, Edit } from 'lucide-react';
 import { getContacts } from '../../../shared/store/services/contactsApi';
 import { getStaff } from '../../../shared/store/services/staffApi';
+import { getTeamConversations, getConversationMessages, createTeamConversation, sendTeamMessage, markConversationAsRead, getTeamContacts, findConversationByParticipants } from '../../../shared/store/services/teamMessagingApi';
+import { supabase } from '../../../shared/lib/supabase';
+import ConversationList from '../components/team-messaging/ConversationList';
+import MessageThread from '../components/team-messaging/MessageThread';
+import NewMessageModal from '../components/team-messaging/NewMessageModal';
+import { TeamConversationListItem, TeamMessageItem, TeamContact, MessageType } from '../types/teamMessaging';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Contact {
   id: number;
@@ -65,6 +72,16 @@ const Conversations: React.FC = () => {
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
   const [contactsList, setContactsList] = useState<any[]>([]);
   const [showContactDropdown, setShowContactDropdown] = useState(false);
+
+  // Team Messaging State
+  const [teamConversations, setTeamConversations] = useState<TeamConversationListItem[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<TeamMessageItem[]>([]);
+  const [teamContacts, setTeamContacts] = useState<TeamContact[]>([]);
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [conversationSearchQuery, setConversationSearchQuery] = useState('');
+  const [teamMessagingLoading, setTeamMessagingLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
 
   const contacts = [
     {
@@ -218,6 +235,200 @@ const Conversations: React.FC = () => {
     fetchStaff();
     fetchContacts();
   }, []);
+
+  // Team Messaging Functions
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16'
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
+  const loadTeamConversations = async () => {
+    try {
+      setTeamMessagingLoading(true);
+      const conversations = await getTeamConversations();
+
+      const formattedConversations: TeamConversationListItem[] = conversations.map(conv => {
+        const participantNames = conv.participants
+          .map(p => p.contact?.full_name)
+          .filter(Boolean)
+          .join(', ');
+
+        const displayName = conv.is_group
+          ? conv.name || `Group (${conv.participants.length})`
+          : participantNames;
+
+        return {
+          id: conv.id,
+          name: conv.name,
+          is_group: conv.is_group,
+          participants: conv.participants.map(p => ({
+            id: p.contact?.id || '',
+            full_name: p.contact?.full_name || '',
+            first_name: p.contact?.first_name || '',
+            last_name: p.contact?.last_name || '',
+            email: p.contact?.email || '',
+            phone: p.contact?.phone || '',
+            type: p.contact?.type as 'staff' | 'sub-contractor',
+            initials: getInitials(p.contact?.full_name || ''),
+            avatar_color: getAvatarColor(p.contact?.full_name || ''),
+          })),
+          last_message: conv.last_message?.content || '',
+          last_message_time: conv.last_message?.created_at
+            ? formatDistanceToNow(new Date(conv.last_message.created_at), { addSuffix: true })
+            : '',
+          unread_count: conv.unread_count || 0,
+          display_name: displayName,
+          initials: getInitials(displayName),
+          avatar_color: getAvatarColor(displayName),
+        };
+      });
+
+      setTeamConversations(formattedConversations);
+    } catch (error) {
+      console.error('Failed to load team conversations:', error);
+    } finally {
+      setTeamMessagingLoading(false);
+    }
+  };
+
+  const loadConversationMessages = async (conversationId: string) => {
+    try {
+      setMessagesLoading(true);
+      const messages = await getConversationMessages(conversationId);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const formattedMessages: TeamMessageItem[] = messages.map(msg => ({
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        sender_id: msg.sender_id,
+        sender_name: msg.sender?.email || 'Unknown',
+        content: msg.content,
+        timestamp: msg.created_at,
+        is_own_message: msg.sender_id === user?.id,
+        is_read: msg.is_read || false,
+      }));
+
+      setConversationMessages(formattedMessages);
+
+      // Mark conversation as read
+      await markConversationAsRead(conversationId);
+      await loadTeamConversations();
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
+  const loadTeamContacts = async () => {
+    try {
+      const contacts = await getTeamContacts();
+
+      const formattedContacts: TeamContact[] = contacts.map(contact => ({
+        id: contact.id,
+        full_name: contact.full_name,
+        first_name: contact.first_name,
+        last_name: contact.last_name,
+        email: contact.email,
+        phone: contact.phone,
+        type: contact.type as 'staff' | 'sub-contractor',
+        initials: getInitials(contact.full_name),
+        avatar_color: getAvatarColor(contact.full_name),
+      }));
+
+      setTeamContacts(formattedContacts);
+    } catch (error) {
+      console.error('Failed to load team contacts:', error);
+    }
+  };
+
+  const handleNewMessage = async (
+    messageType: MessageType,
+    contactIds: string[],
+    groupName: string,
+    message: string
+  ) => {
+    try {
+      setTeamMessagingLoading(true);
+
+      // For individual messages, check if conversation already exists
+      if (messageType === 'individual') {
+        const existingConvId = await findConversationByParticipants(contactIds);
+        if (existingConvId) {
+          // Send message to existing conversation
+          await sendTeamMessage({
+            conversation_id: existingConvId,
+            content: message,
+          });
+          setSelectedConversationId(existingConvId);
+          await loadTeamConversations();
+          await loadConversationMessages(existingConvId);
+          setShowNewMessageModal(false);
+          return;
+        }
+      }
+
+      // Create new conversation
+      const conversation = await createTeamConversation({
+        name: messageType === 'group' ? groupName : undefined,
+        is_group: messageType === 'group',
+        participant_ids: contactIds,
+        initial_message: message,
+      });
+
+      setSelectedConversationId(conversation.id);
+      await loadTeamConversations();
+      await loadConversationMessages(conversation.id);
+      setShowNewMessageModal(false);
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setTeamMessagingLoading(false);
+    }
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (!selectedConversationId) return;
+
+    try {
+      await sendTeamMessage({
+        conversation_id: selectedConversationId,
+        content,
+      });
+      await loadConversationMessages(selectedConversationId);
+      await loadTeamConversations();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again.');
+    }
+  };
+
+  const handleConversationSelect = async (conversationId: string) => {
+    setSelectedConversationId(conversationId);
+    await loadConversationMessages(conversationId);
+  };
+
+  // Load team messaging data when tab is active
+  useEffect(() => {
+    if (activeTab === 'team-messaging') {
+      loadTeamConversations();
+      loadTeamContacts();
+    }
+  }, [activeTab]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -898,85 +1109,50 @@ const Conversations: React.FC = () => {
         )}
 
         {activeTab === 'team-messaging' && (
-          <div className="flex-1 p-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Team Messaging</h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Send messages to your team members or broadcast to groups
-                  </p>
-                </div>
-                <button className="px-4 py-2 text-white rounded-lg" style={{backgroundColor: '#dc2626'}}>
-                  New Message
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                      Message Type
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <option>Individual Message</option>
-                      <option>Sales Team Broadcast</option>
-                      <option>All Team Broadcast</option>
-                      <option>Manager Notification</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                      Recipients
-                    </label>
-                    <select multiple className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 h-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <option>John Smith - Sales Rep</option>
-                      <option>Sarah Johnson - Sales Rep</option>
-                      <option>Mike Wilson - Project Manager</option>
-                      <option>Lisa Davis - Admin</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                      Message
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder="Type your message..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          <div className="flex-1 flex h-full">
+            <div className="w-80 flex-shrink-0">
+              <ConversationList
+                conversations={teamConversations}
+                selectedConversationId={selectedConversationId}
+                searchQuery={conversationSearchQuery}
+                onSearchChange={setConversationSearchQuery}
+                onConversationSelect={handleConversationSelect}
+                onNewMessage={() => setShowNewMessageModal(true)}
+              />
+            </div>
+            <div className="flex-1">
+              {selectedConversationId ? (
+                (() => {
+                  const selectedConv = teamConversations.find(c => c.id === selectedConversationId);
+                  if (!selectedConv) return null;
+
+                  return (
+                    <MessageThread
+                      conversationId={selectedConversationId}
+                      conversationName={selectedConv.display_name}
+                      isGroup={selectedConv.is_group}
+                      participants={selectedConv.participants}
+                      messages={conversationMessages}
+                      onSendMessage={handleSendMessage}
+                      loading={messagesLoading}
                     />
-                  </div>
-                  
-                  <button className="w-full px-4 py-2 text-white rounded-lg" style={{backgroundColor: '#dc2626'}}>
-                    Send Message
-                  </button>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Team Messages</h3>
-                  <div className="space-y-3">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Sales Team Broadcast</span>
-                        <span className="text-xs text-gray-500">2 hours ago</span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">New leads came in from Facebook campaign. Please follow up within 1 hour.</p>
-                      <div className="mt-2 text-xs text-gray-500">Sent to: Sales Team (4 members)</div>
-                    </div>
-                    
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Individual Message</span>
-                        <span className="text-xs text-gray-500">1 day ago</span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Great job on closing the Johnson project!</p>
-                      <div className="mt-2 text-xs text-gray-500">Sent to: John Smith</div>
-                    </div>
+                  );
+                })()
+              ) : (
+                <div className="h-full flex items-center justify-center bg-white dark:bg-gray-800">
+                  <div className="text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      Select a conversation to start messaging
+                    </p>
+                    <button
+                      onClick={() => setShowNewMessageModal(true)}
+                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Start New Conversation
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -1907,6 +2083,15 @@ const Conversations: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* New Message Modal */}
+      <NewMessageModal
+        show={showNewMessageModal}
+        contacts={teamContacts}
+        onClose={() => setShowNewMessageModal(false)}
+        onSend={handleNewMessage}
+        loading={teamMessagingLoading}
+      />
     </div>
   );
 };
