@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { ChevronDown, Grid3X3, List, Upload, Plus, Bell, HelpCircle, Settings } from 'lucide-react';
+import { ChevronDown, Grid3X3, List, Upload, Plus } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onAddOpportunity: () => void;
 }
 
-export default function Header({ activeTab, setActiveTab }: HeaderProps) {
+export default function Header({ activeTab, setActiveTab, onAddOpportunity }: HeaderProps) {
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
@@ -59,7 +59,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
             <Upload className="h-4 w-4 mr-2" /> Import
           </button>
 
-          <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700">
+          <button
+            onClick={onAddOpportunity}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add opportunity
           </button>
