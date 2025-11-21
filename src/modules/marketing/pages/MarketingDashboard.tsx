@@ -23,22 +23,22 @@ const MarketingDashboard: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
-        
-        {/* Sub Navigation */}
-        <div className="flex items-center space-x-1">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
+        </div>
+
+        <div className="flex items-center gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 <Icon size={16} />
@@ -49,8 +49,7 @@ const MarketingDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 overflow-auto p-6">
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'campaigns' && <CampaignsTab />}
         {activeTab === 'ads-manager' && <AdsManagerTab />}

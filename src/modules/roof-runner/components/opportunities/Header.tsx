@@ -20,32 +20,34 @@ export default function Header({
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-      <div className="max-w-full mx-auto px-4 py-3 sm:px-6 lg:px-8">
+      <div className="max-w-full mx-auto px-6">
         {/* Top Navigation Tabs */}
         {onViewChange && (
-          <div className="flex space-x-2 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+          <div className="flex items-center gap-4 pt-3">
             <button
               onClick={() => onViewChange('opportunities')}
-              className={`px-6 py-2 text-sm font-medium rounded-t-md transition-colors ${
+              className={`px-6 py-3 font-medium transition-all ${
                 activeView === 'opportunities'
-                  ? 'bg-gray-800 dark:bg-gray-700 text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
               }`}
             >
               Opportunities
             </button>
             <button
               onClick={() => onViewChange('pipelines')}
-              className={`px-6 py-2 text-sm font-medium rounded-t-md transition-colors ${
+              className={`px-6 py-3 font-medium transition-all ${
                 activeView === 'pipelines'
-                  ? 'bg-primary-500 text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
               }`}
             >
               Pipelines
             </button>
           </div>
         )}
+
+        <div className="py-3">{onViewChange && <div className="border-b border-gray-200 dark:border-gray-700 mb-3"></div>}</div>
 
         <div className="flex items-center justify-between">
           {/* Left Section */}

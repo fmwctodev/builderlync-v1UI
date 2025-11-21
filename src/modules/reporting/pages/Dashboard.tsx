@@ -1023,20 +1023,21 @@ export function Dashboard() {
         onClose={() => setShowMetricsModal(false)}
         onCreateReport={handleCreateReport}
       />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
+      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+          <div className="py-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
+          </div>
 
-          <div className="flex space-x-1">
+          <div className="flex items-center gap-4">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                className={`px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-red-50 text-red-700 border-b-2 border-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 {tab.label}
@@ -1044,9 +1045,10 @@ export function Dashboard() {
             ))}
           </div>
         </div>
-      </div>
 
-      {renderTabContent()}
+        <div className="flex-1 overflow-auto">
+          {renderTabContent()}
+        </div>
       </div>
     </>
   );
