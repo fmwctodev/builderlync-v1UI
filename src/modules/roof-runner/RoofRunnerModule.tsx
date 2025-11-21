@@ -8,7 +8,7 @@ import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
 import MaterialOrders from './pages/MaterialOrders';
-import Calendars from './pages/Calendars';
+import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
