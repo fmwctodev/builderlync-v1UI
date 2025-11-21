@@ -104,6 +104,8 @@ export const pipelinesApi = {
         name: stage.name,
         color: stage.color,
         order_position: stage.order_position !== undefined ? stage.order_position : index,
+        include_in_funnel: stage.include_in_funnel !== undefined ? stage.include_in_funnel : true,
+        include_in_distribution: stage.include_in_distribution !== undefined ? stage.include_in_distribution : true,
       }));
 
       const { data: stages, error: stagesError } = await supabase

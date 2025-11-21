@@ -16,6 +16,8 @@ export interface PipelineStage {
   name: string;
   order_position: number;
   color: string;
+  include_in_funnel: boolean;
+  include_in_distribution: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +98,8 @@ export interface PipelineFormData {
     name: string;
     color: string;
     order_position: number;
+    include_in_funnel?: boolean;
+    include_in_distribution?: boolean;
   }>;
 }
 

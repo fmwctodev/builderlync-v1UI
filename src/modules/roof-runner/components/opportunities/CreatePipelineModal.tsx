@@ -78,9 +78,11 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
     try {
       await pipelinesApi.createPipeline({
         name: pipelineName,
+        description: '',
+        is_default: false,
         stages: stages.map((stage, index) => ({
           name: stage.name,
-          order: index,
+          order_position: index,
           color: '#dc2626',
           include_in_funnel: stage.include_in_funnel,
           include_in_distribution: stage.include_in_distribution,

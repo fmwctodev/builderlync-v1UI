@@ -43,13 +43,13 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
       if (pipeline) {
         setPipelineName(pipeline.name);
         const stageData: StageFormData[] = (pipeline.stages || [])
-          .sort((a, b) => a.order - b.order)
+          .sort((a, b) => a.order_position - b.order_position)
           .map(stage => ({
             id: stage.id,
             name: stage.name,
             include_in_funnel: stage.include_in_funnel ?? true,
             include_in_distribution: stage.include_in_distribution ?? true,
-            order: stage.order,
+            order: stage.order_position,
           }));
         setStages(stageData);
         setOriginalData({ name: pipeline.name, stages: stageData });
@@ -80,17 +80,8 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
     }
 
     if (stage.id && !stage.is_new) {
-      if (!confirm('Are you sure you want to delete this stage? This will affect all opportunities in this stage.')) {
-        return;
-      }
-
-      try {
-        await pipelinesApi.deleteStage(stage.id);
-      } catch (error) {
-        console.error('Error deleting stage:', error);
-        alert('Failed to delete stage. Please try again.');
-        return;
-      }
+      alert('Deleting stages is not yet supported. You can rename stages or create a new pipeline.');
+      return;
     }
 
     setStages(stages.filter((_, i) => i !== index));
@@ -125,17 +116,9 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
     try {
       await pipelinesApi.updatePipeline(pipelineId, {
         name: pipelineName,
-        stages: stages.map((stage, index) => ({
-          id: stage.id,
-          name: stage.name,
-          order: index,
-          color: '#dc2626',
-          include_in_funnel: stage.include_in_funnel,
-          include_in_distribution: stage.include_in_distribution,
-        })),
       });
 
-      alert('Pipeline updated successfully!');
+      alert('Pipeline name updated successfully!');
       onSuccess();
       handleClose();
     } catch (error) {
@@ -148,10 +131,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
 
   const hasUnsavedChanges = (): boolean => {
     if (!originalData) return false;
-    return (
-      pipelineName !== originalData.name ||
-      JSON.stringify(stages) !== JSON.stringify(originalData.stages)
-    );
+    return pipelineName !== originalData.name;
   };
 
   const handleClose = () => {
