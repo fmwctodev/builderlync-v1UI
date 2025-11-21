@@ -74,14 +74,34 @@ export const pipelinesApi = {
 
   async createPipeline(formData: PipelineFormData): Promise<PipelineWithStages> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!supabase) {
+        throw new Error('Database connection not available. Please check your configuration.');
+      }
+
+      console.log('Creating pipeline with data:', formData);
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+
+      if (!user) {
+        throw new Error('User not authenticated. Please log in and try again.');
+      }
+
+      console.log('Authenticated user:', user.id);
 
       if (formData.is_default) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('pipelines')
           .update({ is_default: false })
           .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Error updating default pipeline:', updateError);
+        }
       }
 
       const pipelineData: Partial<Pipeline> = {
@@ -91,13 +111,24 @@ export const pipelinesApi = {
         is_default: formData.is_default,
       };
 
+      console.log('Inserting pipeline:', pipelineData);
+
       const { data: pipeline, error: pipelineError } = await supabase
         .from('pipelines')
         .insert(pipelineData)
         .select()
         .single();
 
-      if (pipelineError) throw pipelineError;
+      if (pipelineError) {
+        console.error('Pipeline insert error:', pipelineError);
+        throw new Error(`Failed to create pipeline: ${pipelineError.message}. ${pipelineError.hint || ''}`);
+      }
+
+      if (!pipeline) {
+        throw new Error('Pipeline created but no data returned');
+      }
+
+      console.log('Pipeline created successfully:', pipeline.id);
 
       const stagesData = formData.stages.map((stage, index) => ({
         pipeline_id: pipeline.id,
@@ -108,12 +139,19 @@ export const pipelinesApi = {
         include_in_distribution: stage.include_in_distribution !== undefined ? stage.include_in_distribution : true,
       }));
 
+      console.log('Inserting stages:', stagesData.length);
+
       const { data: stages, error: stagesError } = await supabase
         .from('pipeline_stages')
         .insert(stagesData)
         .select();
 
-      if (stagesError) throw stagesError;
+      if (stagesError) {
+        console.error('Stages insert error:', stagesError);
+        throw new Error(`Failed to create pipeline stages: ${stagesError.message}. ${stagesError.hint || ''}`);
+      }
+
+      console.log('Stages created successfully:', stages?.length);
 
       return {
         ...pipeline,
@@ -121,7 +159,10 @@ export const pipelinesApi = {
       };
     } catch (error) {
       console.error('Error creating pipeline:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('An unexpected error occurred while creating the pipeline');
     }
   },
 

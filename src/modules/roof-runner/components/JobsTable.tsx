@@ -5,11 +5,12 @@ import { Job } from '../../../shared/store/services/jobsApi';
 interface JobsTableProps {
   jobs: Job[];
   loading: boolean;
+  onView: (job: Job) => void;
   onEdit: (job: Job) => void;
   onDelete: (id: number) => void;
 }
 
-const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onEdit, onDelete }) => {
+const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, onDelete }) => {
   const headers = [
     'Last updated', 'Time in stage', 'Address', 'Contact', 'Value',
     'Workflow', 'Stage', 'Close date', 'Lead source', 'Assignees',
@@ -76,18 +77,24 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onEdit, onDelete }
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">0</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center space-x-2">
-                        <button className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <button
+                          onClick={() => onView(job)}
+                          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          title="View job details"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onEdit(job)}
                           className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-blue-400"
+                          title="Edit job"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDelete(job.id!)}
                           className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                          title="Delete job"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

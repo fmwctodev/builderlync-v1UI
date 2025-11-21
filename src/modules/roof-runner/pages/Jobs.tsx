@@ -19,6 +19,7 @@ const Jobs: React.FC = () => {
   const [showJobModal, setShowJobModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
+  const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [jobAddress, setJobAddress] = useState('');
   const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
 
@@ -160,6 +161,37 @@ const Jobs: React.FC = () => {
     setShowJobModal(true);
   };
 
+  const handleView = (job: Job) => {
+    setViewingJob(job);
+    setEditingJob(job);
+    setFormData({
+      name: job.name,
+      location: job.location,
+      assignees: job.assignees,
+      jobOwner: job.jobOwner,
+      workflowStages: job.workflowStages,
+      closeDate: job.closeDate,
+      jobValue: job.jobValue,
+      source: job.source,
+      details: job.details,
+      insuranceEnabled: job.insuranceEnabled,
+      insuranceCompany: job.insuranceCompany,
+      policyAccountNumber: job.policyAccountNumber,
+      claimNumber: job.claimNumber,
+      dateOfLoss: job.dateOfLoss,
+      typeOfDamage: job.typeOfDamage,
+      claimAmount: job.claimAmount,
+      deductible: job.deductible,
+      claimDetails: job.claimDetails,
+      createdBy: job.createdBy,
+      createdByName: job.createdByName,
+      editedBy: 1,
+      editedByName: 'Current User',
+      jobType: job.jobType || 'residential'
+    });
+    setShowJobDetails(true);
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -250,6 +282,7 @@ const Jobs: React.FC = () => {
                   console.error('Error updating job stage:', error);
                 }
               }}
+              onCardClick={handleView}
             />
           )}
 
@@ -257,6 +290,7 @@ const Jobs: React.FC = () => {
             <JobsTable
               jobs={jobs}
               loading={loading}
+              onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -304,6 +338,8 @@ const Jobs: React.FC = () => {
         isOpen={showJobDetails}
         onClose={() => {
           setShowJobDetails(false);
+          setViewingJob(null);
+          setEditingJob(null);
           resetForm();
           setJobAddress('');
           setJobCoordinates(null);
@@ -313,10 +349,13 @@ const Jobs: React.FC = () => {
           handleSubmit(e);
           setShowJobDetails(false);
         }}
+        onDelete={viewingJob ? () => handleDelete(viewingJob.id!) : undefined}
         formData={formData}
         setFormData={setFormData}
         staff={staff}
         loading={loading}
+        viewingJob={viewingJob}
+        editingJob={editingJob}
       />
 
       <JobModal

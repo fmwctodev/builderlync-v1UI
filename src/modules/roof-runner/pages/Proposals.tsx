@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Search, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import ProposalEditor from '../components/ProposalEditor';
 
@@ -9,13 +9,31 @@ export default function Proposals() {
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showNewProposalDropdown, setShowNewProposalDropdown] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowNewProposalDropdown(false);
+      }
+    };
+
+    if (showNewProposalDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNewProposalDropdown]);
 
   const proposals = [
     {
@@ -71,13 +89,50 @@ export default function Proposals() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals</h1>
         </div>
 
-        <button
-          onClick={() => setShowMeasurementsModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-        >
-          <Plus size={16} />
-          <span>New Proposal</span>
-        </button>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+          >
+            <Plus size={16} />
+            <span>New Proposal</span>
+            <ChevronDown size={16} />
+          </button>
+
+          {showNewProposalDropdown && (
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowNewProposalModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Scratch
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowMeasurementsModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Report
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowTemplateModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Template
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">

@@ -94,7 +94,20 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
       handleClose();
     } catch (error) {
       console.error('Error creating pipeline:', error);
-      alert('Failed to create pipeline. Please try again.');
+
+      let errorMessage = 'Failed to create pipeline. Please try again.';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      if (errorMessage.includes('not authenticated')) {
+        errorMessage = 'You are not logged in. Please log in and try again.';
+      } else if (errorMessage.includes('Database connection')) {
+        errorMessage = 'Unable to connect to the database. Please check your internet connection.';
+      }
+
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
