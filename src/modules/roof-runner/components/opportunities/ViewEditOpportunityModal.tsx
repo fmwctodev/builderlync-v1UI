@@ -69,33 +69,37 @@ export default function ViewEditOpportunityModal({
       setLoading(true);
       const data = await opportunitiesApi.getOpportunityById(opportunityId);
 
-      if (data) {
-        setOpportunity(data);
-
-        const primaryContact = data.contacts?.find(c => c.is_primary);
-        const formValues: OpportunityFormData = {
-          opportunity_name: data.opportunity_name,
-          pipeline_id: data.pipeline_id,
-          stage_id: data.stage_id,
-          status: data.status,
-          value: data.value,
-          owner_id: data.owner_id,
-          business_name: data.business_name || '',
-          source: data.source || '',
-          tags: data.tags || [],
-          appointment_time: data.appointment_time || '',
-          contact_name: primaryContact?.contact_name || '',
-          contact_email: primaryContact?.contact_email || '',
-          contact_phone: primaryContact?.contact_phone || '',
-          follower_ids: data.followers?.map(f => f.user_id) || [],
-        };
-
-        setFormData(formValues);
-        setOriginalData(formValues);
+      if (!data) {
+        throw new Error('Opportunity not found');
       }
+
+      setOpportunity(data);
+
+      const primaryContact = data.contacts?.find(c => c.is_primary) || data.contacts?.[0];
+      const formValues: OpportunityFormData = {
+        opportunity_name: data.opportunity_name,
+        pipeline_id: data.pipeline_id,
+        stage_id: data.stage_id,
+        status: data.status,
+        value: data.value,
+        owner_id: data.owner_id,
+        business_name: data.business_name || '',
+        source: data.source || '',
+        tags: data.tags || [],
+        appointment_time: data.appointment_time || '',
+        contact_name: primaryContact?.contact_name || '',
+        contact_email: primaryContact?.contact_email || '',
+        contact_phone: primaryContact?.contact_phone || '',
+        follower_ids: data.followers?.map(f => f.user_id) || [],
+      };
+
+      setFormData(formValues);
+      setOriginalData(formValues);
     } catch (error) {
       console.error('Error loading opportunity:', error);
-      alert('Failed to load opportunity details.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to load opportunity details: ${errorMessage}`);
+      handleClose();
     } finally {
       setLoading(false);
     }
