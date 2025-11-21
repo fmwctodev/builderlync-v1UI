@@ -91,8 +91,19 @@ export default function WorkflowBuilder({ onBack }: WorkflowBuilderProps) {
 
     if (item) {
       setSteps([...steps, { type: sidebarType, ...item }]);
-      handleCloseSidebar();
+
+      if (sidebarType === 'trigger') {
+        setSidebarType('action');
+        setActiveTab('Actions');
+        setSearchQuery('');
+      } else {
+        handleCloseSidebar();
+      }
     }
+  };
+
+  const handleAddActionAtPosition = (position: number) => {
+    handleOpenSidebar('action');
   };
 
   const filteredTriggers = triggerOptions.filter(t =>
@@ -223,15 +234,35 @@ export default function WorkflowBuilder({ onBack }: WorkflowBuilderProps) {
                           </button>
                         </div>
                       </div>
-                      <div className="w-0.5 h-12 bg-gray-300 dark:bg-gray-600 mx-auto"></div>
-                      <div className="flex justify-center">
-                        <button className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
-                          <Plus className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        </button>
-                      </div>
-                      <div className="w-0.5 h-12 bg-gray-300 dark:bg-gray-600 mx-auto"></div>
+
+                      {index < steps.length - 1 || step.type === 'trigger' ? (
+                        <>
+                          <div className="w-0.5 h-12 bg-gray-300 dark:bg-gray-600 mx-auto"></div>
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => handleAddActionAtPosition(index + 1)}
+                              className="p-1.5 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                              <Plus className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            </button>
+                          </div>
+                          <div className="w-0.5 h-12 bg-gray-300 dark:bg-gray-600 mx-auto"></div>
+                        </>
+                      ) : null}
                     </div>
                   ))}
+
+                  {steps.length > 0 && steps[steps.length - 1].type === 'trigger' && (
+                    <>
+                      <button
+                        onClick={() => handleOpenSidebar('action')}
+                        className="bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 min-w-[280px] text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                      >
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Please select action</span>
+                      </button>
+                      <div className="w-0.5 h-12 bg-gray-300 dark:bg-gray-600 mx-auto"></div>
+                    </>
+                  )}
 
                   <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-6 py-2 text-sm font-medium text-gray-600 dark:text-gray-300">
                     END
