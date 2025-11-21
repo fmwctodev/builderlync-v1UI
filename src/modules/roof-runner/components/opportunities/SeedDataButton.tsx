@@ -1,16 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../../../shared/lib/supabase';
 
 export function SeedDataButton() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUser();
+  }, []);
 
   const handleSeedData = async () => {
+    if (!userId) {
+      setMessage('⚠ Please log in first');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
     try {
-      const { data, error } = await supabase.rpc('seed_dummy_opportunities');
+      const { data, error } = await supabase.rpc('seed_dummy_opportunities_for_user', {
+        p_user_id: userId
+      });
 
       if (error) throw error;
 
