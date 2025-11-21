@@ -52,7 +52,7 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
       id: 'job',
       icon: <Home className="w-5 h-5 text-primary-600" />,
       title: 'Job',
-      description: 'This will create a card on the CRM board',
+      description: 'Create a New Job',
       onClick: () => {
         onNewJob();
         setIsOpen(false);
@@ -62,7 +62,7 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
       id: 'report',
       icon: <Package className="w-5 h-5 text-primary-600" />,
       title: 'Report',
-      description: 'Get a measurement report in hours',
+      description: 'Create a Report',
       onClick: () => {
         onNewReport();
         setIsOpen(false);
@@ -72,7 +72,7 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
       id: 'customer',
       icon: <UserPlus className="w-5 h-5 text-primary-600" />,
       title: 'Customer',
-      description: 'Add new contacts to Roofr',
+      description: 'Add New Contact',
       onClick: () => {
         onNewCustomer();
         setIsOpen(false);
