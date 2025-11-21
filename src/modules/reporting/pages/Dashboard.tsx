@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, ChevronDown } from 'lucide-react';
 import ReportMetricsModal from '../components/ReportMetricsModal';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState('custom-reports');
   const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
   const handleCreateReport = (selectedMetrics: string[]) => {
     console.log('Creating report with metrics:', selectedMetrics);
   };
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    console.log('Selected year:', year);
+  };
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
 
   const tabs = [
     { id: 'custom-reports', label: 'Reports' },
@@ -980,12 +989,25 @@ export function Dashboard() {
             </div>
             <div className="flex-1 p-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Reports</h3>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Find a report you already created</p>
-                    <button className="text-primary-600 hover:text-primary-700 font-medium">choose a year</button>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Reports</h3>
+                  <div className="relative">
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => handleYearChange(e.target.value)}
+                      className="appearance-none px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
                   </div>
+                </div>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
+                  <p className="text-center text-gray-600 dark:text-gray-400">Find a report you already created</p>
                 </div>
               </div>
             </div>
