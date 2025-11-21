@@ -24,7 +24,7 @@ const ReviewsAITab: React.FC = () => {
               value="off"
               checked={aiMode === 'off'}
               onChange={(e) => setAiMode(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div>
               <label htmlFor="off" className="font-medium text-gray-900 dark:text-white">Off</label>
@@ -40,7 +40,7 @@ const ReviewsAITab: React.FC = () => {
               value="suggestive"
               checked={aiMode === 'suggestive'}
               onChange={(e) => setAiMode(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div>
               <label htmlFor="suggestive" className="font-medium text-gray-900 dark:text-white">Suggestive</label>
@@ -56,7 +56,7 @@ const ReviewsAITab: React.FC = () => {
               value="auto"
               checked={aiMode === 'auto'}
               onChange={(e) => setAiMode(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div>
               <label htmlFor="auto" className="font-medium text-gray-900 dark:text-white">Auto Responses</label>
@@ -93,7 +93,7 @@ const ReviewsAITab: React.FC = () => {
             <select
               value={timeUnit}
               onChange={(e) => setTimeUnit(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             >
               <option value="Minutes">Minutes</option>
               <option value="Hours">Hours</option>

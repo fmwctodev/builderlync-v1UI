@@ -46,7 +46,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Appointments</h1>
           <button
             onClick={onNewAppointment}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
           >
             <Plus className="w-4 h-4" />
             New Appointment
@@ -58,42 +58,42 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
             onClick={() => setActiveTab('upcoming')}
             className={`px-4 py-2 font-medium transition-colors relative ${
               activeTab === 'upcoming'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-primary-600 dark:text-primary-400'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
             Upcoming
             {activeTab === 'upcoming' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
           <button
             onClick={() => setActiveTab('cancelled')}
             className={`px-4 py-2 font-medium transition-colors relative ${
               activeTab === 'cancelled'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-primary-600 dark:text-primary-400'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
             Cancelled
             {activeTab === 'cancelled' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
           <button
             onClick={() => setActiveTab('all')}
             className={`px-4 py-2 font-medium transition-colors relative ${
               activeTab === 'all'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-primary-600 dark:text-primary-400'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
             All
             {activeTab === 'all' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
-          <button className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+          <button className="px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-blue-300 font-medium">
             + Smart list
           </button>
         </div>
@@ -123,7 +123,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
               placeholder="Search by title"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -136,7 +136,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
       <div className="flex-1 overflow-auto p-6">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           </div>
         ) : filteredAppointments.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12">
@@ -161,7 +161,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
               </p>
               <button
                 onClick={() => setActiveTab('all')}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
               >
                 See All Appointments
               </button>
@@ -238,7 +238,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
       </div>
 
       <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-        <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+        <button className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-blue-300 font-medium">
           Customize List
         </button>
       </div>

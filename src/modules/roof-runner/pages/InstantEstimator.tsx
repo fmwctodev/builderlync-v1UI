@@ -166,7 +166,7 @@ const InstantEstimator: React.FC = () => {
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <button
                             onClick={() => navigate(`/instant-estimator/${estimator.id}/manage`)}
-                            className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                            className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
                           >
                             {estimator.name}
                           </button>

@@ -90,7 +90,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   <div className="flex items-center justify-between">
                     <span>{item}</span>
                     {item === 'Instant Estimate' && (
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-blue-800 dark:text-blue-300 rounded-full">
                         NEW
                       </span>
                     )}

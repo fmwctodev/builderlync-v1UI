@@ -57,7 +57,7 @@ export function timeAgo(dateString: string): string {
 export function getNotificationColor(type: 'info' | 'success' | 'warning' | 'error'): string {
   switch (type) {
     case 'info':
-      return 'text-blue-500 bg-blue-100 dark:bg-blue-900 dark:text-blue-300';
+      return 'text-primary-500 bg-primary-100 dark:bg-primary-900 dark:text-primary-300';
     case 'success':
       return 'text-green-500 bg-green-100 dark:bg-green-900 dark:text-green-300';
     case 'warning':

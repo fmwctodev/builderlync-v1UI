@@ -60,7 +60,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
     switch (status) {
       case 'completed': return 'text-green-600 bg-green-100';
       case 'processing': return 'text-yellow-600 bg-yellow-100';
-      case 'pending': return 'text-blue-600 bg-blue-100';
+      case 'pending': return 'text-primary-600 bg-primary-100';
       case 'failed': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -139,7 +139,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-gray-900 dark:text-white">{report.name}</h4>
-                {/* <span className="text-lg font-bold text-blue-600">{report.price}</span> */}
+                {/* <span className="text-lg font-bold text-primary-600">{report.price}</span> */}
               </div>
               <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                 {report.features.map((feature, idx) => (
@@ -189,7 +189,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
                 <div className="flex gap-2">
                   <button
                     onClick={() => onReportSelect?.(report)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                    className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md"
                     title="View Report"
                   >
                     <Eye className="w-4 h-4" />

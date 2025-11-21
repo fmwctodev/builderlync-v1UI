@@ -15,12 +15,12 @@ const Companies: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Building2 className="w-8 h-8 text-blue-600 mr-3" />
+          <Building2 className="w-8 h-8 text-primary-600 mr-3" />
           <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Company

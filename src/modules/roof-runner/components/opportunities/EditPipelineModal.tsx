@@ -181,7 +181,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                   placeholder="Pipeline name"
                   className={`w-full px-3 py-2 border ${
                     errors.pipelineName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Use a unique, descriptive name so you can find this pipeline later
@@ -198,7 +198,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                   </h3>
                   <button
                     onClick={addStage}
-                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                    className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-blue-300 flex items-center"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Stage
@@ -231,7 +231,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                           value={stage.name}
                           onChange={(e) => updateStage(index, 'name', e.target.value)}
                           placeholder="Stage name"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
 
@@ -241,7 +241,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                             type="checkbox"
                             checked={stage.include_in_funnel}
                             onChange={(e) => updateStage(index, 'include_in_funnel', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Funnel Chart</span>
                         </label>
@@ -250,7 +250,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                             type="checkbox"
                             checked={stage.include_in_distribution}
                             onChange={(e) => updateStage(index, 'include_in_distribution', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Stage Distribution</span>
                         </label>
@@ -284,7 +284,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
             <button
               onClick={handleSubmit}
               disabled={saving || !hasUnsavedChanges()}
-              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Updating...' : 'Update'}
             </button>

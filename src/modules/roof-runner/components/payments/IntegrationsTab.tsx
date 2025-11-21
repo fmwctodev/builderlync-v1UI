@@ -206,7 +206,7 @@ const IntegrationsTab: React.FC = () => {
           })}
         </div>
 
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+        <div className="mt-8 bg-primary-50 dark:bg-primary-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
           <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
             Need help with integrations?
           </h4>
@@ -214,7 +214,7 @@ const IntegrationsTab: React.FC = () => {
             Check our documentation or contact support for assistance setting up your payment
             integrations.
           </p>
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+          <button className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium">
             View Documentation →
           </button>
         </div>

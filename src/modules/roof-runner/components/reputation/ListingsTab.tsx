@@ -80,8 +80,8 @@ const ListingsTab: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="text-center p-4">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle size={32} className="text-blue-600" />
+              <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <CheckCircle size={32} className="text-primary-600" />
               </div>
               <h4 className="font-medium text-gray-900 dark:text-white">Listing Management</h4>
             </div>

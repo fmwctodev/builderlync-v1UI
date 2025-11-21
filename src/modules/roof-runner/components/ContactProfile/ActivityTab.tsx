@@ -51,14 +51,14 @@ const ActivityTab: React.FC<ActivityTabProps> = ({ contactId }) => {
 
       {loading ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
         </div>
       ) : activities.length > 0 ? (
         <div className="space-y-4">
           {activities.map((activity) => (
             <div key={activity.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border">
               <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full">
+                <div className="bg-primary-100 dark:bg-primary-900 p-2 rounded-full">
                   {getActivityIcon(activity.activityType)}
                 </div>
                 <div className="flex-1">

@@ -249,7 +249,7 @@ const BusinessInfo: React.FC = () => {
               State / Prov / Region
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>Texas</option>
                 <option>California</option>
                 <option>Florida</option>
@@ -263,7 +263,7 @@ const BusinessInfo: React.FC = () => {
               Country
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>United States</option>
                 <option>Canada</option>
                 <option>Mexico</option>
@@ -277,7 +277,7 @@ const BusinessInfo: React.FC = () => {
               Time Zone <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>GMT-06:00 America/Chicago (CST)</option>
                 <option>GMT-05:00 America/New_York (EST)</option>
                 <option>GMT-08:00 America/Los_Angeles (PST)</option>
@@ -292,7 +292,7 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>English (United States)</option>
                 <option>Spanish (Spain)</option>
                 <option>French (France)</option>
@@ -307,7 +307,7 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>Select language</option>
                 <option>English</option>
                 <option>Spanish</option>
@@ -333,7 +333,7 @@ const BusinessInfo: React.FC = () => {
               Business Type
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>Limited Liability Company Or Sole-Proprietorship</option>
                 <option>Corporation</option>
                 <option>Partnership</option>
@@ -347,7 +347,7 @@ const BusinessInfo: React.FC = () => {
               Business Industry
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>CONSTRUCTION</option>
                 <option>Technology</option>
                 <option>Healthcare</option>
@@ -361,7 +361,7 @@ const BusinessInfo: React.FC = () => {
               Business Registration ID Type
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 <option>USA: Employer Identification Number (EIN)</option>
                 <option>Canada: Business Number (BN)</option>
                 <option>UK: Company Registration Number (CRN)</option>
@@ -422,7 +422,7 @@ const BusinessInfo: React.FC = () => {
         </div>
 
         <div className="flex justify-end">
-          <button className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+          <button className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
             Update Information
           </button>
         </div>
@@ -467,7 +467,7 @@ const BusinessInfo: React.FC = () => {
           <input
             type="email"
             defaultValue="wolfgang@tarrytownroofing.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
@@ -476,7 +476,7 @@ const BusinessInfo: React.FC = () => {
             Job Position
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
               <option>CEO</option>
               <option>CTO</option>
               <option>CFO</option>
@@ -493,12 +493,12 @@ const BusinessInfo: React.FC = () => {
           <input
             type="tel"
             defaultValue="+1 713-824-3620"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
         <div className="flex justify-end">
-          <button className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+          <button className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
             Update Information
           </button>
         </div>

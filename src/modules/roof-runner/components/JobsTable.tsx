@@ -56,7 +56,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onEdit, onDelete }
                       ${job.jobValue?.toLocaleString() || '0'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                      <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
                         🏠 {job.workflowStages}
                       </span>
                     </td>
@@ -81,7 +81,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onEdit, onDelete }
                         </button>
                         <button
                           onClick={() => onEdit(job)}
-                          className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                          className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-blue-400"
                         >
                           <Edit className="w-4 h-4" />
                         </button>

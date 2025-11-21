@@ -12,7 +12,7 @@ const RelatedObjectsTab: React.FC = () => {
           <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             No association found
           </h4>
-          <p className="text-blue-600 hover:text-blue-700 text-sm mb-8 cursor-pointer">
+          <p className="text-primary-600 hover:text-primary-700 text-sm mb-8 cursor-pointer">
             Looks like a ghost town. Nothing to see here
           </p>
           
@@ -30,7 +30,7 @@ const RelatedObjectsTab: React.FC = () => {
               </div>
               
               <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
-                <div className="w-4 h-2 bg-blue-600 rounded"></div>
+                <div className="w-4 h-2 bg-primary-600 rounded"></div>
                 <div className="w-4 h-2 bg-blue-400 rounded"></div>
               </div>
             </div>
@@ -44,7 +44,7 @@ const RelatedObjectsTab: React.FC = () => {
             <div className="absolute bottom-12 right-4 text-gray-400 text-xs">✦</div>
           </div>
           
-          <button className="px-6 py-2 bg-blue-100 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/30 rounded-md text-sm font-medium flex items-center gap-2 mx-auto">
+          <button className="px-6 py-2 bg-primary-100 dark:bg-primary-900/20 text-primary-600 hover:bg-primary-200 dark:hover:bg-primary-900/30 rounded-md text-sm font-medium flex items-center gap-2 mx-auto">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>

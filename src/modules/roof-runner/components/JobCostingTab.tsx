@@ -22,7 +22,7 @@ const JobCostingTab: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Job cost projections are automatically generated based on won proposals.
             </p>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
               View proposals
             </button>
           </div>

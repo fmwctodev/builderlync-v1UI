@@ -241,10 +241,10 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
               {steps.length === 0 ? (
                 <button
                   onClick={() => handleOpenSidebar('trigger')}
-                  className="border-2 border-dashed border-blue-400 dark:border-blue-600 rounded-lg px-12 py-8 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors bg-white dark:bg-gray-800"
+                  className="border-2 border-dashed border-blue-400 dark:border-primary-600 rounded-lg px-12 py-8 text-center hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-white dark:bg-gray-800"
                 >
-                  <Plus className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                  <span className="text-blue-600 font-medium">Add New Trigger</span>
+                  <Plus className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+                  <span className="text-primary-600 font-medium">Add New Trigger</span>
                 </button>
               ) : (
                 <>
@@ -253,8 +253,8 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 min-w-[280px] shadow-sm">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                              <step.icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <div className="w-10 h-10 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                              <step.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                             </div>
                             <div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">
@@ -398,8 +398,8 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                      <trigger.icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                      <trigger.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <span className="text-sm text-gray-900 dark:text-white font-medium">{trigger.name}</span>
                                   </div>
@@ -434,8 +434,8 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                      <trigger.icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                      <trigger.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <span className="text-sm text-gray-900 dark:text-white">{trigger.name}</span>
                                   </div>
@@ -472,8 +472,8 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                      <action.icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                      <action.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <span className="text-sm text-gray-900 dark:text-white font-medium">{action.name}</span>
                                   </div>
@@ -508,14 +508,14 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                      <action.icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    <div className="w-8 h-8 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                      <action.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                     </div>
                                     <span className="text-sm text-gray-900 dark:text-white">{action.name}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {action.starred && (
-                                      <Star className="w-4 h-4 text-blue-600 dark:text-blue-400 fill-current" />
+                                      <Star className="w-4 h-4 text-primary-600 dark:text-primary-400 fill-current" />
                                     )}
                                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
                                   </div>

@@ -850,7 +850,7 @@ const Conversations: React.FC = () => {
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
                       Owner (Assigned to)
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white">
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white">
                       <option>Unassigned</option>
                     </select>
                   </div>
@@ -863,7 +863,7 @@ const Conversations: React.FC = () => {
                     <input
                       type="text"
                       placeholder="Search followers"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
                     />
                   </div>
 
@@ -1010,11 +1010,11 @@ const Conversations: React.FC = () => {
                             <td className="px-4 py-3">
                               <input type="checkbox" className="rounded" />
                             </td>
-                            <td className="px-4 py-3 text-sm text-blue-600 dark:text-blue-400">{snippet.name}</td>
+                            <td className="px-4 py-3 text-sm text-primary-600 dark:text-primary-400">{snippet.name}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">{snippet.body}</td>
                             <td className="px-4 py-3 text-sm">
                               {snippet.folder && (
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-blue-900 dark:text-blue-200">
+                                <span className="bg-primary-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">
                                   {snippet.folder}
                                 </span>
                               )}
@@ -1220,7 +1220,7 @@ const Conversations: React.FC = () => {
                     value={snippetName}
                     onChange={(e) => setSnippetName(e.target.value)}
                     placeholder="Enter Snippet Name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 
@@ -1245,7 +1245,7 @@ const Conversations: React.FC = () => {
                       onChange={(e) => setSnippetBody(e.target.value)}
                       placeholder="Type a message"
                       rows={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500 mt-2">
@@ -1289,7 +1289,7 @@ const Conversations: React.FC = () => {
                       value={testPhone}
                       onChange={(e) => setTestPhone(e.target.value)}
                       placeholder="Enter phone number"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     <button className="px-4 py-2 text-white rounded flex items-center space-x-1" style={{backgroundColor: '#dc2626'}}>
                       <span>📤</span>
@@ -1316,7 +1316,7 @@ const Conversations: React.FC = () => {
                     </div>
                     <div className="p-4 h-full bg-gray-50">
                       {snippetBody && (
-                        <div className="bg-blue-500 text-white p-2 rounded-lg text-xs max-w-48 ml-auto">
+                        <div className="bg-primary-500 text-white p-2 rounded-lg text-xs max-w-48 ml-auto">
                           {snippetBody}
                         </div>
                       )}
@@ -1376,7 +1376,7 @@ const Conversations: React.FC = () => {
                     value={snippetName}
                     onChange={(e) => setSnippetName(e.target.value)}
                     placeholder="this"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 
@@ -1389,7 +1389,7 @@ const Conversations: React.FC = () => {
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
                     placeholder="fkjasldhklf"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 
@@ -1455,14 +1455,14 @@ const Conversations: React.FC = () => {
                       value={fromEmail}
                       onChange={(e) => setFromEmail(e.target.value)}
                       placeholder="From Email Address"
-                      className="px-3 py-2 border border-red-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-red-500 dark:text-white"
+                      className="px-3 py-2 border border-red-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-red-500 dark:text-white"
                     />
                     <input
                       type="email"
                       value={toEmail}
                       onChange={(e) => setToEmail(e.target.value)}
                       placeholder="To Email Address"
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                   <p className="text-red-500 text-sm mb-2">Please enter a valid from email address</p>
@@ -1492,19 +1492,19 @@ const Conversations: React.FC = () => {
                       <div className="bg-white rounded-lg p-2 mb-2">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
-                            <span className="text-blue-500">←</span>
-                            <span className="text-blue-500 text-sm">Inbox</span>
+                            <span className="text-primary-500">←</span>
+                            <span className="text-primary-500 text-sm">Inbox</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <span className="text-blue-500">^</span>
-                            <span className="text-blue-500">v</span>
+                            <span className="text-primary-500">^</span>
+                            <span className="text-primary-500">v</span>
                           </div>
                         </div>
                         {emailSubject && (
                           <div className="font-semibold text-sm mb-2">{emailSubject}</div>
                         )}
                         <div className="flex items-center space-x-2 text-xs text-gray-600 mb-2">
-                          <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white">J</span>
+                          <span className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white">J</span>
                           <div>
                             <div>Jane Doe 10:15am</div>
                             <div className="text-gray-400">↩</div>
@@ -1515,10 +1515,10 @@ const Conversations: React.FC = () => {
                         )}
                       </div>
                       <div className="flex justify-center space-x-4 mt-4">
-                        <button className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white">📧</button>
-                        <button className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white">📁</button>
-                        <button className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white">↩</button>
-                        <button className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white">✏️</button>
+                        <button className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center text-white">📧</button>
+                        <button className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center text-white">📁</button>
+                        <button className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center text-white">↩</button>
+                        <button className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center text-white">✏️</button>
                       </div>
                     </div>
                   </div>
@@ -1745,7 +1745,7 @@ const Conversations: React.FC = () => {
                   setShowCreateMessageModal(false);
                   setShowDirectMessageModal(true);
                 }}
-                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-blue-500"
+                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-primary-500"
               >
                 <div className="text-center">
                   <div className="mb-4">
@@ -1763,7 +1763,7 @@ const Conversations: React.FC = () => {
                   setShowCreateMessageModal(false);
                   setShowGroupMessageModal(true);
                 }}
-                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-blue-500"
+                className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 cursor-pointer transition-colors dark:border-gray-600 dark:hover:border-primary-500"
               >
                 <div className="text-center">
                   <div className="mb-4">
@@ -1825,7 +1825,7 @@ const Conversations: React.FC = () => {
                   onClick={() => setShowContactDropdown(!showContactDropdown)}
                   readOnly
                   placeholder="Select name, email or phone"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1847,7 +1847,7 @@ const Conversations: React.FC = () => {
                         className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                          <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                             {contact.full_name?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
                           <div className="flex-1">
@@ -1933,7 +1933,7 @@ const Conversations: React.FC = () => {
                     onClick={() => setShowPhoneDropdown(!showPhoneDropdown)}
                     readOnly
                     placeholder="Phone number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1954,7 +1954,7 @@ const Conversations: React.FC = () => {
                           className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                               {staff.first_name?.charAt(0)?.toUpperCase()}{staff.last_name?.charAt(0)?.toUpperCase()}
                             </div>
                             <div className="flex-1">
@@ -1984,7 +1984,7 @@ const Conversations: React.FC = () => {
                     onClick={() => setShowContactDropdown(!showContactDropdown)}
                     readOnly
                     placeholder="Search by contact name or number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-pointer"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2007,7 +2007,7 @@ const Conversations: React.FC = () => {
                           className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 dark:hover:bg-gray-600 dark:border-gray-600"
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                               {contact.full_name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
                             <div className="flex-1">
@@ -2031,7 +2031,7 @@ const Conversations: React.FC = () => {
                     {selectedParticipants.map((participant) => (
                       <div key={participant.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg dark:bg-gray-700">
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                          <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
                             {participant.full_name?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
                           <div>

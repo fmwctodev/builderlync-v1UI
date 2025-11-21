@@ -69,7 +69,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     <div 
                       key={notification.id}
                       className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                        !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        !notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                       }`}
                     >
                       <div className="flex justify-between items-start">
@@ -77,7 +77,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded">New</span>
+                          <span className="ml-2 px-2 py-1 text-xs bg-primary-500 text-white rounded">New</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

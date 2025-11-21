@@ -94,7 +94,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
               onClick={() => setSelectedInbox(key as any)}
               className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm ${
                 selectedInbox === key
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900 dark:text-blue-300'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
@@ -112,7 +112,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
             key={conversation.id}
             onClick={() => onSelectConversation(conversation.id)}
             className={`p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
-              selectedConversation === conversation.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+              selectedConversation === conversation.id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
             }`}
           >
             <div className="flex items-start space-x-3">
@@ -144,7 +144,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
                     {conversation.contact.phone}
                   </span>
                   {conversation.unreadCount > 0 && (
-                    <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                    <span className="bg-primary-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                       {conversation.unreadCount}
                     </span>
                   )}

@@ -53,7 +53,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose }) => {
                 value={formData.pageSource}
                 onChange={(e) => setFormData({ ...formData, pageSource: e.target.value })}
                 onClick={() => setShowSourceDropdown(!showSourceDropdown)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white cursor-pointer"
                 placeholder="Source"
                 readOnly
               />
@@ -91,7 +91,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose }) => {
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Start Date"
                 />
               </div>
@@ -100,7 +100,7 @@ const AISummaryModal: React.FC<AISummaryModalProps> = ({ isOpen, onClose }) => {
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="End Date"
                 />
               </div>

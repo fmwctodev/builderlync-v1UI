@@ -97,7 +97,7 @@ const ManageQuestions: React.FC = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(`/instant-estimator/${id}/manage`)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
+            className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -106,7 +106,7 @@ const ManageQuestions: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 text-sm">Choose which questions you'd like to be displayed in your instant estimator</p>
           </div>
         </div>
-        <button onClick={saveQuestions} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+        <button onClick={saveQuestions} className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
           Save
         </button>
       </div>
@@ -158,7 +158,7 @@ const ManageQuestions: React.FC = () => {
               
               <button 
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="w-full border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-6 text-center text-blue-600 hover:text-blue-700 hover:border-blue-400"
+                className="w-full border-2 border-dashed border-blue-300 dark:border-primary-600 rounded-lg p-6 text-center text-primary-600 hover:text-primary-700 hover:border-blue-400"
               >
                 <Plus className="w-6 h-6 mx-auto" />
               </button>

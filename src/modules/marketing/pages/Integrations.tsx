@@ -2,14 +2,14 @@ import React from 'react';
 
 export function Integrations() {
   const integrations = [
-    { name: 'Google Calendar', logo: '📅', color: 'bg-blue-500', status: 'Connect' },
+    { name: 'Google Calendar', logo: '📅', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Google My Business', logo: '🏢', color: 'bg-red-500', status: 'Connect', featured: true },
     { name: 'Microsoft Teams', logo: '👥', color: 'bg-purple-500', status: 'Connect' },
-    { name: 'Facebook & Instagram', logo: '📱', color: 'bg-blue-600', status: 'Connect' },
+    { name: 'Facebook & Instagram', logo: '📱', color: 'bg-primary-600', status: 'Connect' },
     { name: 'QuickBooks', logo: 'qb', color: 'bg-green-500', status: 'Connect' },
     { name: 'Xero', logo: 'xero', color: 'bg-blue-400', status: 'Connect' },
-    { name: 'Wave', logo: 'wave', color: 'bg-blue-500', status: 'Connect' },
-    { name: 'Veem', logo: '✓', color: 'bg-blue-500', status: 'Connect' },
+    { name: 'Wave', logo: 'wave', color: 'bg-primary-500', status: 'Connect' },
+    { name: 'Veem', logo: '✓', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Stripe', logo: 'stripe', color: 'bg-purple-600', status: 'Connect' },
     { name: 'Shopify', logo: '🛍️', color: 'bg-green-600', status: 'Connect' },
     { name: 'TikTok', logo: '🎵', color: 'bg-black', status: 'Connect' },
@@ -46,7 +46,7 @@ export function Integrations() {
                   Connect your {integration.name} account
                 </p>
                 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                <button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
                   {integration.status}
                 </button>
               </div>

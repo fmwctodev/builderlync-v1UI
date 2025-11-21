@@ -260,7 +260,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('opportunity-details')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'opportunity-details'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('project-details')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'project-details'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -280,7 +280,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('tasks')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'tasks'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -290,7 +290,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('notes')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'notes'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -300,7 +300,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('appointments')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'appointments'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -310,7 +310,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('photos')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'photos'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -320,7 +320,7 @@ export default function ViewEditOpportunityModal({
                   onClick={() => setActiveSection('payments')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'payments'
-                      ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -360,7 +360,7 @@ export default function ViewEditOpportunityModal({
                           value={formData.contact_name}
                           onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
                           placeholder="Enter contact name"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
 
@@ -374,7 +374,7 @@ export default function ViewEditOpportunityModal({
                             value={formData.contact_email}
                             onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                             placeholder="Enter email"
-                            className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                            className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                           />
                         </div>
                         {errors.contact_email && (
@@ -393,7 +393,7 @@ export default function ViewEditOpportunityModal({
                           value={formData.contact_phone}
                           onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                           placeholder="Enter phone"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export default function ViewEditOpportunityModal({
                           value={formData.opportunity_name}
                           onChange={(e) => setFormData({ ...formData, opportunity_name: e.target.value })}
                           placeholder="Enter opportunity name"
-                          className={`w-full px-3 py-2 border ${errors.opportunity_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                          className={`w-full px-3 py-2 border ${errors.opportunity_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                         />
                         {errors.opportunity_name && (
                           <p className="mt-1 text-sm text-red-600">{errors.opportunity_name}</p>
@@ -427,7 +427,7 @@ export default function ViewEditOpportunityModal({
                           <select
                             value={formData.pipeline_id}
                             onChange={(e) => handlePipelineChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           >
                             {pipelines.map((pipeline) => (
                               <option key={pipeline.id} value={pipeline.id}>
@@ -444,7 +444,7 @@ export default function ViewEditOpportunityModal({
                           <select
                             value={formData.stage_id}
                             onChange={(e) => setFormData({ ...formData, stage_id: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           >
                             {stages.map((stage) => (
                               <option key={stage.id} value={stage.id}>
@@ -463,7 +463,7 @@ export default function ViewEditOpportunityModal({
                           <select
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value as OpportunityStatus })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           >
                             <option value="open">Open</option>
                             <option value="won">Won</option>
@@ -482,7 +482,7 @@ export default function ViewEditOpportunityModal({
                               type="number"
                               value={formData.value}
                               onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
-                              className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             />
                           </div>
                         </div>
@@ -496,7 +496,7 @@ export default function ViewEditOpportunityModal({
                           <select
                             value={formData.owner_id || ''}
                             onChange={(e) => setFormData({ ...formData, owner_id: e.target.value || undefined })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           >
                             <option value="">Unassigned</option>
                           </select>
@@ -510,12 +510,12 @@ export default function ViewEditOpportunityModal({
                             {formData.follower_ids?.map((followerId) => (
                               <span
                                 key={followerId}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 dark:bg-primary-900 text-blue-800 dark:text-blue-200"
                               >
                                 Follower
                                 <button
                                   onClick={() => removeFollower(followerId)}
-                                  className="ml-2 hover:text-blue-600 dark:hover:text-blue-400"
+                                  className="ml-2 hover:text-primary-600 dark:hover:text-blue-400"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -535,7 +535,7 @@ export default function ViewEditOpportunityModal({
                             value={formData.business_name}
                             onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
                             placeholder="Enter Business Name"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                         </div>
 
@@ -549,7 +549,7 @@ export default function ViewEditOpportunityModal({
                             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                             placeholder="Enter Source"
                             list="sources-edit"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                           <datalist id="sources-edit">
                             {OPPORTUNITY_SOURCES.map((source) => (
@@ -567,7 +567,7 @@ export default function ViewEditOpportunityModal({
                           type="datetime-local"
                           value={formData.appointment_time}
                           onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -610,7 +610,7 @@ export default function ViewEditOpportunityModal({
                 <button
                   onClick={handleUpdate}
                   disabled={saving || !hasUnsavedChanges()}
-                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {saving ? 'Updating...' : 'Update'}
                 </button>

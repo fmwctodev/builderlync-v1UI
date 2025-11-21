@@ -116,7 +116,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => onFormDataChange({...formData, firstName: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter First Name"
               />
             </div>
@@ -128,7 +128,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => onFormDataChange({...formData, lastName: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter Last Name"
               />
             </div>
@@ -142,7 +142,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   type="email"
                   value={formData.email}
                   onChange={(e) => onFormDataChange({...formData, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Please enter email address"
                 />
               </div>
@@ -161,13 +161,13 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   type="email"
                   value={secondaryEmail}
                   onChange={(e) => onSecondaryEmailChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="secondary@domain.com"
                 />
               </div>
             )}
             {!showSecondaryEmail && (
-              <button onClick={addSecondaryEmail} className="text-sm mt-1 text-blue-600 hover:underline dark:text-blue-400">
+              <button onClick={addSecondaryEmail} className="text-sm mt-1 text-primary-600 hover:underline dark:text-primary-400">
                 + Add Email
               </button>
             )}
@@ -188,7 +188,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => onPhoneChange(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter phone number"
                 maxLength={14}
               />
@@ -215,14 +215,14 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   type="tel"
                   value={secondaryPhone.phone}
                   onChange={(e) => onSecondaryPhoneChange(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter phone number"
                   maxLength={14}
                 />
               </div>
             )}
             {!showSecondaryPhone && (
-              <button onClick={addSecondaryPhone} className="text-sm mt-1 text-blue-600 hover:underline dark:text-blue-400">
+              <button onClick={addSecondaryPhone} className="text-sm mt-1 text-primary-600 hover:underline dark:text-primary-400">
                 + Add Phone
               </button>
             )}
@@ -234,7 +234,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               type="text"
               value={formData.company}
               onChange={(e) => onFormDataChange({...formData, company: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="Company name"
             />
           </div>
@@ -245,7 +245,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               value={formData.address}
               onChange={onAddressChange}
               placeholder="Enter address"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -298,7 +298,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                 id="dndAll"
                 checked={formData.dndAllChannels || false}
                 onChange={(e) => handleDndAllChange(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
               <label htmlFor="dndAll" className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
                 DND All Channels
@@ -321,7 +321,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   checked={formData.dndChannels?.email || false}
                   onChange={(e) => handleDndChannelChange('email', e.target.checked)}
                   disabled={formData.dndAllChannels}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                  className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                 />
                 <Mail className="ml-2 w-4 h-4 text-gray-600 dark:text-gray-400" />
                 <label htmlFor="dndEmail" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -336,7 +336,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   checked={formData.dndChannels?.textMessages || false}
                   onChange={(e) => handleDndChannelChange('textMessages', e.target.checked)}
                   disabled={formData.dndAllChannels}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                  className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                 />
                 <MessageSquare className="ml-2 w-4 h-4 text-gray-600 dark:text-gray-400" />
                 <label htmlFor="dndText" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -351,7 +351,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   checked={formData.dndChannels?.callsVoicemail || false}
                   onChange={(e) => handleDndChannelChange('callsVoicemail', e.target.checked)}
                   disabled={formData.dndAllChannels}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                  className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                 />
                 <Phone className="ml-2 w-4 h-4 text-gray-600 dark:text-gray-400" />
                 <label htmlFor="dndCalls" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -366,7 +366,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   checked={formData.dndChannels?.inboundCallsSms || false}
                   onChange={(e) => handleDndChannelChange('inboundCallsSms', e.target.checked)}
                   disabled={formData.dndAllChannels}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                  className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
                 />
                 <PhoneIncoming className="ml-2 w-4 h-4 text-gray-600 dark:text-gray-400" />
                 <label htmlFor="dndInbound" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -385,7 +385,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
           <button
             onClick={onSubmit}
             disabled={isLoading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (isEdit ? 'Updating...' : 'Creating...') : 'Save'}
           </button>

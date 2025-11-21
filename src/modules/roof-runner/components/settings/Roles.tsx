@@ -95,7 +95,7 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
       case 'owner':
         return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
       case 'admin':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
+        return 'bg-primary-100 text-blue-700 dark:bg-primary-900/20 dark:text-primary-400';
       case 'user':
         return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
       default:

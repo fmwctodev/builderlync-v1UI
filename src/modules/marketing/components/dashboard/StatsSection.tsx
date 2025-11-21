@@ -21,7 +21,7 @@ export const StatsSection: React.FC<StatsSectionProps> = ({ stats }) => {
   const getIconBg = (iconName: string) => {
     switch (iconName) {
       case 'Star': return 'bg-yellow-500';
-      case 'Globe': return 'bg-blue-500';
+      case 'Globe': return 'bg-primary-500';
       case 'TrendingUp': return 'bg-green-500';
       case 'Users': return 'bg-purple-500';
       default: return 'bg-gray-500';

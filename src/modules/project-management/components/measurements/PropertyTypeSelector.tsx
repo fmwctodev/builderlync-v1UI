@@ -41,7 +41,7 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
           <label className="flex items-center">
             <input
               type="radio"
-              className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
               name="propertyType"
               checked={propertyType === 'Residential'}
               onChange={() => handleTypeChange('Residential')}
@@ -52,7 +52,7 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
           <label className="flex items-center">
             <input
               type="radio"
-              className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
               name="propertyType"
               checked={propertyType === 'Commercial'}
               onChange={() => handleTypeChange('Commercial')}
@@ -63,7 +63,7 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
           <label className="flex items-center">
             <input
               type="radio"
-              className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
               name="propertyType"
               checked={propertyType === 'Multi-Family'}
               onChange={() => handleTypeChange('Multi-Family')}
@@ -74,7 +74,7 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
           <label className="flex items-center">
             <input
               type="radio"
-              className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
               name="propertyType"
               checked={propertyType === 'Industrial'}
               onChange={() => handleTypeChange('Industrial')}
@@ -87,7 +87,7 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
           <label className="flex items-center">
             <input
               type="checkbox"
-              className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+              className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
               checked={isComplex}
               onChange={handleComplexChange}
             />
@@ -110,8 +110,8 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
         </div>
 
         {isComplex && (
-          <div className="flex gap-4 bg-blue-50 dark:bg-blue-900/20 items-center justify-start p-4 rounded-lg">
-            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <div className="flex gap-4 bg-primary-50 dark:bg-primary-900/20 items-center justify-start p-4 rounded-lg">
+            <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
             <p className="text-blue-800 dark:text-blue-200 text-sm">
               Add additional buildings on this complex to your order by dropping additional pins on the map.
             </p>

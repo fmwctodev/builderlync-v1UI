@@ -181,8 +181,8 @@ const CompetitorAnalysisTab: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <BarChart size={20} className="text-blue-600" />
+              <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                <BarChart size={20} className="text-primary-600" />
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 dark:text-white">Score</h4>

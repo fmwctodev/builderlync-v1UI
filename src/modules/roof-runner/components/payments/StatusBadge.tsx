@@ -29,7 +29,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'invoice' }) =
         case 'draft':
           return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
         case 'sent':
-          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+          return 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300';
         case 'accepted':
           return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
         case 'rejected':
@@ -51,7 +51,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'invoice' }) =
         case 'completed':
           return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
         case 'payments':
-          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+          return 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300';
         case 'archived':
           return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
         default:
@@ -79,7 +79,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'invoice' }) =
         case 'funded':
           return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
         case 'in_transit':
-          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+          return 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300';
         case 'not_funded':
           return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
         case 'error':
@@ -96,7 +96,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'invoice' }) =
         case 'active':
           return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
         case 'scheduled':
-          return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+          return 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-blue-300';
         case 'expired':
           return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
         default:

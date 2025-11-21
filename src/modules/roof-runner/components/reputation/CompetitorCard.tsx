@@ -37,7 +37,7 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({ competitor, onEdit, onD
         <div className="flex items-center gap-2 ml-3">
           <button
             onClick={() => onEdit(competitor)}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
             title="Edit competitor"
           >
             <Edit2 size={18} />

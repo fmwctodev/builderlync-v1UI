@@ -21,13 +21,13 @@ export default function PurchaseOrders() {
         <input
           type="text"
           placeholder="Search by P.O. number, vendor, job, etc."
-          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         
         <div className="relative">
           <button
             onClick={() => setIsStatusOpen(!isStatusOpen)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px] text-left"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[100px] text-left"
           >
             {selectedStatus || 'Status'}
           </button>
@@ -89,7 +89,7 @@ function PurchaseOrderRow() {
       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">2024-01-15</td>
       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">View</button>
+          <button className="text-primary-600 hover:text-blue-900 dark:text-primary-400 dark:hover:text-blue-300">View</button>
           <div className="relative">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}

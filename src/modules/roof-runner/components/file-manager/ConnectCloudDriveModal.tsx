@@ -135,7 +135,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Cloud className="h-6 w-6 text-blue-600" />
+            <Cloud className="h-6 w-6 text-primary-600" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Connect Cloud Drive</h2>
           </div>
           <button
@@ -149,7 +149,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
         <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           ) : error ? (
             <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4">
@@ -209,7 +209,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
                     key={provider.id}
                     onClick={() => handleConnect(provider.id)}
                     disabled={isConnecting}
-                    className="flex items-center gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    className="flex items-center gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 dark:hover:border-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
                   >
                     <div className="text-3xl">{provider.icon}</div>
                     <div className="flex-1">
@@ -225,7 +225,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
                 ))}
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-6">
+              <div className="bg-primary-50 dark:bg-primary-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-6">
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   By connecting a cloud drive, you authorize BuilderLynk to access and sync files from your selected cloud storage provider. You can disconnect at any time. Your files remain in your cloud storage and are not transferred to our servers.
                 </p>

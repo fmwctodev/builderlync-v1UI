@@ -62,7 +62,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
       {/* Left Sidebar - Groups */}
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
         <div className="p-4">
-          <button className="w-full px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+          <button className="w-full px-4 py-3 bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400 rounded-lg font-medium hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
             All Calendars ({totalCalendars})
           </button>
         </div>
@@ -113,7 +113,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
             })}
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 mt-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg w-full transition-colors">
+          <button className="flex items-center gap-2 px-3 py-2 mt-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg w-full transition-colors">
             <Plus className="w-4 h-4" />
             New Group
           </button>
@@ -130,52 +130,52 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                 onClick={() => setActiveTab('calendars')}
                 className={`px-4 py-3 font-medium transition-colors relative ${
                   activeTab === 'calendars'
-                    ? 'text-blue-600 dark:text-blue-400'
+                    ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
                 Calendars
                 {activeTab === 'calendars' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('service-menu')}
                 className={`px-4 py-3 font-medium transition-colors relative ${
                   activeTab === 'service-menu'
-                    ? 'text-blue-600 dark:text-blue-400'
+                    ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
                 Service Menu
                 {activeTab === 'service-menu' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('rooms')}
                 className={`px-4 py-3 font-medium transition-colors relative ${
                   activeTab === 'rooms'
-                    ? 'text-blue-600 dark:text-blue-400'
+                    ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
                 Rooms
                 {activeTab === 'rooms' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab('equipment')}
                 className={`px-4 py-3 font-medium transition-colors relative ${
                   activeTab === 'equipment'
-                    ? 'text-blue-600 dark:text-blue-400'
+                    ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
                 Equipment
                 {activeTab === 'equipment' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
             </div>
@@ -187,7 +187,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="all">Status: All</option>
                 <option value="active">Active</option>
@@ -197,7 +197,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="all">Type: All</option>
                 <option value="personal">Personal</option>
@@ -205,7 +205,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                 <option value="event">Event</option>
               </select>
 
-              <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option>Owned by: Anyone</option>
               </select>
 
@@ -216,13 +216,13 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                   placeholder="Calendar/Group Name"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <button
                 onClick={onNewCalendar}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 New Calendar
@@ -235,7 +235,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">

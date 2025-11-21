@@ -16,7 +16,7 @@ const MyStatsTab: React.FC = () => {
               onClick={() => setSelectedFilter(filter)}
               className={`px-3 py-1 text-sm rounded-full transition-colors ${
                 selectedFilter === filter
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900/30 dark:text-blue-300'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
               }`}
             >
@@ -39,8 +39,8 @@ const MyStatsTab: React.FC = () => {
               Customers find the fanpage content lacking and unengaging. However, they appreciate the potential of the video content creation services to enhance engagement and conversions.
             </p>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-blue-600">Google</span>
-              <span className="text-blue-600">Facebook</span>
+              <span className="text-primary-600">Google</span>
+              <span className="text-primary-600">Facebook</span>
               <span className="text-gray-500">From 1 Reviews</span>
             </div>
           </div>
@@ -91,7 +91,7 @@ const MyStatsTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg text-center">
+      <div className="mt-8 bg-primary-50 dark:bg-primary-900/20 p-6 rounded-lg text-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start Growing your Online Visibility Today!</h3>
         <p className="text-gray-600 dark:text-gray-400 mb-4">Get listed across 35+ Digital services Globally</p>
       </div>
@@ -128,7 +128,7 @@ const MyStatsTab: React.FC = () => {
           <h4 className="font-medium text-gray-900 dark:text-white mb-4">Latest Reviews</h4>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                 BA
               </div>
               <div className="flex-1">

@@ -74,12 +74,12 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ onOpenProposalEditor }) => 
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center">
-                      <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                      <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
                       <h4 className="font-medium text-gray-900 dark:text-white">{template.name}</h4>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{template.description}</p>
                     <div className="flex items-center mt-2 space-x-4">
-                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">
+                      <span className="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-blue-800 dark:text-blue-300 rounded">
                         {template.type}
                       </span>
                       <span className="text-sm font-medium text-green-600 dark:text-green-400">
@@ -121,7 +121,7 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ onOpenProposalEditor }) => 
             ))}
           </div>
 
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+          <div className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               💡 <strong>Tip:</strong> Create proposals directly from your measurements to automatically populate square footage and material calculations.
             </p>

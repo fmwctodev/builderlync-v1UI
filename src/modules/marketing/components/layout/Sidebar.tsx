@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
     const props = { 
       size: 20, 
       className: active 
-        ? 'text-blue-500 dark:text-blue-400' 
+        ? 'text-primary-500 dark:text-primary-400' 
         : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
     };
 
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               to={item.href}
               className={`flex items-center px-3 py-2 rounded-md group transition-colors ${
                 isActive 
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' 
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >

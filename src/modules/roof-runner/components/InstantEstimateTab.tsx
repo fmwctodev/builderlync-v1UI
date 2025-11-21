@@ -49,11 +49,11 @@ const InstantEstimateTab: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Instant Estimate</h2>
-            <span className="ml-3 px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+            <span className="ml-3 px-3 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-blue-800 dark:text-blue-300 rounded-full">
               ✨ FEATURED
             </span>
           </div>
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
             Edit
           </button>
         </div>

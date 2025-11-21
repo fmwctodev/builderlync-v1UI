@@ -60,12 +60,12 @@ export function SeedDataButton() {
       <button
         onClick={handleSeedData}
         disabled={loading || !userId}
-        className="px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+        className="px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
       >
         {loading ? 'Seeding Data...' : 'Seed Dummy Data'}
       </button>
       {message && (
-        <span className={`text-sm font-medium ${message.startsWith('✓') ? 'text-green-600 dark:text-green-400' : message.startsWith('⚠') ? 'text-yellow-600 dark:text-yellow-400' : message.startsWith('Creating') ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+        <span className={`text-sm font-medium ${message.startsWith('✓') ? 'text-green-600 dark:text-green-400' : message.startsWith('⚠') ? 'text-yellow-600 dark:text-yellow-400' : message.startsWith('Creating') ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}`}>
           {message}
         </span>
       )}

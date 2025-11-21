@@ -195,7 +195,7 @@ const CampaignsTab: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-      scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      scheduled: 'bg-primary-100 text-blue-800 dark:bg-primary-900 dark:text-blue-200',
       sending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
       sent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       paused: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
@@ -356,7 +356,7 @@ const AdsManagerTab: React.FC = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Connected</p>
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button className="w-full bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
             Create Google Ad
           </button>
         </div>
@@ -367,7 +367,7 @@ const AdsManagerTab: React.FC = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Connected</p>
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button className="w-full bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
             Create Facebook Ad
           </button>
         </div>
@@ -418,7 +418,7 @@ const SocialPlannerTab: React.FC = () => {
                 <span className="text-sm text-gray-900 dark:text-white">{channel.name}</span>
               </div>
               {!channel.connected && (
-                <button className="text-xs text-blue-600 hover:underline dark:text-blue-400">
+                <button className="text-xs text-primary-600 hover:underline dark:text-primary-400">
                   Connect
                 </button>
               )}
@@ -472,7 +472,7 @@ const SocialPlannerTab: React.FC = () => {
               Save as Draft
             </button>
             <div className="space-x-2">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              <button className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
                 Schedule Post
               </button>
               <button className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
