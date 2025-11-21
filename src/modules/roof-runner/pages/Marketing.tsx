@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart3, Target, Share2, TrendingUp, Plus } from 'lucide-react';
+import CampaignModal from '../components/CampaignModal';
+import { campaignsApi } from '../../../shared/services/campaignsApi';
+import { Campaign, CampaignFormData } from '../types/campaigns';
+import { Toast } from '../components/Toast';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -142,15 +146,136 @@ const AnalyticsTab: React.FC = () => {
 };
 
 const CampaignsTab: React.FC = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      const data = await campaignsApi.getCampaigns();
+      setCampaigns(data);
+    } catch (error) {
+      console.error('Error loading campaigns:', error);
+    }
+  };
+
+  const handleSaveCampaign = async (data: CampaignFormData, sendNow: boolean) => {
+    try {
+      setIsLoading(true);
+      await campaignsApi.createCampaign(data, sendNow);
+      setToast({ show: true, message: sendNow ? 'Campaign sent successfully!' : 'Campaign saved as draft', type: 'success' });
+      setShowModal(false);
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error saving campaign:', error);
+      setToast({ show: true, message: 'Failed to save campaign', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this campaign?')) return;
+
+    try {
+      await campaignsApi.deleteCampaign(id);
+      setToast({ show: true, message: 'Campaign deleted successfully', type: 'success' });
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      setToast({ show: true, message: 'Failed to delete campaign', type: 'error' });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+      scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      sending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      sent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      paused: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    };
+    return styles[status] || styles.draft;
+  };
+
   return (
     <div className="space-y-6">
+      <CampaignModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={handleSaveCampaign}
+      />
+
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email & SMS Campaigns</h3>
-        <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+        >
           <Plus size={16} />
           <span>New Campaign</span>
         </button>
       </div>
+
+      {/* Active Campaigns */}
+      {campaigns.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Campaigns</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Campaign</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                {campaigns.map((campaign) => (
+                  <tr key={campaign.id}>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{campaign.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">{campaign.type}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusBadge(campaign.status)}`}>
+                        {campaign.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(campaign.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="text-red-600 hover:text-red-700 text-sm dark:text-red-400"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Campaign Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
