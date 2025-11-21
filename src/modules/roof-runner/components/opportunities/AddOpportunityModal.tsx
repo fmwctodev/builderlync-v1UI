@@ -12,7 +12,7 @@ interface AddOpportunityModalProps {
 }
 
 export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddOpportunityModalProps) {
-  const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('opportunity');
+  const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
   const [pipelines, setPipelines] = useState<PipelineWithStages[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OpportunityFormData>({
@@ -126,7 +126,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
       follower_ids: [],
     });
     setErrors({});
-    setActiveTab('opportunity');
+    setActiveTab('contact');
     onClose();
   };
 
@@ -153,16 +153,6 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
         <div className="border-b border-gray-200 dark:border-gray-700">
           <div className="flex px-6">
             <button
-              onClick={() => setActiveTab('opportunity')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'opportunity'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              Opportunity Details
-            </button>
-            <button
               onClick={() => setActiveTab('contact')}
               className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'contact'
@@ -172,11 +162,70 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
             >
               Contact details
             </button>
+            <button
+              onClick={() => setActiveTab('opportunity')}
+              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'opportunity'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Opportunity Details
+            </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'opportunity' ? (
+          {activeTab === 'contact' ? (
+            <div className="space-y-6">
+              <div className="flex items-center mb-4">
+                <User className="h-5 w-5 text-gray-500 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Contact details</h3>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Primary Contact Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.contact_name}
+                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                  placeholder="Enter Contact name"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Primary Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.contact_email}
+                  onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                  placeholder="Enter Email"
+                  className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                {errors.contact_email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.contact_email}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Primary Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.contact_phone}
+                  onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                  placeholder="Enter Phone"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : (
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -346,55 +395,6 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
                   type="datetime-local"
                   value={formData.appointment_time}
                   onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center mb-4">
-                <User className="h-5 w-5 text-gray-500 mr-2" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Contact details</h3>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Primary Contact Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.contact_name}
-                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                  placeholder="Enter Contact name"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Primary Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.contact_email}
-                  onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                  placeholder="Enter Email"
-                  className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                />
-                {errors.contact_email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.contact_email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Primary Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.contact_phone}
-                  onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                  placeholder="Enter Phone"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
