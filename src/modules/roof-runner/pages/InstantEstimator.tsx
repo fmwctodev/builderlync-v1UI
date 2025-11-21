@@ -94,8 +94,8 @@ const InstantEstimator: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 flex-shrink-0">
+        <div className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instant Estimator</h1>
           <button
             onClick={() => setShowModal(true)}
@@ -107,26 +107,26 @@ const InstantEstimator: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setActiveTab('all')}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+            className={`px-6 py-3 font-medium transition-all ${
               activeTab === 'all'
-                ? 'bg-red-100 dark:bg-red-900/30 text-[#dc2626] dark:text-red-300'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
             }`}
           >
-            <span>All Instant Estimators</span>
+            All Instant Estimators
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+            className={`px-6 py-3 font-medium transition-all ${
               activeTab === 'settings'
-                ? 'bg-red-100 dark:bg-red-900/30 text-[#dc2626] dark:text-red-300'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
             }`}
           >
-            <span>Settings</span>
+            Settings
           </button>
         </div>
       </div>
