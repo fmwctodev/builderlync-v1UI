@@ -15,14 +15,21 @@ interface Stage {
   include_in_distribution: boolean;
 }
 
+const DEFAULT_OPPORTUNITY_STAGES: Stage[] = [
+  { id: '1', name: 'New Lead', include_in_funnel: true, include_in_distribution: true },
+  { id: '2', name: 'Follow-Up 1', include_in_funnel: true, include_in_distribution: true },
+  { id: '3', name: 'Follow-Up 2', include_in_funnel: true, include_in_distribution: true },
+  { id: '4', name: 'Follow-Up 3', include_in_funnel: true, include_in_distribution: true },
+  { id: '5', name: 'Long Term Follow Up', include_in_funnel: true, include_in_distribution: true },
+  { id: '6', name: 'In Convo', include_in_funnel: true, include_in_distribution: true },
+  { id: '7', name: 'Inspection/Estimate Booked (Creates Job)', include_in_funnel: true, include_in_distribution: true },
+  { id: '8', name: 'Job Qualified', include_in_funnel: true, include_in_distribution: true },
+  { id: '9', name: 'Job Unqualified', include_in_funnel: true, include_in_distribution: true },
+];
+
 export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: CreatePipelineModalProps) {
   const [pipelineName, setPipelineName] = useState('');
-  const [stages, setStages] = useState<Stage[]>([
-    { id: '1', name: 'New Lead', include_in_funnel: true, include_in_distribution: true },
-    { id: '2', name: 'Contacted', include_in_funnel: true, include_in_distribution: true },
-    { id: '3', name: 'Proposal Sent', include_in_funnel: true, include_in_distribution: true },
-    { id: '4', name: 'Closed', include_in_funnel: true, include_in_distribution: true },
-  ]);
+  const [stages, setStages] = useState<Stage[]>([...DEFAULT_OPPORTUNITY_STAGES]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -93,12 +100,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
 
   const handleClose = () => {
     setPipelineName('');
-    setStages([
-      { id: '1', name: 'New Lead', include_in_funnel: true, include_in_distribution: true },
-      { id: '2', name: 'Contacted', include_in_funnel: true, include_in_distribution: true },
-      { id: '3', name: 'Proposal Sent', include_in_funnel: true, include_in_distribution: true },
-      { id: '4', name: 'Closed', include_in_funnel: true, include_in_distribution: true },
-    ]);
+    setStages([...DEFAULT_OPPORTUNITY_STAGES]);
     setErrors({});
     onClose();
   };
