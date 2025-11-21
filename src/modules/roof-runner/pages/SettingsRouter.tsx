@@ -4,7 +4,7 @@ import SettingsLayout from '../components/settings/SettingsLayout';
 import BusinessInfo from '../components/settings/BusinessInfo';
 import Profile from '../components/settings/Profile';
 import Integrations from '../components/settings/Integrations';
-import Staff from '../components/settings/Staff';
+import StaffManagement from '../components/settings/StaffManagement';
 import Billing from '../components/settings/Billing';
 import Communications from '../components/settings/Communications';
 import CustomFields from '../components/settings/CustomFields';
@@ -22,10 +22,11 @@ const SettingsRouter: React.FC = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/staff" element={<Staff />} />
+        <Route path="/staff" element={<StaffManagement initialTab="staff" />} />
+        <Route path="/staff/roles" element={<StaffManagement initialTab="roles" />} />
         <Route path="/communications" element={<Communications />} />
         <Route path="/custom-fields" element={<CustomFields />} />
-        <Route path="/permissions" element={<Permissions />} />
+        <Route path="/permissions" element={<StaffManagement initialTab="roles" />} />
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/brand-board" element={<BrandBoard />} />
         <Route path="/email-service" element={<EmailService />} />
