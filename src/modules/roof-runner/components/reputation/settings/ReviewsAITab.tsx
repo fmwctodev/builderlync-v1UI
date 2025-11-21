@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Plus, Minus, MoreHorizontal, Edit, Copy, Power } from 'lucide-react';
-import AIEmployeeModal from './AIEmployeeModal';
 import CreateStarterAgentsModal from './CreateStarterAgentsModal';
 import CreateAgentModal from './CreateAgentModal';
 
@@ -8,7 +7,6 @@ const ReviewsAITab: React.FC = () => {
   const [aiMode, setAiMode] = useState('off');
   const [waitTime, setWaitTime] = useState(1);
   const [timeUnit, setTimeUnit] = useState('Days');
-  const [isAIEmployeeModalOpen, setIsAIEmployeeModalOpen] = useState(false);
   const [isStarterAgentsModalOpen, setIsStarterAgentsModalOpen] = useState(false);
   const [isCreateAgentModalOpen, setIsCreateAgentModalOpen] = useState(false);
 
@@ -67,49 +65,41 @@ const ReviewsAITab: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Wait time before responding
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
-                <button
-                  onClick={() => setWaitTime(Math.max(1, waitTime - 1))}
-                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <Minus size={16} />
-                </button>
-                <input
-                  type="number"
-                  value={waitTime}
-                  onChange={(e) => setWaitTime(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-center border-0 focus:ring-0 dark:bg-gray-700 dark:text-white"
-                />
-                <button
-                  onClick={() => setWaitTime(waitTime + 1)}
-                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-              <select
-                value={timeUnit}
-                onChange={(e) => setTimeUnit(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Wait time before responding
+          </label>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
+              <button
+                onClick={() => setWaitTime(Math.max(1, waitTime - 1))}
+                className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <option value="Minutes">Minutes</option>
-                <option value="Hours">Hours</option>
-                <option value="Days">Days</option>
-              </select>
+                <Minus size={16} />
+              </button>
+              <input
+                type="number"
+                value={waitTime}
+                onChange={(e) => setWaitTime(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-16 text-center border-0 focus:ring-0 dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                onClick={() => setWaitTime(waitTime + 1)}
+                className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <Plus size={16} />
+              </button>
             </div>
+            <select
+              value={timeUnit}
+              onChange={(e) => setTimeUnit(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="Minutes">Minutes</option>
+              <option value="Hours">Hours</option>
+              <option value="Days">Days</option>
+            </select>
           </div>
-          <button
-            onClick={() => setIsAIEmployeeModalOpen(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Upgrade to unlimited AI Employee plan
-          </button>
         </div>
       </div>
 
@@ -168,17 +158,13 @@ const ReviewsAITab: React.FC = () => {
         </div>
       </div>
 
-      <AIEmployeeModal 
-        isOpen={isAIEmployeeModalOpen} 
-        onClose={() => setIsAIEmployeeModalOpen(false)} 
+      <CreateStarterAgentsModal
+        isOpen={isStarterAgentsModalOpen}
+        onClose={() => setIsStarterAgentsModalOpen(false)}
       />
-      <CreateStarterAgentsModal 
-        isOpen={isStarterAgentsModalOpen} 
-        onClose={() => setIsStarterAgentsModalOpen(false)} 
-      />
-      <CreateAgentModal 
-        isOpen={isCreateAgentModalOpen} 
-        onClose={() => setIsCreateAgentModalOpen(false)} 
+      <CreateAgentModal
+        isOpen={isCreateAgentModalOpen}
+        onClose={() => setIsCreateAgentModalOpen(false)}
       />
     </div>
   );
