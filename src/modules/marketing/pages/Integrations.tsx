@@ -16,7 +16,6 @@ export function Integrations() {
     { name: 'LinkedIn', logo: 'in', color: 'bg-blue-700', status: 'Connect' },
     { name: 'Slack', logo: 'slack', color: 'bg-purple-500', status: 'Connect' },
     { name: 'WooCommerce', logo: 'woo', color: 'bg-purple-600', status: 'Connect' },
-    { name: 'WhatsApp', logo: '💬', color: 'bg-green-500', status: 'Connect' },
     { name: 'ClickUp', logo: 'clickup', color: 'bg-pink-500', status: 'Connect' }
   ];
 

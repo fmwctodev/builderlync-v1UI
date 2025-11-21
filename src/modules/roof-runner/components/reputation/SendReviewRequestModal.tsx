@@ -19,8 +19,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
 
   const modes = [
     { id: 'email', label: 'Email', icon: Mail },
-    { id: 'sms', label: 'SMS', icon: MessageSquare },
-    { id: 'whatsapp', label: 'WhatsApp', icon: Phone }
+    { id: 'sms', label: 'SMS', icon: MessageSquare }
   ];
 
   const renderModeContent = () => {
@@ -46,18 +45,6 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
             </p>
             <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">
               Enable sms request
-            </button>
-          </div>
-        );
-      case 'whatsapp':
-        return (
-          <div className="text-center py-6">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Reach out to your customer on their favorite messaging app<br />
-              Stay closer to your customers by providing instant support, sending timely updates, and creating engaging interactions.
-            </p>
-            <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg">
-              Contact whatsapp
             </button>
           </div>
         );
