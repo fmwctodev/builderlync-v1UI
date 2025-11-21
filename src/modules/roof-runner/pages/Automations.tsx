@@ -92,50 +92,6 @@ export default function Automations() {
       lastUpdated: 'Sep 30 2025, 12:57 AM',
       createdOn: 'Nov 22 2024, 10:45 AM',
       isFolder: true
-    },
-    {
-      id: 9,
-      name: '4. New Sale - Send Review Request',
-      status: 'Published',
-      totalEnrolled: 12,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 30 2024, 12:06 AM',
-      createdOn: 'Jun 07 2024, 1:21 AM',
-      isFolder: false,
-      hasExternal: true
-    },
-    {
-      id: 10,
-      name: 'CUSTOM VALUE UPDATER',
-      status: 'Draft',
-      totalEnrolled: 0,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 29 2024, 6:22 PM',
-      createdOn: 'Nov 19 2024, 7:34 PM',
-      isFolder: false,
-      hasExternal: true
-    },
-    {
-      id: 11,
-      name: 'New Client (remove from all WF)',
-      status: 'Published',
-      totalEnrolled: 6,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 29 2024, 11:56 PM',
-      createdOn: 'Jun 12 2024, 10:27 PM',
-      isFolder: false,
-      hasExternal: true
-    },
-    {
-      id: 12,
-      name: 'New Workflow : 1762888972865',
-      status: 'Draft',
-      totalEnrolled: 0,
-      activeEnrolled: 0,
-      lastUpdated: 'Nov 11 2025, 2:22 PM',
-      createdOn: 'Nov 11 2025, 2:22 PM',
-      isFolder: false,
-      hasExternal: true
     }
   ];
 
