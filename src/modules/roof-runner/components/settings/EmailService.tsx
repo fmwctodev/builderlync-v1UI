@@ -126,8 +126,8 @@ const SMTPServiceContent: React.FC = () => {
                 <div className="w-6 h-6 bg-primary-500 rounded"></div>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">LeadConnector Email System</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">lc.automationlab.com</p>
+                <h4 className="font-medium text-gray-900 dark:text-white">LyncConnector Email System</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">lc.yourdomain.com</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
