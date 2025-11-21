@@ -118,10 +118,11 @@ export default function Automations() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Workflow List</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="flex justify-between items-center py-4">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Workflow List</h1>
         <div className="flex gap-3">
           <button 
             onClick={() => setShowFolderModal(true)}
@@ -166,43 +167,44 @@ export default function Automations() {
             )}
           </div>
         </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveTab('All Workflows')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'All Workflows'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            All Workflows
+          </button>
+          <button
+            onClick={() => setActiveTab('Needs Review')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'Needs Review'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            Needs Review (0)
+          </button>
+          <button
+            onClick={() => setActiveTab('Deleted')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'Deleted'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            Deleted
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 mb-6 border-b border-gray-200 dark:border-gray-700">
-        <button 
-          onClick={() => setActiveTab('All Workflows')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'All Workflows' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          All Workflows
-        </button>
-        <button 
-          onClick={() => setActiveTab('Needs Review')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'Needs Review' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Needs Review (0)
-        </button>
-        <button 
-          onClick={() => setActiveTab('Deleted')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'Deleted' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Deleted
-        </button>
-       
-      </div>
-
+      <div className="flex-1 overflow-auto p-6">
       {/* Controls */}
       <div className="flex justify-between items-center mb-6">
         <button 
@@ -394,6 +396,7 @@ export default function Automations() {
         onClose={() => setShowTemplateModal(false)}
         onSelectTemplate={handleSelectTemplate}
       />
+      </div>
     </div>
   );
 }

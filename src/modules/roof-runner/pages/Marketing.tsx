@@ -17,22 +17,24 @@ const Marketing: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
-        
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
+        </div>
+
         {/* Sub Navigation */}
-        <div className="flex items-center space-x-1 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'text-red-600 border-b-2 border-red-600 dark:text-red-400 dark:border-red-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 <Icon size={16} />
@@ -44,7 +46,7 @@ const Marketing: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div>
+      <div className="flex-1 overflow-auto">
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'campaigns' && <CampaignsTab />}
         {activeTab === 'ads-manager' && <AdsManagerTab />}

@@ -433,43 +433,41 @@ const Conversations: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Conversations</h1>
-        <div className="flex items-center space-x-6">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Conversations</h1>
+        </div>
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setActiveTab('conversations')}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`px-6 py-3 font-medium transition-all ${
               activeTab === 'conversations'
-                ? 'text-red-700'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
             }`}
-            style={activeTab === 'conversations' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
           >
             Conversations
           </button>
           <button
             onClick={() => setActiveTab('team-messaging')}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`px-6 py-3 font-medium transition-all ${
               activeTab === 'team-messaging'
-                ? 'text-red-700'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
             }`}
-            style={activeTab === 'team-messaging' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
           >
             Team Messaging
           </button>
           <button
             onClick={() => setActiveTab('snippets')}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`px-6 py-3 font-medium transition-all ${
               activeTab === 'snippets'
-                ? 'text-red-700'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
             }`}
-            style={activeTab === 'snippets' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
           >
             Snippets
           </button>
-
         </div>
       </div>
 
