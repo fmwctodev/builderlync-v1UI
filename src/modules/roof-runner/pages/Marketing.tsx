@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, Target, Share2, TrendingUp, Plus } from 'lucide-react';
 
 const Marketing: React.FC = () => {
@@ -50,7 +51,7 @@ const Marketing: React.FC = () => {
 };
 
 const AnalyticsTab: React.FC = () => {
-  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const navigate = useNavigate();
 
   const platforms = [
     { id: 'all', label: 'All Platforms' },
@@ -61,6 +62,10 @@ const AnalyticsTab: React.FC = () => {
     { id: 'google-business', label: 'Google Business' },
   ];
 
+  const handlePlatformClick = (platformId: string) => {
+    navigate(`/marketing/analytics/${platformId}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Platform Selector */}
@@ -70,12 +75,8 @@ const AnalyticsTab: React.FC = () => {
           {platforms.map((platform) => (
             <button
               key={platform.id}
-              onClick={() => setSelectedPlatform(platform.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedPlatform === platform.id
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-              }`}
+              onClick={() => handlePlatformClick(platform.id)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               {platform.label}
             </button>

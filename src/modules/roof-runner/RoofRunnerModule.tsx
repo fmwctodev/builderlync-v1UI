@@ -25,6 +25,7 @@ import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
+import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
@@ -63,6 +64,7 @@ export function RoofRunnerModule() {
         <Route path="automation" element={<Automations />} />
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<Marketing />} />
+        <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
