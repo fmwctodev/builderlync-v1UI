@@ -24,6 +24,7 @@ interface ContactsTableProps {
   onViewJob: (contact: Contact) => void;
   onEdit: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
+  onContactNameClick?: (contact: Contact) => void;
 }
 
 const ContactsTable: React.FC<ContactsTableProps> = ({
@@ -38,6 +39,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
   onViewJob,
   onEdit,
   onDelete,
+  onContactNameClick,
 }) => {
   return (
     <div className="flex-1 overflow-auto">
@@ -103,8 +105,13 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                     style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties}
                   />
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
-                  {contact.fullName}
+                <td className="px-6 py-4 text-sm font-medium">
+                  <button
+                    onClick={() => onContactNameClick ? onContactNameClick(contact) : onViewProfile(contact)}
+                    className="text-gray-900 dark:text-white hover:text-red-600 dark:hover:text-red-400 hover:underline cursor-pointer transition-colors text-left"
+                  >
+                    {contact.fullName}
+                  </button>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-2">

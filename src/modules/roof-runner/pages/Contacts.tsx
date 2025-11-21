@@ -515,6 +515,7 @@ const Contacts: React.FC = () => {
         onViewJob={handleViewJob}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onContactNameClick={handleViewProfile}
       />
 
       <Pagination
