@@ -103,39 +103,39 @@ const Communications: React.FC = () => {
             onClick={() => setMainTab('phone-numbers')}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
               mainTab === 'phone-numbers'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-red-600 dark:text-red-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Phone Numbers
             {mainTab === 'phone-numbers' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 dark:bg-red-400"></div>
             )}
           </button>
           <button
             onClick={() => setMainTab('voice')}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
               mainTab === 'voice'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-red-600 dark:text-red-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Voice
             {mainTab === 'voice' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 dark:bg-red-400"></div>
             )}
           </button>
           <button
             onClick={() => setMainTab('additional-settings')}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
               mainTab === 'additional-settings'
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-red-600 dark:text-red-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             Additional Settings
             {mainTab === 'additional-settings' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 dark:bg-red-400"></div>
             )}
           </button>
         </div>
@@ -147,7 +147,7 @@ const Communications: React.FC = () => {
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Manage Numbers</h3>
-                    <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-blue-900 dark:text-blue-200">
+                    <span className="bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-red-900 dark:text-red-200">
                       {phoneNumbers.length} Phone Numbers
                     </span>
                   </div>
@@ -198,7 +198,7 @@ const Communications: React.FC = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search"
-                      className="pl-3 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                      className="pl-3 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                     <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                   </div>
@@ -256,7 +256,7 @@ const Communications: React.FC = () => {
                                     {phone.number}
                                   </div>
                                   {phone.isDefault && (
-                                    <span className="inline-block mt-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                    <span className="inline-block mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
                                       Default Number
                                     </span>
                                   )}
@@ -275,7 +275,7 @@ const Communications: React.FC = () => {
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end space-x-2">
                                 {!phone.forwardingNumber ? (
-                                  <button className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                                  <button className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
                                     Add
                                   </button>
                                 ) : (
@@ -305,7 +305,7 @@ const Communications: React.FC = () => {
                       >
                         Previous
                       </button>
-                      <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700">
+                      <button className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700">
                         {currentPage}
                       </button>
                       <button
@@ -346,7 +346,7 @@ const Communications: React.FC = () => {
                       onClick={() => setVoiceTab('call-recording')}
                       className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         voiceTab === 'call-recording'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                           : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                       }`}
                     >
@@ -356,7 +356,7 @@ const Communications: React.FC = () => {
                       onClick={() => setVoiceTab('voicemail')}
                       className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         voiceTab === 'voicemail'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                           : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                       }`}
                     >
@@ -366,7 +366,7 @@ const Communications: React.FC = () => {
                       onClick={() => setVoiceTab('call-scripts')}
                       className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         voiceTab === 'call-scripts'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                           : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                       }`}
                     >
@@ -376,7 +376,7 @@ const Communications: React.FC = () => {
                       onClick={() => setVoiceTab('voip')}
                       className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         voiceTab === 'voip'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                           : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                       }`}
                     >
@@ -386,7 +386,7 @@ const Communications: React.FC = () => {
                       onClick={() => setVoiceTab('other-settings')}
                       className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         voiceTab === 'other-settings'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                           : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
                       }`}
                     >
@@ -406,8 +406,8 @@ const Communications: React.FC = () => {
                       <div className="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                         <button
                           onClick={() => setAutoDeleteRecordings(!autoDeleteRecordings)}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            autoDeleteRecordings ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                            autoDeleteRecordings ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
                           }`}
                         >
                           <span
@@ -468,7 +468,7 @@ const Communications: React.FC = () => {
               </div>
 
               <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-                <button className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
+                <button className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400">
                   Telephony Provider
                 </button>
               </div>
@@ -502,7 +502,7 @@ const Communications: React.FC = () => {
                     onClick={() => setSelectedProvider('twilio')}
                     className={`w-full p-6 rounded-lg border-2 transition-colors text-left ${
                       selectedProvider === 'twilio'
-                        ? 'border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/10'
+                        ? 'border-red-500 dark:border-red-400 bg-red-50/50 dark:bg-red-900/10'
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
@@ -526,11 +526,11 @@ const Communications: React.FC = () => {
                       <div className="flex-shrink-0">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                           selectedProvider === 'twilio'
-                            ? 'border-blue-500 dark:border-blue-400'
+                            ? 'border-red-500 dark:border-red-400'
                             : 'border-gray-300 dark:border-gray-600'
                         }`}>
                           {selectedProvider === 'twilio' && (
-                            <div className="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-red-600 dark:bg-red-400"></div>
                           )}
                         </div>
                       </div>
@@ -543,7 +543,7 @@ const Communications: React.FC = () => {
                 <button className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
                   Cancel
                 </button>
-                <button className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                <button className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
                   Save
                 </button>
               </div>

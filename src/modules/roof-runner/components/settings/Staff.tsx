@@ -117,7 +117,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
   const getAvatarColor = (index: number) => {
     const colors = [
       'bg-teal-500',
-      'bg-blue-500',
+      'bg-red-600',
       'bg-purple-500',
       'bg-red-500',
       'bg-cyan-500',
@@ -186,7 +186,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
+                  className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
                 >
                   <option value="">User Role</option>
                   <option value="admin">Admin</option>
@@ -202,7 +202,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="name, email, phone, ids"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
             </div>
@@ -210,7 +210,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
             {canManageStaff && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
               >
                 <Plus size={16} />
                 <span>Add User</span>
@@ -244,7 +244,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
                   </td>
                 </tr>
               ) : filteredStaff.length === 0 ? (
@@ -344,7 +344,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                 Previous
               </button>
               <button
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700"
               >
                 {currentPage}
               </button>

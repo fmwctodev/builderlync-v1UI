@@ -56,7 +56,7 @@ const BusinessInfo: React.FC = () => {
                   The proposed size is 350px * 180px. No bigger than 2.5 MB
                 </p>
                 <div className="flex items-center space-x-2">
-                  <button className="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                  <button className="px-4 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
                     Upload
                   </button>
                   <button className="px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
@@ -74,7 +74,7 @@ const BusinessInfo: React.FC = () => {
             <input
               type="text"
               defaultValue="Tarrytown Roofing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -87,7 +87,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 defaultValue="Tarrytown Roofing LLC"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
                 <MoreVertical className="w-4 h-4" />
@@ -106,7 +106,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="email"
                 defaultValue="sales@tarrytownroofing.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
@@ -116,7 +116,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="tel"
                 defaultValue="+1 737-734-2911"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -130,7 +130,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 placeholder="Branded Domain"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
                 <Plus className="w-4 h-4" />
@@ -146,7 +146,7 @@ const BusinessInfo: React.FC = () => {
             <input
               type="url"
               defaultValue="https://tarrytownroofing.com/"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -156,7 +156,7 @@ const BusinessInfo: React.FC = () => {
                 Business Niche
               </label>
               <div className="relative">
-                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <option>Roofing Contractor</option>
                   <option>General Contractor</option>
                   <option>Solar Installation</option>
@@ -170,7 +170,7 @@ const BusinessInfo: React.FC = () => {
                 <Info className="w-4 h-4" />
               </label>
               <div className="relative">
-                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <option>USD - US Dollar ($)</option>
                   <option>EUR - Euro (€)</option>
                   <option>GBP - British Pound (£)</option>
@@ -213,7 +213,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 defaultValue="1717 W 6th Street STE 100"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
                 <MoreVertical className="w-4 h-4" />
@@ -229,7 +229,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 defaultValue="Austin"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
@@ -239,7 +239,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 defaultValue="78703"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ const BusinessInfo: React.FC = () => {
           </div>
 
           <div className="flex justify-end">
-            <button className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+            <button className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
               Update
             </button>
           </div>
@@ -377,7 +377,7 @@ const BusinessInfo: React.FC = () => {
             <input
               type="text"
               defaultValue="99-4425498"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </div>
@@ -386,7 +386,7 @@ const BusinessInfo: React.FC = () => {
           <input
             type="checkbox"
             id="notRegistered"
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
           />
           <label htmlFor="notRegistered" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
             My business is Not registered
@@ -411,7 +411,7 @@ const BusinessInfo: React.FC = () => {
                   id={region.id}
                   checked={selectedRegions.includes(region.id)}
                   onChange={() => toggleRegion(region.id)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                 />
                 <label htmlFor={region.id} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                   {region.label}
@@ -440,7 +440,7 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 defaultValue="James"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
                 <MoreVertical className="w-4 h-4" />
@@ -455,7 +455,7 @@ const BusinessInfo: React.FC = () => {
             <input
               type="text"
               defaultValue="Kuntz"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </div>
@@ -510,8 +510,8 @@ const BusinessInfo: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setAllowDuplicateContact(!allowDuplicateContact)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              allowDuplicateContact ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+              allowDuplicateContact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
             }`}
           >
             <span
@@ -528,7 +528,7 @@ const BusinessInfo: React.FC = () => {
             Find existing contacts based on
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
+            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
               <option>Email</option>
               <option>Phone</option>
               <option>Name</option>
@@ -542,7 +542,7 @@ const BusinessInfo: React.FC = () => {
             Second preference for search (Optional)
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
+            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
               <option>Phone</option>
               <option>Email</option>
               <option>Name</option>
