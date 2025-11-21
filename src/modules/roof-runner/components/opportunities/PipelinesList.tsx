@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Pencil, Link2, Trash2, Search } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
 import type { PipelineWithStages } from '../../types/opportunities';
+import { SeedDataButton } from './SeedDataButton';
 
 interface PipelinesListProps {
   onEdit: (pipelineId: string) => void;
@@ -108,8 +109,13 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredPipelines.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                    {searchTerm ? 'No pipelines found matching your search.' : 'No pipelines created yet.'}
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="text-gray-500 dark:text-gray-400">
+                        {searchTerm ? 'No pipelines found matching your search.' : 'No pipelines created yet.'}
+                      </div>
+                      {!searchTerm && pipelines.length === 0 && <SeedDataButton />}
+                    </div>
                   </td>
                 </tr>
               ) : (
