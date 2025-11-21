@@ -16,6 +16,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    email: '',
     phone: '',
     extension: '',
     platform_language: 'en-US',
@@ -35,6 +36,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
         setFormData({
           first_name: data.first_name,
           last_name: data.last_name,
+          email: data.email || '',
           phone: data.phone,
           extension: data.extension,
           platform_language: data.platform_language,
@@ -128,10 +130,6 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Personal Data</h2>
-        <p className="text-gray-600 dark:text-gray-400">Manage your personal information and contact details</p>
-      </div>
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -141,11 +139,11 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Personal Data</h3>
 
           <div className="flex items-start space-x-6 mb-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden group">
+              <div className="w-40 h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden group">
                 {profile?.avatar_url ? (
                   <>
                     <img
@@ -154,15 +152,13 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                       className="w-full h-full object-cover"
                     />
                     {!uploading && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={handleRemoveAvatar}
-                          className="p-2 bg-white rounded-full hover:bg-gray-100"
-                        >
-                          <X className="w-5 h-5 text-gray-900" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="absolute top-2 right-2 p-1.5 bg-white rounded-full hover:bg-gray-100 shadow-md"
+                      >
+                        <X className="w-4 h-4 text-gray-900" />
+                      </button>
                     )}
                   </>
                 ) : (
@@ -178,9 +174,9 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
               </div>
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 p-2 bg-red-600 rounded-full cursor-pointer hover:bg-red-700 transition-colors"
+                className="absolute bottom-0 right-0 p-2 bg-white border border-gray-300 rounded-full cursor-pointer hover:bg-gray-50 transition-colors shadow-md"
               >
-                <Camera className="w-4 h-4 text-white" />
+                <Camera className="w-5 h-5 text-gray-700" />
                 <input
                   id="avatar-upload"
                   type="file"
@@ -211,7 +207,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.first_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -225,36 +221,53 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.last_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Phone
+                Email <span className="text-red-500">*</span>
               </label>
               <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleInputChange}
-                placeholder="+1 689-310-2712"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                placeholder="sean@autom8ionlab.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Extension
-              </label>
-              <input
-                type="text"
-                name="extension"
-                value={formData.extension}
-                onChange={handleInputChange}
-                placeholder="Extension"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 689-310-2712"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Extension
+                </label>
+                <input
+                  type="text"
+                  name="extension"
+                  value={formData.extension}
+                  onChange={handleInputChange}
+                  placeholder="Extension"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
             </div>
 
             <div>
@@ -267,7 +280,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 value={formData.calendar_name}
                 onChange={handleInputChange}
                 placeholder="Book With..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
 
@@ -279,7 +292,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 name="platform_language"
                 value={formData.platform_language}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="en-US">English (United States)</option>
                 <option value="es-ES">Spanish (Spain)</option>

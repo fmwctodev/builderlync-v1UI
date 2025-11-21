@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { Loader2, MoreHorizontal } from 'lucide-react';
 import { passwordService } from '../../../../shared/services/profileService';
 
 const PasswordSection: React.FC = () => {
@@ -13,6 +13,7 @@ const PasswordSection: React.FC = () => {
     new: false,
     confirm: false,
   });
+  const [signingOut, setSigningOut] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -69,17 +70,17 @@ const PasswordSection: React.FC = () => {
   };
 
   const handleSignOutEverywhere = async () => {
-    if (!confirm('This will sign you out of all devices and sessions. Continue?')) {
+    if (!confirm('This will sign you out of all devices and sessions, including this one. Continue?')) {
       return;
     }
 
     try {
-      setLoading(true);
+      setSigningOut(true);
       await passwordService.signOutEverywhere();
     } catch (err: any) {
       setError(err.message || 'Failed to sign out everywhere');
     } finally {
-      setLoading(false);
+      setSigningOut(false);
     }
   };
 
@@ -97,10 +98,6 @@ const PasswordSection: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Change Password</h2>
-        <p className="text-gray-600 dark:text-gray-400">Update your password and secure your account</p>
-      </div>
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -115,7 +112,7 @@ const PasswordSection: React.FC = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Update Password</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Change Password</h3>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -129,21 +126,22 @@ const PasswordSection: React.FC = () => {
                 value={formData.currentPassword}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="••••••••"
+                className="w-full px-3 py-2 pr-10 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('current')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white bg-red-500 hover:bg-red-600 rounded"
               >
-                {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              New Password <span className="text-red-500">*</span>
+              Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -152,54 +150,16 @@ const PasswordSection: React.FC = () => {
                 value={formData.newPassword}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Password"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('new')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white bg-red-500 hover:bg-red-600 rounded"
               >
-                {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                <MoreHorizontal className="w-4 h-4" />
               </button>
-            </div>
-
-            {formData.newPassword && (
-              <div className="mt-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">Password strength</span>
-                  <span className={`text-xs font-medium ${
-                    passwordStrength.label === 'Weak' ? 'text-red-600' :
-                    passwordStrength.label === 'Medium' ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
-                    {passwordStrength.label}
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                    style={{ width: `${passwordStrength.strength}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="mt-3 space-y-2">
-              {passwordRequirements.map((req, index) => {
-                const met = req.test(formData.newPassword);
-                return (
-                  <div key={index} className="flex items-center space-x-2">
-                    {met ? (
-                      <Check className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <X className="w-4 h-4 text-gray-400" />
-                    )}
-                    <span className={`text-sm ${met ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {req.label}
-                    </span>
-                  </div>
-                );
-              })}
             </div>
           </div>
 
@@ -214,14 +174,15 @@ const PasswordSection: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Confirm Password"
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility('confirm')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white bg-red-500 hover:bg-red-600 rounded"
               >
-                {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -247,10 +208,11 @@ const PasswordSection: React.FC = () => {
         <button
           type="button"
           onClick={handleSignOutEverywhere}
-          disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={signingOut}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
         >
-          Sign Out Everywhere
+          {signingOut && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>Sign Out Everywhere</span>
         </button>
       </div>
     </div>

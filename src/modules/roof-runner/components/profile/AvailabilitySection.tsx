@@ -186,10 +186,6 @@ const AvailabilitySection: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">User Availability</h2>
-        <p className="text-gray-600 dark:text-gray-400">Set your working hours and meeting preferences</p>
-      </div>
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -204,13 +200,17 @@ const AvailabilitySection: React.FC = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Meeting Location</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">User Availability</h3>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Meeting Location
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <select
               value={meetingLocation}
               onChange={(e) => setMeetingLocation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="google_meet">Google Meet</option>
               <option value="zoom">Zoom</option>
@@ -218,62 +218,66 @@ const AvailabilitySection: React.FC = () => {
               <option value="phone">Phone Call</option>
               <option value="custom">Custom</option>
             </select>
+            <input
+              type="text"
+              value={customLocation}
+              onChange={(e) => setCustomLocation(e.target.value)}
+              placeholder="Meeting Location"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
-          {meetingLocation === 'custom' && (
-            <div>
-              <input
-                type="text"
-                value={customLocation}
-                onChange={(e) => setCustomLocation(e.target.value)}
-                placeholder="Meeting Location"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-          )}
         </div>
-      </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Time Zone</h3>
-        <select
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        >
-          <option value="America/New_York">GMT-05:00 America/New_York (EST)</option>
-          <option value="America/Chicago">GMT-06:00 America/Chicago (CST)</option>
-          <option value="America/Denver">GMT-07:00 America/Denver (MST)</option>
-          <option value="America/Los_Angeles">GMT-08:00 America/Los_Angeles (PST)</option>
-          <option value="Europe/London">GMT+00:00 Europe/London</option>
-          <option value="Europe/Paris">GMT+01:00 Europe/Paris</option>
-        </select>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Available Hours</h3>
-
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button
-            type="button"
-            onClick={toggleAllDays}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300"
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Time Zone
+          </label>
+          <select
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white md:w-1/2"
           >
-            Select All
-          </button>
+            <option value="America/New_York">GMT-05:00 America/New_York (EST)</option>
+            <option value="America/Chicago">GMT-06:00 America/Chicago (CST)</option>
+            <option value="America/Denver">GMT-07:00 America/Denver (MST)</option>
+            <option value="America/Los_Angeles">GMT-08:00 America/Los_Angeles (PST)</option>
+            <option value="Europe/London">GMT+00:00 Europe/London</option>
+            <option value="Europe/Paris">GMT+01:00 Europe/Paris</option>
+          </select>
+        </div>
+
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 mt-8">Available Hours</h3>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          <label className="inline-flex items-center px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+            <input
+              type="checkbox"
+              checked={schedule.every(s => s.enabled)}
+              onChange={toggleAllDays}
+              className="sr-only"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Select All
+            </span>
+          </label>
 
           {DAY_SHORT.map((day, index) => (
-            <button
+            <label
               key={index}
-              type="button"
-              onClick={() => toggleDay(index)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`inline-flex items-center px-4 py-2 border-2 rounded-lg cursor-pointer transition-colors ${
                 schedule[index]?.enabled
-                  ? 'bg-blue-600 text-white border-2 border-blue-600'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              {day}
-            </button>
+              <input
+                type="checkbox"
+                checked={schedule[index]?.enabled || false}
+                onChange={() => toggleDay(index)}
+                className="w-4 h-4 mr-2 rounded border-gray-300"
+              />
+              <span className="text-sm font-medium">{day}</span>
+            </label>
           ))}
         </div>
 
@@ -299,14 +303,14 @@ const AvailabilitySection: React.FC = () => {
                       type="time"
                       value={slot.start}
                       onChange={(e) => updateTimeSlot(day.day, slotIndex, 'start', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     <span className="text-gray-500 dark:text-gray-400">to</span>
                     <input
                       type="time"
                       value={slot.end}
                       onChange={(e) => updateTimeSlot(day.day, slotIndex, 'end', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     {day.slots.length > 1 && (
                       <button
@@ -341,17 +345,17 @@ const AvailabilitySection: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-        >
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          <span>Save</span>
-        </button>
+        <div className="flex justify-end mt-6">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>Save</span>
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -4,6 +4,7 @@ export interface UserProfile {
   avatar_url: string | null;
   first_name: string;
   last_name: string;
+  email: string;
   phone: string;
   extension: string;
   platform_language: string;
