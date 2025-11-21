@@ -83,7 +83,7 @@ const JobCam: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Camera className="w-8 h-8 text-red-600" />
@@ -242,6 +242,19 @@ const JobCam: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* COMING SOON Overlay */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-12 max-w-md mx-4 text-center">
+          <Camera className="w-20 h-20 text-red-600 mx-auto mb-6" />
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-wide">
+            COMING SOON
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            The Job Cam feature is currently under development
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
