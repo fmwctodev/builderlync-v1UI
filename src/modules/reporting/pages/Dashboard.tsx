@@ -983,8 +983,8 @@ export function Dashboard() {
                 <div className="text-center">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Reports</h3>
                   <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Let's enhance this report by adding a widget</p>
-                    <button className="text-primary-600 hover:text-primary-700 font-medium">+ Add a widget</button>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">Find a report you already created</p>
+                    <button className="text-primary-600 hover:text-primary-700 font-medium">choose a year</button>
                   </div>
                 </div>
               </div>
