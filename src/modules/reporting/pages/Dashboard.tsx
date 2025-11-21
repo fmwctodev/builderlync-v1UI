@@ -11,7 +11,7 @@ export function Dashboard() {
   };
 
   const tabs = [
-    { id: 'custom-reports', label: 'Custom Reports' },
+    { id: 'custom-reports', label: 'Reports' },
     { id: 'google-ads', label: 'Google Ads Report' },
     { id: 'facebook-ads', label: 'Facebook Ads Report' },
     { id: 'attribution-report', label: 'Attribution Report' },
