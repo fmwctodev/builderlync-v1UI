@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
+import ViewEditOpportunityModal from './ViewEditOpportunityModal';
 import { pipelinesApi } from '../../services/pipelinesApi';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import type { PipelineStage, OpportunityWithDetails } from '../../types/opportunities';
@@ -9,6 +10,8 @@ export default function KanbanBoard() {
   const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
+  const [showViewEditModal, setShowViewEditModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -68,6 +71,24 @@ export default function KanbanBoard() {
     return getStageOpportunities(stageId).reduce((sum, opp) => sum + (opp.value || 0), 0);
   };
 
+  const handleCardClick = (opportunityId: string) => {
+    setSelectedOpportunityId(opportunityId);
+    setShowViewEditModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowViewEditModal(false);
+    setSelectedOpportunityId(null);
+  };
+
+  const handleUpdate = () => {
+    loadData();
+  };
+
+  const handleDelete = () => {
+    loadData();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -77,7 +98,8 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="flex space-x-4 overflow-x-auto pb-4">
+    <>
+      <div className="flex space-x-4 overflow-x-auto pb-4">
       {stages.map((stage) => {
         const stageOpportunities = getStageOpportunities(stage.id);
         const stageValue = getStageValue(stage.id);
@@ -106,10 +128,20 @@ export default function KanbanBoard() {
                 initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
               }))}
               onDragStart={handleDragStart}
+              onCardClick={handleCardClick}
             />
           </div>
         );
       })}
-    </div>
+      </div>
+
+      <ViewEditOpportunityModal
+        isOpen={showViewEditModal}
+        opportunityId={selectedOpportunityId}
+        onClose={handleModalClose}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+      />
+    </>
   );
 }

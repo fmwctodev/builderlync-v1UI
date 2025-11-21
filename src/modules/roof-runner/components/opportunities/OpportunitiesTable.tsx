@@ -50,7 +50,11 @@ const tableOpportunities: Opportunity[] = [
   }
 ];
 
-export default function OpportunitiesTable() {
+interface OpportunitiesTableProps {
+  onRowClick?: (opportunityId: string) => void;
+}
+
+export default function OpportunitiesTable({ onRowClick }: OpportunitiesTableProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="overflow-x-auto">
@@ -88,7 +92,11 @@ export default function OpportunitiesTable() {
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {tableOpportunities.map((opportunity) => (
-              <tr key={opportunity.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <tr
+                key={opportunity.id}
+                onClick={() => onRowClick?.(opportunity.id)}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {opportunity.name}
                 </td>
