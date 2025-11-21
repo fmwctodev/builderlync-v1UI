@@ -14,16 +14,27 @@ const Contacts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     type: 'customer',
     labelRole: '',
     email: '',
     phone: '',
+    phoneType: 'mobile',
     extension: '',
     company: '',
     address: '',
     latitude: 0,
-    longitude: 0
+    longitude: 0,
+    timezone: '',
+    dndAllChannels: false,
+    dndChannels: {
+      email: false,
+      textMessages: false,
+      callsVoicemail: false,
+      inboundCallsSms: false
+    },
+    secondaryPhoneType: 'mobile'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -98,8 +109,10 @@ const Contacts: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
     const contactData: CreateContactRequest = {
-      fullName: formData.fullName,
+      fullName: fullName,
       type: formData.type,
       labelOrRole: formData.labelRole,
       email: formData.email,
@@ -114,16 +127,27 @@ const Contacts: React.FC = () => {
       await createContact(contactData);
 
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         type: 'customer',
         labelRole: '',
         email: '',
         phone: '',
+        phoneType: 'mobile',
         extension: '',
         company: '',
         address: '',
         latitude: 0,
-        longitude: 0
+        longitude: 0,
+        timezone: '',
+        dndAllChannels: false,
+        dndChannels: {
+          email: false,
+          textMessages: false,
+          callsVoicemail: false,
+          inboundCallsSms: false
+        },
+        secondaryPhoneType: 'mobile'
       });
       setShowContactModal(false);
       setToast({message: 'Contact created successfully!', type: 'success'});
@@ -143,8 +167,10 @@ const Contacts: React.FC = () => {
 
     setIsLoading(true);
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
     const contactData: CreateContactRequest = {
-      fullName: formData.fullName,
+      fullName: fullName,
       type: formData.type,
       labelOrRole: formData.labelRole,
       email: formData.email,
@@ -159,16 +185,27 @@ const Contacts: React.FC = () => {
       await updateContact(editingContact.id, contactData);
 
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         type: 'customer',
         labelRole: '',
         email: '',
         phone: '',
+        phoneType: 'mobile',
         extension: '',
         company: '',
         address: '',
         latitude: 0,
-        longitude: 0
+        longitude: 0,
+        timezone: '',
+        dndAllChannels: false,
+        dndChannels: {
+          email: false,
+          textMessages: false,
+          callsVoicemail: false,
+          inboundCallsSms: false
+        },
+        secondaryPhoneType: 'mobile'
       });
       setShowEditModal(false);
       setEditingContact(null);
@@ -306,18 +343,33 @@ const Contacts: React.FC = () => {
   };
 
   const handleEdit = (contact: any) => {
+    const nameParts = (contact.fullName || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     setEditingContact(contact);
     setFormData({
-      fullName: contact.fullName || '',
+      firstName: firstName,
+      lastName: lastName,
       type: contact.type || 'customer',
       labelRole: contact.label_or_role || '',
       email: contact.email || '',
       phone: contact.phone || '',
+      phoneType: contact.phoneType || 'mobile',
       extension: '',
       company: contact.company || '',
       address: contact.address || '',
       latitude: contact.latitude || 0,
-      longitude: contact.longitude || 0
+      longitude: contact.longitude || 0,
+      timezone: contact.timezone || '',
+      dndAllChannels: contact.dndAllChannels || false,
+      dndChannels: contact.dndChannels || {
+        email: false,
+        textMessages: false,
+        callsVoicemail: false,
+        inboundCallsSms: false
+      },
+      secondaryPhoneType: contact.secondaryPhoneType || 'mobile'
     });
     setShowEditModal(true);
     setActiveDropdown(null);
