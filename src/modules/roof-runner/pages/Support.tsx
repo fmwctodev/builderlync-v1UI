@@ -132,14 +132,14 @@ const Support: React.FC = () => {
 
           {/* Email Support */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Email Support</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Submit a support ticket and get a detailed response within 24 hours
             </p>
-            <button className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+            <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
               Send Email
             </button>
           </div>
