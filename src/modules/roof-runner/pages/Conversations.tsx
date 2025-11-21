@@ -237,15 +237,15 @@ const Conversations: React.FC = () => {
             Conversations
           </button>
           <button
-            onClick={() => setActiveTab('manual-actions')}
+            onClick={() => setActiveTab('team-messaging')}
             className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'manual-actions'
+              activeTab === 'team-messaging'
                 ? 'text-red-700'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
-            style={activeTab === 'manual-actions' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
+            style={activeTab === 'team-messaging' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
           >
-            Manual actions
+            Team Messaging
           </button>
           <button
             onClick={() => setActiveTab('snippets')}
@@ -257,17 +257,6 @@ const Conversations: React.FC = () => {
             style={activeTab === 'snippets' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
           >
             Snippets
-          </button>
-          <button
-            onClick={() => setActiveTab('team-messaging')}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'team-messaging'
-                ? 'text-red-700'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            style={activeTab === 'team-messaging' ? {backgroundColor: '#fef2f2', color: '#dc2626'} : {}}
-          >
-            Team Messaging
           </button>
 
         </div>
@@ -719,27 +708,6 @@ const Conversations: React.FC = () => {
               </div>
             </div>
           </>
-        )}
-
-        {activeTab === 'manual-actions' && (
-          <div className="flex-1 p-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center space-x-4 mb-6">
-                <input
-                  type="text"
-                  placeholder="Type to Search Workflows"
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                />
-                <select className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white">
-                  <option>Select Assignee</option>
-                </select>
-              </div>
-              <div className="text-center py-8">
-                <h3 className="text-lg font-semibold text-green-600 mb-2">Good Work!</h3>
-                <p className="text-gray-600 dark:text-gray-400">You have no pending tasks</p>
-              </div>
-            </div>
-          </div>
         )}
 
         {activeTab === 'snippets' && (
