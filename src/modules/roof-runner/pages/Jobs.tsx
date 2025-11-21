@@ -22,10 +22,12 @@ const Jobs: React.FC = () => {
 
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('default');
+  const [selectedJobType, setSelectedJobType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
@@ -52,20 +54,31 @@ const Jobs: React.FC = () => {
     createdBy: 1,
     createdByName: 'Current User',
     editedBy: 1,
-    editedByName: 'Current User'
+    editedByName: 'Current User',
+    jobType: 'residential'
   });
 
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
       const response = await getJobs(page, 10);
-      setJobs(response.data.data || []);
-
+      const fetchedJobs = response.data.data || [];
+      setAllJobs(fetchedJobs);
+      filterJobsByType(fetchedJobs, selectedJobType);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       setToast({ message: 'Failed to load jobs', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filterJobsByType = (jobsList: Job[], type: string) => {
+    if (type === 'all') {
+      setJobs(jobsList);
+    } else {
+      const filtered = jobsList.filter(job => job.jobType === type);
+      setJobs(filtered);
     }
   };
 
@@ -139,7 +152,8 @@ const Jobs: React.FC = () => {
       createdBy: job.createdBy,
       createdByName: job.createdByName,
       editedBy: 1,
-      editedByName: 'Current User'
+      editedByName: 'Current User',
+      jobType: job.jobType || 'residential'
     });
     setShowJobModal(true);
   };
@@ -167,7 +181,8 @@ const Jobs: React.FC = () => {
       createdBy: 1,
       createdByName: 'Current User',
       editedBy: 1,
-      editedByName: 'Current User'
+      editedByName: 'Current User',
+      jobType: 'residential'
     });
   };
 
@@ -175,6 +190,10 @@ const Jobs: React.FC = () => {
     fetchJobs();
     fetchStaff();
   }, []);
+
+  useEffect(() => {
+    filterJobsByType(allJobs, selectedJobType);
+  }, [selectedJobType]);
 
   useEffect(() => {
     if (toast) {
@@ -194,6 +213,8 @@ const Jobs: React.FC = () => {
         setSearchQuery={setSearchQuery}
         selectedFilter={selectedFilter}
         setSelectedFilter={setSelectedFilter}
+        selectedJobType={selectedJobType}
+        setSelectedJobType={setSelectedJobType}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         onNewJob={() => setShowAddressModal(true)}

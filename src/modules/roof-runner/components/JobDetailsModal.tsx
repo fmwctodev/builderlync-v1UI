@@ -119,6 +119,35 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
 
                   <form onSubmit={onSubmit} className="space-y-6 pb-20">
+                {/* Job Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="residential"
+                        checked={formData.jobType === 'residential'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="commercial"
+                        checked={formData.jobType === 'commercial'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>

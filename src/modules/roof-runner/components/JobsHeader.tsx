@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, Plus, Grid, List, Settings } from 'lucide-react';
+import { Search, Filter, Plus, Grid, List, Settings, Building2 } from 'lucide-react';
 
 interface JobsHeaderProps {
   activeView: string;
@@ -8,6 +8,8 @@ interface JobsHeaderProps {
   setSearchQuery: (query: string) => void;
   selectedFilter: string;
   setSelectedFilter: (filter: string) => void;
+  selectedJobType: string;
+  setSelectedJobType: (type: string) => void;
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   onNewJob: () => void;
@@ -20,6 +22,8 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
   setSearchQuery,
   selectedFilter,
   setSelectedFilter,
+  selectedJobType,
+  setSelectedJobType,
   showFilters,
   setShowFilters,
   onNewJob
@@ -39,6 +43,22 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
 
       {/* Tabs */}
       <div className="flex items-center space-x-6 mb-4">
+        {/* Job Type Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedJobType}
+            onChange={(e) => setSelectedJobType(e.target.value)}
+            className="input min-w-[180px] pr-8 appearance-none cursor-pointer"
+          >
+            <option value="all">All Jobs</option>
+            <option value="residential">Residential</option>
+            <option value="commercial">Commercial</option>
+          </select>
+          <Building2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+
+        <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+
         <button
           onClick={() => setActiveView('board')}
           className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
