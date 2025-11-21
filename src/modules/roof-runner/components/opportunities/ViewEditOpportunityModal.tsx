@@ -338,7 +338,7 @@ export default function ViewEditOpportunityModal({
                 <div className="space-y-8">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contact details</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Opportunity Details</h3>
                       <label className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                         <input
                           type="checkbox"
@@ -349,58 +349,6 @@ export default function ViewEditOpportunityModal({
                         Hide Empty Fields
                       </label>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Primary Contact Name <span className="text-red-600">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.contact_name}
-                          onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                          placeholder="Enter contact name"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Primary Email
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="email"
-                            value={formData.contact_email}
-                            onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                            placeholder="Enter email"
-                            className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                          />
-                        </div>
-                        {errors.contact_email && (
-                          <p className="mt-1 text-sm text-red-600">{errors.contact_email}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Primary Phone
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.contact_phone}
-                          onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                          placeholder="Enter phone"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Opportunity Details</h3>
 
                     <div className="space-y-4">
                       <div>
@@ -567,6 +515,58 @@ export default function ViewEditOpportunityModal({
                           type="datetime-local"
                           value={formData.appointment_time}
                           onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact details</h3>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Primary Contact Name <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.contact_name}
+                          onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                          placeholder="Enter contact name"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Primary Email
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="email"
+                            value={formData.contact_email}
+                            onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                            placeholder="Enter email"
+                            className={`w-full px-3 py-2 border ${errors.contact_email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                          />
+                        </div>
+                        {errors.contact_email && (
+                          <p className="mt-1 text-sm text-red-600">{errors.contact_email}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Primary Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.contact_phone}
+                          onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                          placeholder="Enter phone"
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
