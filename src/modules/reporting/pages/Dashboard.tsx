@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, TrendingUp } from 'lucide-react';
+import ReportMetricsModal from '../components/ReportMetricsModal';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState('custom-reports');
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+
+  const handleCreateReport = (selectedMetrics: string[]) => {
+    console.log('Creating report with metrics:', selectedMetrics);
+  };
 
   const tabs = [
     { id: 'custom-reports', label: 'Custom Reports' },
@@ -960,7 +966,10 @@ export function Dashboard() {
                   <span className="text-gray-700 dark:text-gray-300">Add Reports Insights</span>
                 </div>
               </div>
-              <button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8">
+              <button
+                onClick={() => setShowMetricsModal(true)}
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8 transition-colors"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Report
               </button>
@@ -986,7 +995,13 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <>
+      <ReportMetricsModal
+        show={showMetricsModal}
+        onClose={() => setShowMetricsModal(false)}
+        onCreateReport={handleCreateReport}
+      />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
@@ -1010,6 +1025,7 @@ export function Dashboard() {
       </div>
 
       {renderTabContent()}
-    </div>
+      </div>
+    </>
   );
 }
