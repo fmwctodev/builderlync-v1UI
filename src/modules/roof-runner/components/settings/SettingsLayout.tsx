@@ -18,7 +18,6 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
     { id: 'profile', label: 'Profile', icon: Users, path: '/settings/profile' },
     { id: 'billing', label: 'Billing', icon: CreditCard, path: '/settings/billing' },
     { id: 'staff', label: 'Staff Management', icon: Users, path: '/settings/staff' },
-    { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/settings/calendar' },
     { id: 'communications', label: 'Communications', icon: Mail, path: '/settings/communications' },
     { id: 'integrations', label: 'Integrations', icon: Zap, path: '/settings/integrations' },
     { id: 'custom-fields', label: 'Custom Fields', icon: Database, path: '/settings/custom-fields' },

@@ -6,7 +6,6 @@ import Profile from '../components/settings/Profile';
 import Integrations from '../components/settings/Integrations';
 import Staff from '../components/settings/Staff';
 import Billing from '../components/settings/Billing';
-import Calendar from '../components/settings/Calendar';
 import Communications from '../components/settings/Communications';
 import CustomFields from '../components/settings/CustomFields';
 import Permissions from '../components/settings/Permissions';
@@ -24,7 +23,6 @@ const SettingsRouter: React.FC = () => {
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/staff" element={<Staff />} />
-        <Route path="/calendar" element={<Calendar />} />
         <Route path="/communications" element={<Communications />} />
         <Route path="/custom-fields" element={<CustomFields />} />
         <Route path="/permissions" element={<Permissions />} />
