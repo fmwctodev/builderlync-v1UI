@@ -4,15 +4,52 @@ interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onAddOpportunity: () => void;
+  activeView?: 'opportunities' | 'pipelines';
+  onViewChange?: (view: 'opportunities' | 'pipelines') => void;
+  onAddPipeline?: () => void;
 }
 
-export default function Header({ activeTab, setActiveTab, onAddOpportunity }: HeaderProps) {
+export default function Header({
+  activeTab,
+  setActiveTab,
+  onAddOpportunity,
+  activeView = 'opportunities',
+  onViewChange,
+  onAddPipeline
+}: HeaderProps) {
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-      <div className="max-w-full mx-auto px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Left Section */}
-        <div className="flex items-center space-x-4">
+      <div className="max-w-full mx-auto px-4 py-3 sm:px-6 lg:px-8">
+        {/* Top Navigation Tabs */}
+        {onViewChange && (
+          <div className="flex space-x-2 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <button
+              onClick={() => onViewChange('opportunities')}
+              className={`px-6 py-2 text-sm font-medium rounded-t-md transition-colors ${
+                activeView === 'opportunities'
+                  ? 'bg-gray-800 dark:bg-gray-700 text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Opportunities
+            </button>
+            <button
+              onClick={() => onViewChange('pipelines')}
+              className={`px-6 py-2 text-sm font-medium rounded-t-md transition-colors ${
+                activeView === 'pipelines'
+                  ? 'bg-cyan-500 text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Pipelines
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          {/* Left Section */}
+          <div className="flex items-center space-x-4">
           {/* Project/Account Selector */}
           <div className="relative inline-block text-left">
             <button className="inline-flex justify-center items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
@@ -59,13 +96,24 @@ export default function Header({ activeTab, setActiveTab, onAddOpportunity }: He
             <Upload className="h-4 w-4 mr-2" /> Import
           </button>
 
-          <button
-            onClick={onAddOpportunity}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add opportunity
-          </button>
+          {activeView === 'opportunities' ? (
+            <button
+              onClick={onAddOpportunity}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add opportunity
+            </button>
+          ) : (
+            <button
+              onClick={onAddPipeline}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Pipeline
+            </button>
+          )}
+        </div>
         </div>
       </div>
     </header>
