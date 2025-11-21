@@ -374,7 +374,7 @@ const AdsManagerTab: React.FC = () => {
       {/* COMING SOON Overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-12 max-w-md mx-4 text-center">
-          <TrendingUp className="w-20 h-20 text-red-600 mx-auto mb-6" />
+          <TrendingUp className="w-20 h-20 !text-red-600 mx-auto mb-6" />
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-wide">
             COMING SOON
           </h2>
