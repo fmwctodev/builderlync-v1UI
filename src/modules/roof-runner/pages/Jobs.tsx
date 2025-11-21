@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import JobsHeader from '../components/JobsHeader';
@@ -12,6 +13,7 @@ import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
 
 const Jobs: React.FC = () => {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showJobModal, setShowJobModal] = useState(false);
@@ -202,6 +204,14 @@ const Jobs: React.FC = () => {
     }
   }, [toast]);
 
+  const handleNewReport = () => {
+    navigate('/roof-runner/measurements');
+  };
+
+  const handleNewCustomer = () => {
+    navigate('/roof-runner/contacts');
+  };
+
 
 
   return (
@@ -218,6 +228,8 @@ const Jobs: React.FC = () => {
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         onNewJob={() => setShowAddressModal(true)}
+        onNewReport={handleNewReport}
+        onNewCustomer={handleNewCustomer}
       />
 
       <div className="flex-1 flex overflow-hidden">

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Filter, Plus, Grid, List, Settings, Building2 } from 'lucide-react';
+import { Search, Filter, Grid, List, Settings, Building2 } from 'lucide-react';
+import NewButtonDropdown from './NewButtonDropdown';
 
 interface JobsHeaderProps {
   activeView: string;
@@ -13,6 +14,8 @@ interface JobsHeaderProps {
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   onNewJob: () => void;
+  onNewReport: () => void;
+  onNewCustomer: () => void;
 }
 
 const JobsHeader: React.FC<JobsHeaderProps> = ({
@@ -26,19 +29,19 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
   setSelectedJobType,
   showFilters,
   setShowFilters,
-  onNewJob
+  onNewJob,
+  onNewReport,
+  onNewCustomer
 }) => {
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jobs</h1>
-        <button
-          onClick={onNewJob}
-          className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Job</span>
-        </button>
+        <NewButtonDropdown
+          onNewJob={onNewJob}
+          onNewReport={onNewReport}
+          onNewCustomer={onNewCustomer}
+        />
       </div>
 
       {/* Tabs */}
