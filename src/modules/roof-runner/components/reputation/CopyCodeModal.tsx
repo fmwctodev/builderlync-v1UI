@@ -26,7 +26,7 @@ const CopyCodeModal: React.FC<CopyCodeModalProps> = ({ isOpen, onClose }) => {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Review Widget Code</h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Add the below code to your website. Learn how to use Review Widget on your website or funnel here:{' '}
-              <a href="#" className="text-blue-600 hover:underline">Link</a>
+              <a href="#" className="text-primary-600 hover:underline">Link</a>
             </p>
           </div>
           <button
@@ -50,7 +50,7 @@ const CopyCodeModal: React.FC<CopyCodeModalProps> = ({ isOpen, onClose }) => {
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-left flex items-center justify-between"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-left flex items-center justify-between"
               >
                 <span>{selectedWidget}</span>
                 <ChevronDown size={16} className="text-gray-400" />
@@ -75,7 +75,7 @@ const CopyCodeModal: React.FC<CopyCodeModalProps> = ({ isOpen, onClose }) => {
           <div className="flex justify-end">
             <button
               onClick={copyToClipboard}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
               <Copy size={16} />
               Copy Code

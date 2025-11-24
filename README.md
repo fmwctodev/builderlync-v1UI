@@ -1,4 +1,4 @@
-# BuilderLynk - Unified Platform
+# BuilderLync - Unified Platform
 
 A comprehensive construction management platform that combines multiple specialized modules into a single, cohesive application.
 

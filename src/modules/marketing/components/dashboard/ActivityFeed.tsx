@@ -20,9 +20,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
 
   const getIconBg = (type: string) => {
     switch (type) {
-      case 'contact': return 'bg-blue-500';
+      case 'contact': return 'bg-primary-500';
       case 'meeting': return 'bg-green-500';
-      case 'deal': return 'bg-purple-500';
+      case 'deal': return 'bg-primary-500';
       case 'message': return 'bg-orange-500';
       default: return 'bg-gray-500';
     }

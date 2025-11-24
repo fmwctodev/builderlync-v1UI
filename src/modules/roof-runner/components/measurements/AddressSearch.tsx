@@ -111,7 +111,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
       <div className="flex flex-col md:flex-row gap-4">
         <div className="w-full md:w-1/4">
           <select
-            className="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white"
+            className="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
             value={country}
             onChange={handleCountryChange}
           >
@@ -128,7 +128,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
             <input
               ref={autocompleteInputRef}
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
               placeholder="Enter address"
               value={address}
               onChange={handleAddressChange}
@@ -138,13 +138,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
       </div>
 
       {isAddressSelected && showAlert && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 relative">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border-l-4 border-blue-400 p-4 relative">
           <div className="flex">
             <div className="flex-shrink-0">
               <MapPin className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <p className="text-sm text-blue-700 dark:text-primary-300">
                 Check that the address is accurate, then drag the marker over the correct structure.
               </p>
             </div>
@@ -166,13 +166,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
               <div className="flex items-center">
                 <input
                   type="text"
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   value={buildingId}
                   disabled
                 />
                 <button
                   type="button"
-                  className="ml-2 p-2 text-blue-600 hover:text-blue-700"
+                  className="ml-2 p-2 text-primary-600 hover:text-primary-700"
                   onClick={() => setShowEditForm(true)}
                 >
                   <Edit className="h-5 w-5" />
@@ -190,7 +190,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
                 <div>
@@ -201,13 +201,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
                     type="text"
                     value={buildingId}
                     onChange={(e) => setBuildingId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
               </div>
               <div className="flex gap-4">
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
                   onClick={() => setShowEditForm(false)}
                 >
                   Update

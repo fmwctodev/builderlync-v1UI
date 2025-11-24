@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
             to="/abc-supply/products"
             className="bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-600 transition group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-500/20 rounded-lg flex items-center justify-center">
               <ShoppingBag className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-4">
@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
             to="/abc-supply/orders"
             className="bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-600 transition group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-purple-500/20 rounded-lg flex items-center justify-center">
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-500/20 rounded-lg flex items-center justify-center">
               <ClipboardList className="h-5 w-5 text-purple-400" />
             </div>
             <div className="ml-4">
@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
         <section className="lg:col-span-2 bg-gray-800 rounded-lg">
           <div className="px-6 py-5 border-b border-gray-700 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">Recent Orders</h2>
-            <Link to="/abc-supply/orders" className="text-blue-400 flex items-center text-sm font-medium hover:text-blue-300 transition">
+            <Link to="/abc-supply/orders" className="text-blue-400 flex items-center text-sm font-medium hover:text-primary-300 transition">
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
             <div className="text-center py-6">
               <p className="text-gray-400">No recent orders found.</p>
               <Link to="/abc-supply/products">
-                <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <button className="mt-3 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition">
                   Start Shopping
                 </button>
               </Link>
@@ -94,7 +94,7 @@ const Dashboard: React.FC = () => {
           <section className="bg-gray-800 rounded-lg">
             <div className="px-6 py-5 border-b border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-white">Featured Products</h2>
-              <Link to="/abc-supply/products" className="text-blue-400 flex items-center text-sm font-medium hover:text-blue-300 transition">
+              <Link to="/abc-supply/products" className="text-blue-400 flex items-center text-sm font-medium hover:text-primary-300 transition">
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
@@ -139,7 +139,7 @@ const Dashboard: React.FC = () => {
           <section className="bg-gray-800 rounded-lg">
             <div className="px-6 py-5 border-b border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-white">Nearest Branches</h2>
-              <Link to="/abc-supply/branches" className="text-blue-400 flex items-center text-sm font-medium hover:text-blue-300 transition">
+              <Link to="/abc-supply/branches" className="text-blue-400 flex items-center text-sm font-medium hover:text-primary-300 transition">
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>

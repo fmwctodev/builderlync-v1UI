@@ -12,7 +12,7 @@ const NewMaterial: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const materials = [
-    { id: 'custom', name: 'Add custom offering', icon: <Plus className="w-8 h-8 text-blue-600" />, selected: true },
+    { id: 'custom', name: 'Add custom offering', icon: <Plus className="w-8 h-8 text-primary-600" />, selected: true },
     { id: 'asphalt', name: 'Asphalt', icon: <div className="w-8 h-8 bg-gray-800 rounded-full"></div> },
     { id: 'tile', name: 'Tile', icon: <div className="w-8 h-8 bg-red-600 rounded-full"></div> },
     { id: 'metal', name: 'Metal', icon: <div className="w-8 h-8 bg-blue-400 rounded-full"></div> },
@@ -97,7 +97,7 @@ const NewMaterial: React.FC = () => {
                 onClick={() => toggleMaterial(material.name)}
                 className={`relative border-2 rounded-lg p-6 cursor-pointer transition-all ${
                   selectedMaterials.includes(material.name)
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
@@ -105,7 +105,7 @@ const NewMaterial: React.FC = () => {
                 <div className="absolute top-3 right-3">
                   <div className={`w-5 h-5 rounded border-2 ${
                     selectedMaterials.includes(material.name)
-                      ? 'border-blue-500 bg-blue-500'
+                      ? 'border-primary-500 bg-primary-500'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {selectedMaterials.includes(material.name) && (
@@ -139,7 +139,7 @@ const NewMaterial: React.FC = () => {
         >
           Back
         </button>
-        <button onClick={handleContinue} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+        <button onClick={handleContinue} className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
           Continue
         </button>
       </div>

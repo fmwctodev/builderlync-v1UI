@@ -28,10 +28,10 @@ export function Automations() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Automations</h1>
         <div className="space-x-2">
-          <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+          <button className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700">
             Create custom
           </button>
-          <button className="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300">
+          <button className="px-4 py-2 rounded-lg bg-primary-100 text-blue-700 hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-300">
             Browse automations
           </button>
         </div>
@@ -51,7 +51,7 @@ export function Automations() {
               <button
                 onClick={() => toggleAutomation(automation.id)}
                 className={`${
-                  automation.enabled ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+                  automation.enabled ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
                 } relative inline-flex h-6 w-11 items-center rounded-full transition`}
               >
                 <span
@@ -74,7 +74,7 @@ export function Automations() {
 
             <button
               onClick={() => setEditing(automation)}
-              className="text-blue-600 hover:underline"
+              className="text-primary-600 hover:underline"
             >
               Edit
             </button>
@@ -155,7 +155,7 @@ function EditModal({
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Frequency</p>
             <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-blue-600 text-white text-sm">
+              <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-primary-600 text-white text-sm">
                 Every time
               </button>
               <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700">
@@ -166,7 +166,7 @@ function EditModal({
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">When</p>
             <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-blue-600 text-white text-sm">
+              <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-primary-600 text-white text-sm">
                 Immediately
               </button>
               <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700">
@@ -180,7 +180,7 @@ function EditModal({
           <button className="text-red-500 hover:underline">Delete</button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
           >
             Save automation
           </button>

@@ -3,7 +3,6 @@ import ReviewsAITab from './settings/ReviewsAITab';
 import ReviewLinkTab from './settings/ReviewLinkTab';
 import SMSRequestsTab from './settings/SMSRequestsTab';
 import EmailRequestsTab from './settings/EmailRequestsTab';
-import WhatsAppRequestsTab from './settings/WhatsAppRequestsTab';
 import ReviewsQRTab from './settings/ReviewsQRTab';
 import SpamReviewsTab from './settings/SpamReviewsTab';
 import IntegrationsTab from './settings/IntegrationsTab';
@@ -16,7 +15,6 @@ const SettingsTab: React.FC = () => {
     { id: 'review-link', label: 'Review Link' },
     { id: 'sms-requests', label: 'SMS Requests' },
     { id: 'email-requests', label: 'Email Requests' },
-    { id: 'whatsapp-requests', label: 'WhatsApp Requests' },
     { id: 'reviews-qr', label: 'Reviews QR' },
     { id: 'spam-reviews', label: 'Spam Reviews' },
     { id: 'integrations', label: 'Integrations' }
@@ -32,8 +30,6 @@ const SettingsTab: React.FC = () => {
         return <SMSRequestsTab />;
       case 'email-requests':
         return <EmailRequestsTab />;
-      case 'whatsapp-requests':
-        return <WhatsAppRequestsTab />;
       case 'reviews-qr':
         return <ReviewsQRTab />;
       case 'spam-reviews':

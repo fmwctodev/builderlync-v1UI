@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, ChevronDown } from 'lucide-react';
+import ReportMetricsModal from '../components/ReportMetricsModal';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState('custom-reports');
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+  const handleCreateReport = (selectedMetrics: string[]) => {
+    console.log('Creating report with metrics:', selectedMetrics);
+  };
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    console.log('Selected year:', year);
+  };
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
 
   const tabs = [
-    { id: 'custom-reports', label: 'Custom Reports' },
+    { id: 'custom-reports', label: 'Reports' },
     { id: 'google-ads', label: 'Google Ads Report' },
     { id: 'facebook-ads', label: 'Facebook Ads Report' },
     { id: 'attribution-report', label: 'Attribution Report' },
@@ -49,8 +64,8 @@ export function Dashboard() {
 
               <div className="grid grid-cols-3 gap-6 max-w-6xl mx-auto">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-purple-600 text-2xl">✓</span>
+                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-600 text-2xl">✓</span>
                   </div>
                   <span className="text-lg font-medium">Check Your GBP Health</span>
                 </div>
@@ -960,7 +975,10 @@ export function Dashboard() {
                   <span className="text-gray-700 dark:text-gray-300">Add Reports Insights</span>
                 </div>
               </div>
-              <button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8">
+              <button
+                onClick={() => setShowMetricsModal(true)}
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center mb-8 transition-colors"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Report
               </button>
@@ -971,12 +989,25 @@ export function Dashboard() {
             </div>
             <div className="flex-1 p-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Sales report 2023</h3>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Let's enhance this report by adding a widget</p>
-                    <button className="text-primary-600 hover:text-primary-700 font-medium">+ Add a widget</button>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Reports</h3>
+                  <div className="relative">
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => handleYearChange(e.target.value)}
+                      className="appearance-none px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
                   </div>
+                </div>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12">
+                  <p className="text-center text-gray-600 dark:text-gray-400">Find a report you already created</p>
                 </div>
               </div>
             </div>
@@ -986,20 +1017,27 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
+    <>
+      <ReportMetricsModal
+        show={showMetricsModal}
+        onClose={() => setShowMetricsModal(false)}
+        onCreateReport={handleCreateReport}
+      />
+      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+          <div className="py-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
+          </div>
 
-          <div className="flex space-x-1">
+          <div className="flex items-center gap-4">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                className={`px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-red-50 text-red-700 border-b-2 border-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 {tab.label}
@@ -1007,9 +1045,11 @@ export function Dashboard() {
             ))}
           </div>
         </div>
-      </div>
 
-      {renderTabContent()}
-    </div>
+        <div className="flex-1 overflow-auto">
+          {renderTabContent()}
+        </div>
+      </div>
+    </>
   );
 }

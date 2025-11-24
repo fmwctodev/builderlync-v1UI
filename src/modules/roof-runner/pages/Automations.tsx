@@ -3,91 +3,126 @@ import { ChevronDown, ChevronRight, X, Filter, RefreshCw, Info, List, Search, Mo
 import AutomationModal from '../components/AutomationModal';
 import AutomationEditor from '../components/AutomationEditor';
 import WorkflowBuilder from './WorkflowBuilder';
+import WorkflowTemplateLibraryModal from '../components/WorkflowTemplateLibraryModal';
+import { WorkflowTemplate } from '../../../shared/store/services/workflowTemplateApi';
 
 export default function Automations() {
   const [activeTab, setActiveTab] = useState('All Workflows');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [currentView, setCurrentView] = useState('list');
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
 
   const workflows = [
     {
       id: 1,
-      name: 'Onboarding Automations',
+      name: '00. A2P',
       status: null,
       totalEnrolled: null,
       activeEnrolled: null,
-      lastUpdated: 'Jul 24 2025, 2:53 PM',
-      createdOn: 'Jul 24 2025, 2:53 PM',
+      lastUpdated: 'Sep 25 2024, 9:41 AM',
+      createdOn: 'Sep 25 2024, 9:41 AM',
       isFolder: true
     },
     {
       id: 2,
-      name: 'Social Workflows',
+      name: '000a. Sierra-AI Caller',
       status: null,
       totalEnrolled: null,
       activeEnrolled: null,
-      lastUpdated: 'Jun 12 2024, 11:03 PM',
-      createdOn: 'Jun 12 2024, 11:03 PM',
+      lastUpdated: 'Aug 07 2025, 1:32 AM',
+      createdOn: 'Jul 20 2025, 9:15 PM',
       isFolder: true
     },
     {
       id: 3,
-      name: '4. New Sale - Send Review Request',
-      status: 'Published',
-      totalEnrolled: 12,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 30 2024, 12:06 AM',
-      createdOn: 'Jun 07 2024, 1:21 AM',
-      isFolder: false,
-      hasExternal: true
+      name: '000b. Sierra-AI-JobWorkflows',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Aug 07 2025, 1:33 AM',
+      createdOn: 'Jul 30 2025, 9:26 PM',
+      isFolder: true
     },
     {
       id: 4,
-      name: 'CUSTOM VALUE UPDATER',
-      status: 'Draft',
-      totalEnrolled: 0,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 29 2024, 6:22 PM',
-      createdOn: 'Nov 19 2024, 7:34 PM',
-      isFolder: false,
-      hasExternal: true
+      name: '01. Residential Sales Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Dec 26 2024, 3:52 PM',
+      createdOn: 'Dec 20 2024, 3:26 PM',
+      isFolder: true
     },
     {
       id: 5,
-      name: 'New Client (remove from all WF)',
-      status: 'Published',
-      totalEnrolled: 6,
-      activeEnrolled: 0,
-      lastUpdated: 'Dec 29 2024, 11:56 PM',
-      createdOn: 'Jun 12 2024, 10:27 PM',
-      isFolder: false,
-      hasExternal: true
+      name: '02. Commercial Sales Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 29 2025, 11:59 PM',
+      createdOn: 'Sep 29 2025, 11:59 PM',
+      isFolder: true
     },
     {
       id: 6,
-      name: 'New Workflow : 1762888972865',
-      status: 'Draft',
-      totalEnrolled: 0,
-      activeEnrolled: 0,
-      lastUpdated: 'Nov 11 2025, 2:22 PM',
-      createdOn: 'Nov 11 2025, 2:22 PM',
-      isFolder: false,
-      hasExternal: true
+      name: '02. Subcontractor Pipeline',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:14 AM',
+      createdOn: 'Jan 14 2025, 8:14 AM',
+      isFolder: true
+    },
+    {
+      id: 7,
+      name: '03. New Employee Application',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:15 AM',
+      createdOn: 'Jan 29 2025, 2:26 PM',
+      isFolder: true
+    },
+    {
+      id: 8,
+      name: '08. Request review',
+      status: null,
+      totalEnrolled: null,
+      activeEnrolled: null,
+      lastUpdated: 'Sep 30 2025, 12:57 AM',
+      createdOn: 'Nov 22 2024, 10:45 AM',
+      isFolder: true
     }
   ];
 
+  const handleSelectTemplate = (template: WorkflowTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplateModal(false);
+    setCurrentView('builder');
+  };
+
   if (currentView === 'builder') {
-    return <WorkflowBuilder onBack={() => setCurrentView('list')} />;
+    return (
+      <WorkflowBuilder
+        onBack={() => {
+          setCurrentView('list');
+          setSelectedTemplate(null);
+        }}
+        initialTemplate={selectedTemplate}
+      />
+    );
   }
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Workflow List</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="flex justify-between items-center py-4">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Workflow List</h1>
         <div className="flex gap-3">
           <button 
             onClick={() => setShowFolderModal(true)}
@@ -119,7 +154,10 @@ export default function Automations() {
                     Start from Scratch
                   </button>
                   <button
-                    onClick={() => { setShowCreateDropdown(false); }}
+                    onClick={() => {
+                      setShowCreateDropdown(false);
+                      setShowTemplateModal(true);
+                    }}
                     className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     Select from Template
@@ -129,43 +167,44 @@ export default function Automations() {
             )}
           </div>
         </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveTab('All Workflows')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'All Workflows'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            All Workflows
+          </button>
+          <button
+            onClick={() => setActiveTab('Needs Review')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'Needs Review'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            Needs Review (0)
+          </button>
+          <button
+            onClick={() => setActiveTab('Deleted')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'Deleted'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+            }`}
+          >
+            Deleted
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 mb-6 border-b border-gray-200 dark:border-gray-700">
-        <button 
-          onClick={() => setActiveTab('All Workflows')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'All Workflows' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          All Workflows
-        </button>
-        <button 
-          onClick={() => setActiveTab('Needs Review')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'Needs Review' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Needs Review (0)
-        </button>
-        <button 
-          onClick={() => setActiveTab('Deleted')}
-          className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-            activeTab === 'Deleted' 
-              ? 'border-primary-600 text-primary-600' 
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          }`}
-        >
-          Deleted
-        </button>
-       
-      </div>
-
+      <div className="flex-1 overflow-auto p-6">
       {/* Controls */}
       <div className="flex justify-between items-center mb-6">
         <button 
@@ -350,6 +389,14 @@ export default function Automations() {
           </div>
         </div>
       )}
+
+      {/* Template Library Modal */}
+      <WorkflowTemplateLibraryModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
+      </div>
     </div>
   );
 }

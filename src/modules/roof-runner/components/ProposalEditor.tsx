@@ -29,7 +29,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
         <div className="flex items-center">
           <button
             onClick={onClose}
-            className="flex items-center text-blue-600 hover:text-blue-700 mr-4"
+            className="flex items-center text-primary-600 hover:text-primary-700 mr-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
             Back to proposals
@@ -39,14 +39,14 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
         
         <div className="flex items-center">
           <span className="text-gray-900 dark:text-white font-medium mr-4">503 Westmorland Drive, Austin, TX 78745</span>
-          <button className="flex items-center px-3 py-1 text-blue-600 hover:text-blue-700 border border-blue-200 rounded mr-2">
+          <button className="flex items-center px-3 py-1 text-primary-600 hover:text-primary-700 border border-primary-200 rounded mr-2">
             <Send className="w-4 h-4 mr-1" />
             Send
           </button>
           <button className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded mr-2">
             Edit proposal
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
             View proposal
           </button>
         </div>
@@ -69,7 +69,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
           {/* Related */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="font-medium text-gray-900 dark:text-white mb-2">Related</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm">
+            <button className="text-primary-600 hover:text-primary-700 text-sm">
               View job details
             </button>
           </div>
@@ -89,7 +89,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                   onClick={() => setActiveSection(section)}
                   className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                     activeSection === section
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -110,7 +110,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Estimate</h2>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm">
+                    <button className="text-primary-600 hover:text-primary-700 text-sm">
                       View details
                     </button>
                   </div>
@@ -147,7 +147,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">Scope of Work</div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">IKO Cambridge Roof Replacement</div>
-                            <div className="text-xs text-blue-600 dark:text-blue-400">See Scope of Work for full details.</div>
+                            <div className="text-xs text-primary-600 dark:text-primary-400">See Scope of Work for full details.</div>
                           </div>
                           <div className="text-right">
                             <div className="font-medium text-gray-900 dark:text-white">$12,500.00</div>

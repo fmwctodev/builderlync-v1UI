@@ -188,14 +188,14 @@ const ABCSupplyView: React.FC = () => {
                             <Package className="h-4 w-4 text-yellow-500 mr-1" />
                           )}
                           {order.status === 'shipped' && (
-                            <Truck className="h-4 w-4 text-blue-500 mr-1" />
+                            <Truck className="h-4 w-4 text-primary-500 mr-1" />
                           )}
                           {order.status === 'delivered' && (
                             <Truck className="h-4 w-4 text-green-500 mr-1" />
                           )}
                           <span className={`text-sm capitalize ${
                             order.status === 'processing' ? 'text-yellow-600' :
-                            order.status === 'shipped' ? 'text-blue-600' :
+                            order.status === 'shipped' ? 'text-primary-600' :
                             order.status === 'delivered' ? 'text-green-600' :
                             'text-gray-500'
                           }`}>

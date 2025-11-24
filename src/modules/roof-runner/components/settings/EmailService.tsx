@@ -126,8 +126,8 @@ const SMTPServiceContent: React.FC = () => {
                 <div className="w-6 h-6 bg-primary-500 rounded"></div>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">LeadConnector Email System</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">lc.automationlab.com</p>
+                <h4 className="font-medium text-gray-900 dark:text-white">LyncConnector Email System</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">lc.yourdomain.com</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -274,7 +274,7 @@ const PostmasterToolsContent: React.FC = () => {
             onClick={() => setActiveProvider('Google')}
             className={`w-full text-left px-3 py-2 rounded-md text-sm ${
               activeProvider === 'Google'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                 : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
@@ -284,7 +284,7 @@ const PostmasterToolsContent: React.FC = () => {
             onClick={() => setActiveProvider('Microsoft SNDS')}
             className={`w-full text-left px-3 py-2 rounded-md text-sm ${
               activeProvider === 'Microsoft SNDS'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                 : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >

@@ -30,7 +30,7 @@ const ReviewLinkTab: React.FC = () => {
               onChange={(e) => setIsBalancingEnabled(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
           </label>
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white">Review Balancing</h4>
@@ -43,7 +43,7 @@ const ReviewLinkTab: React.FC = () => {
           disabled={!isBalancingEnabled}
           className={`px-4 py-2 rounded-lg transition-colors ${
             isBalancingEnabled
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              ? 'bg-primary-600 hover:bg-primary-700 text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
           }`}
         >
@@ -61,7 +61,7 @@ const ReviewLinkTab: React.FC = () => {
               value="google"
               checked={selectedPlatform === 'google'}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">G</div>
@@ -80,10 +80,10 @@ const ReviewLinkTab: React.FC = () => {
               value="facebook"
               checked={selectedPlatform === 'facebook'}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">f</div>
+              <div className="w-6 h-6 bg-primary-600 rounded text-white text-xs flex items-center justify-center font-bold">f</div>
               <div>
                 <label htmlFor="facebook" className="font-medium text-gray-900 dark:text-white">Get Reviews on Facebook</label>
                 <p className="text-xs text-gray-500">http://www.facebook.com/18383...</p>
@@ -99,7 +99,7 @@ const ReviewLinkTab: React.FC = () => {
               value="custom"
               checked={selectedPlatform === 'custom'}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-500 rounded text-white text-xs flex items-center justify-center">
@@ -126,7 +126,7 @@ const ReviewLinkTab: React.FC = () => {
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Page</label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white">
+                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-600 dark:text-white">
                   <option>Google</option>
                 </select>
               </div>
@@ -146,7 +146,7 @@ const ReviewLinkTab: React.FC = () => {
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Page</label>
-                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white">
+                <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-600 dark:text-white">
                   <option>Facebook</option>
                 </select>
               </div>
@@ -165,12 +165,12 @@ const ReviewLinkTab: React.FC = () => {
                 <input
                   type="text"
                   value="www.custom-link.business.com/review"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-600 dark:text-white"
                 />
                 <input
                   type="text"
                   value="www.custom-link.business.com/review"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-600 dark:text-white"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-3">Your customers will provide reviews through the given link</p>

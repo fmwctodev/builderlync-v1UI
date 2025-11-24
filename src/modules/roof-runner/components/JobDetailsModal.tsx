@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { CreateJobRequest } from '../../../shared/store/services/jobsApi';
+import { X, Trash2 } from 'lucide-react';
+import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import TasksTab from './TasksTab';
 import CalendarTab from './CalendarTab';
@@ -20,20 +20,26 @@ interface JobDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onDelete?: () => void;
   formData: CreateJobRequest;
   setFormData: (data: CreateJobRequest) => void;
   staff: StaffMember[];
   loading: boolean;
+  viewingJob?: Job | null;
+  editingJob?: Job | null;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  onDelete,
   formData,
   setFormData,
   staff,
-  loading
+  loading,
+  viewingJob,
+  editingJob
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
@@ -60,7 +66,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-900 dark:text-white">{formData.location || 'New Job'}</h3>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{formData.location || 'New Job'}</h3>
+                  {viewingJob && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Job #{viewingJob.id}</span>
+                  )}
+                </div>
                 <button
                   onClick={onClose}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -83,14 +94,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     activeTab === item
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                       : item === 'Instant Estimate'
-                      ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700'
+                      ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border border-primary-200 dark:border-primary-700'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{item}</span>
                     {item === 'Instant Estimate' && (
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full">
                         NEW
                       </span>
                     )}
@@ -107,18 +118,51 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">New</h2>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                        {viewingJob ? `Job #${viewingJob.id}` : 'New Job'}
+                      </h2>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                         <span>0/1</span>
                         <span>No reports</span>
                         <span>No proposals</span>
-                        <span>Updated a minute ago</span>
+                        {viewingJob && viewingJob.updatedAt && (
+                          <span>Updated {new Date(viewingJob.updatedAt).toLocaleDateString()}</span>
+                        )}
                       </div>
                       <p className="text-sm text-green-600 dark:text-green-400 mt-1">Changes auto-saved</p>
                     </div>
                   </div>
 
                   <form onSubmit={onSubmit} className="space-y-6 pb-20">
+                {/* Job Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="residential"
+                        checked={formData.jobType === 'residential'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="commercial"
+                        checked={formData.jobType === 'commercial'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
@@ -369,22 +413,36 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
             {/* Fixed Footer - Only show for Job details tab */}
             {activeTab === 'Job details' && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-800">
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    onClick={onSubmit}
-                    disabled={loading}
-                    className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Creating...' : 'Create Job'}
-                  </button>
+                <div className="flex justify-between items-center">
+                  {viewingJob && onDelete ? (
+                    <button
+                      type="button"
+                      onClick={onDelete}
+                      className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Job</span>
+                    </button>
+                  ) : (
+                    <div></div>
+                  )}
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      onClick={onSubmit}
+                      disabled={loading}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                    >
+                      {loading ? (viewingJob ? 'Updating...' : 'Creating...') : (viewingJob ? 'Update Job' : 'Create Job')}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

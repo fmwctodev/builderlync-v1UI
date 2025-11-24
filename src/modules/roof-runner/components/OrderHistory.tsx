@@ -50,7 +50,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'processing': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'shipped': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'shipped': return 'text-primary-600 bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400';
       case 'delivered': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
       default: return 'text-gray-600 bg-primary-100 dark:bg-primary-700 dark:text-gray-400';
     }

@@ -78,7 +78,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({ refreshTrigger }) => {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center mb-2">
-                <Building2 className="w-5 h-5 text-blue-600 mr-2" />
+                <Building2 className="w-5 h-5 text-primary-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">{company.name}</h3>
               </div>
               
@@ -104,7 +104,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({ refreshTrigger }) => {
                 {company.website && (
                   <div className="flex items-center text-gray-600">
                     <Globe className="w-4 h-4 mr-2" />
-                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
                       {company.website}
                     </a>
                   </div>

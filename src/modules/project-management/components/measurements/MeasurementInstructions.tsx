@@ -42,7 +42,7 @@ const MeasurementInstructions: React.FC<MeasurementInstructionsProps> = ({
           <label key={instruction} className="flex items-center cursor-pointer">
             <input
               type="radio"
-              className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+              className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
               name="measurementInstruction"
               checked={selectedInstruction === instruction}
               onChange={() => handleInstructionChange(instruction)}

@@ -141,7 +141,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
             <div
               className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                 message.isOutbound
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-primary-500 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700'
               }`}
             >
@@ -165,12 +165,12 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <button
             onClick={handleSendMessage}
             disabled={!newMessage.trim()}
-            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
           </button>

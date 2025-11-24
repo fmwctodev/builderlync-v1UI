@@ -292,7 +292,7 @@ const Calendars: React.FC = () => {
         <div
           key={day}
           onClick={() => handleDateClick(day)}
-          className={`min-h-[120px] border-r border-b border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-750 transition-all duration-200 group ${
+          className={`min-h-[120px] border-r border-b border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-750 transition-all duration-200 group ${
             isToday ? 'bg-primary-50 dark:bg-primary-900/20' : ''
           }`}
         >
@@ -596,29 +596,29 @@ const Calendars: React.FC = () => {
               </div>
 
               {formData.job && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 space-y-4">
-                  <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 space-y-4">
+                  <h4 className="text-sm font-semibold text-blue-700 dark:text-primary-300 flex items-center">
+                    <div className="w-2 h-2 bg-primary-500 rounded-full mr-2"></div>
                     Client Information (Auto-filled)
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-xs font-medium text-blue-600 dark:text-blue-400">Client Name</label>
+                      <label className="block text-xs font-medium text-primary-600 dark:text-primary-400">Client Name</label>
                       <input
                         type="text"
                         value={formData.clientName}
                         onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-                        className="input w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="Client name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-medium text-blue-600 dark:text-blue-400">Client Email</label>
+                      <label className="block text-xs font-medium text-primary-600 dark:text-primary-400">Client Email</label>
                       <input
                         type="email"
                         value={formData.clientEmail}
                         onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
-                        className="input w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="client@email.com"
                       />
                     </div>

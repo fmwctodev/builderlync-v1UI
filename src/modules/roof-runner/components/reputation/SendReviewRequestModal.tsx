@@ -19,8 +19,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
 
   const modes = [
     { id: 'email', label: 'Email', icon: Mail },
-    { id: 'sms', label: 'SMS', icon: MessageSquare },
-    { id: 'whatsapp', label: 'WhatsApp', icon: Phone }
+    { id: 'sms', label: 'SMS', icon: MessageSquare }
   ];
 
   const renderModeContent = () => {
@@ -32,7 +31,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
               Reach out to your customers through Email for more reviews!<br />
               Enable Email Review Requests to seamlessly collect customer feedback and boost your online reputation.
             </p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
               Enable email request
             </button>
           </div>
@@ -46,18 +45,6 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
             </p>
             <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">
               Enable sms request
-            </button>
-          </div>
-        );
-      case 'whatsapp':
-        return (
-          <div className="text-center py-6">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Reach out to your customer on their favorite messaging app<br />
-              Stay closer to your customers by providing instant support, sending timely updates, and creating engaging interactions.
-            </p>
-            <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg">
-              Contact whatsapp
             </button>
           </div>
         );
@@ -92,7 +79,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
                 type="text"
                 value={formData.contactName}
                 onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter contact name"
               />
             </div>
@@ -104,7 +91,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
                 type="tel"
                 value={formData.contactPhone}
                 onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter phone number"
               />
             </div>
@@ -118,7 +105,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
               type="email"
               value={formData.contactEmail}
               onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="Enter email address"
             />
           </div>
@@ -136,7 +123,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
                     onClick={() => setActiveMode(mode.id)}
                     className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                       activeMode === mode.id
-                        ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        ? 'bg-primary-50 text-blue-700 border-b-2 border-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                   >
@@ -153,7 +140,7 @@ const SendReviewRequestModal: React.FC<SendReviewRequestModalProps> = ({ isOpen,
           </div>
 
           <div className="flex justify-end">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
               Send Review Request
             </button>
           </div>

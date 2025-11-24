@@ -41,7 +41,7 @@ export function Dashboard() {
           title="Total Contacts" 
           value="245" 
           change="+12%" 
-          icon={<Users className="w-10 h-10 text-blue-500 dark:text-blue-400" />} 
+          icon={<Users className="w-10 h-10 text-primary-500 dark:text-primary-400" />} 
         />
         <StatCard 
           title="Appointments" 
@@ -55,7 +55,7 @@ export function Dashboard() {
           value="$24,500" 
           change="+18%" 
           timeframe="This Month"
-          icon={<DollarSign className="w-10 h-10 text-purple-500 dark:text-purple-400" />} 
+          icon={<DollarSign className="w-10 h-10 text-primary-500 dark:text-purple-400" />} 
         />
         <StatCard 
           title="Conversion Rate" 
@@ -89,7 +89,7 @@ export function Dashboard() {
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h3>
-            <button className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            <button className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all
             </button>
           </div>
@@ -155,7 +155,7 @@ interface ActivityItemProps {
 function ActivityItem({ title, description, time }: ActivityItemProps) {
   return (
     <div className="flex items-start">
-      <div className="flex-shrink-0 h-3 w-3 rounded-full bg-blue-500 mt-1.5"></div>
+      <div className="flex-shrink-0 h-3 w-3 rounded-full bg-primary-500 mt-1.5"></div>
       <div className="ml-3">
         <p className="text-sm font-medium text-gray-900 dark:text-white">{title}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>

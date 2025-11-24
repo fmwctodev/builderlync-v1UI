@@ -12,7 +12,7 @@ const IntegrationsTab: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
                 <span className="text-white text-sm font-bold">CC</span>
               </div>
               <div>
@@ -22,7 +22,7 @@ const IntegrationsTab: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <button className="flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
               <span>View project</span>
               <ExternalLink className="w-4 h-4" />
             </button>
