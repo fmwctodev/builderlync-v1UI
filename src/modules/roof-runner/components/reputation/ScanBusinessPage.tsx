@@ -28,7 +28,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
                     1
                   </div>
                   <div>
@@ -42,7 +42,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
                     2
                   </div>
                   <div>
@@ -56,7 +56,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold">
                     3
                   </div>
                   <div>
@@ -71,7 +71,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-lg mb-6">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-6 rounded-lg mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                 Activate Listings
               </h3>
@@ -79,14 +79,14 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
               
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                    <Search size={12} className="text-blue-600" />
+                  <div className="w-6 h-6 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                    <Search size={12} className="text-primary-600" />
                   </div>
                   <span className="text-gray-700 dark:text-gray-300">Listing Management</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                    <RefreshCw size={12} className="text-purple-600" />
+                  <div className="w-6 h-6 bg-primary-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                    <RefreshCw size={12} className="text-primary-600" />
                   </div>
                   <span className="text-gray-700 dark:text-gray-300">Sync Functionality</span>
                 </div>
@@ -104,7 +104,7 @@ const ScanBusinessPage: React.FC<ScanBusinessPageProps> = ({ onBack }) => {
                 </div>
               </div>
 
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
+              <button className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg transition-colors">
                 Subscribe Now
               </button>
             </div>

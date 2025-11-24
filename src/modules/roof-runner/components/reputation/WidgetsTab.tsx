@@ -27,7 +27,7 @@ const WidgetsTab: React.FC = () => {
               onClick={() => setIsMobileView(!isMobileView)}
               className={`p-2 rounded-lg transition-colors ${
                 isMobileView 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
+                  ? 'bg-primary-100 text-blue-700 dark:bg-primary-900/30 dark:text-primary-300' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
               }`}
               title="Mobile View"
@@ -84,7 +84,7 @@ const WidgetsTab: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-gray-700 text-sm mb-3">
-                      {reviews[currentReview].text} <span className="text-blue-600 cursor-pointer">More</span>
+                      {reviews[currentReview].text} <span className="text-primary-600 cursor-pointer">More</span>
                     </p>
                   </div>
                 )}

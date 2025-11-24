@@ -27,7 +27,7 @@ const Billing: React.FC<BillingProps> = ({ userRole = 'Owner' }) => {
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-xl font-bold text-gray-900 dark:text-white">Professional Plan</h4>
-            <p className="text-gray-600 dark:text-gray-400">$99/month • Billed monthly</p>
+            <p className="text-gray-600 dark:text-gray-400">$497/month • Billed monthly</p>
           </div>
           <button
             className={`px-4 py-2 rounded-lg ${userRole === 'Owner'

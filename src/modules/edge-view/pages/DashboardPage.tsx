@@ -25,7 +25,7 @@ const DashboardPage: React.FC = () => {
     <>
       <Header />
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-blue-600 h-48">
+        <div className="bg-primary-600 h-48">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <h1 className="text-3xl font-bold text-white">Dashboard</h1>
           </div>
@@ -43,7 +43,7 @@ const DashboardPage: React.FC = () => {
                     {businessInfo.city}, {businessInfo.state} {businessInfo.zipCode}
                   </p>
                 </div>
-                <button className="text-blue-600 hover:text-blue-700">
+                <button className="text-primary-600 hover:text-primary-700">
                   <Pencil className="h-5 w-5" />
                 </button>
               </div>
@@ -92,7 +92,7 @@ const DashboardPage: React.FC = () => {
               <p className="text-gray-600 mb-6">You have no recent orders at this time</p>
               <button
                 onClick={() => navigate('/edge-view')}
-                className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               >
                 Start New Order
               </button>

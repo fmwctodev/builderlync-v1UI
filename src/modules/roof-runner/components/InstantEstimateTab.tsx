@@ -45,15 +45,15 @@ const InstantEstimateTab: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-b border-blue-200 dark:border-blue-700 px-6 py-4">
+      <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-b border-primary-200 dark:border-primary-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Instant Estimate</h2>
-            <span className="ml-3 px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+            <span className="ml-3 px-3 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full">
               ✨ FEATURED
             </span>
           </div>
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
             Edit
           </button>
         </div>

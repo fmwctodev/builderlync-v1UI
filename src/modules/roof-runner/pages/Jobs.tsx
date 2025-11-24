@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import JobsHeader from '../components/JobsHeader';
@@ -12,20 +13,24 @@ import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
 
 const Jobs: React.FC = () => {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showJobModal, setShowJobModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
+  const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [jobAddress, setJobAddress] = useState('');
   const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
 
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('default');
+  const [selectedJobType, setSelectedJobType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
@@ -52,20 +57,31 @@ const Jobs: React.FC = () => {
     createdBy: 1,
     createdByName: 'Current User',
     editedBy: 1,
-    editedByName: 'Current User'
+    editedByName: 'Current User',
+    jobType: 'residential'
   });
 
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
       const response = await getJobs(page, 10);
-      setJobs(response.data.data || []);
-
+      const fetchedJobs = response.data.data || [];
+      setAllJobs(fetchedJobs);
+      filterJobsByType(fetchedJobs, selectedJobType);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       setToast({ message: 'Failed to load jobs', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filterJobsByType = (jobsList: Job[], type: string) => {
+    if (type === 'all') {
+      setJobs(jobsList);
+    } else {
+      const filtered = jobsList.filter(job => job.jobType === type);
+      setJobs(filtered);
     }
   };
 
@@ -139,9 +155,41 @@ const Jobs: React.FC = () => {
       createdBy: job.createdBy,
       createdByName: job.createdByName,
       editedBy: 1,
-      editedByName: 'Current User'
+      editedByName: 'Current User',
+      jobType: job.jobType || 'residential'
     });
     setShowJobModal(true);
+  };
+
+  const handleView = (job: Job) => {
+    setViewingJob(job);
+    setEditingJob(job);
+    setFormData({
+      name: job.name,
+      location: job.location,
+      assignees: job.assignees,
+      jobOwner: job.jobOwner,
+      workflowStages: job.workflowStages,
+      closeDate: job.closeDate,
+      jobValue: job.jobValue,
+      source: job.source,
+      details: job.details,
+      insuranceEnabled: job.insuranceEnabled,
+      insuranceCompany: job.insuranceCompany,
+      policyAccountNumber: job.policyAccountNumber,
+      claimNumber: job.claimNumber,
+      dateOfLoss: job.dateOfLoss,
+      typeOfDamage: job.typeOfDamage,
+      claimAmount: job.claimAmount,
+      deductible: job.deductible,
+      claimDetails: job.claimDetails,
+      createdBy: job.createdBy,
+      createdByName: job.createdByName,
+      editedBy: 1,
+      editedByName: 'Current User',
+      jobType: job.jobType || 'residential'
+    });
+    setShowJobDetails(true);
   };
 
   const resetForm = () => {
@@ -167,7 +215,8 @@ const Jobs: React.FC = () => {
       createdBy: 1,
       createdByName: 'Current User',
       editedBy: 1,
-      editedByName: 'Current User'
+      editedByName: 'Current User',
+      jobType: 'residential'
     });
   };
 
@@ -177,11 +226,23 @@ const Jobs: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    filterJobsByType(allJobs, selectedJobType);
+  }, [selectedJobType]);
+
+  useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const handleNewReport = () => {
+    navigate('/roof-runner/measurements');
+  };
+
+  const handleNewCustomer = () => {
+    navigate('/roof-runner/contacts');
+  };
 
 
 
@@ -194,9 +255,13 @@ const Jobs: React.FC = () => {
         setSearchQuery={setSearchQuery}
         selectedFilter={selectedFilter}
         setSelectedFilter={setSelectedFilter}
+        selectedJobType={selectedJobType}
+        setSelectedJobType={setSelectedJobType}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         onNewJob={() => setShowAddressModal(true)}
+        onNewReport={handleNewReport}
+        onNewCustomer={handleNewCustomer}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -217,6 +282,7 @@ const Jobs: React.FC = () => {
                   console.error('Error updating job stage:', error);
                 }
               }}
+              onCardClick={handleView}
             />
           )}
 
@@ -224,6 +290,7 @@ const Jobs: React.FC = () => {
             <JobsTable
               jobs={jobs}
               loading={loading}
+              onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -271,6 +338,8 @@ const Jobs: React.FC = () => {
         isOpen={showJobDetails}
         onClose={() => {
           setShowJobDetails(false);
+          setViewingJob(null);
+          setEditingJob(null);
           resetForm();
           setJobAddress('');
           setJobCoordinates(null);
@@ -280,10 +349,13 @@ const Jobs: React.FC = () => {
           handleSubmit(e);
           setShowJobDetails(false);
         }}
+        onDelete={viewingJob ? () => handleDelete(viewingJob.id!) : undefined}
         formData={formData}
         setFormData={setFormData}
         staff={staff}
         loading={loading}
+        viewingJob={viewingJob}
+        editingJob={editingJob}
       />
 
       <JobModal

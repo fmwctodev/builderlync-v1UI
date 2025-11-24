@@ -32,7 +32,7 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({ onAddAppointment }) =
           <p className="text-gray-500 dark:text-gray-400 text-sm">
             Click <button 
               onClick={onAddAppointment}
-              className="text-blue-600 hover:underline font-medium"
+              className="text-primary-600 hover:underline font-medium"
             >here</button> to create one
           </p>
         </div>

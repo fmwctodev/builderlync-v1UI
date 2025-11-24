@@ -70,7 +70,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
       case 'created': return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
       case 'in-process': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
       case 'completed': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
-      case 'delivered': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'delivered': return 'text-primary-600 bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400';
       default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
     }
   };
@@ -95,7 +95,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
     return parts.map((part, index) => {
       if (regex.test(part)) {
         return (
-          <span key={index} className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-medium">
+          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-primary-800 dark:text-blue-200 font-medium">
             {part}
           </span>
         );

@@ -8,7 +8,7 @@ import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
 import MaterialOrders from './pages/MaterialOrders';
-import Calendars from './pages/Calendars';
+import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
@@ -28,6 +28,7 @@ import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
+import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
@@ -69,6 +70,7 @@ export function RoofRunnerModule() {
         <Route path="automation" element={<Automations />} />
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<Marketing />} />
+        <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<Reputation />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />

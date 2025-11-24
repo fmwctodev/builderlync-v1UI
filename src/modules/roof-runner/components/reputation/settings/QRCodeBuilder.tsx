@@ -29,7 +29,7 @@ const QRCodeBuilder: React.FC<QRCodeBuilderProps> = ({ onBack }) => {
             <button className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
               Download
             </button>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+            <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors">
               Save
             </button>
           </div>
@@ -63,7 +63,7 @@ const QRCodeBuilder: React.FC<QRCodeBuilderProps> = ({ onBack }) => {
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">Drop a Review</h2>
             
             <div className="flex justify-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">f</span>
               </div>
               <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
@@ -116,19 +116,19 @@ const QRCodeBuilder: React.FC<QRCodeBuilderProps> = ({ onBack }) => {
               <div className="text-sm text-gray-600">Carlton, VIC</div>
             </div>
 
-            <div className="mt-4 text-xs text-blue-600">
+            <div className="mt-4 text-xs text-primary-600">
               Powered by Automation Lab
             </div>
 
-            <div className="absolute inset-0 border-2 border-blue-500 rounded-lg pointer-events-none">
-              <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-primary-500 rounded-lg pointer-events-none">
+              <div className="absolute -top-1 -left-1 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
+              <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-primary-500 rounded-full"></div>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ const QRCodeBuilder: React.FC<QRCodeBuilderProps> = ({ onBack }) => {
                   type="text"
                   value={backgroundColor}
                   onChange={(e) => setBackgroundColor(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-sm"
                 />
               </div>
             </div>
@@ -167,7 +167,7 @@ const QRCodeBuilder: React.FC<QRCodeBuilderProps> = ({ onBack }) => {
                   type="text"
                   value={textColor}
                   onChange={(e) => setTextColor(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-sm"
                 />
               </div>
             </div>

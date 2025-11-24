@@ -5,6 +5,7 @@ import FolderNavigation from '../components/file-manager/FolderNavigation';
 import FileGrid from '../components/file-manager/FileGrid';
 import CreateFolderModal from '../components/file-manager/CreateFolderModal';
 import FilterSortDrawer from '../components/file-manager/FilterSortDrawer';
+import ConnectCloudDriveModal from '../components/file-manager/ConnectCloudDriveModal';
 
 const mockFolders = [
   { id: 'f1', name: 'Proposal Pages' },
@@ -25,6 +26,7 @@ const mockFiles = [
 export default function FileManager() {
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isFilterSortDrawerOpen, setIsFilterSortDrawerOpen] = useState(false);
+  const [isCloudDriveModalOpen, setIsCloudDriveModalOpen] = useState(false);
   const [folders, setFolders] = useState(mockFolders);
   const [files, setFiles] = useState(mockFiles);
 
@@ -40,7 +42,10 @@ export default function FileManager() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <FileManagerHeader onCreateFolder={() => setIsCreateFolderModalOpen(true)} />
+      <FileManagerHeader
+        onCreateFolder={() => setIsCreateFolderModalOpen(true)}
+        onConnectCloudDrive={() => setIsCloudDriveModalOpen(true)}
+      />
 
       <main className="flex-grow p-6">
         <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
@@ -58,6 +63,11 @@ export default function FileManager() {
         isOpen={isFilterSortDrawerOpen}
         onClose={() => setIsFilterSortDrawerOpen(false)}
         onApply={handleApplyFilters}
+      />
+
+      <ConnectCloudDriveModal
+        isOpen={isCloudDriveModalOpen}
+        onClose={() => setIsCloudDriveModalOpen(false)}
       />
     </div>
   );

@@ -13,14 +13,21 @@ interface Opportunity {
 interface OpportunityCardProps {
   opportunity: Opportunity;
   onDragStart?: (e: React.DragEvent, opportunity: Opportunity) => void;
+  onClick?: (opportunityId: string) => void;
 }
 
-export default function OpportunityCard({ opportunity, onDragStart }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, onDragStart, onClick }: OpportunityCardProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.(opportunity.id);
+  };
+
   return (
-    <div 
-      className="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 relative hover:shadow-md transition-shadow cursor-grab"
+    <div
+      className="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 relative hover:shadow-md transition-shadow cursor-pointer"
       draggable
       onDragStart={(e) => onDragStart?.(e, opportunity)}
+      onClick={handleClick}
     >
       {/* Avatar/Initials */}
       <div className="absolute top-3 right-3">

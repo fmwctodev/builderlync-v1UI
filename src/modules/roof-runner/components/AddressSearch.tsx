@@ -60,9 +60,9 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
         </div>
 
         <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-          <div className="h-64 bg-gradient-to-br from-green-400 to-blue-500 relative">
+          <div className="h-64 bg-gradient-to-br from-green-400 to-primary-600 relative">
             <div className="absolute inset-0 bg-gray-200 dark:bg-gray-600">
-              <div className="w-full h-full bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900 relative">
+              <div className="w-full h-full bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900 dark:to-teal-900 relative">
                 {/* Simulated map with property marker */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center">

@@ -29,7 +29,7 @@ const ManageCardsModal: React.FC<ManageCardsModalProps> = ({ isOpen, onClose, on
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               No cards on file
             </p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">
               Add New Card
             </button>
           </div>

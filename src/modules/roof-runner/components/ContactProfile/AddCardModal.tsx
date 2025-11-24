@@ -39,7 +39,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ isOpen, onClose, onSave }) 
           <div className="mt-6">
             <button
               onClick={() => setShowAdditionalOptions(!showAdditionalOptions)}
-              className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+              className="text-primary-600 dark:text-primary-400 text-sm hover:underline"
             >
               Additional Options {showAdditionalOptions ? '▲' : '▼'}
             </button>
@@ -55,7 +55,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ isOpen, onClose, onSave }) 
           </button>
           <button
             onClick={onSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
           >
             Add Card
           </button>

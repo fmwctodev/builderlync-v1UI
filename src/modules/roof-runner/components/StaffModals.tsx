@@ -125,7 +125,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 <Upload size={24} className="text-gray-400" />
               )}
             </div>
-            <label className="cursor-pointer text-sm text-blue-600 hover:underline">
+            <label className="cursor-pointer text-sm text-primary-600 hover:underline">
               Upload Profile Image
               <input
                 type="file"
@@ -214,7 +214,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary-600 hover:underline"
             >
               Advanced Settings
             </button>

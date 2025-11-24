@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, Target, Share2, TrendingUp, Plus } from 'lucide-react';
+import CampaignModal from '../components/CampaignModal';
+import { campaignsApi } from '../../../shared/services/campaignsApi';
+import { Campaign, CampaignFormData } from '../types/campaigns';
+import { Toast } from '../components/Toast';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -12,22 +17,24 @@ const Marketing: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
-        
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
+        </div>
+
         {/* Sub Navigation */}
-        <div className="flex items-center space-x-1 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'text-red-600 border-b-2 border-red-600 dark:text-red-400 dark:border-red-400'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 <Icon size={16} />
@@ -39,7 +46,7 @@ const Marketing: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div>
+      <div className="flex-1 overflow-auto">
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'campaigns' && <CampaignsTab />}
         {activeTab === 'ads-manager' && <AdsManagerTab />}
@@ -50,7 +57,7 @@ const Marketing: React.FC = () => {
 };
 
 const AnalyticsTab: React.FC = () => {
-  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const navigate = useNavigate();
 
   const platforms = [
     { id: 'all', label: 'All Platforms' },
@@ -61,6 +68,10 @@ const AnalyticsTab: React.FC = () => {
     { id: 'google-business', label: 'Google Business' },
   ];
 
+  const handlePlatformClick = (platformId: string) => {
+    navigate(`/marketing/analytics/${platformId}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Platform Selector */}
@@ -70,12 +81,8 @@ const AnalyticsTab: React.FC = () => {
           {platforms.map((platform) => (
             <button
               key={platform.id}
-              onClick={() => setSelectedPlatform(platform.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedPlatform === platform.id
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-              }`}
+              onClick={() => handlePlatformClick(platform.id)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               {platform.label}
             </button>
@@ -141,15 +148,136 @@ const AnalyticsTab: React.FC = () => {
 };
 
 const CampaignsTab: React.FC = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      const data = await campaignsApi.getCampaigns();
+      setCampaigns(data);
+    } catch (error) {
+      console.error('Error loading campaigns:', error);
+    }
+  };
+
+  const handleSaveCampaign = async (data: CampaignFormData, sendNow: boolean) => {
+    try {
+      setIsLoading(true);
+      await campaignsApi.createCampaign(data, sendNow);
+      setToast({ show: true, message: sendNow ? 'Campaign sent successfully!' : 'Campaign saved as draft', type: 'success' });
+      setShowModal(false);
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error saving campaign:', error);
+      setToast({ show: true, message: 'Failed to save campaign', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this campaign?')) return;
+
+    try {
+      await campaignsApi.deleteCampaign(id);
+      setToast({ show: true, message: 'Campaign deleted successfully', type: 'success' });
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      setToast({ show: true, message: 'Failed to delete campaign', type: 'error' });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+      scheduled: 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-blue-200',
+      sending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      sent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      paused: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    };
+    return styles[status] || styles.draft;
+  };
+
   return (
     <div className="space-y-6">
+      <CampaignModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={handleSaveCampaign}
+      />
+
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email & SMS Campaigns</h3>
-        <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+        >
           <Plus size={16} />
           <span>New Campaign</span>
         </button>
       </div>
+
+      {/* Active Campaigns */}
+      {campaigns.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Campaigns</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Campaign</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                {campaigns.map((campaign) => (
+                  <tr key={campaign.id}>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{campaign.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">{campaign.type}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusBadge(campaign.status)}`}>
+                        {campaign.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(campaign.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="text-red-600 hover:text-red-700 text-sm dark:text-red-400"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Campaign Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -213,7 +341,7 @@ const CampaignsTab: React.FC = () => {
 
 const AdsManagerTab: React.FC = () => {
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ads Manager</h3>
         <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
@@ -230,7 +358,7 @@ const AdsManagerTab: React.FC = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Connected</p>
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button className="w-full bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
             Create Google Ad
           </button>
         </div>
@@ -241,7 +369,7 @@ const AdsManagerTab: React.FC = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Connected</p>
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button className="w-full bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
             Create Facebook Ad
           </button>
         </div>
@@ -255,6 +383,19 @@ const AdsManagerTab: React.FC = () => {
           <button className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
             Connect TikTok
           </button>
+        </div>
+      </div>
+
+      {/* COMING SOON Overlay */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-12 max-w-md mx-4 text-center">
+          <TrendingUp className="w-20 h-20 text-gray-400 dark:text-gray-500 mx-auto mb-6" />
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-wide">
+            COMING SOON
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            Our Ads Manager feature is currently under development and will be available soon.
+          </p>
         </div>
       </div>
     </div>
@@ -292,7 +433,7 @@ const SocialPlannerTab: React.FC = () => {
                 <span className="text-sm text-gray-900 dark:text-white">{channel.name}</span>
               </div>
               {!channel.connected && (
-                <button className="text-xs text-blue-600 hover:underline dark:text-blue-400">
+                <button className="text-xs text-primary-600 hover:underline dark:text-primary-400">
                   Connect
                 </button>
               )}
@@ -346,7 +487,7 @@ const SocialPlannerTab: React.FC = () => {
               Save as Draft
             </button>
             <div className="space-x-2">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              <button className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
                 Schedule Post
               </button>
               <button className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">

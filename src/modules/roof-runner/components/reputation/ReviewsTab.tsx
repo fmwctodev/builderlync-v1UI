@@ -23,7 +23,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
           <div className="flex gap-2">
             <button
               onClick={() => setIsAIModalOpen(true)}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Bot size={16} />
               AI Summary
@@ -103,11 +103,11 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
 
         <div className="grid grid-cols-4 gap-6">
           <div className="space-y-4">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="text-purple-600">✨</div>
-                  <h3 className="font-medium text-purple-700">AI Summary (Default)</h3>
+                  <div className="text-primary-600">✨</div>
+                  <h3 className="font-medium text-primary-700">AI Summary (Default)</h3>
                 </div>
                 <button className="text-gray-400 hover:text-gray-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,24 +118,24 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
               
               <p className="text-sm text-gray-700 mb-4">
                 The reviews indicate highly positive feedback on video content quality and creation speed, while also{' '}
-                <span className="text-blue-600 cursor-pointer font-medium">See More</span>
+                <span className="text-primary-600 cursor-pointer font-medium">See More</span>
               </p>
               
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   video content
                 </div>
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   high quality
                 </div>
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   easy to use
                 </div>
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   diverse content
                 </div>
                 <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">
@@ -147,7 +147,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
               <div className="flex items-center gap-2 text-xs text-gray-600">
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">G</div>
-                  <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">f</div>
+                  <div className="w-4 h-4 bg-primary-600 rounded text-white text-xs flex items-center justify-center font-bold">f</div>
                 </div>
                 <span>From 1 Reviews</span>
               </div>
@@ -168,12 +168,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
           <div className="col-span-3 space-y-4">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   BA
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-blue-600">Facebook</span>
+                    <span className="text-sm font-medium text-primary-600">Facebook</span>
                     <span className="text-xs text-gray-500">Bootcreative AI</span>
                     <span className="text-xs text-gray-500">886.digital</span>
                   </div>
@@ -207,7 +207,7 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
                         </div>
                       </div>
                     ))}
-                    <div className="text-xs text-blue-600 font-medium">Replied By Reviews AI</div>
+                    <div className="text-xs text-primary-600 font-medium">Replied By Reviews AI</div>
                   </div>
                 </div>
               </div>

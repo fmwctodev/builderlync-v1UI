@@ -45,6 +45,35 @@ const JobModal: React.FC<JobModalProps> = ({
 
         <div className="max-h-[70vh] overflow-y-auto p-6">
           <form onSubmit={onSubmit} className="space-y-4">
+            {/* Job Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="jobType"
+                    value="residential"
+                    checked={formData.jobType === 'residential'}
+                    onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                    className="w-4 h-4 text-red-600 focus:ring-2 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="jobType"
+                    value="commercial"
+                    checked={formData.jobType === 'commercial'}
+                    onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                    className="w-4 h-4 text-red-600 focus:ring-2 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                </label>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Job Name</label>

@@ -8,7 +8,7 @@ const CalendarTab: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Calendar</h2>
           <div className="flex items-center space-x-4">
-            <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <button className="flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
               <ExternalLink className="w-4 h-4" />
               <span>View calendar</span>
             </button>

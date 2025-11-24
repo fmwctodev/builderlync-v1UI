@@ -69,7 +69,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     <div 
                       key={notification.id}
                       className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                        !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        !notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                       }`}
                     >
                       <div className="flex justify-between items-start">
@@ -77,7 +77,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded">New</span>
+                          <span className="ml-2 px-2 py-1 text-xs bg-primary-500 text-white rounded">New</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -109,7 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             }}
             className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-1"
           >
-            <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold">
+            <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
               {user.name.split(' ').map(n => n[0]).join('')}
             </div>
             <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" />
