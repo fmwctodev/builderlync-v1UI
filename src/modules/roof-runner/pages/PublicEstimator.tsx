@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../store/services/api';
+import { ArrowLeft } from 'lucide-react';
 
 const PublicEstimator: React.FC = () => {
   const { publicUrl } = useParams();
@@ -15,6 +16,22 @@ const PublicEstimator: React.FC = () => {
   const mapInstanceRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    roofSteepness: '',
+    buildingType: '',
+    currentRoof: '',
+    desiredRoof: '',
+    timeline: '',
+    financing: '',
+    projectDetails: '',
+    name: '',
+    email: '',
+    phone: '',
+    agreeToTerms: false,
+    agreeToContact: false
+  });
 
   useEffect(() => {
     fetchEstimatorData();
@@ -94,6 +111,12 @@ const PublicEstimator: React.FC = () => {
 
   const handleContinue = () => {
     setCurrentStep(3);
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   if (loading) {
@@ -191,12 +214,325 @@ const PublicEstimator: React.FC = () => {
     );
   }
 
-  if (currentStep > 2) {
+  // Step 3: Roof Steepness
+  if (currentStep === 3) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Step {currentStep} of 10</h1>
-          <p className="text-gray-600">Estimator flow continues here...</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setCurrentStep(2)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 3 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">How steep is your roof?</h1>
+          <p className="text-gray-600 mb-8">Note: We do not currently offer flat roofing services</p>
+          
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { id: 'flat', title: 'Flat', desc: 'Not offered', disabled: true },
+              { id: 'low', title: 'Low', desc: 'Easily walked on' },
+              { id: 'moderate', title: 'Moderate', desc: 'Not easily walked on' },
+              { id: 'steep', title: 'Steep', desc: "Can't be walked on" }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => !option.disabled && (setFormData({...formData, roofSteepness: option.id}), setCurrentStep(4))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  option.disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50' :
+                  formData.roofSteepness === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-400 transform rotate-12"></div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{option.title}</h3>
+                <p className="text-sm text-gray-600">{option.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 4: Building Type
+  if (currentStep === 4) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <button onClick={() => setCurrentStep(3)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 4 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of building do you have?</h1>
+          
+          <div className="grid grid-cols-2 gap-6">
+            {[
+              { id: 'residential', title: 'Residential', image: 'house' },
+              { id: 'commercial', title: 'Commercial', image: 'building' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({...formData, buildingType: option.id}), setCurrentStep(5))}
+                className={`relative h-80 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                  formData.buildingType === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                }`}
+              >
+                <div className={`w-full h-full ${
+                  option.id === 'residential' ? 'bg-gradient-to-br from-blue-200 to-blue-400' : 'bg-gradient-to-br from-gray-300 to-gray-500'
+                }`}></div>
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="text-2xl font-bold text-white">{option.title}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 5: Current Roof Material
+  if (currentStep === 5) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <button onClick={() => setCurrentStep(4)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 5 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">What is currently on your roof?</h1>
+          
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400' },
+              { id: 'tile', title: 'Tile', color: 'bg-red-600' },
+              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({...formData, currentRoof: option.id}), setCurrentStep(6))}
+                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
+                  formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                }`}
+              >
+                <div className={`w-full h-full ${option.color}`}></div>
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="text-xl font-bold text-white">{option.title}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 6: Desired Roof Material
+  if (currentStep === 6) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <button onClick={() => setCurrentStep(5)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 6 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of roof would you like?</h1>
+          
+          <div className="grid grid-cols-1 gap-4 max-w-md">
+            <div
+              onClick={() => (setFormData({...formData, desiredRoof: 'metal'}), setCurrentStep(7))}
+              className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
+                formData.desiredRoof === 'metal' ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+              }`}
+            >
+              <div className="w-full h-full bg-blue-400"></div>
+              <div className="absolute bottom-6 left-6">
+                <h3 className="text-xl font-bold text-white">Metal</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 7: Timeline
+  if (currentStep === 7) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setCurrentStep(6)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 7 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">When would you like to start your project?</h1>
+          
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { id: 'no-timeline', title: 'No timeline', desc: 'I do not have a timeline in mind yet' },
+              { id: '1-3-months', title: 'In 1-3 months', desc: 'Not urgent, but I would like to start soon' },
+              { id: 'now', title: 'Now', desc: 'I would like to start immediately' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({...formData, timeline: option.id}), setCurrentStep(8))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.timeline === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
+                <p className="text-gray-600">{option.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 8: Financing
+  if (currentStep === 8) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setCurrentStep(7)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 8 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">Are you interested in financing?</h1>
+          
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { id: 'yes', title: 'Yes', desc: 'I am interested in financing' },
+              { id: 'no', title: 'No', desc: 'I am not interested in financing' },
+              { id: 'maybe', title: 'Maybe', desc: 'I would like to learn more about financing' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({...formData, financing: option.id}), setCurrentStep(9))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                  formData.financing === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
+                <p className="text-gray-600">{option.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 9: Project Details
+  if (currentStep === 9) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <button onClick={() => setCurrentStep(8)} className="flex items-center gap-2 text-gray-600 mb-6">
+            <ArrowLeft className="w-4 h-4" /> Step 9 of 10
+          </button>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Tell us about your project (optional)</h1>
+          
+          <div className="bg-white rounded-lg p-6">
+            <textarea
+              value={formData.projectDetails}
+              onChange={(e) => setFormData({...formData, projectDetails: e.target.value})}
+              placeholder="Provide any additional details which will help us prepare your roofing estimate"
+              className="w-full h-40 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => setCurrentStep(10)}
+                className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-full font-medium transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 10: Contact Information
+  if (currentStep === 10) {
+    return (
+      <div className="min-h-screen bg-gray-900 bg-opacity-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-lg p-8 max-w-lg w-full">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Where should we send your estimates?</h1>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="Enter your full name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="Enter your email"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="Enter your phone number"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={formData.agreeToTerms}
+                  onChange={(e) => setFormData({...formData, agreeToTerms: e.target.checked})}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">
+                  I agree to <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a><span className="text-red-500">*</span>
+                </span>
+              </label>
+              
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={formData.agreeToContact}
+                  onChange={(e) => setFormData({...formData, agreeToContact: e.target.checked})}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">
+                  To ensure you're getting the best offers and pricing, Tarrytown Roofing LLC may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
+                </span>
+              </label>
+            </div>
+            
+            <button
+              onClick={() => alert('Estimate submitted!')}
+              disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms}
+              className="w-full bg-gray-400 text-white py-3 rounded-full font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Get my estimate
+            </button>
+          </div>
         </div>
       </div>
     );
