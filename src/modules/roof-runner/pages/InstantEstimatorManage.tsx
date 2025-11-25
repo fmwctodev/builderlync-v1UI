@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, ExternalLink, Copy, QrCode, Code, Plus, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
+import Toast from '../../../shared/components/Toast';
 
 const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const InstantEstimatorManage: React.FC = () => {
   const [interestRate, setInterestRate] = useState('0');
   const [showProjectShowcase, setShowProjectShowcase] = useState(false);
   const [showSocialMedia, setShowSocialMedia] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     fetchEstimatorData();
@@ -112,10 +114,10 @@ const InstantEstimatorManage: React.FC = () => {
         show_social_media: showSocialMedia
       });
       
-      alert('Settings saved successfully!');
+      setToast({ message: 'Settings saved successfully!', type: 'success' });
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('Failed to save settings');
+      setToast({ message: 'Failed to save settings', type: 'error' });
     }
   };
 
@@ -173,7 +175,22 @@ const InstantEstimatorManage: React.FC = () => {
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
               <button 
-                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/estimator/${publicUrl}`)}
+                onClick={async () => {
+                  const url = `${window.location.origin}/estimator/${publicUrl}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                  } catch (err) {
+                    // Fallback for browsers that don't support clipboard API
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                  }
+                }}
                 className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm"
               >
                 <Copy className="w-4 h-4" />
@@ -227,21 +244,56 @@ const InstantEstimatorManage: React.FC = () => {
               Add the materials you offer along with their approximate prices, which should include tear-off, waste, and markup costs. Your customers will have the option to choose the materials they want and will receive estimates based on the information you provide below.
             </p>
 
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 italic mb-4">
-                {selectedMaterials.length > 0 
-                  ? `${selectedMaterials.length} materials added: ${selectedMaterials.map(m => m.name).join(', ')}`
-                  : 'No materials added'
-                }
-              </p>
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage/materials`)}
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              >
+                Manage materials
+              </button>
               <button
                 onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg mx-auto"
+                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
               >
                 <Plus className="w-4 h-4" />
                 Add
               </button>
             </div>
+            
+            {selectedMaterials.length > 0 ? (
+              <div className="space-y-3">
+                {selectedMaterials.slice(0, 3).map((material, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-sm flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">
+                          {material.materialType?.charAt(0) || material.name?.charAt(0) || 'M'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {material.name}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          ${material.price?.toFixed(2) || '0.00'}/sqft
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {selectedMaterials.length > 3 && (
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    +{selectedMaterials.length - 3} more materials
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 italic mb-4">
+                  No materials added
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Pricing settings */}
@@ -532,6 +584,13 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

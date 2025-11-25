@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, X, Lock, GripVertical } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
+import Toast from '../../../shared/components/Toast';
 
 const ManageQuestions: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
   const [selectedQuestions, setSelectedQuestions] = useState([
     'Get started',
@@ -83,10 +85,10 @@ const ManageQuestions: React.FC = () => {
       console.log('Questions data:', questionsData);
       const result = await apiService.updateInstantEstimatorQuestions(parseInt(id), questionsData);
       console.log('Save result:', result);
-      alert('Questions saved successfully!');
+      setToast({ message: 'Questions saved successfully!', type: 'success' });
     } catch (error) {
       console.error('Failed to save questions:', error);
-      alert('Failed to save questions: ' + error);
+      setToast({ message: 'Failed to save questions', type: 'error' });
     }
   };
 
@@ -195,6 +197,13 @@ const ManageQuestions: React.FC = () => {
           </div>
         </div>
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

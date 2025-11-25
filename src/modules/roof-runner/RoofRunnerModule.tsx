@@ -15,6 +15,9 @@ import InstantEstimator from './pages/InstantEstimator';
 import InstantEstimatorManage from './pages/InstantEstimatorManage';
 import ManageQuestions from './pages/ManageQuestions';
 import NewMaterial from './pages/NewMaterial';
+import MaterialSetup from './pages/MaterialSetup';
+import MaterialsList from './pages/MaterialsList';
+import EditMaterial from './pages/EditMaterial';
 import Conversations from './pages/Conversations';
 import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
@@ -57,6 +60,9 @@ export function RoofRunnerModule() {
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
         <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
         <Route path="instant-estimator/:id/manage/materials/new" element={<NewMaterial />} />
+        <Route path="instant-estimator/:id/manage/materials/setup" element={<MaterialSetup />} />
+        <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
+        <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />
