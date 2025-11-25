@@ -266,6 +266,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   options={[
                     { value: 'lead', label: 'Lead' },
                     { value: 'customer', label: 'Customer' },
+                    { value: 'partner', label: 'Partner' },
                     { value: 'vendor', label: 'Vendor' },
                     { value: 'sub-contractor', label: 'Sub-Contractor' },
                     { value: 'adjuster', label: 'Adjuster' },

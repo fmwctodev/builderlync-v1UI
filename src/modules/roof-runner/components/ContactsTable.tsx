@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2 } from 'lucide-react';
+import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -117,10 +117,14 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                   <div className="flex items-center gap-2">
                     {contact.type === 'customer' ? (
                       <User className="w-4 h-4" />
+                    ) : contact.type === 'lead' ? (
+                      <UserPlus className="w-4 h-4" />
+                    ) : contact.type === 'partner' ? (
+                      <Handshake className="w-4 h-4" />
                     ) : (
                       <Briefcase className="w-4 h-4" />
                     )}
-                    {contact.type}
+                    <span className="capitalize">{contact.type.replace('-', ' ')}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
