@@ -52,8 +52,8 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{backgroundColor: '#dc2626'}}>
-            <span className="text-white text-xl font-bold">BL</span>
+          <div className="flex items-center justify-center mx-auto mb-4">
+            <img src="/logo/icon.png" alt="BuilderLync" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
           <p className="text-gray-600 mt-2">Sign in to your BuilderLync account</p>
