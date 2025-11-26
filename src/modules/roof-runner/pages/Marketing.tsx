@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
-  Bold, Italic, ChevronDown, Sparkles, X
+  Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings
 } from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
 import { Campaign, CampaignFormData } from '../types/campaigns';
 import { Toast } from '../components/Toast';
 import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
+import ManageSocialsModal from '../components/social-planner/ManageSocialsModal';
+import SettingsModal from '../components/social-planner/SettingsModal';
+import NewPostModal, { NewPostData } from '../components/social-planner/NewPostModal';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -417,6 +420,10 @@ const SocialPlannerTab: React.FC = () => {
     facebook: { postType: 'feed' },
     instagram: { postType: 'feed' },
   });
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSocialsModal, setShowSocialsModal] = useState(false);
+  const [showNewPostModal, setShowNewPostModal] = useState(false);
 
   const MAX_CHARACTERS = 1500;
   const characterCount = postContent.length;
@@ -458,12 +465,69 @@ const SocialPlannerTab: React.FC = () => {
     }
   };
 
+  const handleCreateNewPost = async (data: NewPostData) => {
+    try {
+      console.log('Creating new post:', data);
+      alert(`Post ${data.publishNow ? 'published' : 'scheduled'} successfully!`);
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Failed to create post');
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-6 p-6">
-      {/* Left Panel - Post Creation */}
-      <div className="flex-1 space-y-6">
-        {/* Post To Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+    <div className="h-full flex flex-col">
+      {/* Header Action Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Social Planner</h2>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+              className={`inline-flex items-center px-3 py-2 border rounded-md shadow-sm text-sm font-medium transition-colors ${
+                viewMode === 'calendar'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+              }`}
+              title={viewMode === 'list' ? 'Switch to calendar view' : 'Switch to list view'}
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={() => setShowSocialsModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Socials
+            </button>
+
+            <button
+              onClick={() => setShowNewPostModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Post
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        <div className="h-full flex flex-col lg:flex-row gap-6 p-6">
+          {/* Left Panel - Post Creation */}
+          <div className="flex-1 space-y-6">
+            {/* Post To Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-base font-semibold text-gray-900 dark:text-white">Post to</h4>
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -857,6 +921,25 @@ const SocialPlannerTab: React.FC = () => {
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Modals */}
+      <ManageSocialsModal
+        isOpen={showSocialsModal}
+        onClose={() => setShowSocialsModal(false)}
+      />
+
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
+
+      <NewPostModal
+        isOpen={showNewPostModal}
+        onClose={() => setShowNewPostModal(false)}
+        onCreatePost={handleCreateNewPost}
+      />
+    </div>
     </div>
   );
 };
