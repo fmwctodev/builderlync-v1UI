@@ -11,14 +11,11 @@ import CalendarTab from './CalendarTab';
 import MeasurementsTab from './MeasurementsTab';
 import ProposalsTab from './ProposalsTab';
 import ProposalEditor from './ProposalEditor';
-import PDFSignerTab from './PDFSignerTab';
 import MaterialOrdersTab from './MaterialOrdersTab';
-import WorkOrdersTab from './WorkOrdersTab';
 import InvoicesTab from './InvoicesTab';
 import JobCostingTab from './JobCostingTab';
 import AttachmentsTab from './AttachmentsTab';
 import InstantEstimateTab from './InstantEstimateTab';
-import IntegrationsTab from './IntegrationsTab';
 
 interface JobDetailsModalProps {
   isOpen: boolean;
@@ -99,9 +96,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
             <div className="p-4 space-y-2 overflow-y-auto flex-1">
               {[
-                'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals', 'PDF Signer',
-                'Material orders', 'Work orders', 'Invoices', 'Job costing',
-                'Attachments', 'Instant Estimate', 'Integration'
+                'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals',
+                'Material orders', 'Invoices', 'Job Cost',
+                'Attachments', 'Instant Estimate'
               ].map((item) => (
                 <button
                   key={item}
@@ -446,23 +443,17 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 />
               )}
 
-              {activeTab === 'PDF Signer' && <PDFSignerTab />}
-
               {activeTab === 'Material orders' && <MaterialOrdersTab />}
-
-              {activeTab === 'Work orders' && <WorkOrdersTab />}
 
               {activeTab === 'Invoices' && <InvoicesTab />}
 
-              {activeTab === 'Job costing' && <JobCostingTab />}
+              {activeTab === 'Job Cost' && <JobCostingTab />}
 
               {activeTab === 'Attachments' && <AttachmentsTab />}
 
               {activeTab === 'Instant Estimate' && <InstantEstimateTab />}
 
-              {activeTab === 'Integration' && <IntegrationsTab />}
-
-              {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'PDF Signer' && activeTab !== 'Material orders' && activeTab !== 'Work orders' && activeTab !== 'Invoices' && activeTab !== 'Job costing' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && activeTab !== 'Integration' && (
+              {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'Proposals' && activeTab !== 'Material orders' && activeTab !== 'Invoices' && activeTab !== 'Job Cost' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeTab}</h2>
                   <p className="text-gray-600 dark:text-gray-400">Content for {activeTab} will be implemented here.</p>
