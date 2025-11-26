@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+import { supabase } from '../../lib/supabase';
 
 export interface CreateContactRequest {
   fullName: string;
@@ -14,133 +12,209 @@ export interface CreateContactRequest {
   longitude: number;
 }
 
+export interface Contact {
+  id: string;
+  full_name: string;
+  type: string;
+  label_or_role: string;
+  email: string;
+  phone: string;
+  company: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string | null;
+}
+
 export interface ContactResponse {
   success: boolean;
-  message: string;
+  message?: string;
+  data: Contact;
+}
+
+export interface ContactsListResponse {
+  success: boolean;
   data: {
-    id: number;
-    full_name: string;
-    type: string;
-    label_or_role: string;
-    email: string;
-    phone: string;
-    company: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-    created_at: string;
-    updated_at: string;
-    created_by: null;
+    data: Contact[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   };
 }
 
+function camelToSnake(obj: any): any {
+  const snakeObj: any = {};
+  const keyMap: Record<string, string> = {
+    fullName: 'full_name',
+    labelOrRole: 'label_or_role',
+  };
+
+  for (const key in obj) {
+    const snakeKey = keyMap[key] || key;
+    snakeObj[snakeKey] = obj[key];
+  }
+
+  return snakeObj;
+}
+
 export const createContact = async (contactData: CreateContactRequest): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const response = await axios.post<ContactResponse>(
-    `${API_BASE_URL}/contacts`,
-    contactData,
-    {
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
 
-  return response.data;
+  const snakeData = camelToSnake(contactData);
+  snakeData.user_id = user.id;
+
+  const { data, error } = await supabase
+    .from('contacts')
+    .insert([snakeData])
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    success: true,
+    message: 'Contact created successfully',
+    data
+  };
 };
 
-export const getContacts = async (search?: string, type?: string, page: number = 1, limit: number = 10) => {
-  const token = localStorage.getItem('token');
+export const getContacts = async (search?: string, type?: string, page: number = 1, limit: number = 10): Promise<ContactsListResponse> => {
+  const offset = (page - 1) * limit;
 
-  const params = new URLSearchParams();
-  if (search) params.append('search', search);
-  if (type) params.append('type', type);
-  params.append('page', page.toString());
-  params.append('limit', limit.toString());
+  let query = supabase
+    .from('contacts')
+    .select('*', { count: 'exact' });
 
-  const response = await axios.get(
-    `${API_BASE_URL}/contacts?${params.toString()}`,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
+  if (search) {
+    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,company.ilike.%${search}%`);
+  }
+
+  if (type) {
+    query = query.eq('type', type);
+  }
+
+  query = query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    success: true,
+    data: {
+      data: data || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
       }
     }
-  );
-
-  return response.data;
+  };
 };
 
-export const getContactById = async (id: number): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
+export const searchContactsByTypeAndName = async (search: string, types: string[]): Promise<Contact[]> => {
+  if (!search || search.length < 2) {
+    return [];
+  }
 
-  const response = await axios.get<ContactResponse>(
-    `${API_BASE_URL}/contacts/${id}`,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  let query = supabase
+    .from('contacts')
+    .select('*');
 
-  return response.data;
+  if (types && types.length > 0) {
+    query = query.in('type', types);
+  }
+
+  query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`);
+
+  query = query
+    .order('full_name', { ascending: true })
+    .limit(10);
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || [];
 };
 
-export const updateContact = async (id: number, contactData: CreateContactRequest): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
+export const getContactById = async (id: string): Promise<ContactResponse> => {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const response = await axios.put<ContactResponse>(
-    `${API_BASE_URL}/contacts/${id}`,
-    contactData,
-    {
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  return response.data;
+  return {
+    success: true,
+    data
+  };
 };
 
-export const deleteContact = async (id: number): Promise<{ success: boolean; message: string }> => {
-  const token = localStorage.getItem('token');
+export const updateContact = async (id: string, contactData: CreateContactRequest): Promise<ContactResponse> => {
+  const snakeData = camelToSnake(contactData);
 
-  const response = await axios.delete(
-    `${API_BASE_URL}/contacts/${id}`,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  const { data, error } = await supabase
+    .from('contacts')
+    .update(snakeData)
+    .eq('id', id)
+    .select()
+    .single();
 
-  return response.data;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    success: true,
+    message: 'Contact updated successfully',
+    data
+  };
+};
+
+export const deleteContact = async (id: string) => {
+  const { error } = await supabase
+    .from('contacts')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    success: true,
+    message: 'Contact deleted successfully'
+  };
 };
 
 export const uploadContactsCsv = async (file: File) => {
-  const token = localStorage.getItem('token');
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await axios.post(
-    `${API_BASE_URL}/contacts/upload-csv`,
-    formData,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('CSV upload not yet implemented in Supabase version');
 };
 
 export interface CreateNoteRequest {
@@ -149,87 +223,21 @@ export interface CreateNoteRequest {
 }
 
 export const createNote = async (noteData: CreateNoteRequest) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.post(
-    `${API_BASE_URL}/notes`,
-    noteData,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('Notes not yet migrated to Supabase');
 };
 
 export const getNotes = async (contactId: number, page: number = 1, limit: number = 10) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.get(
-    `${API_BASE_URL}/notes?contactId=${contactId}&page=${page}&limit=${limit}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('Notes not yet migrated to Supabase');
 };
 
 export const deleteNote = async (noteId: number) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.delete(
-    `${API_BASE_URL}/notes/${noteId}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('Notes not yet migrated to Supabase');
 };
 
 export const updateNote = async (noteId: number, data: string) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.put(
-    `${API_BASE_URL}/notes/${noteId}`,
-    { data },
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('Notes not yet migrated to Supabase');
 };
 
 export const replyToNote = async (noteId: number, data: string, contactId: number) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.post(
-    `${API_BASE_URL}/notes/${noteId}/replies`,
-    { data, contactId },
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
+  throw new Error('Notes not yet migrated to Supabase');
 };

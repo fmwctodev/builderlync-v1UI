@@ -57,7 +57,9 @@ const Jobs: React.FC = () => {
     createdByName: 'Current User',
     editedBy: 1,
     editedByName: 'Current User',
-    jobType: 'residential'
+    jobType: 'residential',
+    contactId: null,
+    contactName: null
   });
 
   const fetchJobs = async (page: number = 1) => {

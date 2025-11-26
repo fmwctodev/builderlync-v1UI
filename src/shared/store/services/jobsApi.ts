@@ -36,6 +36,8 @@ export interface Job {
   createdByName: string;
   editedByName: string | null;
   jobType?: 'residential' | 'commercial' | 'insurance';
+  contactId?: number | null;
+  contactName?: string | null;
 }
 
 export interface JobsResponse {
@@ -75,6 +77,8 @@ export interface CreateJobRequest {
   editedBy: number;
   editedByName: string;
   jobType?: 'residential' | 'commercial' | 'insurance';
+  contactId?: number | null;
+  contactName?: string | null;
 }
 
 function camelToSnake(obj: any): any {
@@ -109,7 +113,9 @@ function camelToSnake(obj: any): any {
     editedByName: 'edited_by_name',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    jobType: 'job_type'
+    jobType: 'job_type',
+    contactId: 'contact_id',
+    contactName: 'contact_name'
   };
 
   for (const key in obj) {
@@ -152,7 +158,9 @@ function snakeToCamel(obj: any): any {
     edited_by_name: 'editedByName',
     created_at: 'createdAt',
     updated_at: 'updatedAt',
-    job_type: 'jobType'
+    job_type: 'jobType',
+    contact_id: 'contactId',
+    contact_name: 'contactName'
   };
 
   for (const key in obj) {

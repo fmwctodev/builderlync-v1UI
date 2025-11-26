@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
+import ContactSearchDropdown from './ContactSearchDropdown';
 import TasksTab from './TasksTab';
 import CalendarTab from './CalendarTab';
 import MeasurementsTab from './MeasurementsTab';
@@ -180,6 +181,24 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
                     </label>
                   </div>
+                </div>
+
+                {/* Customer/Lead Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer/Lead</label>
+                  <ContactSearchDropdown
+                    selectedContact={formData.contactId && formData.contactName ? {
+                      id: formData.contactId.toString(),
+                      name: formData.contactName
+                    } : null}
+                    onSelectContact={(contact) => {
+                      setFormData({
+                        ...formData,
+                        contactId: contact ? Number(contact.id) : null,
+                        contactName: contact ? contact.name : null
+                      });
+                    }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
