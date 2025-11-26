@@ -152,7 +152,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         name="jobType"
                         value="residential"
                         checked={formData.jobType === 'residential'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
                         className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
@@ -163,10 +163,21 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         name="jobType"
                         value="commercial"
                         checked={formData.jobType === 'commercial'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
                         className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="insurance"
+                        checked={formData.jobType === 'insurance'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
                     </label>
                   </div>
                 </div>

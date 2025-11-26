@@ -56,6 +56,7 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
             <option value="all">All Jobs</option>
             <option value="residential">Residential</option>
             <option value="commercial">Commercial</option>
+            <option value="insurance">Insurance</option>
           </select>
           <Building2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>

@@ -37,7 +37,7 @@ export interface Job {
   updatedAt: string;
   createdByName: string;
   editedByName: string | null;
-  jobType?: 'residential' | 'commercial';
+  jobType?: 'residential' | 'commercial' | 'insurance';
 }
 
 export interface JobsResponse {
@@ -76,7 +76,7 @@ export interface CreateJobRequest {
   createdByName: string;
   editedBy: number;
   editedByName: string;
-  jobType?: 'residential' | 'commercial';
+  jobType?: 'residential' | 'commercial' | 'insurance';
 }
 
 export const getJobs = async (page: number = 1, limit: number = 10): Promise<JobsResponse> => {
