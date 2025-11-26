@@ -4,7 +4,7 @@ import { useTheme } from '../../../../shared/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../../../shared/store/slices/authSlice';
-import DialerModal from '../../../../shared/components/DialerModal';
+import DialerModalEnhanced from '../../../../shared/components/DialerModalEnhanced';
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -135,7 +135,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
         </div>
       </div>
 
-      <DialerModal isOpen={dialerOpen} onClose={() => setDialerOpen(false)} />
+      <DialerModalEnhanced isOpen={dialerOpen} onClose={() => setDialerOpen(false)} />
     </header>
   );
 };

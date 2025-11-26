@@ -27,6 +27,7 @@
     "@tiptap/pm": "^2.2.4",
     "@tiptap/react": "^2.2.4",
     "@tiptap/starter-kit": "^2.2.4",
+    "@twilio/voice-sdk": "^2.16.0",
     "axios": "^1.6.7",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
@@ -49,6 +50,7 @@
     "reactflow": "^11.10.1",
     "redux-saga": "^1.4.2",
     "tailwind-merge": "^2.2.1",
+    "twilio": "^5.10.6",
     "xlsx": "^0.18.5",
     "zod": "^3.22.4",
     "zustand": "^4.4.1"

@@ -5,6 +5,7 @@ import { authReducer } from './slices/authSlice';
 import { contactsReducer } from './slices/contactsSlice';
 import tasksReducer, { tasksSaga } from './slices/tasksSlice';
 import notesReducer, { notesSaga } from './slices/notesSlice';
+import callReducer from './slices/callSlice';
 import { watchAuthSagas } from './sagas/authSaga';
 import { default as contactsSaga } from './sagas/contactsSaga';
 
@@ -25,6 +26,7 @@ export const store = configureStore({
     contacts: contactsReducer,
     tasks: tasksReducer,
     notes: notesReducer,
+    call: callReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
