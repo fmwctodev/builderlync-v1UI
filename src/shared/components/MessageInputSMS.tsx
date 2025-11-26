@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Send, FileText, Paperclip, Smile, DollarSign, Plus, Sparkles, ChevronDown } from 'lucide-react';
+import { sendSMS } from '../services/conversationsApi';
+import { supabase } from '../lib/supabase';
 
 interface MessageInputSMSProps {
-  onSend: (message: string, metadata: any) => void;
-  fromNumber?: string;
+  conversationId: string;
   toNumber?: string;
   contactName?: string;
+  onSendSuccess?: () => void;
+  onSendError?: (error: string) => void;
 }
 
-export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: MessageInputSMSProps) {
+export function MessageInputSMS({ conversationId, toNumber, contactName, onSendSuccess, onSendError }: MessageInputSMSProps) {
   const [message, setMessage] = useState('');
-  const [selectedFromNumber, setSelectedFromNumber] = useState(fromNumber || '+1 813-527-9352');
+  const [selectedFromNumber, setSelectedFromNumber] = useState('');
   const [selectedToNumber, setSelectedToNumber] = useState(toNumber || '');
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [availableFromNumbers, setAvailableFromNumbers] = useState<Array<{ number: string; verified: boolean }>>([]);
 
   // Calculate SMS character count and segments
   const calculateSMSStats = (text: string) => {
@@ -39,15 +44,52 @@ export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: M
 
   const { chars, segments } = calculateSMSStats(message);
 
-  const handleSend = () => {
-    if (message.trim() && selectedToNumber) {
-      onSend(message, {
-        from_number: selectedFromNumber,
+  // Fetch available phone numbers on mount
+  useEffect(() => {
+    const fetchPhoneNumbers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('twilio_phone_numbers')
+          .select('phone_number, is_default')
+          .order('is_default', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const numbers = data.map(n => ({ number: n.phone_number, verified: true }));
+          setAvailableFromNumbers(numbers);
+
+          // Set default number
+          const defaultNum = data.find(n => n.is_default);
+          setSelectedFromNumber(defaultNum?.phone_number || data[0].phone_number);
+        }
+      } catch (error) {
+        console.error('Failed to fetch phone numbers:', error);
+      }
+    };
+
+    fetchPhoneNumbers();
+  }, []);
+
+  const handleSend = async () => {
+    if (!message.trim() || !selectedToNumber || sending) return;
+
+    setSending(true);
+    try {
+      await sendSMS({
+        conversation_id: conversationId,
         to_number: selectedToNumber,
-        character_count: chars,
-        segment_count: segments,
+        from_number: selectedFromNumber,
+        message: message.trim(),
       });
+
       setMessage('');
+      onSendSuccess?.();
+    } catch (error: any) {
+      console.error('Failed to send SMS:', error);
+      onSendError?.(error.message || 'Failed to send SMS');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -58,15 +100,8 @@ export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: M
     }
   };
 
-  // Mock available numbers - in production, fetch from user's phone numbers
-  const availableFromNumbers = [
-    { number: '+1 813-527-9352', verified: true },
-    { number: '+1 555-123-4567', verified: false },
-  ];
-
   const availableToNumbers = [
-    { number: toNumber || '+1 815-479-4734', label: 'Primary', isPrimary: true },
-    { number: '+1 555-987-6543', label: 'Mobile' },
+    { number: toNumber || '', label: 'Primary', isPrimary: true },
   ];
 
   return (
@@ -201,10 +236,10 @@ export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: M
           </button>
           <button
             onClick={handleSend}
-            disabled={!message.trim() || !selectedToNumber}
+            disabled={!message.trim() || !selectedToNumber || sending}
             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            <span>Send</span>
+            <span>{sending ? 'Sending...' : 'Send'}</span>
             <Send className="w-4 h-4" />
           </button>
         </div>

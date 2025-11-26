@@ -1,21 +1,37 @@
 import React, { useState } from 'react';
 import { Send, Smile } from 'lucide-react';
+import { sendInternalComment } from '../services/conversationsApi';
 
 interface MessageInputInternalCommentProps {
-  onSend: (message: string, metadata: any) => void;
+  conversationId: string;
+  onSendSuccess?: () => void;
+  onSendError?: (error: string) => void;
 }
 
-export function MessageInputInternalComment({ onSend }: MessageInputInternalCommentProps) {
+export function MessageInputInternalComment({ conversationId, onSendSuccess, onSendError }: MessageInputInternalCommentProps) {
   const [message, setMessage] = useState('');
   const [mentions, setMentions] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
-    if (message.trim()) {
-      onSend(message, {
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
+
+    setSending(true);
+    try {
+      await sendInternalComment({
+        conversation_id: conversationId,
+        message: message.trim(),
         mentions,
       });
+
       setMessage('');
       setMentions([]);
+      onSendSuccess?.();
+    } catch (error: any) {
+      console.error('Failed to send internal comment:', error);
+      onSendError?.(error.message || 'Failed to send comment');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -97,10 +113,10 @@ export function MessageInputInternalComment({ onSend }: MessageInputInternalComm
           </button>
           <button
             onClick={handleSend}
-            disabled={!message.trim()}
+            disabled={!message.trim() || sending}
             className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            <span>Send</span>
+            <span>{sending ? 'Sending...' : 'Send'}</span>
             <Send className="w-4 h-4" />
           </button>
         </div>
