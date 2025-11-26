@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
+import { getRoles, Role } from '../../../shared/store/services/rolesApi';
 
 interface StaffMember {
   id?: number;
@@ -11,6 +12,7 @@ interface StaffMember {
   password?: string;
   profileImage?: string;
   image?: File;
+  roleId?: string;
 }
 
 interface AddEditStaffModalProps {
@@ -42,10 +44,33 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     phone: '',
     extension: '',
     password: '',
-    profileImage: ''
+    profileImage: '',
+    roleId: ''
   });
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (isOpen) {
+      fetchRoles();
+    }
+  }, [isOpen]);
+
+  const fetchRoles = async () => {
+    try {
+      setLoadingRoles(true);
+      const response = await getRoles();
+      if (response.success && response.data) {
+        setRoles(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
+
+  useEffect(() => {
     if (member && isEdit) {
       setFormData({
         firstName: member.firstName || '',
@@ -54,7 +79,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         phone: member.phone || '',
         extension: member.extension || '',
         password: '',
-        profileImage: member.profileImage || ''
+        profileImage: member.profileImage || '',
+        roleId: member.roleId || ''
       });
     } else {
       setFormData({
@@ -64,7 +90,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         phone: '',
         extension: '',
         password: '',
-        profileImage: ''
+        profileImage: '',
+        roleId: ''
       });
     }
   }, [member, isEdit, isOpen]);
@@ -207,6 +234,33 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
+          </div>
+
+          {/* Role Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Role
+            </label>
+            <select
+              name="roleId"
+              value={formData.roleId}
+              onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">Select a role (optional)</option>
+              {loadingRoles ? (
+                <option disabled>Loading roles...</option>
+              ) : (
+                roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))
+              )}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Assign a role to control this staff member's permissions
+            </p>
           </div>
 
           {/* Advanced Settings */}

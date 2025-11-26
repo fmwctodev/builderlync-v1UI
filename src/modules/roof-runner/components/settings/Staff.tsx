@@ -40,7 +40,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
   const handleAddMember = async (member: any) => {
     try {
       const { createStaff } = await import('../../../../shared/store/services/staffApi');
-      await createStaff({
+      const staffResponse = await createStaff({
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
@@ -49,6 +49,17 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         password: member.password || 'defaultPassword123',
         image: member.image
       });
+
+      const staffId = staffResponse?.data?.id;
+
+      if (member.roleId && staffId) {
+        try {
+          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+          await assignRoleToStaffMember(staffId, member.roleId);
+        } catch (roleError: any) {
+          console.error('Error assigning role to staff member:', roleError);
+        }
+      }
 
       try {
         const { createContact } = await import('../../../../shared/store/services/contactsApi');
@@ -89,6 +100,15 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         password: member.password,
         image: member.image
       });
+
+      if (member.roleId) {
+        try {
+          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+          await assignRoleToStaffMember(selectedMember.id, member.roleId);
+        } catch (roleError: any) {
+          console.error('Error assigning role to staff member:', roleError);
+        }
+      }
 
       try {
         const { getContacts, updateContact, createContact } = await import('../../../../shared/store/services/contactsApi');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Sparkles } from 'lucide-react';
 import { Role, RolePermissions, createRole, updateRole, getDefaultPermissions } from '../../../../shared/store/services/rolesApi';
+import { ROLE_TEMPLATES } from '../../../../shared/constants/roleTemplates';
 
 interface CreateRoleModalProps {
   isOpen: boolean;
@@ -22,18 +23,37 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   const [permissions, setPermissions] = useState<RolePermissions>(getDefaultPermissions());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [showTemplates, setShowTemplates] = useState(!isEdit);
 
   useEffect(() => {
     if (role && isEdit) {
       setName(role.name);
       setDescription(role.description);
       setPermissions(role.permissions);
+      setShowTemplates(false);
+    } else {
+      setName('');
+      setDescription('');
+      setPermissions(getDefaultPermissions());
+      setSelectedTemplate('');
+      setShowTemplates(true);
+    }
+  }, [role, isEdit, isOpen]);
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = ROLE_TEMPLATES.find(t => t.id === templateId);
+    if (template) {
+      setName(template.name);
+      setDescription(template.description);
+      setPermissions(template.permissions as RolePermissions);
     } else {
       setName('');
       setDescription('');
       setPermissions(getDefaultPermissions());
     }
-  }, [role, isEdit, isOpen]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +174,57 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
         manage_automation: 'Manage automation',
       },
     },
+    scheduling: {
+      label: 'Scheduling & Dispatch',
+      permissions: {
+        view_calendar: 'View calendar',
+        create_appointments: 'Create appointments',
+        assign_crew: 'Assign crew',
+        manage_dispatch: 'Manage dispatch',
+      },
+    },
+    estimates: {
+      label: 'Estimates & Quotes',
+      permissions: {
+        create_estimate: 'Create estimates',
+        edit_estimate: 'Edit estimates',
+        approve_estimate: 'Approve estimates',
+        send_estimate: 'Send estimates',
+      },
+    },
+    reporting: {
+      label: 'Reporting & Analytics',
+      permissions: {
+        view_reports: 'View reports',
+        export_reports: 'Export reports',
+        view_financial_reports: 'View financial reports',
+      },
+    },
+    field_operations: {
+      label: 'Field Operations',
+      permissions: {
+        upload_photos: 'Upload photos',
+        complete_tasks: 'Complete tasks',
+        mark_job_complete: 'Mark job complete',
+        request_supplements: 'Request supplements',
+      },
+    },
+    integrations: {
+      label: 'Third-Party Integrations',
+      permissions: {
+        manage_eagleview: 'Manage EagleView',
+        manage_material_orders: 'Manage material orders',
+        manage_quickbooks: 'Manage QuickBooks',
+      },
+    },
+    automation: {
+      label: 'Automation & AI',
+      permissions: {
+        view_automation: 'View automation',
+        edit_automation: 'Edit automation',
+        manage_ai_settings: 'Manage AI settings',
+      },
+    },
   };
 
   if (!isOpen) return null;
@@ -178,6 +249,56 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-600 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
                 {error}
+              </div>
+            )}
+
+            {showTemplates && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Start from Template (Optional)
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleTemplateSelect('')}
+                    className={`p-3 border rounded-lg text-left transition-all ${
+                      selectedTemplate === ''
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-red-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Sparkles size={14} className="text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-900 dark:text-white">Custom</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Build from scratch</p>
+                  </button>
+                  {ROLE_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => handleTemplateSelect(template.id)}
+                      className={`p-3 border rounded-lg text-left transition-all ${
+                        selectedTemplate === template.id
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-red-300'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-gray-900 dark:text-white mb-1">{template.name}</div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{template.description}</p>
+                    </button>
+                  ))}
+                </div>
+                {selectedTemplate && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-xs text-blue-800 dark:text-blue-300">
+                      <strong>Ideal for:</strong> {ROLE_TEMPLATES.find(t => t.id === selectedTemplate)?.ideal_for.join(', ')}
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      You can customize permissions below before creating.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

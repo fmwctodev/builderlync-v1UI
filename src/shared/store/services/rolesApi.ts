@@ -9,10 +9,24 @@ export interface Role {
   permissions: RolePermissions;
   is_default: boolean;
   is_deletable: boolean;
+  is_custom?: boolean;
+  template_id?: string;
   organization_id?: string;
   created_at: string;
   updated_at: string;
   staff_count?: number;
+}
+
+export interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  role_type: string;
+  permissions: RolePermissions;
+  is_system_template: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RolePermissions {
@@ -59,6 +73,39 @@ export interface RolePermissions {
     manage_campaigns: boolean;
     view_analytics: boolean;
     manage_automation: boolean;
+  };
+  scheduling: {
+    view_calendar: boolean;
+    create_appointments: boolean;
+    assign_crew: boolean;
+    manage_dispatch: boolean;
+  };
+  estimates: {
+    create_estimate: boolean;
+    edit_estimate: boolean;
+    approve_estimate: boolean;
+    send_estimate: boolean;
+  };
+  reporting: {
+    view_reports: boolean;
+    export_reports: boolean;
+    view_financial_reports: boolean;
+  };
+  field_operations: {
+    upload_photos: boolean;
+    complete_tasks: boolean;
+    mark_job_complete: boolean;
+    request_supplements: boolean;
+  };
+  integrations: {
+    manage_eagleview: boolean;
+    manage_material_orders: boolean;
+    manage_quickbooks: boolean;
+  };
+  automation: {
+    view_automation: boolean;
+    edit_automation: boolean;
+    manage_ai_settings: boolean;
   };
 }
 
@@ -182,5 +229,65 @@ export const getDefaultPermissions = (): RolePermissions => {
       view_analytics: false,
       manage_automation: false,
     },
+    scheduling: {
+      view_calendar: false,
+      create_appointments: false,
+      assign_crew: false,
+      manage_dispatch: false,
+    },
+    estimates: {
+      create_estimate: false,
+      edit_estimate: false,
+      approve_estimate: false,
+      send_estimate: false,
+    },
+    reporting: {
+      view_reports: false,
+      export_reports: false,
+      view_financial_reports: false,
+    },
+    field_operations: {
+      upload_photos: false,
+      complete_tasks: false,
+      mark_job_complete: false,
+      request_supplements: false,
+    },
+    integrations: {
+      manage_eagleview: false,
+      manage_material_orders: false,
+      manage_quickbooks: false,
+    },
+    automation: {
+      view_automation: false,
+      edit_automation: false,
+      manage_ai_settings: false,
+    },
+  };
+};
+
+export const getRoleTemplates = async () => {
+  const response = await axios.get(`${API_URL}/role-templates`);
+  return {
+    success: true,
+    data: response.data
+  };
+};
+
+export const createRoleFromTemplate = async (templateId: string, customData?: { name?: string; description?: string; permissions?: Partial<RolePermissions> }) => {
+  const response = await axios.post(`${API_URL}/roles/from-template`, {
+    templateId,
+    ...customData
+  });
+  return {
+    success: true,
+    data: response.data
+  };
+};
+
+export const assignRoleToStaffMember = async (staffId: string, roleId: string) => {
+  const response = await axios.post(`${API_URL}/staff/${staffId}/assign-role`, { roleId });
+  return {
+    success: true,
+    data: response.data
   };
 };
