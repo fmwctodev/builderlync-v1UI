@@ -53,9 +53,9 @@ const Jobs: React.FC = () => {
     claimAmount: 0,
     deductible: 0,
     claimDetails: '',
-    createdBy: 1,
+    createdBy: '',
     createdByName: 'Current User',
-    editedBy: 1,
+    editedBy: '',
     editedByName: 'Current User',
     jobType: 'residential',
     contactId: null,
@@ -71,7 +71,15 @@ const Jobs: React.FC = () => {
       filterJobsByType(fetchedJobs, selectedJobType);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
-      setToast({ message: 'Failed to load jobs', type: 'error' });
+      const errorMessage = error.message || 'Failed to load jobs';
+      if (errorMessage.includes('Supabase client not initialized')) {
+        setToast({
+          message: 'Database connection error. Please refresh the page or contact support.',
+          type: 'error'
+        });
+      } else {
+        setToast({ message: errorMessage, type: 'error' });
+      }
     } finally {
       setLoading(false);
     }
@@ -261,11 +269,13 @@ const Jobs: React.FC = () => {
       claimAmount: 0,
       deductible: 0,
       claimDetails: '',
-      createdBy: 1,
+      createdBy: '',
       createdByName: 'Current User',
-      editedBy: 1,
+      editedBy: '',
       editedByName: 'Current User',
-      jobType: 'residential'
+      jobType: 'residential',
+      contactId: null,
+      contactName: null
     });
   };
 

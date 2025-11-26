@@ -11,7 +11,7 @@ export interface Job {
   jobValue: number;
   source: string;
   details: string;
-  createdBy: number;
+  createdBy: string;
   insuranceEnabled: boolean;
   insuranceCompany: string;
   policyAccountNumber: string;
@@ -35,6 +35,7 @@ export interface Job {
   updatedAt: string;
   createdByName: string;
   editedByName: string | null;
+  editedBy: string | null;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
   contactName?: string | null;
@@ -72,9 +73,9 @@ export interface CreateJobRequest {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: number;
+  createdBy: string;
   createdByName: string;
-  editedBy: number;
+  editedBy: string;
   editedByName: string;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
@@ -172,6 +173,10 @@ function snakeToCamel(obj: any): any {
 }
 
 export const getJobs = async (page: number = 1, limit: number = 10): Promise<JobsResponse> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const offset = (page - 1) * limit;
 
   const { count } = await supabase
@@ -208,6 +213,10 @@ export const getJobs = async (page: number = 1, limit: number = 10): Promise<Job
 };
 
 export const createJob = async (jobData: CreateJobRequest) => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -238,6 +247,10 @@ export const createJob = async (jobData: CreateJobRequest) => {
 };
 
 export const updateJob = async (id: number, jobData: CreateJobRequest) => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -271,6 +284,10 @@ export const updateJob = async (id: number, jobData: CreateJobRequest) => {
 };
 
 export const deleteJob = async (id: number) => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { error } = await supabase
     .from('jobs')
     .delete()
@@ -287,6 +304,10 @@ export const deleteJob = async (id: number) => {
 };
 
 export const getJobById = async (id: number) => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { data, error } = await supabase
     .from('jobs')
     .select('*')

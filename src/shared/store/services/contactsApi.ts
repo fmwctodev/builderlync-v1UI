@@ -63,6 +63,10 @@ function camelToSnake(obj: any): any {
 }
 
 export const createContact = async (contactData: CreateContactRequest): Promise<ContactResponse> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -90,6 +94,10 @@ export const createContact = async (contactData: CreateContactRequest): Promise<
 };
 
 export const getContacts = async (search?: string, type?: string, page: number = 1, limit: number = 10): Promise<ContactsListResponse> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const offset = (page - 1) * limit;
 
   let query = supabase
@@ -132,6 +140,10 @@ export const getContacts = async (search?: string, type?: string, page: number =
 };
 
 export const searchContactsByTypeAndName = async (search: string, types: string[]): Promise<Contact[]> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   if (!search || search.length < 2) {
     return [];
   }
@@ -160,6 +172,10 @@ export const searchContactsByTypeAndName = async (search: string, types: string[
 };
 
 export const getContactById = async (id: string): Promise<ContactResponse> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { data, error } = await supabase
     .from('contacts')
     .select('*')
@@ -177,6 +193,10 @@ export const getContactById = async (id: string): Promise<ContactResponse> => {
 };
 
 export const updateContact = async (id: string, contactData: CreateContactRequest): Promise<ContactResponse> => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const snakeData = camelToSnake(contactData);
 
   const { data, error } = await supabase
@@ -198,6 +218,10 @@ export const updateContact = async (id: string, contactData: CreateContactReques
 };
 
 export const deleteContact = async (id: string) => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+
   const { error } = await supabase
     .from('contacts')
     .delete()
