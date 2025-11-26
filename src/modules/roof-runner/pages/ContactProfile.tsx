@@ -109,10 +109,11 @@ const ContactProfile: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const response: any = await getStaff(1, 100);
+      const response = await getStaff(1, 100);
       setStaff(response.data || []);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
+      setStaff([]);
     }
   };
 
