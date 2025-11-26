@@ -15,6 +15,9 @@ import InstantEstimator from './pages/InstantEstimator';
 import InstantEstimatorManage from './pages/InstantEstimatorManage';
 import ManageQuestions from './pages/ManageQuestions';
 import NewMaterial from './pages/NewMaterial';
+import MaterialSetup from './pages/MaterialSetup';
+import MaterialsList from './pages/MaterialsList';
+import EditMaterial from './pages/EditMaterial';
 import Conversations from './pages/Conversations';
 import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
@@ -29,6 +32,7 @@ import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
+import OAuthCallback from './components/file-manager/OAuthCallback';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -57,6 +61,9 @@ export function RoofRunnerModule() {
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
         <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
         <Route path="instant-estimator/:id/manage/materials/new" element={<NewMaterial />} />
+        <Route path="instant-estimator/:id/manage/materials/setup" element={<MaterialSetup />} />
+        <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
+        <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
         <Route path="material-orders" element={<MaterialOrders />} />
@@ -71,6 +78,8 @@ export function RoofRunnerModule() {
         <Route path="support" element={<Support />} />
         <Route path="settings/*" element={<Settings />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
+        <Route path="auth/google/callback" element={<OAuthCallback />} />
+        <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
       </Route>
       </Routes>
     </Provider>

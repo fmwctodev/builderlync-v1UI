@@ -1,5 +1,4 @@
 import axios from 'axios';
-import type { InstantEstimatorsResponse, CreateInstantEstimatorData, RenameInstantEstimatorData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -96,6 +95,21 @@ export const apiService = {
     return response.data;
   },
 
+  addInstantEstimatorMaterial: async (id: number, material: any) => {
+    const response = await apiClient.post(`/instant-estimators/${id}/materials`, material);
+    return response.data;
+  },
+
+  updateInstantEstimatorMaterial: async (id: number, materialId: string, material: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/materials/${materialId}`, material);
+    return response.data;
+  },
+
+  deleteInstantEstimatorMaterial: async (id: number, materialId: string) => {
+    const response = await apiClient.delete(`/instant-estimators/${id}/materials/${materialId}`);
+    return response.data;
+  },
+
   updateInstantEstimatorPricingSettings: async (id: number, pricingSettings: any) => {
     const response = await apiClient.put(`/instant-estimators/${id}/pricing-settings`, pricingSettings);
     return response.data;
@@ -108,6 +122,11 @@ export const apiService = {
 
   getInstantEstimatorByPublicUrl: async (publicUrl: string) => {
     const response = await apiClient.get(`/instant-estimators/public/${publicUrl}`);
+    return response.data;
+  },
+
+  generateEstimate: async (publicUrl: string, formData: any) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/generate-estimate`, formData);
     return response.data;
   },
 };
