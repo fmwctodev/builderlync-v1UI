@@ -406,10 +406,13 @@ const SocialPlannerTab: React.FC = () => {
   const [postType, setPostType] = useState('unified');
 
   const channels = [
+    { id: 'google-business', name: 'Google Business', connected: false },
     { id: 'facebook', name: 'Facebook', connected: true },
     { id: 'instagram', name: 'Instagram', connected: true },
     { id: 'linkedin', name: 'LinkedIn', connected: false },
     { id: 'twitter', name: 'Twitter', connected: false },
+    { id: 'tiktok', name: 'TikTok', connected: false },
+    { id: 'youtube', name: 'YouTube', connected: false },
   ];
 
   return (
@@ -425,7 +428,7 @@ const SocialPlannerTab: React.FC = () => {
       {/* Channel Selection */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Connected Channels</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {channels.map((channel) => (
             <div key={channel.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg dark:border-gray-600">
               <div className="flex items-center space-x-2">
