@@ -62,6 +62,13 @@ export interface Opportunity {
   source?: string;
   tags?: string[];
   appointment_time?: string;
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  property_country?: string;
+  property_latitude?: number;
+  property_longitude?: number;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +95,13 @@ export interface OpportunityFormData {
   contact_email?: string;
   contact_phone?: string;
   follower_ids?: string[];
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  property_country?: string;
+  property_latitude?: number;
+  property_longitude?: number;
 }
 
 export interface CreateOpportunityRequest {

@@ -95,6 +95,13 @@ export const opportunitiesApi = {
         source: formData.source || null,
         tags: formData.tags || null,
         appointment_time: formData.appointment_time || null,
+        property_address: formData.property_address || null,
+        property_city: formData.property_city || null,
+        property_state: formData.property_state || null,
+        property_zip: formData.property_zip || null,
+        property_country: formData.property_country || null,
+        property_latitude: formData.property_latitude || null,
+        property_longitude: formData.property_longitude || null,
       };
 
       const { data: opportunity, error: oppError } = await supabase
@@ -154,6 +161,13 @@ export const opportunitiesApi = {
         ...(formData.source !== undefined && { source: formData.source }),
         ...(formData.tags !== undefined && { tags: formData.tags }),
         ...(formData.appointment_time !== undefined && { appointment_time: formData.appointment_time }),
+        ...(formData.property_address !== undefined && { property_address: formData.property_address }),
+        ...(formData.property_city !== undefined && { property_city: formData.property_city }),
+        ...(formData.property_state !== undefined && { property_state: formData.property_state }),
+        ...(formData.property_zip !== undefined && { property_zip: formData.property_zip }),
+        ...(formData.property_country !== undefined && { property_country: formData.property_country }),
+        ...(formData.property_latitude !== undefined && { property_latitude: formData.property_latitude }),
+        ...(formData.property_longitude !== undefined && { property_longitude: formData.property_longitude }),
         updated_at: new Date().toISOString(),
       };
 
