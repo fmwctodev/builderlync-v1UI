@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, Cloud } from 'lucide-react';
+import { AlertCircle, Cloud, ArrowLeft, Home } from 'lucide-react';
 import FileManagerHeader from '../components/file-manager/FileManagerHeader';
 import SearchAndFilterBar from '../components/file-manager/SearchAndFilterBar';
 import FolderNavigation from '../components/file-manager/FolderNavigation';
@@ -29,15 +29,97 @@ export default function FileManager() {
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showDashboard, setShowDashboard] = useState(true);
+  const [targetFolderId, setTargetFolderId] = useState<string | undefined>();
+  const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
 
   const handleCreateFolder = async (folderName: string) => {
     try {
-      const newFolder = await fileManagerApi.createFolder(folderName, currentFolderId);
+      const parentId = targetFolderId || currentFolderId;
+      const newFolder = await fileManagerApi.createFolder(folderName, parentId);
       setFolders([...folders, newFolder]);
       setIsCreateFolderModalOpen(false);
+      setTargetFolderId(undefined);
     } catch (err) {
       console.error('Error creating folder:', err);
       setError('Failed to create folder');
+    }
+  };
+
+  const handleFolderClick = (folderId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (folder) {
+      setFolderPath([...folderPath, { id: folderId, name: folder.name }]);
+    }
+    setCurrentFolderId(folderId);
+  };
+
+  const handleBackClick = () => {
+    if (folderPath.length > 0) {
+      const newPath = [...folderPath];
+      newPath.pop();
+      setFolderPath(newPath);
+      const parentId = newPath.length > 0 ? newPath[newPath.length - 1].id : undefined;
+      setCurrentFolderId(parentId);
+    }
+  };
+
+  const handleBreadcrumbClick = (index: number) => {
+    const newPath = folderPath.slice(0, index + 1);
+    setFolderPath(newPath);
+    const folderId = newPath.length > 0 ? newPath[newPath.length - 1].id : undefined;
+    setCurrentFolderId(folderId);
+  };
+
+  const handleHomeClick = () => {
+    setFolderPath([]);
+    setCurrentFolderId(undefined);
+  };
+
+  const handleCreateSubfolder = (parentId: string) => {
+    setTargetFolderId(parentId);
+    setIsCreateFolderModalOpen(true);
+  };
+
+  const handleUploadToFolder = (folderId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files) {
+        Array.from(files).forEach(file => {
+          handleFileUploadToFolder(file, folderId);
+        });
+      }
+    };
+    input.click();
+  };
+
+  const handleFileUploadToFolder = async (file: File, folderId: string) => {
+    try {
+      setUploadFileName(file.name);
+      setUploadStatus('uploading');
+      setUploadError(null);
+      
+      const uploadedFile = await fileManagerApi.uploadFile(
+        file,
+        folderId,
+        undefined,
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+      
+      setFiles([...files, uploadedFile]);
+      setUploadStatus('success');
+      
+      setTimeout(() => {
+        setUploadStatus(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setUploadStatus('error');
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload file');
     }
   };
 
@@ -91,7 +173,6 @@ export default function FileManager() {
       setFiles([...files, uploadedFile]);
       setUploadStatus('success');
       
-      // Auto-close success modal after 2 seconds
       setTimeout(() => {
         setUploadStatus(null);
       }, 2000);
@@ -102,9 +183,9 @@ export default function FileManager() {
     }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = async (fileId: number) => {
     try {
-      await fileManagerApi.deleteFile(fileId);
+      await fileManagerApi.deleteFile(fileId.toString());
       setFiles(files.filter(f => f.id !== fileId));
     } catch (err) {
       console.error('Error deleting file:', err);
@@ -200,10 +281,44 @@ export default function FileManager() {
         ) : (
           <div className="p-6">
             <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
+            
+            {/* Breadcrumb Navigation */}
+            <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <button
+                onClick={handleHomeClick}
+                className="flex items-center gap-1 hover:text-primary-600 transition-colors"
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </button>
+              {folderPath.map((folder, index) => (
+                <div key={folder.id} className="flex items-center gap-2">
+                  <span>/</span>
+                  <button
+                    onClick={() => handleBreadcrumbClick(index)}
+                    className="hover:text-primary-600 transition-colors"
+                  >
+                    {folder.name}
+                  </button>
+                </div>
+              ))}
+              {folderPath.length > 0 && (
+                <button
+                  onClick={handleBackClick}
+                  className="ml-4 flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+              )}
+            </div>
+
             <FolderNavigation 
               folders={folders} 
-              onFolderClick={setCurrentFolderId}
+              onFolderClick={handleFolderClick}
               onDeleteFolder={handleDeleteFolder}
+              onCreateSubfolder={handleCreateSubfolder}
+              onUploadToFolder={handleUploadToFolder}
             />
             <FileGrid 
               files={files} 

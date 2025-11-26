@@ -16,6 +16,8 @@ import {
 import { fileManagerApi } from '../../../../shared/services/fileManagerApi';
 import { cloudDriveApi, CloudDriveConnection } from '../../../../shared/services/cloudDriveApi';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+
 interface StorageStats {
   totalFiles: number;
   totalFolders: number;
@@ -46,7 +48,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
       setError(null);
       
       // Fetch storage statistics
-      const response = await fetch('/api/file-manager/stats', {
+      const response = await fetch(`${API_BASE_URL}/file-manager/stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -72,7 +74,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
       setSyncing(true);
       setError(null);
 
-      const response = await fetch('/api/file-manager/sync', {
+      const response = await fetch(`${API_BASE_URL}/file-manager/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -249,7 +251,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
       )}
 
       {/* Recent Activity */}
-      {stats && stats.recentActivity.length > 0 && (
+      {/* {stats && stats.recentActivity.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
           <div className="space-y-3">
@@ -272,7 +274,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Connection Info */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
