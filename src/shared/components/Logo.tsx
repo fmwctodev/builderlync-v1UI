@@ -14,7 +14,7 @@ const Logo: React.FC<LogoProps> = ({ type, className = '', size = 'md' }) => {
   };
 
   const logoSrc = {
-    icon: '/logo/icon.jpeg',
+    icon: '/logo/icon.png',
     light: '/logo/lightlogo.jpeg',
     dark: '/logo/lightlogo.jpeg'
   };
