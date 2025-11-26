@@ -226,7 +226,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Close date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
                     <input
                       type="date"
                       value={formData.closeDate}
