@@ -24,54 +24,26 @@ export default function OpportunityCard({ opportunity, onDragStart, onClick }: O
 
   return (
     <div
-      className="bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 relative hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200"
       draggable
       onDragStart={(e) => onDragStart?.(e, opportunity)}
       onClick={handleClick}
     >
-      {/* Avatar/Initials */}
-      <div className="absolute top-3 right-3">
-        {opportunity.initials ? (
-          <span className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center text-sm font-semibold text-red-800 dark:text-red-200">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-medium text-gray-900 dark:text-white">{opportunity.name}</h4>
+        {opportunity.initials && (
+          <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
             {opportunity.initials}
-          </span>
-        ) : (
-          <UserCircle className="h-8 w-8 text-gray-300 dark:text-gray-600" />
+          </div>
         )}
       </div>
-
-      <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-1 pr-10">
-        {opportunity.name}
-      </h5>
       {opportunity.business && (
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{opportunity.business}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{opportunity.business}</p>
       )}
-      {opportunity.source && (
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-          <span className="font-medium">Opportunity Source:</span> {opportunity.source}
-        </p>
-      )}
-      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-        <span className="font-medium">Opportunity Value:</span> ${opportunity.value.toFixed(2)}
-      </p>
-
-      {/* Action Icons */}
-      <div className="flex space-x-2 text-gray-400 dark:text-gray-500 mt-3">
-        <button className="p-1 hover:text-[#dc2626] dark:hover:text-red-400">
-          <Phone className="h-4 w-4" />
-        </button>
-        <button className="p-1 hover:text-[#dc2626] dark:hover:text-red-400">
-          <Mail className="h-4 w-4" />
-        </button>
-        <button className="p-1 hover:text-[#dc2626] dark:hover:text-red-400">
-          <MessageSquare className="h-4 w-4" />
-        </button>
-        <button className="p-1 hover:text-[#dc2626] dark:hover:text-red-400">
-          <ClipboardCheck className="h-4 w-4" />
-        </button>
-        <button className="p-1 hover:text-[#dc2626] dark:hover:text-red-400">
-          <Calendar className="h-4 w-4" />
-        </button>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-green-600 dark:text-green-400">
+          ${opportunity.value.toLocaleString()}
+        </span>
       </div>
     </div>
   );

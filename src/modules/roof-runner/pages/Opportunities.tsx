@@ -14,6 +14,7 @@ import type { JobType } from '../types/opportunities';
 export default function Opportunities() {
   const [activeTab, setActiveTab] = useState('all');
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
+  const [internalView, setInternalView] = useState<'board' | 'list' | 'settings'>('board');
   const [selectedJobType, setSelectedJobType] = useState<JobType | 'all'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
@@ -82,15 +83,26 @@ export default function Opportunities() {
         activeView={activeView}
         onViewChange={setActiveView}
         onAddPipeline={() => setShowCreatePipelineModal(true)}
+        internalView={internalView}
+        onInternalViewChange={setInternalView}
       />
       <main className="flex-grow p-4">
         {activeView === 'opportunities' ? (
           <>
-            <FiltersAndSort />
-            {activeTab === 'all' ? (
+            {internalView === 'board' && (
               <KanbanBoard key={refreshKey} selectedJobType={selectedJobType} />
-            ) : (
-              <OpportunitiesTable key={refreshKey} selectedJobType={selectedJobType} onRowClick={handleRowClick} />
+            )}
+            {internalView === 'list' && (
+              <>
+                <FiltersAndSort />
+                <OpportunitiesTable key={refreshKey} selectedJobType={selectedJobType} onRowClick={handleRowClick} />
+              </>
+            )}
+            {internalView === 'settings' && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Opportunities Settings</h2>
+                <p className="text-gray-600 dark:text-gray-400">Settings panel coming soon...</p>
+              </div>
             )}
           </>
         ) : (

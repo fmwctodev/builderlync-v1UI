@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Grid3X3, List, Upload, Plus, Building2 } from 'lucide-react';
+import { Grid3X3, List, Upload, Plus, Building2, Settings } from 'lucide-react';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import {
   EMBEDDED_PIPELINE_TYPES,
@@ -17,6 +17,8 @@ interface OpportunitiesHeaderProps {
   activeView?: 'opportunities' | 'pipelines';
   onViewChange?: (view: 'opportunities' | 'pipelines') => void;
   onAddPipeline?: () => void;
+  internalView?: 'board' | 'list' | 'settings';
+  onInternalViewChange?: (view: 'board' | 'list' | 'settings') => void;
 }
 
 export default function OpportunitiesHeader({
@@ -28,6 +30,8 @@ export default function OpportunitiesHeader({
   activeView = 'opportunities',
   onViewChange,
   onAddPipeline,
+  internalView = 'board',
+  onInternalViewChange,
 }: OpportunitiesHeaderProps) {
   const [opportunityCounts, setOpportunityCounts] = useState<Record<JobType, number>>({
     Residential: 0,
@@ -118,24 +122,34 @@ export default function OpportunitiesHeader({
 
                 <div className="border border-gray-300 dark:border-gray-600 rounded-md p-1 flex space-x-1">
                   <button
-                    onClick={() => setActiveTab('all')}
+                    onClick={() => onInternalViewChange?.('board')}
                     className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
-                      activeTab === 'all'
+                      internalView === 'board'
                         ? 'bg-[#dc2626] text-white shadow'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <Grid3X3 className="h-4 w-4 mr-1" /> All
+                    <Grid3X3 className="h-4 w-4 mr-1" /> Board View
                   </button>
                   <button
-                    onClick={() => setActiveTab('list')}
+                    onClick={() => onInternalViewChange?.('list')}
                     className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
-                      activeTab === 'list'
+                      internalView === 'list'
                         ? 'bg-[#dc2626] text-white shadow'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <List className="h-4 w-4 mr-1" /> List
+                    <List className="h-4 w-4 mr-1" /> List View
+                  </button>
+                  <button
+                    onClick={() => onInternalViewChange?.('settings')}
+                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
+                      internalView === 'settings'
+                        ? 'bg-[#dc2626] text-white shadow'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Settings className="h-4 w-4 mr-1" /> Settings
                   </button>
                 </div>
               </div>

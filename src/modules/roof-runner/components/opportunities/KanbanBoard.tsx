@@ -116,40 +116,42 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
 
   return (
     <>
-      <div className="flex space-x-4 overflow-x-auto pb-4">
-      {stages.map((stage) => {
-        const stageOpportunities = getStageOpportunities(stage.id);
-        const stageValue = getStageValue(stage.id);
+      <div className="h-full p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div className="flex gap-4 min-w-max">
+          {stages.map((stage) => {
+            const stageOpportunities = getStageOpportunities(stage.id);
+            const stageValue = getStageValue(stage.id);
 
-        return (
-          <div
-            key={stage.id}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, stage.id)}
-          >
-            <KanbanColumn
-              stage={{
-                id: stage.id,
-                title: stage.name,
-                opportunitiesCount: stageOpportunities.length,
-                value: stageValue,
-                color: `border-[${stage.color}]`,
-              }}
-              opportunities={stageOpportunities.map(opp => ({
-                id: opp.id,
-                stage: opp.stage_id,
-                name: opp.opportunity_name,
-                source: opp.source,
-                business: opp.business_name,
-                value: opp.value,
-                initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-              }))}
-              onDragStart={handleDragStart}
-              onCardClick={handleCardClick}
-            />
-          </div>
-        );
-      })}
+            return (
+              <div
+                key={stage.id}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.id)}
+              >
+                <KanbanColumn
+                  stage={{
+                    id: stage.id,
+                    title: stage.name,
+                    opportunitiesCount: stageOpportunities.length,
+                    value: stageValue,
+                    color: `border-[${stage.color}]`,
+                  }}
+                  opportunities={stageOpportunities.map(opp => ({
+                    id: opp.id,
+                    stage: opp.stage_id,
+                    name: opp.opportunity_name,
+                    source: opp.source,
+                    business: opp.business_name,
+                    value: opp.value,
+                    initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+                  }))}
+                  onDragStart={handleDragStart}
+                  onCardClick={handleCardClick}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <ViewEditOpportunityModal
