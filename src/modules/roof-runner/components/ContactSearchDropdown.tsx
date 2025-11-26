@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, User } from 'lucide-react';
+import { Search, X, User, Plus, Eye, Edit2 } from 'lucide-react';
 import { searchContactsByTypeAndName, Contact } from '../../../shared/store/services/contactsApi';
 
 interface ContactSearchDropdownProps {
   selectedContact: { id: string; name: string } | null;
   onSelectContact: (contact: { id: string; name: string } | null) => void;
   disabled?: boolean;
+  required?: boolean;
+  hasError?: boolean;
+  onCreateNew?: () => void;
+  onViewProfile?: (contactId: string) => void;
+  onEditContact?: (contactId: string) => void;
 }
 
 const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   selectedContact,
   onSelectContact,
-  disabled = false
+  disabled = false,
+  required = false,
+  hasError = false,
+  onCreateNew,
+  onViewProfile,
+  onEditContact
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -103,8 +113,12 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   if (selectedContact) {
     return (
       <div className="relative">
-        <div className="flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-          <div className="flex items-center space-x-2">
+        <div className={`flex items-center justify-between px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 ${
+          hasError
+            ? 'border-red-500 dark:border-red-500'
+            : 'border-gray-300 dark:border-gray-600'
+        }`}>
+          <div className="flex items-center space-x-2 flex-1">
             <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
               <User className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             </div>
@@ -113,13 +127,36 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
             </span>
           </div>
           {!disabled && (
-            <button
-              type="button"
-              onClick={handleClearSelection}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center space-x-1">
+              {onViewProfile && (
+                <button
+                  type="button"
+                  onClick={() => onViewProfile(selectedContact.id)}
+                  className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                  title="View contact profile"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              )}
+              {onEditContact && (
+                <button
+                  type="button"
+                  onClick={() => onEditContact(selectedContact.id)}
+                  className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                  title="Edit contact"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                title="Clear selection"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -146,7 +183,11 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           placeholder="Search for customer or lead..."
-          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+            hasError
+              ? 'border-red-500 dark:border-red-500 focus:border-red-500'
+              : 'border-gray-300 dark:border-gray-600 focus:border-primary-500'
+          }`}
         />
       </div>
 
@@ -156,42 +197,64 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
             <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
               Searching...
             </div>
-          ) : contacts.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-              No contacts found
-            </div>
           ) : (
-            <ul className="py-1">
-              {contacts.map((contact, index) => (
-                <li key={contact.id}>
+            <>
+              {contacts.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  No contacts found
+                </div>
+              ) : (
+                <ul className="py-1">
+                  {contacts.map((contact, index) => (
+                    <li key={contact.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectContact(contact)}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                          index === highlightedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {contact.full_name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {contact.email || contact.phone}
+                              {contact.company && ` • ${contact.company}`}
+                            </div>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                            {contact.type}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {onCreateNew && (
+                <>
+                  <div className="border-t border-gray-200 dark:border-gray-700"></div>
                   <button
                     type="button"
-                    onClick={() => handleSelectContact(contact)}
-                    className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                      index === highlightedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
-                    }`}
+                    onClick={() => {
+                      setIsOpen(false);
+                      setSearchTerm('');
+                      onCreateNew();
+                    }}
+                    className="w-full px-4 py-2.5 text-left hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors flex items-center space-x-2 text-primary-600 dark:text-primary-400 font-medium"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {contact.full_name}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {contact.email || contact.phone}
-                          {contact.company && ` • ${contact.company}`}
-                        </div>
-                      </div>
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                        {contact.type}
-                      </span>
-                    </div>
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm">Create New Contact</span>
                   </button>
-                </li>
-              ))}
-            </ul>
+                </>
+              )}
+            </>
           )}
         </div>
       )}

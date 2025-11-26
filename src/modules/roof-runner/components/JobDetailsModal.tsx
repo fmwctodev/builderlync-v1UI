@@ -3,6 +3,9 @@ import { X, Trash2 } from 'lucide-react';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import ContactSearchDropdown from './ContactSearchDropdown';
+import QuickCreateContactModal from './QuickCreateContactModal';
+import ViewContactModal from './ViewContactModal';
+import EditContactModal from './EditContactModal';
 import TasksTab from './TasksTab';
 import CalendarTab from './CalendarTab';
 import MeasurementsTab from './MeasurementsTab';
@@ -45,6 +48,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+  const [showCreateContactModal, setShowCreateContactModal] = useState(false);
+  const [showViewContactModal, setShowViewContactModal] = useState(false);
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [contactError, setContactError] = useState(false);
 
   if (!isOpen) return null;
 
@@ -185,7 +192,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                 {/* Customer/Lead Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer/Lead</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Customer/Lead <span className="text-red-500">*</span>
+                  </label>
                   <ContactSearchDropdown
                     selectedContact={formData.contactId && formData.contactName ? {
                       id: formData.contactId.toString(),
@@ -197,8 +206,17 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         contactId: contact ? Number(contact.id) : null,
                         contactName: contact ? contact.name : null
                       });
+                      setContactError(false);
                     }}
+                    required
+                    hasError={contactError}
+                    onCreateNew={() => setShowCreateContactModal(true)}
+                    onViewProfile={(contactId) => setShowViewContactModal(true)}
+                    onEditContact={(contactId) => setShowEditContactModal(true)}
                   />
+                  {contactError && (
+                    <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
@@ -499,6 +517,40 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           setSelectedTemplateId(undefined);
         }}
         templateId={selectedTemplateId}
+      />
+
+      <QuickCreateContactModal
+        isOpen={showCreateContactModal}
+        onClose={() => setShowCreateContactModal(false)}
+        onContactCreated={(contact) => {
+          setFormData({
+            ...formData,
+            contactId: Number(contact.id),
+            contactName: contact.name
+          });
+          setContactError(false);
+          setShowCreateContactModal(false);
+        }}
+      />
+
+      <ViewContactModal
+        isOpen={showViewContactModal}
+        onClose={() => setShowViewContactModal(false)}
+        contactId={formData.contactId?.toString() || null}
+      />
+
+      <EditContactModal
+        isOpen={showEditContactModal}
+        onClose={() => setShowEditContactModal(false)}
+        contactId={formData.contactId?.toString() || null}
+        onContactUpdated={(contact) => {
+          setFormData({
+            ...formData,
+            contactId: Number(contact.id),
+            contactName: contact.name
+          });
+          setShowEditContactModal(false);
+        }}
       />
     </div>
   );

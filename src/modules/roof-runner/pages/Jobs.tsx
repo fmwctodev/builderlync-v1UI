@@ -98,6 +98,12 @@ const Jobs: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.contactId || !formData.contactName) {
+      setToast({ message: 'Please select a customer or lead before saving', type: 'error' });
+      return;
+    }
+
     try {
       setLoading(true);
       const previousStage = editingJob?.workflowStages;
