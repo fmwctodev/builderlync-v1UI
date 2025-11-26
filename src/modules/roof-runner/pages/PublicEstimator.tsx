@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../store/services/api';
 import { ArrowLeft } from 'lucide-react';
+import EstimateReview from './EstimateReview';
 
 const PublicEstimator: React.FC = () => {
   const { publicUrl } = useParams();
@@ -10,6 +11,9 @@ const PublicEstimator: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [showEstimateReview, setShowEstimateReview] = useState(false);
+  const [estimateData, setEstimateData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [address, setAddress] = useState('');
   const [showRoofOutline, setShowRoofOutline] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -118,6 +122,40 @@ const PublicEstimator: React.FC = () => {
       setCurrentStep(currentStep - 1);
     }
   };
+
+  const handleSubmitEstimate = async () => {
+    if (!publicUrl) return;
+    
+    try {
+      setSubmitting(true);
+      const submitData = {
+        ...formData,
+        address // Include the address from the map step
+      };
+      
+      const response = await apiService.generateEstimate(publicUrl, submitData);
+      setEstimateData(response.data);
+      setShowEstimateReview(true);
+    } catch (error) {
+      console.error('Failed to generate estimate:', error);
+      alert('Failed to generate estimate. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Show estimate review page
+  if (showEstimateReview && estimateData) {
+    return (
+      <EstimateReview 
+        estimateData={estimateData} 
+        onBack={() => {
+          setShowEstimateReview(false);
+          setEstimateData(null);
+        }} 
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -301,10 +339,10 @@ const PublicEstimator: React.FC = () => {
           
           <div className="grid grid-cols-4 gap-4">
             {[
-              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800' },
-              { id: 'metal', title: 'Metal', color: 'bg-blue-400' },
-              { id: 'tile', title: 'Tile', color: 'bg-red-600' },
-              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700' }
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.jpg' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.jpg'},
+              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.jpg'},
+              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.jpg' }
             ].map((option) => (
               <div
                 key={option.id}
@@ -313,9 +351,11 @@ const PublicEstimator: React.FC = () => {
                   formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
                 }`}
               >
-                <div className={`w-full h-full ${option.color}`}></div>
+                <div className={`w-full h-full`}>
+                  <img src={option.image} alt="" />
+                </div>
                 <div className="absolute bottom-6 left-6">
-                  <h3 className="text-xl font-bold text-white">{option.title}</h3>
+                  <h3 className="text-xl font-bold text-black">{option.title}</h3>
                 </div>
               </div>
             ))}
@@ -342,7 +382,10 @@ const PublicEstimator: React.FC = () => {
                 formData.desiredRoof === 'metal' ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
               }`}
             >
-              <div className="w-full h-full bg-blue-400"></div>
+              <div className={`w-full h-full`}>
+                  <img src='../rooftypes/residential/metal-2.jpg' alt="" />
+                </div>
+                  {/* <h3 className="text-xl font-bold text-black">Metal</h3> */}
               <div className="absolute bottom-6 left-6">
                 <h3 className="text-xl font-bold text-white">Metal</h3>
               </div>
@@ -520,17 +563,17 @@ const PublicEstimator: React.FC = () => {
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
-                  To ensure you're getting the best offers and pricing, Tarrytown Roofing LLC may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
+                  To ensure you're getting the best offers and pricing, ROOFING LLC may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
                 </span>
               </label>
             </div>
             
             <button
-              onClick={() => alert('Estimate submitted!')}
-              disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms}
-              className="w-full bg-gray-400 text-white py-3 rounded-full font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmitEstimate}
+              disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms || submitting}
+              className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-full font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Get my estimate
+              {submitting ? 'Generating estimate...' : 'Get my estimate'}
             </button>
           </div>
         </div>

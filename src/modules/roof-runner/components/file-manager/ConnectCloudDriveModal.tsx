@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, Cloud, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '../../../../shared/lib/supabase';
+import { cloudDriveApi, CloudDriveConnection } from '../../../../shared/services/cloudDriveApi';
+import { cloudAuthService, CloudProvider } from '../../../../shared/services/cloudAuthService';
 
-interface CloudDriveConnection {
-  id: string;
-  provider: 'google_drive' | 'onedrive_personal' | 'onedrive_business';
-  provider_email: string;
-  connected_at: string;
-  status: string;
-}
+
 
 interface ConnectCloudDriveModalProps {
   isOpen: boolean;
@@ -17,21 +12,24 @@ interface ConnectCloudDriveModalProps {
 
 const PROVIDERS = [
   {
-    id: 'google_drive' as const,
+    id: 'google' as CloudProvider,
+    dbId: 'google_drive' as const,
     name: 'Google Drive',
     description: 'Connect your Google Drive to sync files',
     icon: '🔷',
     color: 'blue',
   },
   {
-    id: 'onedrive_personal' as const,
+    id: 'onedrive_personal' as CloudProvider,
+    dbId: 'onedrive_personal' as const,
     name: 'OneDrive Personal',
     description: 'Connect your personal OneDrive account',
     icon: '🔵',
     color: 'sky',
   },
   {
-    id: 'onedrive_business' as const,
+    id: 'onedrive_business' as CloudProvider,
+    dbId: 'onedrive_business' as const,
     name: 'OneDrive Business',
     description: 'Connect your OneDrive for Business account',
     icon: '💼',
@@ -52,31 +50,12 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
   }, [isOpen]);
 
   const checkExistingConnection = async () => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('You must be logged in to connect a cloud drive');
-        setLoading(false);
-        return;
-      }
-
-      const { data, error: fetchError } = await supabase
-        .from('cloud_drive_connections')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      setExistingConnection(data);
+      const connection = await cloudDriveApi.getCurrentUserConnection();
+      setExistingConnection(connection);
     } catch (err) {
       console.error('Error checking connection:', err);
       setError('Failed to check existing connection');
@@ -85,7 +64,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
     }
   };
 
-  const handleConnect = async (providerId: typeof PROVIDERS[number]['id']) => {
+  const handleConnect = async (providerId: CloudProvider) => {
     setIsConnecting(true);
     setError(null);
 
@@ -96,29 +75,22 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
         return;
       }
 
-      setError('OAuth integration is not yet configured. Please contact your administrator.');
+      await cloudAuthService.initiateOAuth(providerId);
     } catch (err) {
       console.error('Error connecting:', err);
       setError('Failed to connect cloud drive');
-    } finally {
       setIsConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
-    if (!supabase || !existingConnection) return;
+    if (!existingConnection) return;
 
     try {
       setIsConnecting(true);
       setError(null);
 
-      const { error: deleteError } = await supabase
-        .from('cloud_drive_connections')
-        .delete()
-        .eq('id', existingConnection.id);
-
-      if (deleteError) throw deleteError;
-
+      await cloudDriveApi.deleteConnection(existingConnection.id);
       setExistingConnection(null);
     } catch (err) {
       console.error('Error disconnecting:', err);
@@ -164,7 +136,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose }: ConnectCloud
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {PROVIDERS.find(p => p.id === existingConnection.provider)?.name} Connected
+                    {PROVIDERS.find(p => p.dbId === existingConnection.provider)?.name} Connected
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {existingConnection.provider_email}
