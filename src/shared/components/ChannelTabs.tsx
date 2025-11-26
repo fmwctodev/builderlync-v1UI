@@ -1,7 +1,7 @@
 import React from 'react';
-import { MessageSquare, Mail, MessageCircle } from 'lucide-react';
+import { MessageSquare, Mail } from 'lucide-react';
 
-export type ChannelType = 'sms' | 'whatsapp' | 'email' | 'internal_comment';
+export type ChannelType = 'sms' | 'email' | 'internal_comment';
 
 interface ChannelTabsProps {
   activeChannel: ChannelType;
@@ -13,7 +13,6 @@ interface ChannelTabsProps {
 export function ChannelTabs({ activeChannel, onChannelChange, hasPhone = true, hasEmail = true }: ChannelTabsProps) {
   const tabs: { id: ChannelType; label: string; icon?: React.ReactNode; disabled?: boolean }[] = [
     { id: 'sms', label: 'SMS', icon: <MessageSquare className="w-4 h-4" />, disabled: !hasPhone },
-    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle className="w-4 h-4" />, disabled: true },
     { id: 'email', label: 'Email', icon: <Mail className="w-4 h-4" />, disabled: !hasEmail },
     { id: 'internal_comment', label: 'Internal Comment' },
   ];
