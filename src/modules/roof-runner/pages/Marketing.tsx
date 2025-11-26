@@ -10,7 +10,6 @@ import { campaignsApi } from '../../../shared/services/campaignsApi';
 import { Campaign, CampaignFormData } from '../types/campaigns';
 import { Toast } from '../components/Toast';
 import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
-import ManageSocialsModal from '../components/social-planner/ManageSocialsModal';
 import SettingsModal from '../components/social-planner/SettingsModal';
 import NewPostModal, { NewPostData } from '../components/social-planner/NewPostModal';
 
@@ -422,7 +421,7 @@ const SocialPlannerTab: React.FC = () => {
   });
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showSocialsModal, setShowSocialsModal] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState('social-accounts');
   const [showNewPostModal, setShowNewPostModal] = useState(false);
 
   const MAX_CHARACTERS = 1500;
@@ -496,7 +495,10 @@ const SocialPlannerTab: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => {
+                setSettingsInitialTab('social-accounts');
+                setShowSettingsModal(true);
+              }}
               className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               title="Settings"
             >
@@ -504,7 +506,10 @@ const SocialPlannerTab: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setShowSocialsModal(true)}
+              onClick={() => {
+                setSettingsInitialTab('social-accounts');
+                setShowSettingsModal(true);
+              }}
               className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -924,14 +929,10 @@ const SocialPlannerTab: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <ManageSocialsModal
-        isOpen={showSocialsModal}
-        onClose={() => setShowSocialsModal(false)}
-      />
-
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
+        initialTab={settingsInitialTab}
       />
 
       <NewPostModal
