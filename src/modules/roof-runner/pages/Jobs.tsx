@@ -109,7 +109,11 @@ const Jobs: React.FC = () => {
       const previousStage = editingJob?.workflowStages;
       const newStage = formData.workflowStages;
 
+      console.log('Form data before submit:', formData);
+      console.log('Job type in form data:', formData.jobType);
+
       if (editingJob) {
+        console.log('Updating existing job:', editingJob.id);
         await updateJob(editingJob.id!, formData);
 
         if (previousStage !== newStage && editingJob.id) {

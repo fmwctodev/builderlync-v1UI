@@ -92,6 +92,11 @@ export const getJobs = async (page: number = 1, limit: number = 10): Promise<Job
     }
   );
 
+  console.log('Fetched jobs data:', response.data);
+  if (response.data?.data?.data && response.data.data.data.length > 0) {
+    console.log('Sample job data with jobType:', response.data.data.data[0]);
+  }
+
   return response.data;
 };
 
@@ -119,10 +124,13 @@ export const createJob = async (jobData: CreateJobRequest) => {
 
 export const updateJob = async (id: number, jobData: CreateJobRequest) => {
   const token = localStorage.getItem('token');
-  
+
   const payload: any = { ...jobData };
   if (!payload.closeDate) delete payload.closeDate;
   if (!payload.dateOfLoss) delete payload.dateOfLoss;
+
+  console.log('Updating job with payload:', payload);
+  console.log('Job Type being sent:', payload.jobType);
 
   const response = await axios.put(
     `${API_BASE_URL}/jobs/${id}`,
@@ -135,6 +143,8 @@ export const updateJob = async (id: number, jobData: CreateJobRequest) => {
       }
     }
   );
+
+  console.log('Update response:', response.data);
 
   return response.data;
 };
