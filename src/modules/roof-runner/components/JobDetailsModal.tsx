@@ -50,12 +50,20 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   console.log('Staff data in modal:', staff);
 
   const stages = [
-    'Default','New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
-    'Adjuster Meeting Complete', 'Under Service Agreement/Contin', 'Estimate Received',
-    'Proposal sent/presented', 'Proposal follow-up', 'Reinspection', 'Public Adjuster',
-    'Proposal signed/Pre-Production', 'Supplementing', 'Pre-production', 'Materials Ordered',
-    'Production', 'Post-production', 'Payments/Invoicing', 'Post-job completion follow-up',
-    'Job completed', 'Lost', 'Unqualified'
+    'Inspection/Estimate Booked',
+    'Inspection/Estimate Complete',
+    'Proposal Drafted',
+    'Proposal Sent',
+    'Proposal Accepted',
+    'Job Lost',
+    'Job Won',
+    'Under Contract',
+    'Invoice Sent',
+    'Invoice Paid',
+    'Job Scheduled',
+    'Materials Ordered',
+    'Job Started',
+    'Job Complete'
   ];
 
   return (
@@ -210,7 +218,6 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         onChange={(e) => setFormData({...formData, workflowStages: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       >
-                        <option value="New lead">New lead</option>
                         {stages.map(stage => (
                           <option key={stage} value={stage}>{stage}</option>
                         ))}
