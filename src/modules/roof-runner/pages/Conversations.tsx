@@ -13,6 +13,7 @@ import { ChannelTabs, ChannelType } from '../../../shared/components/ChannelTabs
 import { MessageInputSMS } from '../../../shared/components/MessageInputSMS';
 import { MessageInputEmail } from '../../../shared/components/MessageInputEmail';
 import { MessageInputInternalComment } from '../../../shared/components/MessageInputInternalComment';
+import ComingSoonOverlay from '../../../shared/components/ComingSoonOverlay';
 
 interface Contact {
   id: number;
@@ -732,7 +733,12 @@ const Conversations: React.FC = () => {
         )}
 
         {activeTab === 'snippets' && (
-          <div className="flex-1 bg-white dark:bg-gray-800">
+          <div className="flex-1 bg-white dark:bg-gray-800 relative">
+            <ComingSoonOverlay
+              message="Coming Soon"
+              subtitle="The Snippets feature is currently under development and will be available soon."
+              icon="rocket"
+            />
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Snippets</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">

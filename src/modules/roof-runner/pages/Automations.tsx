@@ -5,6 +5,7 @@ import AutomationEditor from '../components/AutomationEditor';
 import WorkflowBuilder from './WorkflowBuilder';
 import WorkflowTemplateLibraryModal from '../components/WorkflowTemplateLibraryModal';
 import { WorkflowTemplate } from '../../../shared/store/services/workflowTemplateApi';
+import ComingSoonOverlay from '../../../shared/components/ComingSoonOverlay';
 
 export default function Automations() {
   const [activeTab, setActiveTab] = useState('All Workflows');
@@ -204,7 +205,12 @@ export default function Automations() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6 relative">
+      <ComingSoonOverlay
+        message="Coming Soon"
+        subtitle="The Automations & Workflows feature is currently under development and will be available soon."
+        icon="construction"
+      />
       {/* Controls */}
       <div className="flex justify-between items-center mb-6">
         <button 
