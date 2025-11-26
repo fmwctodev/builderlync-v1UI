@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { getRoleTemplates, RoleTemplate, createRoleFromTemplate } from '../../../shared/store/services/rolesApi';
+import { getRoleTemplates, RoleTemplate, getRoles, Role } from '../../../shared/store/services/rolesApi';
 
 interface StaffMember {
   id?: number;
@@ -48,23 +48,32 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     roleId: ''
   });
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [organizationRoles, setOrganizationRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchRoleTemplates();
+      fetchRoles();
     }
   }, [isOpen]);
 
-  const fetchRoleTemplates = async () => {
+  const fetchRoles = async () => {
     try {
       setLoadingRoles(true);
-      const response = await getRoleTemplates();
-      if (response.success && response.data) {
-        setRoleTemplates(response.data);
+      const [templatesResponse, rolesResponse] = await Promise.all([
+        getRoleTemplates(),
+        getRoles()
+      ]);
+
+      if (templatesResponse.success && templatesResponse.data) {
+        setRoleTemplates(templatesResponse.data);
+      }
+
+      if (rolesResponse.success && rolesResponse.data) {
+        setOrganizationRoles(rolesResponse.data);
       }
     } catch (error) {
-      console.error('Error fetching role templates:', error);
+      console.error('Error fetching roles:', error);
     } finally {
       setLoadingRoles(false);
     }
@@ -250,18 +259,36 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               <option value="">Select a role (optional)</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
-              ) : roleTemplates.length === 0 ? (
-                <option disabled>No role templates available</option>
               ) : (
-                roleTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))
+                <>
+                  {organizationRoles.length > 0 && (
+                    <optgroup label="Active Roles">
+                      {organizationRoles.map((role) => (
+                        <option key={`role-${role.id}`} value={`role:${role.id}`}>
+                          {role.name} {role.staff_count ? `(${role.staff_count} staff)` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {roleTemplates.length > 0 && (
+                    <optgroup label="Role Templates">
+                      {roleTemplates.map((template) => (
+                        <option key={`template-${template.id}`} value={`template:${template.id}`}>
+                          {template.name} Template
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {organizationRoles.length === 0 && roleTemplates.length === 0 && (
+                    <option disabled>No roles available</option>
+                  )}
+                </>
               )}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Assign a role to control this staff member's permissions
+              {organizationRoles.length === 0 && roleTemplates.length > 0
+                ? 'Create active roles from templates in Roles & Permissions first, or select a template to create one automatically'
+                : 'Assign a role to control this staff member\'s permissions'}
             </p>
           </div>
 

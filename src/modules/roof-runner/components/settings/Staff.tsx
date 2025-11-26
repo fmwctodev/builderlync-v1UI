@@ -56,18 +56,27 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         try {
           const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
 
-          const rolesResponse = await getRoles();
-          let organizationRoleId = member.roleId;
+          let organizationRoleId: string;
 
-          const existingRole = rolesResponse.data?.find((r: any) => r.template_id === member.roleId);
+          if (member.roleId.startsWith('role:')) {
+            organizationRoleId = member.roleId.replace('role:', '');
+          } else if (member.roleId.startsWith('template:')) {
+            const templateId = member.roleId.replace('template:', '');
+            const rolesResponse = await getRoles();
+            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
 
-          if (existingRole) {
-            organizationRoleId = existingRole.id;
-          } else {
-            const roleResponse = await createRoleFromTemplate(member.roleId);
-            if (roleResponse.success && roleResponse.data) {
-              organizationRoleId = roleResponse.data.id;
+            if (existingRole) {
+              organizationRoleId = existingRole.id;
+            } else {
+              const roleResponse = await createRoleFromTemplate(templateId);
+              if (roleResponse.success && roleResponse.data) {
+                organizationRoleId = roleResponse.data.id;
+              } else {
+                throw new Error('Failed to create role from template');
+              }
             }
+          } else {
+            organizationRoleId = member.roleId;
           }
 
           await assignRoleToStaffMember(staffId, organizationRoleId);
@@ -120,18 +129,27 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         try {
           const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
 
-          const rolesResponse = await getRoles();
-          let organizationRoleId = member.roleId;
+          let organizationRoleId: string;
 
-          const existingRole = rolesResponse.data?.find((r: any) => r.template_id === member.roleId);
+          if (member.roleId.startsWith('role:')) {
+            organizationRoleId = member.roleId.replace('role:', '');
+          } else if (member.roleId.startsWith('template:')) {
+            const templateId = member.roleId.replace('template:', '');
+            const rolesResponse = await getRoles();
+            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
 
-          if (existingRole) {
-            organizationRoleId = existingRole.id;
-          } else {
-            const roleResponse = await createRoleFromTemplate(member.roleId);
-            if (roleResponse.success && roleResponse.data) {
-              organizationRoleId = roleResponse.data.id;
+            if (existingRole) {
+              organizationRoleId = existingRole.id;
+            } else {
+              const roleResponse = await createRoleFromTemplate(templateId);
+              if (roleResponse.success && roleResponse.data) {
+                organizationRoleId = roleResponse.data.id;
+              } else {
+                throw new Error('Failed to create role from template');
+              }
             }
+          } else {
+            organizationRoleId = member.roleId;
           }
 
           await assignRoleToStaffMember(selectedMember.id, organizationRoleId);
