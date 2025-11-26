@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import type { DashboardWidget, UserDashboardPreference, WidgetPreferenceUpdate, WidgetWithPreference } from '../../../modules/roof-runner/types/dashboard';
+import { getMetricsForDashboard } from '../../constants/metricsData';
 
 export const dashboardWidgetsApi = {
   async getAvailableWidgets(): Promise<DashboardWidget[]> {
@@ -15,7 +16,35 @@ export const dashboardWidgetsApi = {
       .order('name');
 
     if (error) throw error;
-    return data || [];
+
+    const dbWidgets = data || [];
+    const metricsCategories = getMetricsForDashboard();
+    const allMetricWidgets: DashboardWidget[] = [];
+
+    metricsCategories.forEach(category => {
+      category.widgets.forEach(widget => {
+        const existingWidget = dbWidgets.find(w => w.widget_key === widget.id || w.metric_id === widget.id);
+
+        if (existingWidget) {
+          allMetricWidgets.push(existingWidget);
+        } else {
+          allMetricWidgets.push({
+            id: widget.id,
+            widget_key: widget.id,
+            name: widget.label,
+            description: widget.description || null,
+            category: category.dashboardCategory || 'reporting',
+            icon_name: null,
+            is_active: true,
+            default_visible: widget.defaultVisible || false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        }
+      });
+    });
+
+    return allMetricWidgets;
   },
 
   async getUserPreferences(userId: string): Promise<UserDashboardPreference[]> {

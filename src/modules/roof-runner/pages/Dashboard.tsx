@@ -3,7 +3,7 @@ import { RefreshCw, Plus, Copy } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../shared/store';
 import { dashboardWidgetsApi } from '../../../shared/store/services/dashboardWidgetsApi';
-import WidgetSelectorDropdown from '../components/dashboard/WidgetSelectorDropdown';
+import DashboardWidgetSelector from '../components/dashboard/DashboardWidgetSelector';
 import { WidgetComponents } from '../components/dashboard/widgets';
 import type { WidgetWithPreference } from '../types/dashboard';
 
@@ -116,8 +116,8 @@ export default function Dashboard() {
             </button>
 
             {showWidgetSelector && (
-              <WidgetSelectorDropdown
-                widgets={widgets}
+              <DashboardWidgetSelector
+                selectedWidgetIds={widgets.filter(w => w.is_visible).map(w => w.widget_key)}
                 onApply={handleApplyWidgets}
                 onClose={() => setShowWidgetSelector(false)}
               />

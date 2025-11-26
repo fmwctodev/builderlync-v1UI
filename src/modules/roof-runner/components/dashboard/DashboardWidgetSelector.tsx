@@ -1,21 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { X, ChevronRight, Info, Search, Check, Minus } from 'lucide-react';
-import { getMetricsForReporting, MetricCategory, MetricWidget } from '../../../shared/constants/metricsData';
+import { getMetricsForDashboard, MetricCategory, MetricWidget } from '../../../../shared/constants/metricsData';
 
-interface ReportMetricsModalProps {
-  show: boolean;
+interface DashboardWidgetSelectorProps {
+  selectedWidgetIds: string[];
+  onApply: (selectedWidgetIds: string[]) => void;
   onClose: () => void;
-  onCreateReport: (selectedWidgets: string[]) => void;
 }
 
-const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
-  show,
+const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
+  selectedWidgetIds,
+  onApply,
   onClose,
-  onCreateReport,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [selectedWidgets, setSelectedWidgets] = useState<Set<string>>(new Set());
+  const [selectedWidgets, setSelectedWidgets] = useState<Set<string>>(new Set(selectedWidgetIds));
   const [searchQuery, setSearchQuery] = useState('');
+
+  const METRICS_CATEGORIES = useMemo(() => getMetricsForDashboard(), []);
 
   const toggleCategory = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -63,8 +65,6 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
     return category.widgets.filter((w) => selectedWidgets.has(w.id)).length;
   };
 
-  const METRICS_CATEGORIES = useMemo(() => getMetricsForReporting(), []);
-
   const filteredCategories = useMemo(() => {
     if (!searchQuery.trim()) return METRICS_CATEGORIES;
 
@@ -72,7 +72,8 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
     return METRICS_CATEGORIES.map((category) => {
       const matchesCategory = category.label.toLowerCase().includes(query);
       const matchedWidgets = category.widgets.filter((widget) =>
-        widget.label.toLowerCase().includes(query)
+        widget.label.toLowerCase().includes(query) ||
+        widget.description?.toLowerCase().includes(query)
       );
 
       if (matchesCategory || matchedWidgets.length > 0) {
@@ -85,11 +86,8 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
     }).filter((cat): cat is MetricCategory => cat !== null);
   }, [searchQuery, METRICS_CATEGORIES]);
 
-  const handleCreateReport = () => {
-    onCreateReport(Array.from(selectedWidgets));
-    setSelectedWidgets(new Set());
-    setExpandedCategories(new Set());
-    setSearchQuery('');
+  const handleApplyChanges = () => {
+    onApply(Array.from(selectedWidgets));
     onClose();
   };
 
@@ -99,15 +97,13 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
 
   const totalSelectedWidgets = selectedWidgets.size;
 
-  if (!show) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Select Report Metrics
+            Select Dashboard Widgets
           </h2>
           <button
             onClick={onClose}
@@ -123,10 +119,10 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search metrics..."
+              placeholder="Search widgets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -134,7 +130,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Select one or more metrics to include in your custom report
+            Select widgets to display on your dashboard
           </p>
 
           <div className="space-y-0 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -156,7 +152,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                   <div
                     className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                       selectionState === 'all'
-                        ? 'bg-red-50 dark:bg-red-900/20'
+                        ? 'bg-primary-50 dark:bg-primary-900/20'
                         : selectionState === 'partial'
                         ? 'bg-blue-50 dark:bg-blue-900/20'
                         : 'bg-white dark:bg-gray-800'
@@ -172,7 +168,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                             isExpanded ? 'rotate-90' : ''
                           } ${
                             selectionState !== 'none'
-                              ? 'text-red-600 dark:text-red-400'
+                              ? 'text-primary-600 dark:text-primary-400'
                               : 'text-gray-400 dark:text-gray-500'
                           }`}
                         />
@@ -181,10 +177,10 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                         onClick={() => toggleCategorySelection(category)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                           selectionState === 'all'
-                            ? 'bg-red-600 border-red-600'
+                            ? 'bg-primary-600 border-primary-600'
                             : selectionState === 'partial'
                             ? 'bg-blue-600 border-blue-600'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-red-500'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-primary-500'
                         }`}
                       >
                         {selectionState === 'all' && <Check className="w-3 h-3 text-white" />}
@@ -217,7 +213,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                       {category.widgets.map((widget, widgetIndex) => (
                         <div
                           key={widget.id}
-                          className={`flex items-center space-x-3 px-4 py-3 pl-16 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
+                          className={`flex items-start space-x-3 px-4 py-3 pl-16 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
                             widgetIndex !== category.widgets.length - 1
                               ? 'border-b border-gray-200 dark:border-gray-700'
                               : ''
@@ -225,10 +221,10 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                           onClick={() => toggleWidget(widget.id)}
                         >
                           <button
-                            className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                            className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
                               selectedWidgets.has(widget.id)
-                                ? 'bg-red-600 border-red-600'
-                                : 'border-gray-300 dark:border-gray-600 hover:border-red-500'
+                                ? 'bg-primary-600 border-primary-600'
+                                : 'border-gray-300 dark:border-gray-600 hover:border-primary-500'
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -239,9 +235,16 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                               <Check className="w-2.5 h-2.5 text-white" />
                             )}
                           </button>
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {widget.label}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {widget.label}
+                            </div>
+                            {widget.description && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {widget.description}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -253,7 +256,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
 
           {filteredCategories.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No metrics found matching your search.</p>
+              <p className="text-gray-500 dark:text-gray-400">No widgets found matching your search.</p>
             </div>
           )}
 
@@ -292,15 +295,10 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
             Cancel
           </button>
           <button
-            onClick={handleCreateReport}
-            disabled={totalSelectedWidgets === 0}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
-              totalSelectedWidgets === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
+            onClick={handleApplyChanges}
+            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
           >
-            Create Report
+            Apply Changes
           </button>
         </div>
       </div>
@@ -308,4 +306,4 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
   );
 };
 
-export default ReportMetricsModal;
+export default DashboardWidgetSelector;
