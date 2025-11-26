@@ -92,7 +92,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
 
   const handleOpenEventModal = () => {
     const today = new Date();
-    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const defaultAssignee = jobData?.assignees && jobData.assignees.length > 0
       ? staff.find(s => s.id === parseInt(jobData.assignees[0]))
       : jobData?.jobOwner
@@ -104,9 +107,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
       title: '',
       contactId: jobData?.contactId || undefined,
       contactName: jobData?.contactName || '',
-      startDate: localDate.toISOString().split('T')[0],
+      startDate: dateStr,
       startTime: '',
-      endDate: localDate.toISOString().split('T')[0],
+      endDate: dateStr,
       endTime: '',
       allDay: false,
       location: jobData?.location || '',

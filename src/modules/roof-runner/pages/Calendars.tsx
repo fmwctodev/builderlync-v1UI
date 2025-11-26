@@ -99,7 +99,9 @@ const Calendars: React.FC = () => {
 
   const handleDateClick = (day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const localDate = new Date(clickedDate.getTime() - clickedDate.getTimezoneOffset() * 60000);
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setSelectedDate(clickedDate);
     setEditingEvent(null);
     setFormData({
@@ -107,9 +109,9 @@ const Calendars: React.FC = () => {
       title: '',
       contactId: undefined,
       contactName: '',
-      startDate: localDate.toISOString().split('T')[0],
+      startDate: dateStr,
       startTime: '',
-      endDate: localDate.toISOString().split('T')[0],
+      endDate: dateStr,
       endTime: '',
       allDay: false,
       location: '',
@@ -295,10 +297,11 @@ const Calendars: React.FC = () => {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEvents = events.filter(event => {
-        const eventDate = new Date((event as any).start_date || event.startDate);
-        return eventDate.getDate() === day &&
-               eventDate.getMonth() === currentDate.getMonth() &&
-               eventDate.getFullYear() === currentDate.getFullYear();
+        const dateStr = (event as any).start_date || event.startDate;
+        const [year, month, dayNum] = dateStr.split('-').map(Number);
+        return dayNum === day &&
+               month - 1 === currentDate.getMonth() &&
+               year === currentDate.getFullYear();
       });
 
       const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
@@ -398,16 +401,21 @@ const Calendars: React.FC = () => {
             </div>
             <button
               onClick={() => {
-                setSelectedDate(new Date());
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = today.getMonth() + 1;
+                const day = today.getDate();
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                setSelectedDate(today);
                 setEditingEvent(null);
                 setFormData({
                   type: '',
                   title: '',
                   contactId: undefined,
                   contactName: '',
-                  startDate: new Date().toISOString().split('T')[0],
+                  startDate: dateStr,
                   startTime: '',
-                  endDate: new Date().toISOString().split('T')[0],
+                  endDate: dateStr,
                   endTime: '',
                   allDay: false,
                   location: '',
