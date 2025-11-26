@@ -430,7 +430,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 />
               )}
 
-              {activeTab === 'Calendar' && <CalendarTab />}
+              {activeTab === 'Calendar' && (
+                <CalendarTab
+                  jobId={viewingJob?.id}
+                  jobData={viewingJob || undefined}
+                  staff={staff}
+                />
+              )}
 
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
