@@ -3,17 +3,34 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('🔍 Supabase Initialization Check:');
+console.log('Environment:', import.meta.env.MODE);
+console.log('VITE_SUPABASE_URL:', supabaseUrl ? `✓ Set (${supabaseUrl.substring(0, 30)}...)` : '✗ Missing');
+console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ CRITICAL: Missing Supabase environment variables!');
   console.error('VITE_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
   console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
   console.error('Please ensure your .env file contains both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
   console.error('You may need to restart the development server after adding environment variables.');
+  console.error('Available env vars:', Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+let supabaseClient = null;
+
+try {
+  if (supabaseUrl && supabaseAnonKey) {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client created successfully');
+  } else {
+    console.error('❌ Cannot create Supabase client - missing credentials');
+  }
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+}
+
+export const supabase = supabaseClient;
 
 export async function getCurrentUser() {
   if (!supabase) return null;

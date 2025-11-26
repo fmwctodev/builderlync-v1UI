@@ -76,6 +76,15 @@ export const createContact = async (contactData: CreateContactRequest): Promise<
   const snakeData = camelToSnake(contactData);
   snakeData.user_id = user.id;
 
+  const nameParts = contactData.fullName.trim().split(' ');
+  if (nameParts.length >= 2) {
+    snakeData.first_name = nameParts[0];
+    snakeData.last_name = nameParts.slice(1).join(' ');
+  } else {
+    snakeData.first_name = contactData.fullName;
+    snakeData.last_name = '';
+  }
+
   const { data, error } = await supabase
     .from('contacts')
     .insert([snakeData])
@@ -198,6 +207,15 @@ export const updateContact = async (id: string, contactData: CreateContactReques
   }
 
   const snakeData = camelToSnake(contactData);
+
+  const nameParts = contactData.fullName.trim().split(' ');
+  if (nameParts.length >= 2) {
+    snakeData.first_name = nameParts[0];
+    snakeData.last_name = nameParts.slice(1).join(' ');
+  } else {
+    snakeData.first_name = contactData.fullName;
+    snakeData.last_name = '';
+  }
 
   const { data, error } = await supabase
     .from('contacts')
