@@ -18,7 +18,7 @@ import NewMaterial from './pages/NewMaterial';
 import MaterialSetup from './pages/MaterialSetup';
 import MaterialsList from './pages/MaterialsList';
 import EditMaterial from './pages/EditMaterial';
-import Conversations from './pages/Conversations';
+import ConversationsNew from './pages/ConversationsNew';
 import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
 import ContactProfile from './pages/ContactProfile';
@@ -51,7 +51,7 @@ export function RoofRunnerModule() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
 
-        <Route path="conversations" element={<Conversations />} />
+        <Route path="conversations" element={<ConversationsNew />} />
         <Route path="calendars" element={<Calendars />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="contacts/:id" element={<ContactProfile />} />
