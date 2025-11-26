@@ -310,7 +310,7 @@ export const markConversationAsRead = async (conversationId: string): Promise<vo
 };
 
 /**
- * Get staff and sub-contractor contacts for team messaging
+ * Get staff, sub-contractor, and adjuster contacts for team messaging
  */
 export const getTeamContacts = async (): Promise<any[]> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -320,7 +320,7 @@ export const getTeamContacts = async (): Promise<any[]> => {
     .from('contacts')
     .select('*')
     .eq('user_id', user.id)
-    .in('type', ['staff', 'sub-contractor'])
+    .in('type', ['staff', 'sub-contractor', 'adjuster'])
     .order('full_name', { ascending: true });
 
   if (error) throw error;

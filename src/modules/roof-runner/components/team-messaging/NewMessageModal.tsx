@@ -159,7 +159,7 @@ const NewMessageModal: React.FC<NewMessageModalProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search staff and sub-contractors..."
+                placeholder="Search team members..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
@@ -168,7 +168,7 @@ const NewMessageModal: React.FC<NewMessageModalProps> = ({
             <div className="border border-gray-300 dark:border-gray-600 rounded-md max-h-48 overflow-y-auto">
               {filteredContacts.length === 0 ? (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  {searchQuery ? 'No contacts found' : 'No staff or sub-contractors available'}
+                  {searchQuery ? 'No contacts found' : 'No team members available'}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -193,7 +193,7 @@ const NewMessageModal: React.FC<NewMessageModalProps> = ({
                           {contact.full_name}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {contact.type === 'staff' ? 'Staff' : 'Sub-Contractor'} • {contact.email || contact.phone}
+                          {contact.type === 'staff' ? 'Staff' : contact.type === 'adjuster' ? 'Adjuster' : 'Sub-Contractor'} • {contact.email || contact.phone}
                         </p>
                       </div>
                       <input
