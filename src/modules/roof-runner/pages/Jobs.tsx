@@ -7,7 +7,6 @@ import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
 import JobsSettings from '../components/JobsSettings';
 import FiltersSidebar from '../components/FiltersSidebar';
-import JobModal from '../components/JobModal';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
@@ -16,7 +15,6 @@ const Jobs: React.FC = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
-  const [showJobModal, setShowJobModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
@@ -105,7 +103,6 @@ const Jobs: React.FC = () => {
         await createJob(formData);
         setToast({ message: 'Job created successfully!', type: 'success' });
       }
-      setShowJobModal(false);
       setShowJobDetails(false);
       setEditingJob(null);
       resetForm();
@@ -132,6 +129,7 @@ const Jobs: React.FC = () => {
   };
 
   const handleEdit = (job: Job) => {
+    setViewingJob(job);
     setEditingJob(job);
     setFormData({
       name: job.name,
@@ -158,7 +156,7 @@ const Jobs: React.FC = () => {
       editedByName: 'Current User',
       jobType: job.jobType || 'residential'
     });
-    setShowJobModal(true);
+    setShowJobDetails(true);
   };
 
   const handleView = (job: Job) => {
@@ -357,22 +355,6 @@ const Jobs: React.FC = () => {
         viewingJob={viewingJob}
         editingJob={editingJob}
       />
-
-      <JobModal
-        isOpen={showJobModal}
-        onClose={() => {
-          setShowJobModal(false);
-          setEditingJob(null);
-          resetForm();
-        }}
-        onSubmit={handleSubmit}
-        formData={formData}
-        setFormData={setFormData}
-        staff={staff}
-        editingJob={editingJob}
-        loading={loading}
-      />
-
 
     </div>
   );
