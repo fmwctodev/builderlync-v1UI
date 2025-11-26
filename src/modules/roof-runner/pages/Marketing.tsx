@@ -471,9 +471,19 @@ const SocialPlannerTab: React.FC = () => {
   };
 
   const handleNewPostClick = () => {
-    const postCreationElement = document.getElementById('post-creation-section');
-    if (postCreationElement) {
-      postCreationElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (activeSubTab !== 'planner') {
+      setActiveSubTab('planner');
+      setTimeout(() => {
+        const postCreationElement = document.getElementById('post-creation-section');
+        if (postCreationElement) {
+          postCreationElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } else {
+      const postCreationElement = document.getElementById('post-creation-section');
+      if (postCreationElement) {
+        postCreationElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
