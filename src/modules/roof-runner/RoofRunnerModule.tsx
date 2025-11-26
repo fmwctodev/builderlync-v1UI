@@ -32,6 +32,7 @@ import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
+import OAuthCallback from './pages/OAuthCallback';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -45,6 +46,8 @@ export function RoofRunnerModule() {
       <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
       <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+      <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
+      <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
 

@@ -1,74 +1,48 @@
 import { useState } from 'react';
-import FileManagerHeader from '../components/file-manager/FileManagerHeader';
-import SearchAndFilterBar from '../components/file-manager/SearchAndFilterBar';
-import FolderNavigation from '../components/file-manager/FolderNavigation';
-import FileGrid from '../components/file-manager/FileGrid';
-import CreateFolderModal from '../components/file-manager/CreateFolderModal';
-import FilterSortDrawer from '../components/file-manager/FilterSortDrawer';
-import ConnectCloudDriveModal from '../components/file-manager/ConnectCloudDriveModal';
-
-const mockFolders = [
-  { id: 'f1', name: 'Proposal Pages' },
-  { id: 'f2', name: 'Warranty Info' },
-  { id: 'f3', name: 'Shingle Brochures' },
-  { id: 'f4', name: 'Completed Projects' },
-  { id: 'f5', name: 'Marketing Materials' },
-];
-
-const mockFiles = [
-  { id: 'file1', name: 'ESTIMATE-000796812923', type: 'pdf', pages: 9, thumbnail: '' },
-  { id: 'file2', name: 'IMG_7380', type: 'image', pages: 1, thumbnail: '' },
-  { id: 'file3', name: 'IMG_7379', type: 'image', pages: 1, thumbnail: '' },
-  { id: 'file4', name: 'IMG_7376', type: 'image', pages: 1, thumbnail: '' },
-  { id: 'file5', name: 'IMG_6980', type: 'image', pages: 1, thumbnail: '' },
-];
+import { Cloud, HardDrive } from 'lucide-react';
+import MyCloudTab from '../components/file-manager/MyCloudTab';
+import LocalFilesTab from '../components/file-manager/LocalFilesTab';
 
 export default function FileManager() {
-  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
-  const [isFilterSortDrawerOpen, setIsFilterSortDrawerOpen] = useState(false);
-  const [isCloudDriveModalOpen, setIsCloudDriveModalOpen] = useState(false);
-  const [folders, setFolders] = useState(mockFolders);
-  const [files, setFiles] = useState(mockFiles);
+  const [activeTab, setActiveTab] = useState<'my-cloud' | 'local-files'>('local-files');
 
-  const handleCreateFolder = (folderName: string) => {
-    setFolders([...folders, { id: `f${Date.now()}`, name: folderName }]);
-    setIsCreateFolderModalOpen(false);
-  };
-
-  const handleApplyFilters = (filters: any) => {
-    console.log('Applied filters:', filters);
-    setIsFilterSortDrawerOpen(false);
-  };
+  const tabs = [
+    { id: 'my-cloud' as const, label: 'My Cloud', icon: Cloud },
+    { id: 'local-files' as const, label: 'Local Files', icon: HardDrive },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <FileManagerHeader
-        onCreateFolder={() => setIsCreateFolderModalOpen(true)}
-        onConnectCloudDrive={() => setIsCloudDriveModalOpen(true)}
-      />
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">File Manager</h1>
+        </div>
 
-      <main className="flex-grow p-6">
-        <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
-        <FolderNavigation folders={folders} />
-        <FileGrid files={files} />
-      </main>
+        <div className="flex items-center gap-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
+              >
+                <Icon size={16} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <CreateFolderModal
-        isOpen={isCreateFolderModalOpen}
-        onClose={() => setIsCreateFolderModalOpen(false)}
-        onCreate={handleCreateFolder}
-      />
-
-      <FilterSortDrawer
-        isOpen={isFilterSortDrawerOpen}
-        onClose={() => setIsFilterSortDrawerOpen(false)}
-        onApply={handleApplyFilters}
-      />
-
-      <ConnectCloudDriveModal
-        isOpen={isCloudDriveModalOpen}
-        onClose={() => setIsCloudDriveModalOpen(false)}
-      />
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'my-cloud' && <MyCloudTab />}
+        {activeTab === 'local-files' && <LocalFilesTab />}
+      </div>
     </div>
   );
 }
