@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
+import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
 import JobsHeader from '../components/JobsHeader';
 import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
@@ -105,13 +106,54 @@ const Jobs: React.FC = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      const previousStage = editingJob?.workflowStages;
+      const newStage = formData.workflowStages;
+
       if (editingJob) {
         await updateJob(editingJob.id!, formData);
-        setToast({ message: 'Job updated successfully!', type: 'success' });
+
+        if (previousStage !== newStage && editingJob.id) {
+          try {
+            const createdTasks = await autoCreateTasksForStage(editingJob.id, newStage);
+            if (createdTasks.length > 0) {
+              setToast({
+                message: `Job updated! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
+                type: 'success'
+              });
+            } else {
+              setToast({ message: 'Job updated successfully!', type: 'success' });
+            }
+          } catch (taskError) {
+            console.error('Error auto-creating tasks:', taskError);
+            setToast({ message: 'Job updated, but some tasks could not be created', type: 'success' });
+          }
+        } else {
+          setToast({ message: 'Job updated successfully!', type: 'success' });
+        }
       } else {
-        await createJob(formData);
-        setToast({ message: 'Job created successfully!', type: 'success' });
+        const response = await createJob(formData);
+        const newJobId = response.data.id;
+
+        if (newJobId) {
+          try {
+            const createdTasks = await autoCreateTasksForStage(newJobId, newStage);
+            if (createdTasks.length > 0) {
+              setToast({
+                message: `Job created! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
+                type: 'success'
+              });
+            } else {
+              setToast({ message: 'Job created successfully!', type: 'success' });
+            }
+          } catch (taskError) {
+            console.error('Error auto-creating tasks:', taskError);
+            setToast({ message: 'Job created successfully!', type: 'success' });
+          }
+        } else {
+          setToast({ message: 'Job created successfully!', type: 'success' });
+        }
       }
+
       setShowJobDetails(false);
       setEditingJob(null);
       resetForm();

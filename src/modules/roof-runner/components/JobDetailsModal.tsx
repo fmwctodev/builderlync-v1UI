@@ -389,7 +389,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </div>
               )}
 
-              {activeTab === 'Tasks' && <TasksTab />}
+              {activeTab === 'Tasks' && viewingJob && (
+                <TasksTab
+                  jobId={viewingJob.id!}
+                  currentStage={formData.workflowStages}
+                />
+              )}
 
               {activeTab === 'Calendar' && <CalendarTab />}
 
