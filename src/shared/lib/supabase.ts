@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -15,9 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Please ensure your .env file contains both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
   console.error('You may need to restart the development server after adding environment variables.');
   console.error('Available env vars:', Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
+
+  if (import.meta.env.PROD) {
+    console.error('🚨 PRODUCTION ERROR: Configure environment variables in your hosting provider (Netlify/Vercel)');
+  }
 }
 
-let supabaseClient = null;
+let supabaseClient: SupabaseClient | null = null;
 
 try {
   if (supabaseUrl && supabaseAnonKey) {

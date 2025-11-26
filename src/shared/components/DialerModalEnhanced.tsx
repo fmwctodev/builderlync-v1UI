@@ -34,7 +34,24 @@ type TabType = 'recents' | 'contacts' | 'keypad' | 'voicemail' | 'queue';
 
 const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) => {
   const dispatch = useAppDispatch();
-  const callState = useAppSelector((state) => state.call);
+  const callState = useAppSelector((state) => state.call) || {
+    isInitialized: false,
+    isOnCall: false,
+    callStatus: 'idle' as const,
+    currentCall: {
+      callSid: null,
+      direction: null,
+      phoneNumber: null,
+      contactName: null,
+      startTime: null,
+      duration: 0,
+      isMuted: false,
+      isRecording: false,
+    },
+    incomingCall: null,
+    recentCalls: [],
+    error: null,
+  };
 
   const [activeTab, setActiveTab] = useState<TabType>('keypad');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -69,17 +86,17 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
   }, [isOpen]);
 
   useEffect(() => {
-    if (callState.callStatus === 'connected' && !durationInterval) {
+    if (callState?.callStatus === 'connected' && !durationInterval) {
       const interval = window.setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
       setDurationInterval(interval);
-    } else if (callState.callStatus !== 'connected' && durationInterval) {
+    } else if (callState?.callStatus !== 'connected' && durationInterval) {
       clearInterval(durationInterval);
       setDurationInterval(null);
       setCallDuration(0);
     }
-  }, [callState.callStatus]);
+  }, [callState?.callStatus, durationInterval]);
 
   const handleTwilioEvent = (event: CallEvent) => {
     switch (event.type) {
@@ -203,7 +220,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {callState.isOnCall ? 'On Call' : 'Phone'}
+                {callState?.isOnCall ? 'On Call' : 'Phone'}
               </h2>
               <button
                 onClick={onClose}
@@ -213,7 +230,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
               </button>
             </div>
 
-            {callState.incomingCall && (
+            {callState?.incomingCall && (
               <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Incoming Call</p>
@@ -241,8 +258,8 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
             {callState.isOnCall ? (
               <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  {callState.callStatus === 'connecting' ? 'Connecting...' :
-                   callState.callStatus === 'ringing' ? 'Ringing...' : 'Connected'}
+                  {callState?.callStatus === 'connecting' ? 'Connecting...' :
+                   callState?.callStatus === 'ringing' ? 'Ringing...' : 'Connected'}
                 </p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
                   {callState.currentCall.contactName || callState.currentCall.phoneNumber}
@@ -286,7 +303,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {callState.isOnCall ? (
+            {callState?.isOnCall ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <button
@@ -360,7 +377,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
             )}
           </div>
 
-          {!callState.isOnCall && (
+          {!callState?.isOnCall && (
             <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center justify-around py-3">
                 <button
