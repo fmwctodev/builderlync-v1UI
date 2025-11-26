@@ -9,6 +9,10 @@ import MessageThread from '../components/team-messaging/MessageThread';
 import NewMessageModal from '../components/team-messaging/NewMessageModal';
 import { TeamConversationListItem, TeamMessageItem, TeamContact, MessageType } from '../types/teamMessaging';
 import { formatDistanceToNow } from 'date-fns';
+import { ChannelTabs, ChannelType } from '../../../shared/components/ChannelTabs';
+import { MessageInputSMS } from '../../../shared/components/MessageInputSMS';
+import { MessageInputEmail } from '../../../shared/components/MessageInputEmail';
+import { MessageInputInternalComment } from '../../../shared/components/MessageInputInternalComment';
 
 interface Contact {
   id: number;
@@ -37,7 +41,7 @@ const Conversations: React.FC = () => {
   const [snippetView, setSnippetView] = useState('all-snippets');
   const [inboxTab, setInboxTab] = useState('unread');
   const [message, setMessage] = useState('');
-  const [activeChannel, setActiveChannel] = useState('SMS');
+  const [activeChannel, setActiveChannel] = useState<ChannelType>('sms');
   const [showTriggerDropdown, setShowTriggerDropdown] = useState(false);
   const [showAddFolderModal, setShowAddFolderModal] = useState(false);
   const [folderName, setFolderName] = useState('');
@@ -209,8 +213,6 @@ const Conversations: React.FC = () => {
 
   const currentMessages = contactMessages[contacts[selectedContact]?.id] || [];
   const currentContact = contacts[selectedContact];
-
-  const channels = ['SMS', 'Email'];
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -675,121 +677,54 @@ const Conversations: React.FC = () => {
               </div>
 
               {/* Message Input */}
-              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-                {/* Channel Selection */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    {channels.map((channel) => (
-                      <button
-                        key={channel}
-                        onClick={() => setActiveChannel(channel)}
-                        className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                          activeChannel === channel
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700'
-                        }`}
-                      >
-                        {channel}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                      Internal Comment
-                    </button>
-                  </div>
-                </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                {/* Channel Tabs */}
+                <ChannelTabs
+                  activeChannel={activeChannel}
+                  onChannelChange={setActiveChannel}
+                  hasPhone={Boolean(currentContact?.lastMessage)}
+                  hasEmail={Boolean(currentContact?.name)}
+                />
 
-                {/* Email Form */}
-                {/* {activeChannel === 'Email' && ( */}
-                  <div className="space-y-3 mb-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">From Name:</label>
-                        <input
-                          type="text"
-                          value=""
-                          placeholder="Enter Full Name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">From email:</label>
-                        <input
-                          type="email"
-                          placeholder="Enter Email Address"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1">
-                        <label className="block text-sm text-gray-600 mb-1">To:</label>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm dark:bg-red-900 dark:text-red-200">
-                            {currentContact?.id === 1 ? 'ttran@caretrusteit.com (Primary)' : 
-                             currentContact?.id === 2 ? 'info@mountainsolutions.com (Primary)' :
-                             currentContact?.id === 3 ? '(512) 632-1109 (Primary)' :
-                             currentContact?.id === 4 ? 'barla.diane@email.com (Primary)' :
-                             currentContact?.id === 5 ? 'kelsey.kearny@email.com (Primary)' : 'No email'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="text-sm text-gray-600 hover:text-gray-800">CC</button>
-                        <button className="text-sm text-gray-600 hover:text-gray-800">BCC</button>
-                      </div>
-                    </div>
+                {/* Dynamic Message Input */}
+                <div className="p-4">
+                  {activeChannel === 'sms' && (
+                    <MessageInputSMS
+                      onSend={(message, metadata) => {
+                        console.log('Sending SMS:', message, metadata);
+                        setMessage('');
+                      }}
+                      fromNumber="+1 813-527-9352"
+                      toNumber={currentContact?.id === 3 ? '(512) 632-1109' : '+1 815-479-4734'}
+                      contactName={currentContact?.name}
+                    />
+                  )}
 
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Subject:</label>
-                      <input
-                        type="text"
-                        placeholder="Type a message"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      />
-                    </div>
-                  </div>
-                {/* )} */}
+                  {activeChannel === 'email' && (
+                    <MessageInputEmail
+                      onSend={(message, metadata) => {
+                        console.log('Sending Email:', message, metadata);
+                        setMessage('');
+                      }}
+                      contactEmail={
+                        currentContact?.id === 1 ? 'ttran@caretrusteit.com' :
+                        currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                        currentContact?.id === 4 ? 'barla.diane@email.com' :
+                        currentContact?.id === 5 ? 'kelsey.kearny@email.com' :
+                        'contact@email.com'
+                      }
+                      contactName={currentContact?.name}
+                    />
+                  )}
 
-                {/* Message Input */}
-                <div className="relative">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type a message"
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Paperclip size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Smile size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <DollarSign size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-500">0 word</span>
-                    <button className="px-3 py-1 text-gray-600 hover:text-gray-800">
-                      Clear
-                    </button>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 dark:bg-red-700 dark:hover:bg-red-600">
-                      <span>Send</span>
-                      <Send size={16} />
-                    </button>
-                  </div>
+                  {activeChannel === 'internal_comment' && (
+                    <MessageInputInternalComment
+                      onSend={(message, metadata) => {
+                        console.log('Sending Internal Comment:', message, metadata);
+                        setMessage('');
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
