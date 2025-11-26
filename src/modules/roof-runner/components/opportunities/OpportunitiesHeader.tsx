@@ -161,12 +161,6 @@ export default function OpportunitiesHeader({
               </div>
 
               <div className="flex items-center space-x-3">
-                <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                  <Grid3X3 className="h-5 w-5" />
-                </button>
-                <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                  <List className="h-5 w-5" />
-                </button>
                 <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
                   <Upload className="h-4 w-4 mr-2" /> Import
                 </button>
