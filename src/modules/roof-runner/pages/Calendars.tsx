@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, User } from 'lucide-react';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { getJobs, Job } from '../../../shared/store/services/jobsApi';
 import { createJobEvent, getAllEvents, updateJobEvent, deleteJobEvent, Event } from '../../../shared/store/services/eventsApi';
+import { getContacts, Contact } from '../../../shared/store/services/contactsApi';
 
 interface CalendarEvent {
   id: string;
@@ -26,6 +27,7 @@ const Calendars: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -33,6 +35,8 @@ const Calendars: React.FC = () => {
   const [formData, setFormData] = useState({
     type: '',
     title: '',
+    contactId: undefined as number | undefined,
+    contactName: '',
     startDate: '',
     startTime: '',
     endDate: '',
@@ -42,9 +46,7 @@ const Calendars: React.FC = () => {
     job: '',
     teamMember: '',
     invitees: [] as string[],
-    description: '',
-    clientName: '',
-    clientEmail: ''
+    description: ''
   });
 
   const fetchStaff = async () => {
@@ -65,6 +67,16 @@ const Calendars: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       setToast({ message: 'Failed to load jobs', type: 'error' });
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const response = await getContacts('', '', 1, 1000);
+      setContacts(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching contacts:', error);
+      setToast({ message: 'Failed to load contacts', type: 'error' });
     }
   };
 
@@ -93,6 +105,8 @@ const Calendars: React.FC = () => {
     setFormData({
       type: '',
       title: '',
+      contactId: undefined,
+      contactName: '',
       startDate: localDate.toISOString().split('T')[0],
       startTime: '',
       endDate: localDate.toISOString().split('T')[0],
@@ -102,9 +116,7 @@ const Calendars: React.FC = () => {
       job: '',
       teamMember: '',
       invitees: [],
-      description: '',
-      clientName: '',
-      clientEmail: ''
+      description: ''
     });
     setShowModal(true);
   };
@@ -151,10 +163,12 @@ const Calendars: React.FC = () => {
       const eventData = {
         type: formData.type,
         title: formData.title,
+        contactId: formData.contactId,
+        contactName: formData.contactName,
         startDate: formData.startDate,
-        startTime: formData.startTime,
+        startTime: formData.allDay ? '00:00' : formData.startTime,
         endDate: formData.endDate,
-        endTime: formData.endTime,
+        endTime: formData.allDay ? '23:59' : formData.endTime,
         allDay: formData.allDay,
         location: formData.location,
         invitees: formData.invitees,
@@ -207,6 +221,8 @@ const Calendars: React.FC = () => {
     setFormData({
       type: '',
       title: '',
+      contactId: undefined,
+      contactName: '',
       startDate: '',
       startTime: '',
       endDate: '',
@@ -216,9 +232,7 @@ const Calendars: React.FC = () => {
       job: '',
       teamMember: '',
       invitees: [],
-      description: '',
-      clientName: '',
-      clientEmail: ''
+      description: ''
     });
     setEditingEvent(null);
   };
@@ -226,6 +240,7 @@ const Calendars: React.FC = () => {
   useEffect(() => {
     fetchStaff();
     fetchJobs();
+    fetchContacts();
     fetchEvents();
   }, []);
 
@@ -388,6 +403,8 @@ const Calendars: React.FC = () => {
                 setFormData({
                   type: '',
                   title: '',
+                  contactId: undefined,
+                  contactName: '',
                   startDate: new Date().toISOString().split('T')[0],
                   startTime: '',
                   endDate: new Date().toISOString().split('T')[0],
@@ -397,9 +414,7 @@ const Calendars: React.FC = () => {
                   job: '',
                   teamMember: '',
                   invitees: [],
-                  description: '',
-                  clientName: '',
-                  clientEmail: ''
+                  description: ''
                 });
                 setShowModal(true);
               }}
@@ -463,10 +478,10 @@ const Calendars: React.FC = () => {
                   required
                 >
                   <option value="">Select event type</option>
-                  <option value="meeting">📋 Meeting</option>
-                  <option value="appointment">📅 Appointment</option>
-                  <option value="inspection">🔍 Inspection</option>
-                  <option value="installation">🔧 Installation</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="appointment">Appointment</option>
+                  <option value="inspection">Inspection</option>
+                  <option value="installation">Installation</option>
                 </select>
               </div>
 
@@ -480,6 +495,32 @@ const Calendars: React.FC = () => {
                   placeholder="Enter event title..."
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Contact (Optional)
+                </label>
+                <select
+                  value={formData.contactId || ''}
+                  onChange={(e) => {
+                    const selectedContact = contacts.find(c => c.id === parseInt(e.target.value));
+                    setFormData({
+                      ...formData,
+                      contactId: selectedContact?.id,
+                      contactName: selectedContact ? `${selectedContact.first_name} ${selectedContact.last_name}` : ''
+                    });
+                  }}
+                  className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="">Select a contact (optional)</option>
+                  {contacts.map(contact => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.first_name} {contact.last_name} {contact.email ? `(${contact.email})` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-4">
@@ -505,7 +546,8 @@ const Calendars: React.FC = () => {
                       value={formData.startTime}
                       onChange={(e) => setFormData({...formData, startTime: e.target.value})}
                       className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      required
+                      required={!formData.allDay}
+                      disabled={formData.allDay}
                     />
                   </div>
                 </div>
@@ -534,7 +576,8 @@ const Calendars: React.FC = () => {
                       value={formData.endTime}
                       onChange={(e) => setFormData({...formData, endTime: e.target.value})}
                       className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      required
+                      required={!formData.allDay}
+                      disabled={formData.allDay}
                     />
                   </div>
                 </div>
@@ -571,9 +614,9 @@ const Calendars: React.FC = () => {
                   onChange={(e) => setFormData({...formData, job: e.target.value})}
                   className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="">🏠 Select a job (optional)</option>
+                  <option value="">Select a job (optional)</option>
                   {jobs.map(job => (
-                    <option key={job.id} value={job.name}>🔨 {job.name}</option>
+                    <option key={job.id} value={job.name}>{job.name}</option>
                   ))}
                 </select>
               </div>
@@ -586,62 +629,15 @@ const Calendars: React.FC = () => {
                   className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 >
-                  <option value="">👥 Select team member</option>
+                  <option value="">Select team member</option>
                   {staff.map(member => (
                     <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
-                      👤 {member.first_name} {member.last_name}
+                      {member.first_name} {member.last_name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {formData.job && (
-                <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 space-y-4">
-                  <h4 className="text-sm font-semibold text-blue-700 dark:text-primary-300 flex items-center">
-                    <div className="w-2 h-2 bg-primary-500 rounded-full mr-2"></div>
-                    Client Information (Auto-filled)
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-primary-600 dark:text-primary-400">Client Name</label>
-                      <input
-                        type="text"
-                        value={formData.clientName}
-                        onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-                        className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Client name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-primary-600 dark:text-primary-400">Client Email</label>
-                      <input
-                        type="email"
-                        value={formData.clientEmail}
-                        onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
-                        className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="client@email.com"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Invitees (Optional)</label>
-                <select
-                  multiple
-                  value={formData.invitees}
-                  onChange={(e) => setFormData({...formData, invitees: Array.from(e.target.selectedOptions, option => option.value)})}
-                  className="input w-full h-24 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  {staff.map(member => (
-                    <option key={member.id} value={member.email} className="py-2">
-                      👤 {member.first_name} {member.last_name} ({member.email})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple invitees</p>
-              </div>
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Description</label>

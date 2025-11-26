@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Plus, ExternalLink, Calendar as CalendarIcon, X, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
@@ -20,6 +20,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
   const [formData, setFormData] = useState({
     type: '',
     title: '',
+    contactId: undefined as number | undefined,
+    contactName: '',
     startDate: '',
     startTime: '',
     endDate: '',
@@ -58,13 +60,13 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
   }, [toast]);
 
   useEffect(() => {
-    if (showModal) {
+    if (showModal && !formData.allDay) {
       const timer = setTimeout(() => {
         initAutocomplete();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [showModal]);
+  }, [showModal, formData.allDay]);
 
   const initAutocomplete = () => {
     if (window.google?.maps?.places) {
@@ -100,6 +102,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     setFormData({
       type: '',
       title: '',
+      contactId: jobData?.contactId || undefined,
+      contactName: jobData?.contactName || '',
       startDate: localDate.toISOString().split('T')[0],
       startTime: '',
       endDate: localDate.toISOString().split('T')[0],
@@ -127,10 +131,12 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
       const eventData = {
         type: formData.type,
         title: formData.title,
+        contactId: formData.contactId,
+        contactName: formData.contactName,
         startDate: formData.startDate,
-        startTime: formData.startTime,
+        startTime: formData.allDay ? '00:00' : formData.startTime,
         endDate: formData.endDate,
-        endTime: formData.endTime,
+        endTime: formData.allDay ? '23:59' : formData.endTime,
         allDay: formData.allDay,
         location: formData.location,
         invitees: formData.invitees,
@@ -222,6 +228,11 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 dark:text-white">{event.title}</h4>
                       <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        {event.contactName && (
+                          <div>
+                            <span className="font-medium">Contact:</span> {event.contactName}
+                          </div>
+                        )}
                         <div>
                           <span className="font-medium">Date:</span> {(event as any).start_date || event.startDate}
                         </div>
@@ -281,10 +292,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                     required
                   >
                     <option value="">Select event type</option>
-                    <option value="meeting">📋 Meeting</option>
-                    <option value="appointment">📅 Appointment</option>
-                    <option value="inspection">🔍 Inspection</option>
-                    <option value="installation">🔧 Installation</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="appointment">Appointment</option>
+                    <option value="inspection">Inspection</option>
+                    <option value="installation">Installation</option>
                   </select>
                 </div>
 
@@ -299,6 +310,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                     required
                   />
                 </div>
+
+                {jobData && formData.contactName && (
+                  <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-primary-700 dark:text-primary-300 flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      Contact (Auto-filled from job)
+                    </h4>
+                    <div className="text-sm text-primary-600 dark:text-primary-400 flex items-center">
+                      <span className="font-medium">{formData.contactName}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-4">
                   <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
@@ -323,7 +346,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                         value={formData.startTime}
                         onChange={(e) => setFormData({...formData, startTime: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        required
+                        required={!formData.allDay}
+                        disabled={formData.allDay}
                       />
                     </div>
                   </div>
@@ -352,7 +376,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                         value={formData.endTime}
                         onChange={(e) => setFormData({...formData, endTime: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        required
+                        required={!formData.allDay}
+                        disabled={formData.allDay}
                       />
                     </div>
                   </div>
@@ -388,13 +413,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 space-y-2">
                     <h4 className="text-sm font-semibold text-primary-700 dark:text-primary-300 flex items-center">
                       <div className="w-2 h-2 bg-primary-500 rounded-full mr-2"></div>
-                      Associated Job (Auto-filled)
+                      Associated Job (Optional)
                     </h4>
                     <div className="text-sm text-primary-600 dark:text-primary-400">
                       <span className="font-medium">{jobData.name}</span>
-                      {jobData.contactName && (
-                        <span className="ml-2">• Contact: {jobData.contactName}</span>
-                      )}
                     </div>
                   </div>
                 )}
@@ -409,30 +431,13 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required
                   >
-                    <option value="">👥 Select team member</option>
+                    <option value="">Select team member</option>
                     {staff.map(member => (
                       <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
-                        👤 {member.first_name} {member.last_name}
+                        {member.first_name} {member.last_name}
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Invitees (Optional)</label>
-                  <select
-                    multiple
-                    value={formData.invitees}
-                    onChange={(e) => setFormData({...formData, invitees: Array.from(e.target.selectedOptions, option => option.value)})}
-                    className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    {staff.map(member => (
-                      <option key={member.id} value={member.email} className="py-2">
-                        👤 {member.first_name} {member.last_name} ({member.email})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">💡 Hold Ctrl/Cmd to select multiple invitees</p>
                 </div>
 
                 <div className="space-y-2">

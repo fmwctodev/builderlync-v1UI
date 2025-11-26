@@ -6,6 +6,8 @@ export interface Event {
   id?: number;
   type: string;
   title: string;
+  contactId?: number;
+  contactName?: string;
   startDate: string;
   startTime: string;
   endDate: string;
@@ -24,6 +26,8 @@ export interface Event {
 export interface CreateEventRequest {
   type: string;
   title: string;
+  contactId?: number;
+  contactName?: string;
   startDate: string;
   startTime: string;
   endDate: string;
