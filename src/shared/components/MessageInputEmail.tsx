@@ -1,15 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface MessageInputEmailProps {
-  onSend: (message: string, metadata: any) => void;
+  conversationId: string;
   contactEmail?: string;
   contactName?: string;
+  onSendSuccess?: () => void;
+  onSendError?: (error: string) => void;
 }
 
-export function MessageInputEmail({ onSend, contactEmail, contactName }: MessageInputEmailProps) {
-  const [fromName, setFromName] = useState('Sean Richard');
-  const [fromEmail, setFromEmail] = useState('sean@autom8ionlab.com');
+export function MessageInputEmail({ conversationId, contactEmail, contactName, onSendSuccess, onSendError }: MessageInputEmailProps) {
+  const [fromName, setFromName] = useState('');
+  const [fromEmail, setFromEmail] = useState('');
+  const [emailAccounts, setEmailAccounts] = useState<any[]>([]);
+  const [sending, setSending] = useState(false);
+
+  // Load user's connected email accounts
+  useEffect(() => {
+    loadEmailAccounts();
+  }, []);
+
+  const loadEmailAccounts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: accounts, error } = await supabase
+        .from('email_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setEmailAccounts(accounts || []);
+
+      // Set default from email if available
+      if (accounts && accounts.length > 0) {
+        setFromEmail(accounts[0].email_address);
+      }
+
+      // Load user profile for name
+      const { data: profile } = await supabase
+        .from('contacts')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .eq('type', 'staff')
+        .maybeSingle();
+
+      if (profile) {
+        setFromName(`${profile.first_name || ''} ${profile.last_name || ''}`.trim());
+      }
+    } catch (error) {
+      console.error('Failed to load email accounts:', error);
+    }
+  };
   const [toEmail, setToEmail] = useState(contactEmail || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -23,22 +70,58 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
   // Calculate word count
   const wordCount = message.trim() ? message.trim().split(/\s+/).length : 0;
 
-  const handleSend = () => {
-    if (message.trim() && toEmail && subject.trim()) {
-      onSend(message, {
-        from_name: fromName,
-        from_email: fromEmail,
-        to_emails: [toEmail],
-        cc_emails: ccEmails.length > 0 ? ccEmails : undefined,
-        bcc_emails: bccEmails.length > 0 ? bccEmails : undefined,
-        subject: subject,
+  const handleSend = async () => {
+    if (!message.trim() || !toEmail || !subject.trim()) {
+      onSendError?.('Please fill in all required fields');
+      return;
+    }
+
+    if (emailAccounts.length === 0) {
+      onSendError?.('No email account connected. Please connect Gmail or Outlook in settings.');
+      return;
+    }
+
+    setSending(true);
+    try {
+      // For now, save the email as a pending message in the database
+      // The actual sending will be implemented via edge function when email integration is complete
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase.from('conversation_messages').insert({
+        conversation_id: conversationId,
+        message_type: 'email',
+        direction: 'outbound',
+        sender_id: user.id,
+        content: message,
+        is_internal: false,
+        email_metadata: {
+          from_name: fromName,
+          from_email: fromEmail,
+          to_emails: [toEmail],
+          cc_emails: ccEmails.length > 0 ? ccEmails : undefined,
+          bcc_emails: bccEmails.length > 0 ? bccEmails : undefined,
+          subject: subject,
+        },
+        delivery_status: 'pending',
       });
+
+      if (error) throw error;
+
+      // Clear form
       setMessage('');
       setSubject('');
       setCcEmails([]);
       setBccEmails([]);
       setShowCc(false);
       setShowBcc(false);
+
+      onSendSuccess?.();
+    } catch (error: any) {
+      console.error('Failed to send email:', error);
+      onSendError?.(error.message || 'Failed to send email');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -274,11 +357,15 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
           </button>
           <button
             onClick={handleSend}
-            disabled={!message.trim() || !toEmail || !subject.trim()}
+            disabled={!message.trim() || !toEmail || !subject.trim() || sending}
             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            <span>Send</span>
-            <Clock className="w-4 h-4" />
+            <span>{sending ? 'Sending...' : 'Send'}</span>
+            {sending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Clock className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>
