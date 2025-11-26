@@ -271,45 +271,21 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Job Type <span className="text-red-600">*</span>
                 </label>
-                <div className="flex gap-4">
-                  {JOB_TYPES.map((type) => {
-                    const Icon = EMBEDDED_PIPELINE_ICONS[type];
-                    const color = EMBEDDED_PIPELINE_COLORS[type];
-                    return (
-                      <label
-                        key={type}
-                        className={`flex-1 flex items-center space-x-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                          selectedJobType === type
-                            ? 'border-current shadow-md'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                        }`}
-                        style={
-                          selectedJobType === type
-                            ? {
-                                borderColor: color,
-                                backgroundColor: `${color}15`,
-                                color: color,
-                              }
-                            : {}
-                        }
-                      >
-                        <input
-                          type="radio"
-                          name="jobType"
-                          value={type}
-                          checked={selectedJobType === type}
-                          onChange={(e) => setSelectedJobType(e.target.value as JobType)}
-                          className="sr-only"
-                        />
-                        <Icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{type}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <select
+                  value={selectedJobType}
+                  onChange={(e) => setSelectedJobType(e.target.value as JobType)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Choose job type</option>
+                  {JOB_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
