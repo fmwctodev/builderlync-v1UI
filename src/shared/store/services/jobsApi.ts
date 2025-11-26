@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+import { supabase } from '../../lib/supabase';
 
 export interface Job {
   id: number;
@@ -79,104 +77,220 @@ export interface CreateJobRequest {
   jobType?: 'residential' | 'commercial' | 'insurance';
 }
 
-export const getJobs = async (page: number = 1, limit: number = 10): Promise<JobsResponse> => {
-  const token = localStorage.getItem('token');
+function camelToSnake(obj: any): any {
+  const snakeObj: any = {};
 
-  const response = await axios.get<JobsResponse>(
-    `${API_BASE_URL}/jobs?page=${page}&limit=${limit}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  const keyMap: Record<string, string> = {
+    jobOwner: 'job_owner',
+    workflowStages: 'workflow_stages',
+    closeDate: 'close_date',
+    jobValue: 'job_value',
+    insuranceEnabled: 'insurance_enabled',
+    insuranceCompany: 'insurance_company',
+    policyAccountNumber: 'policy_account_number',
+    claimNumber: 'claim_number',
+    dateOfLoss: 'date_of_loss',
+    typeOfDamage: 'type_of_damage',
+    claimAmount: 'claim_amount',
+    claimDetails: 'claim_details',
+    measurementsId: 'measurements_id',
+    proposalsId: 'proposals_id',
+    pdfSignerId: 'pdf_signer_id',
+    materialOrdersId: 'material_orders_id',
+    workOrdersId: 'work_orders_id',
+    invoiceId: 'invoice_id',
+    jobCostingsId: 'job_costings_id',
+    attachmentsId: 'attachments_id',
+    instantEstimateId: 'instant_estimate_id',
+    integrationsId: 'integrations_id',
+    createdBy: 'created_by',
+    createdByName: 'created_by_name',
+    editedBy: 'edited_by',
+    editedByName: 'edited_by_name',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    jobType: 'job_type'
+  };
 
-  console.log('Fetched jobs data:', response.data);
-  if (response.data?.data?.data && response.data.data.data.length > 0) {
-    console.log('Sample job data with jobType:', response.data.data.data[0]);
+  for (const key in obj) {
+    const snakeKey = keyMap[key] || key;
+    snakeObj[snakeKey] = obj[key];
   }
 
-  return response.data;
+  return snakeObj;
+}
+
+function snakeToCamel(obj: any): any {
+  const camelObj: any = {};
+
+  const keyMap: Record<string, string> = {
+    job_owner: 'jobOwner',
+    workflow_stages: 'workflowStages',
+    close_date: 'closeDate',
+    job_value: 'jobValue',
+    insurance_enabled: 'insuranceEnabled',
+    insurance_company: 'insuranceCompany',
+    policy_account_number: 'policyAccountNumber',
+    claim_number: 'claimNumber',
+    date_of_loss: 'dateOfLoss',
+    type_of_damage: 'typeOfDamage',
+    claim_amount: 'claimAmount',
+    claim_details: 'claimDetails',
+    measurements_id: 'measurementsId',
+    proposals_id: 'proposalsId',
+    pdf_signer_id: 'pdfSignerId',
+    material_orders_id: 'materialOrdersId',
+    work_orders_id: 'workOrdersId',
+    invoice_id: 'invoiceId',
+    job_costings_id: 'jobCostingsId',
+    attachments_id: 'attachmentsId',
+    instant_estimate_id: 'instantEstimateId',
+    integrations_id: 'integrationsId',
+    created_by: 'createdBy',
+    created_by_name: 'createdByName',
+    edited_by: 'editedBy',
+    edited_by_name: 'editedByName',
+    created_at: 'createdAt',
+    updated_at: 'updatedAt',
+    job_type: 'jobType'
+  };
+
+  for (const key in obj) {
+    const camelKey = keyMap[key] || key;
+    camelObj[camelKey] = obj[key];
+  }
+
+  return camelObj;
+}
+
+export const getJobs = async (page: number = 1, limit: number = 10): Promise<JobsResponse> => {
+  const offset = (page - 1) * limit;
+
+  const { count } = await supabase
+    .from('jobs')
+    .select('*', { count: 'exact', head: true });
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const jobs = (data || []).map(snakeToCamel) as Job[];
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    success: true,
+    data: {
+      data: jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    }
+  };
 };
 
 export const createJob = async (jobData: CreateJobRequest) => {
-  const token = localStorage.getItem('token');
-  
-  const payload: any = { ...jobData };
-  if (!payload.closeDate) delete payload.closeDate;
-  if (!payload.dateOfLoss) delete payload.dateOfLoss;
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const response = await axios.post(
-    `${API_BASE_URL}/jobs`,
-    payload,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
 
-  return response.data;
+  const snakeData = camelToSnake(jobData);
+  snakeData.created_by = user.id;
+  snakeData.edited_by = user.id;
+
+  if (!snakeData.close_date) delete snakeData.close_date;
+  if (!snakeData.date_of_loss) delete snakeData.date_of_loss;
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .insert([snakeData])
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    success: true,
+    data: snakeToCamel(data)
+  };
 };
 
 export const updateJob = async (id: number, jobData: CreateJobRequest) => {
-  const token = localStorage.getItem('token');
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const payload: any = { ...jobData };
-  if (!payload.closeDate) delete payload.closeDate;
-  if (!payload.dateOfLoss) delete payload.dateOfLoss;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
 
-  console.log('Updating job with payload:', payload);
-  console.log('Job Type being sent:', payload.jobType);
+  const snakeData = camelToSnake(jobData);
+  snakeData.edited_by = user.id;
 
-  const response = await axios.put(
-    `${API_BASE_URL}/jobs/${id}`,
-    payload,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (!snakeData.close_date) delete snakeData.close_date;
+  if (!snakeData.date_of_loss) delete snakeData.date_of_loss;
 
-  console.log('Update response:', response.data);
+  delete snakeData.created_by;
+  delete snakeData.created_at;
 
-  return response.data;
+  const { data, error } = await supabase
+    .from('jobs')
+    .update(snakeData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    success: true,
+    data: snakeToCamel(data)
+  };
 };
 
 export const deleteJob = async (id: number) => {
-  const token = localStorage.getItem('token');
+  const { error } = await supabase
+    .from('jobs')
+    .delete()
+    .eq('id', id);
 
-  const response = await axios.delete(
-    `${API_BASE_URL}/jobs/${id}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  return response.data;
+  return {
+    success: true,
+    message: 'Job deleted successfully'
+  };
 };
 
 export const getJobById = async (id: number) => {
-  const token = localStorage.getItem('token');
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const response = await axios.get(
-    `${API_BASE_URL}/jobs/${id}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  return response.data;
+  return {
+    success: true,
+    data: snakeToCamel(data)
+  };
 };
