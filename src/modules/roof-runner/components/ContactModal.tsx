@@ -254,30 +254,21 @@ const ContactModal: React.FC<ContactModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Contact Type <span className="text-red-500">*</span>
               </label>
-              {isEdit ? (
-                <input
-                  type="text"
-                  value={formData.type.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('-')}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                />
-              ) : (
-                <CustomDropdown
-                  options={[
-                    { value: 'lead', label: 'Lead' },
-                    { value: 'customer', label: 'Customer' },
-                    { value: 'partner', label: 'Partner' },
-                    { value: 'vendor', label: 'Vendor' },
-                    { value: 'sub-contractor', label: 'Sub-Contractor' },
-                    { value: 'adjuster', label: 'Adjuster' },
-                    { value: 'staff', label: 'Staff' },
-                    { value: 'other', label: 'Other' }
-                  ]}
-                  value={formData.type}
-                  onChange={(value) => onFormDataChange({...formData, type: value})}
-                  placeholder="Select an option"
-                />
-              )}
+              <CustomDropdown
+                options={[
+                  { value: 'lead', label: 'Lead' },
+                  { value: 'customer', label: 'Customer' },
+                  { value: 'partner', label: 'Partner' },
+                  { value: 'vendor', label: 'Vendor' },
+                  { value: 'sub-contractor', label: 'Sub-Contractor' },
+                  { value: 'adjuster', label: 'Adjuster' },
+                  { value: 'staff', label: 'Staff' },
+                  { value: 'other', label: 'Other' }
+                ]}
+                value={formData.type}
+                onChange={(value) => onFormDataChange({...formData, type: value})}
+                placeholder="Select an option"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
