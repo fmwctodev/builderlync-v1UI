@@ -458,7 +458,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
               {activeTab === 'Attachments' && <AttachmentsTab />}
 
-              {activeTab === 'Instant Estimate' && <InstantEstimateTab />}
+              {activeTab === 'Instant Estimate' && (
+                <InstantEstimateTab
+                  jobId={viewingJob?.id}
+                  jobAddress={viewingJob?.location}
+                />
+              )}
 
               {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'Proposals' && activeTab !== 'Material orders' && activeTab !== 'Invoices' && activeTab !== 'Job Cost' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && (
                 <div className="p-6">
