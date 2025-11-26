@@ -3,6 +3,10 @@ import type { DashboardWidget, UserDashboardPreference, WidgetPreferenceUpdate, 
 
 export const dashboardWidgetsApi = {
   async getAvailableWidgets(): Promise<DashboardWidget[]> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { data, error } = await supabase
       .from('dashboard_widgets')
       .select('*')
@@ -15,6 +19,10 @@ export const dashboardWidgetsApi = {
   },
 
   async getUserPreferences(userId: string): Promise<UserDashboardPreference[]> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { data, error } = await supabase
       .from('user_dashboard_preferences')
       .select('*')
@@ -48,6 +56,10 @@ export const dashboardWidgetsApi = {
     userId: string,
     updates: WidgetPreferenceUpdate[]
   ): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const upsertData = updates.map((update, index) => ({
       user_id: userId,
       widget_key: update.widget_key,
@@ -70,6 +82,10 @@ export const dashboardWidgetsApi = {
     widgetKey: string,
     isVisible: boolean
   ): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { error } = await supabase
       .from('user_dashboard_preferences')
       .upsert({
@@ -85,6 +101,10 @@ export const dashboardWidgetsApi = {
   },
 
   async initializeDefaultPreferences(userId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const widgets = await this.getAvailableWidgets();
     const defaultWidgets = widgets
       .filter(w => w.default_visible)
