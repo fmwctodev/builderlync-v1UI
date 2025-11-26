@@ -208,7 +208,7 @@ export const cloudDriveApi = {
       return data;
     } catch (error) {
       console.error('Sync files error:', error);
-      if (error.message.includes('Unexpected token')) {
+      if ((error as any).message.includes('Unexpected token')) {
         throw new Error('Backend server is not running or API endpoint does not exist');
       }
       throw error;

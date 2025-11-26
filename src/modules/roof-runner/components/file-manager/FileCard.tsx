@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FileText, Image, MoreHorizontal, Trash2, Eye, Download } from 'lucide-react';
-import { FileItem } from '../../../../shared/services/fileManagerApi';
+import { FileItem, fileManagerApi } from '../../../../shared/services/fileManagerApi';
 
 interface FileCardProps {
   file: FileItem;
@@ -9,6 +9,7 @@ interface FileCardProps {
 
 export default function FileCard({ file, onDelete }: FileCardProps) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,6 +24,14 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showDropdown]);
+
+  useEffect(() => {
+    if (file.mime_type.startsWith('image/')) {
+      fileManagerApi.getFileThumbnail(file.id.toString())
+        .then(setThumbnailUrl)
+        .catch(() => setThumbnailUrl(null));
+    }
+  }, [file.id, file.mime_type]);
 
   const getFileIcon = () => {
     if (file.mime_type.startsWith('image/')) {
@@ -43,8 +52,16 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
   };
 
   const handlePreview = () => {
+    if (file.file_path) {
+      window.open(file.file_path, '_blank');
+    }
     setShowDropdown(false);
-    // Preview is now shown directly on the card
+  };
+
+  const handleCardClick = () => {
+    if (file.file_path) {
+      window.open(file.file_path, '_blank');
+    }
   };
 
   const handleDelete = () => {
@@ -55,29 +72,26 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative group hover:shadow-md transition-shadow">
+    <div 
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative group hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Thumbnail */}
-      <div className="relative w-full h-36 bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-b border-gray-200 dark:border-gray-600 overflow-hidden">
-        {file.mime_type.startsWith('image/') && file.file_path ? (
+      <div className="relative w-full h-36 bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center border-b border-gray-200 dark:border-gray-600 overflow-hidden">
+        {file.mime_type.startsWith('image/') && thumbnailUrl ? (
           <img 
-            src={file.file_path.replace('/view?usp=drivesdk', '/preview').replace('/file/d/', '/uc?id=').replace('/view', '')}
-            alt={file.filename} 
-            className="object-cover w-full h-full" 
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
+            src={thumbnailUrl}
+            alt={file.filename}
+            className="object-cover w-full h-full"
           />
-        ) : file.mime_type === 'application/pdf' && file.file_path ? (
-          <iframe 
-            src={file.file_path} 
-            className="w-full h-full border-0"
-            title={file.filename}
-          />
-        ) : null}
-        <div className={`${file.mime_type.startsWith('image/') || file.mime_type === 'application/pdf' ? 'hidden' : ''}`}>
-          {getFileIcon()}
-        </div>
+        ) : (
+          <>
+            {getFileIcon()}
+            <span className="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center px-2 truncate w-full">
+              {file.mime_type}
+            </span>
+          </>
+        )}
         
         {/* File size overlay */}
         <span className="absolute bottom-2 left-2 inline-flex items-center rounded-full bg-black bg-opacity-70 px-2 py-1 text-xs font-medium text-white">
