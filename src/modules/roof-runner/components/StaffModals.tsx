@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { getRoles, Role } from '../../../shared/store/services/rolesApi';
+import { getRoleTemplates, RoleTemplate, createRoleFromTemplate } from '../../../shared/store/services/rolesApi';
 
 interface StaffMember {
   id?: number;
@@ -47,24 +47,24 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     profileImage: '',
     roleId: ''
   });
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchRoles();
+      fetchRoleTemplates();
     }
   }, [isOpen]);
 
-  const fetchRoles = async () => {
+  const fetchRoleTemplates = async () => {
     try {
       setLoadingRoles(true);
-      const response = await getRoles();
+      const response = await getRoleTemplates();
       if (response.success && response.data) {
-        setRoles(response.data);
+        setRoleTemplates(response.data);
       }
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error('Error fetching role templates:', error);
     } finally {
       setLoadingRoles(false);
     }
@@ -250,25 +250,19 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               <option value="">Select a role (optional)</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
-              ) : roles.length === 0 ? (
-                <option disabled>No roles available - Create roles in Settings → Roles</option>
+              ) : roleTemplates.length === 0 ? (
+                <option disabled>No role templates available</option>
               ) : (
-                roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
+                roleTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
                   </option>
                 ))
               )}
             </select>
-            {!loadingRoles && roles.length === 0 ? (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                No roles found. Create roles in Settings → Roles & Permissions first.
-              </p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-1">
-                Assign a role to control this staff member's permissions
-              </p>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Assign a role to control this staff member's permissions
+            </p>
           </div>
 
           {/* Advanced Settings */}

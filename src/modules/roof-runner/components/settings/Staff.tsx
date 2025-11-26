@@ -54,8 +54,23 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
       if (member.roleId && staffId) {
         try {
-          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-          await assignRoleToStaffMember(staffId, member.roleId);
+          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+
+          const rolesResponse = await getRoles();
+          let organizationRoleId = member.roleId;
+
+          const existingRole = rolesResponse.data?.find((r: any) => r.template_id === member.roleId);
+
+          if (existingRole) {
+            organizationRoleId = existingRole.id;
+          } else {
+            const roleResponse = await createRoleFromTemplate(member.roleId);
+            if (roleResponse.success && roleResponse.data) {
+              organizationRoleId = roleResponse.data.id;
+            }
+          }
+
+          await assignRoleToStaffMember(staffId, organizationRoleId);
         } catch (roleError: any) {
           console.error('Error assigning role to staff member:', roleError);
         }
@@ -103,8 +118,23 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
       if (member.roleId) {
         try {
-          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-          await assignRoleToStaffMember(selectedMember.id, member.roleId);
+          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+
+          const rolesResponse = await getRoles();
+          let organizationRoleId = member.roleId;
+
+          const existingRole = rolesResponse.data?.find((r: any) => r.template_id === member.roleId);
+
+          if (existingRole) {
+            organizationRoleId = existingRole.id;
+          } else {
+            const roleResponse = await createRoleFromTemplate(member.roleId);
+            if (roleResponse.success && roleResponse.data) {
+              organizationRoleId = roleResponse.data.id;
+            }
+          }
+
+          await assignRoleToStaffMember(selectedMember.id, organizationRoleId);
         } catch (roleError: any) {
           console.error('Error assigning role to staff member:', roleError);
         }
