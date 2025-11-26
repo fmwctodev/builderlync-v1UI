@@ -441,7 +441,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
               {activeTab === 'Proposals' && (
-                <ProposalsTab 
+                <ProposalsTab
+                  jobId={viewingJob?.id}
                   onOpenProposalEditor={(templateId) => {
                     setSelectedTemplateId(templateId);
                     setShowProposalEditor(true);
