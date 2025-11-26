@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Target, Share2, TrendingUp, Plus } from 'lucide-react';
+import {
+  BarChart3, Target, Share2, TrendingUp, Plus,
+  Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
+  Bold, Italic, ChevronDown, Sparkles, X
+} from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
 import { Campaign, CampaignFormData } from '../types/campaigns';
 import { Toast } from '../components/Toast';
+import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -403,100 +408,452 @@ const AdsManagerTab: React.FC = () => {
 };
 
 const SocialPlannerTab: React.FC = () => {
-  const [postType, setPostType] = useState('unified');
+  const [postContent, setPostContent] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(['facebook', 'instagram']);
+  const [customizePerChannel, setCustomizePerChannel] = useState(false);
+  const [activePreviewTab, setActivePreviewTab] = useState<'all' | SocialPlatform>('all');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [platformOptions, setPlatformOptions] = useState<Record<string, any>>({
+    facebook: { postType: 'feed' },
+    instagram: { postType: 'feed' },
+  });
 
-  const channels = [
-    { id: 'google-business', name: 'Google Business', connected: false },
-    { id: 'facebook', name: 'Facebook', connected: true },
-    { id: 'instagram', name: 'Instagram', connected: true },
-    { id: 'linkedin', name: 'LinkedIn', connected: false },
-    { id: 'twitter', name: 'Twitter', connected: false },
-    { id: 'tiktok', name: 'TikTok', connected: false },
-    { id: 'youtube', name: 'YouTube', connected: false },
+  const MAX_CHARACTERS = 1500;
+  const characterCount = postContent.length;
+
+  const platforms = [
+    { id: 'google_business' as SocialPlatform, name: 'Google Business', color: '#4285F4', connected: false },
+    { id: 'facebook' as SocialPlatform, name: 'Facebook', color: '#1877F2', connected: true },
+    { id: 'instagram' as SocialPlatform, name: 'Instagram', color: '#E4405F', connected: true },
+    { id: 'linkedin' as SocialPlatform, name: 'LinkedIn', color: '#0A66C2', connected: false },
+    { id: 'twitter' as SocialPlatform, name: 'Twitter', color: '#1DA1F2', connected: false },
+    { id: 'tiktok' as SocialPlatform, name: 'TikTok', color: '#000000', connected: false },
+    { id: 'youtube' as SocialPlatform, name: 'YouTube', color: '#FF0000', connected: false },
   ];
 
+  const togglePlatform = (platformId: SocialPlatform) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platformId)
+        ? prev.filter(id => id !== platformId)
+        : [...prev, platformId]
+    );
+  };
+
+  const clearAllPlatforms = () => {
+    setSelectedPlatforms([]);
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      await socialMediaApi.saveDraft({
+        content: postContent,
+        platforms: selectedPlatforms,
+        platform_options: platformOptions,
+        is_customize_per_channel: customizePerChannel,
+      });
+      alert('Draft saved successfully!');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('Failed to save draft');
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Social Media Planner</h3>
-        <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-          <Plus size={16} />
-          <span>New Post</span>
-        </button>
-      </div>
-
-      {/* Channel Selection */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Connected Channels</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {channels.map((channel) => (
-            <div key={channel.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg dark:border-gray-600">
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${channel.connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-sm text-gray-900 dark:text-white">{channel.name}</span>
-              </div>
-              {!channel.connected && (
-                <button className="text-xs text-primary-600 hover:underline dark:text-primary-400">
-                  Connect
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Post Creation */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Create Post</h4>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Post Type</label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="unified"
-                  checked={postType === 'unified'}
-                  onChange={(e) => setPostType(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Unified Post</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="custom"
-                  checked={postType === 'custom'}
-                  onChange={(e) => setPostType(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Custom per Channel</span>
-              </label>
-            </div>
+    <div className="h-full flex flex-col lg:flex-row gap-6 p-6">
+      {/* Left Panel - Post Creation */}
+      <div className="flex-1 space-y-6">
+        {/* Post To Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-white">Post to</h4>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={customizePerChannel}
+                onChange={(e) => setCustomizePerChannel(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">Customize for each channel</span>
+            </label>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Post Content</label>
+          {/* Platform Selection */}
+          <div className="flex flex-wrap gap-3 mb-3">
+            {platforms.map((platform) => (
+              <button
+                key={platform.id}
+                onClick={() => platform.connected && togglePlatform(platform.id)}
+                disabled={!platform.connected}
+                className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                  selectedPlatforms.includes(platform.id)
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700'
+                } ${!platform.connected ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300 cursor-pointer'}`}
+              >
+                <div className={`w-3 h-3 rounded-full ${platform.connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{platform.name}</span>
+                {selectedPlatforms.includes(platform.id) && (
+                  <X size={14} className="text-red-600" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {selectedPlatforms.length > 0 && (
+            <button
+              onClick={clearAllPlatforms}
+              className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+
+        {/* Content Editor */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">Type content</h4>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Char limit: <span className={characterCount > MAX_CHARACTERS ? 'text-red-600' : ''}>{characterCount}</span> / {MAX_CHARACTERS}
+              </span>
+            </div>
+
             <textarea
-              rows={4}
-              placeholder="What's happening?"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              placeholder="Write your post here..."
+              rows={8}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
             />
           </div>
 
-          <div className="flex justify-between">
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-              Save as Draft
+          {/* Formatting Toolbar */}
+          <div className="flex items-center space-x-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
+            <button className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+              <Sparkles size={16} />
+              <span className="text-sm font-medium">AI</span>
             </button>
-            <div className="space-x-2">
-              <button className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700">
-                Schedule Post
-              </button>
-              <button className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                Post Now
-              </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Bold">
+              <Bold size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Italic">
+              <Italic size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Emoji">
+              <Smile size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Image">
+              <Image size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Video">
+              <Video size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Document">
+              <FileText size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Hashtag">
+              <Hash size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Tag">
+              <Tag size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Link">
+              <Link2 size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Location">
+              <MapPin size={18} className="text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+
+          {/* Advanced Options */}
+          <button
+            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+            className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <span>Advanced options</span>
+            <ChevronDown size={16} className={`transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showAdvancedOptions && (
+            <div className="mt-4 space-y-4">
+              {/* Platform-Specific Options */}
+              {selectedPlatforms.includes('google_business') && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                    <span>Google Business Profile options</span>
+                  </h5>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
+                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option>Call to Action</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Select button label</label>
+                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option>Select button label</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPlatforms.includes('facebook') && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-full bg-blue-600"></div>
+                    <span>Facebook options</span>
+                  </h5>
+                  <div>
+                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input type="radio" name="fb-type" defaultChecked className="mr-2" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="radio" name="fb-type" className="mr-2" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="radio" name="fb-type" className="mr-2" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPlatforms.includes('instagram') && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-full bg-pink-600"></div>
+                    <span>Instagram options</span>
+                  </h5>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input type="radio" name="ig-type" defaultChecked className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="radio" name="ig-type" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="radio" name="ig-type" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Invite collaborators</label>
+                      <input
+                        type="text"
+                        placeholder="Invite collaborators by entering their Instagram username here."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPlatforms.includes('tiktok') && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-full bg-black dark:bg-white"></div>
+                    <span>TikTok options</span>
+                  </h5>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Who can view this video?</label>
+                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option>Everyone</option>
+                        <option>Friends</option>
+                        <option>Only me</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Allow users to</label>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Comment</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Duet</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Stitch</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPlatforms.includes('youtube') && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-full bg-red-600"></div>
+                    <span>YouTube options</span>
+                  </h5>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
+                      <input
+                        type="text"
+                        placeholder="Add a title"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post Type</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input type="radio" name="yt-type" defaultChecked className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Video</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="radio" name="yt-type" className="mr-2" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Short</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleSaveDraft}
+            className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            Save for later
+          </button>
+          <div className="flex space-x-3">
+            <button className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              Schedule Post
+            </button>
+            <button className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+              <span>Post</span>
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Post Preview */}
+      <div className="lg:w-[480px] flex-shrink-0">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 sticky top-6">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Post Preview</h3>
+
+            {/* Platform Tabs */}
+            <div className="flex items-center space-x-2 overflow-x-auto">
+              <button
+                onClick={() => setActivePreviewTab('all')}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  activePreviewTab === 'all'
+                    ? 'bg-red-600 text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                All
+              </button>
+              {selectedPlatforms.map((platformId) => {
+                const platform = platforms.find(p => p.id === platformId);
+                return (
+                  <button
+                    key={platformId}
+                    onClick={() => setActivePreviewTab(platformId)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                      activePreviewTab === platformId
+                        ? 'bg-red-600 text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {platform?.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Preview Content */}
+          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-4">
+            {(activePreviewTab === 'all' ? selectedPlatforms : [activePreviewTab as SocialPlatform]).map((platformId) => {
+              const platform = platforms.find(p => p.id === platformId);
+              return (
+                <div key={platformId} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                  {/* Mock Social Post Card */}
+                  <div className="flex items-start space-x-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-medium text-sm text-gray-900 dark:text-white">Your Business Name</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Just now</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: platform?.color }}></div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{platform?.name}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Post Content */}
+                  <div className="mb-3">
+                    {postContent ? (
+                      <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{postContent}</p>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Your post content will appear here...</p>
+                    )}
+                  </div>
+
+                  {/* Media Placeholder */}
+                  <div className="bg-gray-200 dark:bg-gray-600 rounded-lg h-48 flex items-center justify-center mb-3">
+                    <div className="text-center">
+                      <Image size={32} className="mx-auto mb-2 text-gray-400" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Make your post stand out with a photo</p>
+                    </div>
+                  </div>
+
+                  {/* Interaction Buttons */}
+                  <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400 text-sm">
+                    <button className="flex items-center space-x-1 hover:text-red-600">
+                      <span>👍</span>
+                      <span>Like</span>
+                    </button>
+                    <button className="flex items-center space-x-1 hover:text-red-600">
+                      <span>💬</span>
+                      <span>Comment</span>
+                    </button>
+                    <button className="flex items-center space-x-1 hover:text-red-600">
+                      <span>↗️</span>
+                      <span>Share</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {selectedPlatforms.length === 0 && (
+              <div className="text-center py-12">
+                <Share2 size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                <p className="text-gray-500 dark:text-gray-400">Select platforms to see preview</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
