@@ -250,6 +250,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               <option value="">Select a role (optional)</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
+              ) : roles.length === 0 ? (
+                <option disabled>No roles available - Create roles in Settings → Roles</option>
               ) : (
                 roles.map((role) => (
                   <option key={role.id} value={role.id}>
@@ -258,9 +260,15 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 ))
               )}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Assign a role to control this staff member's permissions
-            </p>
+            {!loadingRoles && roles.length === 0 ? (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                No roles found. Create roles in Settings → Roles & Permissions first.
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                Assign a role to control this staff member's permissions
+              </p>
+            )}
           </div>
 
           {/* Advanced Settings */}

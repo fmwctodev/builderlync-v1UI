@@ -119,14 +119,25 @@ export interface UpdateRoleData extends Partial<CreateRoleData> {
 
 export const getRoles = async () => {
   if (!supabase) {
-    throw new Error('Supabase client not initialized');
+    console.error('Supabase client not initialized');
+    return {
+      success: false,
+      data: [],
+      error: new Error('Supabase client not initialized')
+    };
   }
 
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      throw new Error('User not authenticated');
+      console.warn('User not authenticated - returning empty roles list');
+      return {
+        success: true,
+        data: []
+      };
     }
+
+    console.log('Fetching roles for organization:', userId);
 
     const { data, error } = await supabase
       .from('organization_roles')
@@ -135,16 +146,22 @@ export const getRoles = async () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching roles:', error);
-      throw error;
+      console.error('Error fetching roles from Supabase:', error);
+      return {
+        success: false,
+        data: [],
+        error
+      };
     }
+
+    console.log('Fetched roles:', data?.length || 0, 'roles found');
 
     return {
       success: true,
       data: data || []
     };
   } catch (error) {
-    console.error('Error in getRoles:', error);
+    console.error('Exception in getRoles:', error);
     return {
       success: false,
       data: [],
