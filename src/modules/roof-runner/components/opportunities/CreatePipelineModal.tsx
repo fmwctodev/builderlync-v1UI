@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, GripVertical } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
+import { JOB_TYPES, JOB_TYPE_COLORS, type JobType } from '../../types/opportunities';
 
 interface CreatePipelineModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const DEFAULT_OPPORTUNITY_STAGES: Stage[] = [
 
 export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: CreatePipelineModalProps) {
   const [pipelineName, setPipelineName] = useState('');
+  const [jobType, setJobType] = useState<JobType>('Commercial');
   const [stages, setStages] = useState<Stage[]>([...DEFAULT_OPPORTUNITY_STAGES]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -62,6 +64,10 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
       newErrors.pipelineName = 'Pipeline name is required';
     }
 
+    if (!jobType) {
+      newErrors.jobType = 'Job type is required';
+    }
+
     const emptyStages = stages.filter(stage => !stage.name.trim());
     if (emptyStages.length > 0) {
       newErrors.stages = 'All stages must have a name';
@@ -80,6 +86,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
         name: pipelineName,
         description: '',
         is_default: false,
+        job_type: jobType,
         stages: stages.map((stage, index) => ({
           name: stage.name,
           order_position: index,
@@ -115,6 +122,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
 
   const handleClose = () => {
     setPipelineName('');
+    setJobType('Commercial');
     setStages([...DEFAULT_OPPORTUNITY_STAGES]);
     setErrors({});
     onClose();
@@ -155,6 +163,43 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
               </p>
               {errors.pipelineName && (
                 <p className="mt-1 text-sm text-red-600">{errors.pipelineName}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Job Type <span className="text-red-600">*</span>
+              </label>
+              <div className="flex gap-4">
+                {JOB_TYPES.map((type) => (
+                  <label
+                    key={type}
+                    className={`flex items-center space-x-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                      jobType === type
+                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="jobType"
+                      value={type}
+                      checked={jobType === type}
+                      onChange={(e) => setJobType(e.target.value as JobType)}
+                      className="text-primary-600 focus:ring-primary-500"
+                    />
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: JOB_TYPE_COLORS[type] }}
+                    />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {type}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {errors.jobType && (
+                <p className="mt-1 text-sm text-red-600">{errors.jobType}</p>
               )}
             </div>
 

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Link2, Trash2, Search } from 'lucide-react';
+import { Pencil, Link2, Trash2, Search, Eye } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
-import type { PipelineWithStages } from '../../types/opportunities';
+import type { PipelineWithStages, JobType } from '../../types/opportunities';
+import { JOB_TYPES, JOB_TYPE_COLORS } from '../../types/opportunities';
 import { SeedDataButton } from './SeedDataButton';
+import ViewPipelineModal from './ViewPipelineModal';
 
 interface PipelinesListProps {
   onEdit: (pipelineId: string) => void;
@@ -10,10 +12,15 @@ interface PipelinesListProps {
   refreshKey: number;
 }
 
+type JobTypeFilter = 'All' | JobType;
+
 export default function PipelinesList({ onEdit, onDelete, refreshKey }: PipelinesListProps) {
   const [pipelines, setPipelines] = useState<PipelineWithStages[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedJobType, setSelectedJobType] = useState<JobTypeFilter>('All');
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewPipelineId, setViewPipelineId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPipelines();
@@ -31,9 +38,21 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
     }
   };
 
-  const filteredPipelines = pipelines.filter(pipeline =>
-    pipeline.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPipelines = pipelines.filter(pipeline => {
+    const matchesSearch = pipeline.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesJobType = selectedJobType === 'All' || pipeline.job_type === selectedJobType;
+    return matchesSearch && matchesJobType;
+  });
+
+  const handleViewPipeline = (pipelineId: string) => {
+    setViewPipelineId(pipelineId);
+    setShowViewModal(true);
+  };
+
+  const handleViewModalEdit = (pipelineId: string) => {
+    setShowViewModal(false);
+    onEdit(pipelineId);
+  };
 
   const handleDeleteClick = async (pipelineId: string, pipelineName: string) => {
     if (confirm(`Are you sure you want to delete the pipeline "${pipelineName}"? This action cannot be undone.`)) {
@@ -56,14 +75,41 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-      <div className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Pipelines</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Pipelines help you manage Opportunities step by step, giving you a clear view of progress and sales outcomes.
-          </p>
-        </div>
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Pipelines</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Pipelines help you manage Opportunities step by step, giving you a clear view of progress and sales outcomes.
+            </p>
+          </div>
+
+          <div className="mb-4 flex items-center space-x-2 border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setSelectedJobType('All')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                selectedJobType === 'All'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              All
+            </button>
+            {JOB_TYPES.map((jobType) => (
+              <button
+                key={jobType}
+                onClick={() => setSelectedJobType(jobType)}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  selectedJobType === jobType
+                    ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {jobType}
+              </button>
+            ))}
+          </div>
 
         <div className="mb-4">
           <div className="relative">
@@ -90,6 +136,11 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   <div className="flex items-center">
+                    Job Type
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <div className="flex items-center">
                     # No. of Stages
                   </div>
                 </th>
@@ -109,10 +160,14 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredPipelines.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
+                  <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="text-gray-500 dark:text-gray-400">
-                        {searchTerm ? 'No pipelines found matching your search.' : 'No pipelines created yet.'}
+                        {searchTerm
+                          ? 'No pipelines found matching your search.'
+                          : selectedJobType !== 'All'
+                          ? `No ${selectedJobType} pipelines created yet.`
+                          : 'No pipelines created yet.'}
                       </div>
                       {!searchTerm && pipelines.length === 0 && <SeedDataButton />}
                     </div>
@@ -125,6 +180,14 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {pipeline.name}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: JOB_TYPE_COLORS[pipeline.job_type] }}
+                      >
+                        {pipeline.job_type}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
@@ -151,17 +214,18 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <button
+                          onClick={() => handleViewPipeline(pipeline.id)}
+                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          title="View pipeline details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => onEdit(pipeline.id)}
                           className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                           title="Edit pipeline"
                         >
                           <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                          title="Copy link"
-                        >
-                          <Link2 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(pipeline.id, pipeline.name)}
@@ -193,5 +257,16 @@ export default function PipelinesList({ onEdit, onDelete, refreshKey }: Pipeline
         )}
       </div>
     </div>
+
+    <ViewPipelineModal
+      isOpen={showViewModal}
+      pipelineId={viewPipelineId}
+      onClose={() => {
+        setShowViewModal(false);
+        setViewPipelineId(null);
+      }}
+      onEdit={handleViewModalEdit}
+    />
+  </>
   );
 }

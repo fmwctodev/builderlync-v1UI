@@ -18,6 +18,7 @@ export default function Opportunities() {
   const [showEditPipelineModal, setShowEditPipelineModal] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
+  const [selectedPipelineForView, setSelectedPipelineForView] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleOpportunityAdded = () => {
@@ -73,6 +74,8 @@ export default function Opportunities() {
         activeView={activeView}
         onViewChange={setActiveView}
         onAddPipeline={() => setShowCreatePipelineModal(true)}
+        selectedPipelineId={selectedPipelineForView}
+        onPipelineChange={setSelectedPipelineForView}
       />
       <main className="flex-grow p-4">
         {activeView === 'opportunities' ? (
