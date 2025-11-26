@@ -8,7 +8,7 @@ interface SettingsModalProps {
   initialTab?: string;
 }
 
-type TabId = 'social-accounts' | 'communities' | 'pinterest' | 'notifications' | 'categories' | 'watermark' | 'global-settings';
+type TabId = 'social-accounts' | 'notifications';
 
 interface ConnectedAccount {
   id: string;
@@ -183,12 +183,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
 
   const tabs = [
     { id: 'social-accounts' as TabId, label: 'Social Accounts' },
-    { id: 'communities' as TabId, label: 'Communities' },
-    { id: 'pinterest' as TabId, label: 'Pinterest' },
     { id: 'notifications' as TabId, label: 'Notifications' },
-    { id: 'categories' as TabId, label: 'Categories' },
-    { id: 'watermark' as TabId, label: 'Watermark' },
-    { id: 'global-settings' as TabId, label: 'Global Settings' },
   ];
 
   const handleToggleNotification = (id: string) => {
@@ -522,18 +517,6 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-
-          {/* Placeholder for other tabs */}
-          {activeTab !== 'social-accounts' && activeTab !== 'notifications' && (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {tabs.find(t => t.id === activeTab)?.label}
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">Coming Soon</p>
               </div>
             </div>
           )}
