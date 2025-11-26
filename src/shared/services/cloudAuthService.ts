@@ -1,7 +1,7 @@
 import { cloudDriveApi, CloudDriveConnection } from './cloudDriveApi';
 
 export type CloudProvider = 'google' | 'onedrive_personal' | 'onedrive_business';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'XXXXXXXXXXXXXXXXXXXXX';
 interface OAuthConfig {
   clientId: string;
   redirectUri: string;
@@ -62,7 +62,7 @@ export const cloudAuthService = {
       const stateData = JSON.parse(state);
       const provider = stateData.provider;
 
-      const response = await fetch('/api/auth/oauth/callback', {
+      const response = await fetch(`${API_BASE_URL}/auth/oauth/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,19 +79,22 @@ export const cloudAuthService = {
         throw new Error('Failed to exchange OAuth code');
       }
 
-      const data = await response.json();
+      const result = await response.json();
+      
+      if (!result.success || !result.data) {
+        throw new Error('Invalid OAuth response');
+      }
+      
+      const data = result.data;
       
       // Create connection record
-      const connection = await cloudDriveApi.createConnection(
+      const connection = await cloudDriveApi.createConnectionFromOAuth(
         provider === 'google' ? 'google_drive' : 
         provider === 'onedrive_personal' ? 'onedrive_personal' : 'onedrive_business',
         {
           access_token: data.access_token,
           refresh_token: data.refresh_token,
-          provider_user_id: data.user_id,
-          provider_email: data.email,
-          token_expires_at: data.expires_at,
-          connected_at: new Date().toISOString(),
+          expires_at: data.expires_at,
           metadata: data.metadata || {}
         }
       );
