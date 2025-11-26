@@ -11,7 +11,6 @@ import { Campaign, CampaignFormData } from '../types/campaigns';
 import { Toast } from '../components/Toast';
 import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
 import SettingsModal from '../components/social-planner/SettingsModal';
-import NewPostModal, { NewPostData } from '../components/social-planner/NewPostModal';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -422,7 +421,6 @@ const SocialPlannerTab: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('social-accounts');
-  const [showNewPostModal, setShowNewPostModal] = useState(false);
 
   const MAX_CHARACTERS = 1500;
   const characterCount = postContent.length;
@@ -464,13 +462,10 @@ const SocialPlannerTab: React.FC = () => {
     }
   };
 
-  const handleCreateNewPost = async (data: NewPostData) => {
-    try {
-      console.log('Creating new post:', data);
-      alert(`Post ${data.publishNow ? 'published' : 'scheduled'} successfully!`);
-    } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Failed to create post');
+  const handleNewPostClick = () => {
+    const postCreationElement = document.getElementById('post-creation-section');
+    if (postCreationElement) {
+      postCreationElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -517,7 +512,7 @@ const SocialPlannerTab: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setShowNewPostModal(true)}
+              onClick={handleNewPostClick}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -528,7 +523,7 @@ const SocialPlannerTab: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="h-full flex flex-col lg:flex-row gap-6 p-6">
+        <div className="h-full flex flex-col lg:flex-row gap-6 p-6" id="post-creation-section">
           {/* Left Panel - Post Creation */}
           <div className="flex-1 space-y-6">
             {/* Post To Section */}
@@ -933,12 +928,6 @@ const SocialPlannerTab: React.FC = () => {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         initialTab={settingsInitialTab}
-      />
-
-      <NewPostModal
-        isOpen={showNewPostModal}
-        onClose={() => setShowNewPostModal(false)}
-        onCreatePost={handleCreateNewPost}
       />
     </div>
     </div>
