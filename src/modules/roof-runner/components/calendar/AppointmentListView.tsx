@@ -206,7 +206,10 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                         {appointment.title}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {appointment.contact_id || '-'}
+                        {appointment.contacts
+                          ? `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim() || appointment.contacts.email || '-'
+                          : '-'
+                        }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -223,10 +226,13 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                         {format(new Date(appointment.appointment_time), 'MMM dd, yyyy h:mm a')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {(appointment as any).calendars?.name || '-'}
+                        {appointment.calendars?.name || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        Owner
+                        {appointment.staff
+                          ? `${appointment.staff.first_name} ${appointment.staff.last_name}`.trim()
+                          : '-'
+                        }
                       </td>
                     </tr>
                   ))}
