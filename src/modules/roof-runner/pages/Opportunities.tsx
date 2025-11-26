@@ -14,7 +14,7 @@ import type { JobType } from '../types/opportunities';
 export default function Opportunities() {
   const [activeTab, setActiveTab] = useState('all');
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
-  const [selectedJobType, setSelectedJobType] = useState<JobType>('Commercial');
+  const [selectedJobType, setSelectedJobType] = useState<JobType | 'all'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
   const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
@@ -106,7 +106,7 @@ export default function Opportunities() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={handleOpportunityAdded}
-        defaultJobType={selectedJobType}
+        defaultJobType={selectedJobType === 'all' ? 'Commercial' : selectedJobType}
       />
 
       <ViewEditOpportunityModal

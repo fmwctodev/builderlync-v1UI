@@ -7,7 +7,7 @@ import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types
 import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
 
 interface KanbanBoardProps {
-  selectedJobType: JobType;
+  selectedJobType: JobType | 'all';
 }
 
 export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
@@ -25,15 +25,24 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
 
-      if (pipeline) {
-        setStages(pipeline.stages);
-        const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+      if (selectedJobType === 'all') {
+        const pipelines = await embeddedPipelinesService.getEmbeddedPipelines();
+        const allStages = pipelines.flatMap(p => p.stages);
+        setStages(allStages);
+        const opportunities = await opportunitiesApi.getOpportunities();
         setOpportunitiesList(opportunities);
       } else {
-        setStages([]);
-        setOpportunitiesList([]);
+        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
+
+        if (pipeline) {
+          setStages(pipeline.stages);
+          const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+          setOpportunitiesList(opportunities);
+        } else {
+          setStages([]);
+          setOpportunitiesList([]);
+        }
       }
     } catch (error) {
       console.error('Error loading kanban data:', error);

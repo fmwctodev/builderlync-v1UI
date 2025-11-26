@@ -4,7 +4,7 @@ import type { OpportunityWithDetails, JobType } from '../../types/opportunities'
 import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
 
 interface OpportunitiesTableProps {
-  selectedJobType: JobType;
+  selectedJobType: JobType | 'all';
   onRowClick?: (opportunityId: string) => void;
 }
 
@@ -58,7 +58,9 @@ export default function OpportunitiesTable({ selectedJobType, onRowClick }: Oppo
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const data = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+      const data = selectedJobType === 'all'
+        ? await opportunitiesApi.getOpportunities()
+        : await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
       setOpportunities(data);
     } catch (error) {
       console.error('Error loading opportunities:', error);
