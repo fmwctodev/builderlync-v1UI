@@ -203,7 +203,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Workflow & stages</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Stage</label>
                     <div className="space-y-2">
                       <select
                         value={formData.workflowStages}
