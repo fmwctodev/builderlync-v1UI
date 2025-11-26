@@ -93,9 +93,6 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
-          <button className="px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-            + Smart list
-          </button>
         </div>
 
         <div className="flex items-center gap-4">
