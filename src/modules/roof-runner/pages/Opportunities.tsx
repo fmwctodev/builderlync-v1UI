@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import Header from '../components/opportunities/Header';
+import { useState, useEffect } from 'react';
+import OpportunitiesHeader from '../components/opportunities/OpportunitiesHeader';
 import FiltersAndSort from '../components/opportunities/FiltersAndSort';
 import KanbanBoard from '../components/opportunities/KanbanBoard';
 import OpportunitiesTable from '../components/opportunities/OpportunitiesTable';
@@ -8,18 +8,24 @@ import ViewEditOpportunityModal from '../components/opportunities/ViewEditOpport
 import PipelinesList from '../components/opportunities/PipelinesList';
 import CreatePipelineModal from '../components/opportunities/CreatePipelineModal';
 import EditPipelineModal from '../components/opportunities/EditPipelineModal';
+import { embeddedPipelinesService } from '../services/embeddedPipelinesService';
+import type { JobType } from '../types/opportunities';
 
 export default function Opportunities() {
   const [activeTab, setActiveTab] = useState('all');
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
+  const [selectedJobType, setSelectedJobType] = useState<JobType>('Commercial');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
   const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
   const [showEditPipelineModal, setShowEditPipelineModal] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
-  const [selectedPipelineForView, setSelectedPipelineForView] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    embeddedPipelinesService.ensureEmbeddedPipelinesExist();
+  }, []);
 
   const handleOpportunityAdded = () => {
     setRefreshKey(prev => prev + 1);
@@ -67,24 +73,24 @@ export default function Opportunities() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <Header
+      <OpportunitiesHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        selectedJobType={selectedJobType}
+        setSelectedJobType={setSelectedJobType}
         onAddOpportunity={() => setShowAddModal(true)}
         activeView={activeView}
         onViewChange={setActiveView}
         onAddPipeline={() => setShowCreatePipelineModal(true)}
-        selectedPipelineId={selectedPipelineForView}
-        onPipelineChange={setSelectedPipelineForView}
       />
       <main className="flex-grow p-4">
         {activeView === 'opportunities' ? (
           <>
             <FiltersAndSort />
             {activeTab === 'all' ? (
-              <KanbanBoard key={refreshKey} />
+              <KanbanBoard key={refreshKey} selectedJobType={selectedJobType} />
             ) : (
-              <OpportunitiesTable key={refreshKey} onRowClick={handleRowClick} />
+              <OpportunitiesTable key={refreshKey} selectedJobType={selectedJobType} onRowClick={handleRowClick} />
             )}
           </>
         ) : (
@@ -100,6 +106,7 @@ export default function Opportunities() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={handleOpportunityAdded}
+        defaultJobType={selectedJobType}
       />
 
       <ViewEditOpportunityModal

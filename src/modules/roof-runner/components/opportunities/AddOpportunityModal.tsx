@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
 import { X, User, Building2 } from 'lucide-react';
-import { pipelinesApi } from '../../services/pipelinesApi';
+import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
-import type { PipelineWithStages, OpportunityFormData, OpportunityStatus } from '../../types/opportunities';
-import { OPPORTUNITY_SOURCES } from '../../types/opportunities';
+import type { PipelineWithStages, OpportunityFormData, OpportunityStatus, JobType } from '../../types/opportunities';
+import { OPPORTUNITY_SOURCES, JOB_TYPES } from '../../types/opportunities';
+import { getEmbeddedPipelineId, EMBEDDED_PIPELINE_COLORS, EMBEDDED_PIPELINE_ICONS } from '../../constants/embeddedPipelines';
 
 interface AddOpportunityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultJobType?: JobType;
 }
 
-export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddOpportunityModalProps) {
+export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial' }: AddOpportunityModalProps) {
   const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
-  const [pipelines, setPipelines] = useState<PipelineWithStages[]>([]);
+  const [selectedJobType, setSelectedJobType] = useState<JobType>(defaultJobType);
+  const [pipeline, setPipeline] = useState<PipelineWithStages | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OpportunityFormData>({
     opportunity_name: '',
@@ -35,39 +38,35 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
 
   useEffect(() => {
     if (isOpen) {
-      loadPipelines();
+      setSelectedJobType(defaultJobType);
+      loadPipeline(defaultJobType);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultJobType]);
 
-  const loadPipelines = async () => {
+  useEffect(() => {
+    if (isOpen && selectedJobType) {
+      loadPipeline(selectedJobType);
+    }
+  }, [selectedJobType]);
+
+  const loadPipeline = async (jobType: JobType) => {
     try {
-      const data = await pipelinesApi.getPipelines();
-      setPipelines(data);
+      const data = await embeddedPipelinesService.getEmbeddedPipelineByJobType(jobType);
+      setPipeline(data);
 
-      if (data.length > 0 && !formData.pipeline_id) {
-        const defaultPipeline = data.find(p => p.is_default) || data[0];
+      if (data) {
         setFormData(prev => ({
           ...prev,
-          pipeline_id: defaultPipeline.id,
-          stage_id: defaultPipeline.stages[0]?.id || '',
+          pipeline_id: data.id,
+          stage_id: data.stages[0]?.id || '',
         }));
       }
     } catch (error) {
-      console.error('Error loading pipelines:', error);
+      console.error('Error loading pipeline:', error);
     }
   };
 
-  const selectedPipeline = pipelines.find(p => p.id === formData.pipeline_id);
-  const stages = selectedPipeline?.stages || [];
-
-  const handlePipelineChange = (pipeline_id: string) => {
-    const pipeline = pipelines.find(p => p.id === pipeline_id);
-    setFormData(prev => ({
-      ...prev,
-      pipeline_id,
-      stage_id: pipeline?.stages[0]?.id || '',
-    }));
-  };
+  const stages = pipeline?.stages || [];
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -243,43 +242,65 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess }: AddO
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Pipeline
-                  </label>
-                  <select
-                    value={formData.pipeline_id}
-                    onChange={(e) => handlePipelineChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">Choose a pipeline</option>
-                    {pipelines.map((pipeline) => (
-                      <option key={pipeline.id} value={pipeline.id}>
-                        {pipeline.name}
-                      </option>
-                    ))}
-                  </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Job Type <span className="text-red-600">*</span>
+                </label>
+                <div className="flex gap-4">
+                  {JOB_TYPES.map((type) => {
+                    const Icon = EMBEDDED_PIPELINE_ICONS[type];
+                    const color = EMBEDDED_PIPELINE_COLORS[type];
+                    return (
+                      <label
+                        key={type}
+                        className={`flex-1 flex items-center space-x-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedJobType === type
+                            ? 'border-current shadow-md'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                        }`}
+                        style={
+                          selectedJobType === type
+                            ? {
+                                borderColor: color,
+                                backgroundColor: `${color}15`,
+                                color: color,
+                              }
+                            : {}
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name="jobType"
+                          value={type}
+                          checked={selectedJobType === type}
+                          onChange={(e) => setSelectedJobType(e.target.value as JobType)}
+                          className="sr-only"
+                        />
+                        <Icon className="h-5 w-5" />
+                        <span className="text-sm font-medium">{type}</span>
+                      </label>
+                    );
+                  })}
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Stage
-                  </label>
-                  <select
-                    value={formData.stage_id}
-                    onChange={(e) => setFormData({ ...formData, stage_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    disabled={!formData.pipeline_id}
-                  >
-                    <option value="">Choose stage</option>
-                    {stages.map((stage) => (
-                      <option key={stage.id} value={stage.id}>
-                        {stage.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Stage
+                </label>
+                <select
+                  value={formData.stage_id}
+                  onChange={(e) => setFormData({ ...formData, stage_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={!formData.pipeline_id}
+                >
+                  <option value="">Choose stage</option>
+                  {stages.map((stage) => (
+                    <option key={stage.id} value={stage.id}>
+                      {stage.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

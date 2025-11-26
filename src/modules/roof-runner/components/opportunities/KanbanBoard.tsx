@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import ViewEditOpportunityModal from './ViewEditOpportunityModal';
-import { pipelinesApi } from '../../services/pipelinesApi';
+import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
-import type { PipelineStage, OpportunityWithDetails } from '../../types/opportunities';
+import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
+import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
 
-export default function KanbanBoard() {
+interface KanbanBoardProps {
+  selectedJobType: JobType;
+}
+
+export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
   const [draggedItem, setDraggedItem] = useState<OpportunityWithDetails | null>(null);
   const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -15,18 +20,21 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedJobType]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const pipeline = await pipelinesApi.getOrCreateDefaultPipeline();
-      setStages(pipeline.stages);
+      const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
 
-      const opportunities = await opportunitiesApi.getOpportunities({
-        pipeline_id: pipeline.id,
-      });
-      setOpportunitiesList(opportunities);
+      if (pipeline) {
+        setStages(pipeline.stages);
+        const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+        setOpportunitiesList(opportunities);
+      } else {
+        setStages([]);
+        setOpportunitiesList([]);
+      }
     } catch (error) {
       console.error('Error loading kanban data:', error);
     } finally {

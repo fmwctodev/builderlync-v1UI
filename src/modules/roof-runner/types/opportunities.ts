@@ -2,6 +2,8 @@ export type OpportunityStatus = 'open' | 'won' | 'lost' | 'abandoned';
 
 export type JobType = 'Residential' | 'Commercial' | 'Insurance';
 
+export type PipelineType = 'system' | 'custom';
+
 export interface Pipeline {
   id: string;
   user_id: string;
@@ -9,6 +11,7 @@ export interface Pipeline {
   description?: string;
   is_default: boolean;
   job_type: JobType;
+  pipeline_type: PipelineType;
   created_at: string;
   updated_at: string;
 }

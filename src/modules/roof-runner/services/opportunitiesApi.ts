@@ -5,11 +5,14 @@ import type {
   OpportunityFormData,
   OpportunityContact,
   OpportunityFollower,
+  JobType,
 } from '../types/opportunities';
+import { getEmbeddedPipelineId } from '../constants/embeddedPipelines';
 
 export const opportunitiesApi = {
   async getOpportunities(filters?: {
     pipeline_id?: string;
+    job_type?: JobType;
     stage_id?: string;
     status?: string;
     owner_id?: string;
@@ -28,6 +31,10 @@ export const opportunitiesApi = {
 
       if (filters?.pipeline_id) {
         query = query.eq('pipeline_id', filters.pipeline_id);
+      }
+      if (filters?.job_type) {
+        const pipelineId = getEmbeddedPipelineId(filters.job_type);
+        query = query.eq('pipeline_id', pipelineId);
       }
       if (filters?.stage_id) {
         query = query.eq('stage_id', filters.stage_id);
@@ -224,6 +231,47 @@ export const opportunitiesApi = {
     } catch (error) {
       console.error('Error removing follower:', error);
       throw error;
+    }
+  },
+
+  async getOpportunitiesByJobType(jobType: JobType): Promise<OpportunityWithDetails[]> {
+    return this.getOpportunities({ job_type: jobType });
+  },
+
+  async getOpportunityCountByJobType(jobType: JobType): Promise<number> {
+    try {
+      const pipelineId = getEmbeddedPipelineId(jobType);
+      const { count, error } = await supabase
+        .from('opportunities')
+        .select('*', { count: 'exact', head: true })
+        .eq('pipeline_id', pipelineId);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error(`Error counting ${jobType} opportunities:`, error);
+      return 0;
+    }
+  },
+
+  async getOpportunityCountsByAllJobTypes(): Promise<Record<JobType, number>> {
+    try {
+      const residential = await this.getOpportunityCountByJobType('Residential');
+      const commercial = await this.getOpportunityCountByJobType('Commercial');
+      const insurance = await this.getOpportunityCountByJobType('Insurance');
+
+      return {
+        Residential: residential,
+        Commercial: commercial,
+        Insurance: insurance,
+      };
+    } catch (error) {
+      console.error('Error counting opportunities by job type:', error);
+      return {
+        Residential: 0,
+        Commercial: 0,
+        Insurance: 0,
+      };
     }
   },
 };
