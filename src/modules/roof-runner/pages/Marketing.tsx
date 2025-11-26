@@ -409,6 +409,7 @@ const AdsManagerTab: React.FC = () => {
 };
 
 const SocialPlannerTab: React.FC = () => {
+  const [activeSubTab, setActiveSubTab] = useState<'planner' | 'comments' | 'statistics' | 'social-listening'>('planner');
   const [postContent, setPostContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(['facebook', 'instagram']);
   const [customizePerChannel, setCustomizePerChannel] = useState(false);
@@ -421,6 +422,13 @@ const SocialPlannerTab: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('social-accounts');
+
+  const subTabs = [
+    { id: 'planner' as const, label: 'Planner' },
+    { id: 'comments' as const, label: 'Comments', badge: 'New' },
+    { id: 'statistics' as const, label: 'Statistics' },
+    { id: 'social-listening' as const, label: 'Social Listening' },
+  ];
 
   const MAX_CHARACTERS = 1500;
   const characterCount = postContent.length;
@@ -522,7 +530,35 @@ const SocialPlannerTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Sub Tab Navigation */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="flex items-center gap-6">
+          {subTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              className={`relative px-4 py-3 text-sm font-medium transition-all ${
+                activeSubTab === tab.id
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-yellow-400 text-gray-900 rounded">
+                  {tab.badge}
+                </span>
+              )}
+              {activeSubTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-auto">
+        {activeSubTab === 'planner' && (
         <div className="h-full flex flex-col lg:flex-row gap-6 p-6" id="post-creation-section">
           {/* Left Panel - Post Creation */}
           <div className="flex-1 space-y-6">
@@ -922,6 +958,20 @@ const SocialPlannerTab: React.FC = () => {
         </div>
       </div>
       </div>
+        )}
+
+        {activeSubTab === 'comments' && (
+          <CommentsTabContent platforms={platforms} />
+        )}
+
+        {activeSubTab === 'statistics' && (
+          <StatisticsTabContent platforms={platforms} />
+        )}
+
+        {activeSubTab === 'social-listening' && (
+          <SocialListeningTabContent />
+        )}
+      </div>
 
       {/* Modals */}
       <SettingsModal
@@ -930,6 +980,377 @@ const SocialPlannerTab: React.FC = () => {
         initialTab={settingsInitialTab}
       />
     </div>
+  );
+};
+
+interface TabContentProps {
+  platforms: Array<{ id: SocialPlatform; name: string; color: string; connected: boolean }>;
+}
+
+const CommentsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('facebook');
+
+  return (
+    <div className="h-full flex gap-6 p-6">
+      {/* Left Sidebar - Platform List */}
+      <div className="w-64 flex-shrink-0 space-y-2">
+        <button
+          onClick={() => setSelectedPlatform('all')}
+          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+            selectedPlatform === 'all'
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+          }`}
+        >
+          All Platforms
+        </button>
+        {platforms.map((platform) => (
+          <button
+            key={platform.id}
+            onClick={() => setSelectedPlatform(platform.id)}
+            disabled={!platform.connected}
+            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+              selectedPlatform === platform.id
+                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                : platform.connected
+                ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            }`}
+          >
+            {platform.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        {/* Filters Bar */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+            <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+          <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Start Date</span>
+            <span className="text-gray-400">→</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">End Date</span>
+          </div>
+          <select className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300">
+            <option>All Comments</option>
+            <option>Replied</option>
+            <option>Pending</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Search by word"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+          />
+        </div>
+
+        {/* Empty State */}
+        <div className="flex flex-col items-center justify-center h-96">
+          <div className="w-16 h-16 mb-4 text-blue-500 dark:text-blue-400">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 8L10.89 13.26C11.5833 13.7167 12.4167 13.7167 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <p className="text-lg font-medium text-gray-900 dark:text-white">No comments yet</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
+
+  return (
+    <div className="h-full flex gap-6 p-6">
+      {/* Left Sidebar - Platform Filter */}
+      <div className="w-64 flex-shrink-0 space-y-2">
+        <button
+          onClick={() => setSelectedPlatform('all')}
+          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+            selectedPlatform === 'all'
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+          }`}
+        >
+          All
+        </button>
+        {platforms.map((platform) => (
+          <button
+            key={platform.id}
+            onClick={() => setSelectedPlatform(platform.id)}
+            disabled={!platform.connected}
+            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+              selectedPlatform === platform.id
+                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                : platform.connected
+                ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+            }`}
+          >
+            {platform.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 space-y-6">
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-5 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Number of Posts</span>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">12</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Likes</span>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">5</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Followers</span>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">2</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Impressions</span>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">140</p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Comments</span>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">1</p>
+          </div>
+        </div>
+
+        {/* Chart Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Social Post Performance</h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">Impressions</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">Likes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">Comments</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Placeholder */}
+          <div className="h-96 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+            <div className="text-center">
+              <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+              <p className="text-gray-500 dark:text-gray-400">Chart visualization coming soon</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Performance data over time</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SocialListeningTabContent: React.FC = () => {
+  const [showBanner, setShowBanner] = useState(true);
+
+  return (
+    <div className="h-full p-6 space-y-6">
+      {/* Info Banner */}
+      {showBanner && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+          <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Powerful Listening Ahead!</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              You're already seeing social trends in action. Soon, we're expanding with in-depth analysis, smarter insights, and actionable data for your brand. The next version is on its way!
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBanner(false)}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Header with Date and Refresh */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Social Trends</h2>
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Nov 25, 2025</span>
+          </div>
+          <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Trend Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Google Trends Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+            <div className="w-6 h-6 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5">
+                <path fill="#4285F4" d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path fill="#34A853" d="M2 17l10 5 10-5-10-5-10 5z"/>
+                <path fill="#FBBC04" d="M2 12l10 5 10-5-10-5-10 5z"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Google Trends</h3>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {[
+              { rank: 1, name: 'santa fe - tolima', searches: '100.7K', badge: 'New' },
+              { rank: 2, name: 'man city', searches: '23.4K', badge: 'New' },
+              { rank: 3, name: 'sophie von der tann', searches: '20K', badge: 'New' },
+              { rank: 4, name: 'jordan chiles', searches: '10.5K', badge: 'New' },
+              { rank: 5, name: 'العجر', searches: '10K', badge: 'New' },
+            ].map((trend) => (
+              <div key={trend.rank} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded">
+                <span className="w-6 text-center text-sm font-medium text-gray-600 dark:text-gray-400">{trend.rank}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{trend.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{trend.searches} Search</p>
+                </div>
+                <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+                  {trend.badge}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pinterest Keywords Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+            <div className="w-6 h-6 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#E60023">
+                <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pinterest Keywords</h3>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {[
+              { rank: 1, name: 'reze', pins: '756', trending: 'up' },
+              { rank: 2, name: 'november nails', pins: '658', trending: null },
+              { rank: 3, name: 'winter outfits', pins: '621', trending: null },
+              { rank: 4, name: 'outfits invierno', pins: '500', trending: 'up' },
+              { rank: 5, name: '67 brainrot', pins: '492', trending: 'up' },
+            ].map((trend) => (
+              <div key={trend.rank} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded">
+                <span className="w-6 text-center text-sm font-medium text-gray-600 dark:text-gray-400">{trend.rank}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{trend.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{trend.pins} Pins</p>
+                </div>
+                {trend.trending === 'up' && (
+                  <span className="text-green-500">
+                    <TrendingUp className="h-4 w-4" />
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Wikipedia Pageviews Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+            <div className="w-6 h-6 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5">
+                <path fill="#000000" d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.911 0 4.746v-.382c0-.165.103-.287.28-.287.346 0 .763.02 1.243.02 1.273 0 2.328-.02 3.162-.02.214 0 .321.122.321.287v.382c0 .165-.107.287-.321.287-.481.03-.896.15-1.167.361-.138.121-.172.271-.172.421 0 .15.062.42.172.69 1.247 3.001 3.514 8.729 3.921 9.57.406-.841 2.674-6.569 3.921-9.57.11-.27.172-.54.172-.69 0-.15-.034-.3-.172-.421-.271-.211-.686-.331-1.167-.361-.214 0-.321-.122-.321-.287v-.382c0-.165.107-.287.321-.287.834 0 1.889.02 3.162.02.48 0 .897-.02 1.243-.02.177 0 .28.122.28.287v.382c0 .165-.103.287-.28.287-.568.031-.941.121-1.122.271-.178.152-.368.538-.619 1.139-1.358 3.265-4.245 9.088-5.651 12.409-.405.902-.916 1.045-1.532-.029-.636-1.18-1.917-3.796-2.853-5.728z"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Wikipedia Pageviews</h3>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {[
+              { rank: 1, name: 'Dharmendra', views: '386.7K', badge: null },
+              { rank: 2, name: 'Sawyer Sweeten', views: '314.4K', badge: 'New' },
+              { rank: 3, name: 'Google Chrome', views: '308.8K', badge: null },
+              { rank: 4, name: 'Richard Branson', views: '160.2K', badge: 'New' },
+              { rank: 5, name: 'Wicked: For Good', views: '149.5K', badge: null },
+            ].map((trend) => (
+              <div key={trend.rank} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded">
+                <span className="w-6 text-center text-sm font-medium text-gray-600 dark:text-gray-400">{trend.rank}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{trend.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{trend.views} Views</p>
+                </div>
+                {trend.badge && (
+                  <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+                    {trend.badge}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
