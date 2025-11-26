@@ -64,6 +64,8 @@ const Jobs: React.FC = () => {
       setLoading(true);
       const response = await getJobs(page, 10);
       const fetchedJobs = response.data.data || [];
+      console.log('Fetched jobs from API:', fetchedJobs);
+      console.log('Sample job data:', fetchedJobs[0]);
       setAllJobs(fetchedJobs);
       filterJobsByType(fetchedJobs, selectedJobType);
     } catch (error: any) {
@@ -75,11 +77,17 @@ const Jobs: React.FC = () => {
   };
 
   const filterJobsByType = (jobsList: Job[], type: string) => {
+    console.log('Filtering jobs by type:', type);
+    console.log('Total jobs:', jobsList.length);
+    console.log('Job types in list:', jobsList.map(job => ({ id: job.id, type: job.jobType })));
+
     if (type === 'all') {
       setJobs(jobsList);
+      console.log('Showing all jobs:', jobsList.length);
     } else {
       const filtered = jobsList.filter(job => job.jobType === type);
       setJobs(filtered);
+      console.log(`Filtered ${type} jobs:`, filtered.length);
     }
   };
 
