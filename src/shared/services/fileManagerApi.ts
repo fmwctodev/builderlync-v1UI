@@ -303,5 +303,31 @@ export const fileManagerApi = {
 
     const data = await response.json();
     return data.data;
+  },
+
+  /**
+   * Get file thumbnail
+   */
+  async getFileThumbnail(fileId: string): Promise<string> {
+    const connection = await cloudDriveApi.getCurrentUserConnection();
+    if (!connection) {
+      throw new Error('No cloud drive connected');
+    }
+
+    const accessToken = await cloudAuthService.getValidAccessToken(connection);
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}/thumbnail?accessToken=${encodeURIComponent(accessToken)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get thumbnail');
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
   }
 };
