@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Send, Phone, Mail, MoreVertical, Check, CheckCheck, MessageSquare, Shield, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, MoreVertical, Check, CheckCheck } from 'lucide-react';
+import { ChannelTabs, ChannelType } from './ChannelTabs';
+import { MessageInputSMS } from './MessageInputSMS';
+import { MessageInputEmail } from './MessageInputEmail';
+import { MessageInputInternalComment } from './MessageInputInternalComment';
 
 interface Message {
   id: string;
@@ -55,8 +59,7 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ conversationId }: ChatAreaProps) {
-  const [newMessage, setNewMessage] = useState('');
-  const [activeChannel, setActiveChannel] = useState<'sms' | 'email'>('sms');
+  const [activeChannel, setActiveChannel] = useState<ChannelType>('sms');
 
   const contactData = {
     phone: '+13073727509',
@@ -67,6 +70,15 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
 
   const hasPhone = Boolean(contactData.phone);
   const hasEmail = Boolean(contactData.email);
+
+  const handleSendMessage = (message: string, metadata: any) => {
+    console.log('Sending message:', {
+      channel: activeChannel,
+      message,
+      metadata,
+    });
+    // In production, call API to send message based on channel type
+  };
 
   if (!conversationId) {
     return (
@@ -85,13 +97,6 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
       </div>
     );
   }
-
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      console.log('Sending message:', newMessage);
-      setNewMessage('');
-    }
-  };
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-US', { 
@@ -206,74 +211,37 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        {/* Channel Selector */}
-        <div className="flex items-center space-x-2 mb-3">
-          <button
-            onClick={() => setActiveChannel('sms')}
-            disabled={!hasPhone}
-            title={!hasPhone ? 'No phone number available' : contactData.phoneVerified ? 'Phone verified' : 'Phone not verified'}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              activeChannel === 'sms'
-                ? 'bg-green-500 text-white shadow-md'
-                : hasPhone
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>SMS</span>
-            {hasPhone && (
-              contactData.phoneVerified ? (
-                <ShieldCheck className="w-3 h-3" />
-              ) : (
-                <Shield className="w-3 h-3 opacity-50" />
-              )
-            )}
-          </button>
-          <button
-            onClick={() => setActiveChannel('email')}
-            disabled={!hasEmail}
-            title={!hasEmail ? 'No email available' : contactData.emailVerified ? 'Email verified' : 'Email not verified'}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              activeChannel === 'email'
-                ? 'bg-blue-500 text-white shadow-md'
-                : hasEmail
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>Email</span>
-            {hasEmail && (
-              contactData.emailVerified ? (
-                <ShieldCheck className="w-3 h-3" />
-              ) : (
-                <Shield className="w-3 h-3 opacity-50" />
-              )
-            )}
-          </button>
-        </div>
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        {/* Channel Tabs */}
+        <ChannelTabs
+          activeChannel={activeChannel}
+          onChannelChange={setActiveChannel}
+          hasPhone={hasPhone}
+          hasEmail={hasEmail}
+        />
 
-        {/* Message Input Field */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder={`Type a message via ${activeChannel === 'sms' ? 'SMS' : 'Email'}...`}
-            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
-            className={`p-3 rounded-full text-white transition-all shadow-md ${
-              activeChannel === 'sms' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            <Send className="w-5 h-5" />
-          </button>
+        {/* Dynamic Message Input */}
+        <div className="p-4">
+          {activeChannel === 'sms' && (
+            <MessageInputSMS
+              onSend={handleSendMessage}
+              fromNumber="+1 813-527-9352"
+              toNumber={contactData.phone}
+              contactName="John Smith"
+            />
+          )}
+
+          {activeChannel === 'email' && (
+            <MessageInputEmail
+              onSend={handleSendMessage}
+              contactEmail={contactData.email}
+              contactName="John Smith"
+            />
+          )}
+
+          {activeChannel === 'internal_comment' && (
+            <MessageInputInternalComment onSend={handleSendMessage} />
+          )}
         </div>
       </div>
     </div>
