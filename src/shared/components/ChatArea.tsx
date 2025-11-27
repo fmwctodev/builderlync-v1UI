@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, Mail, MoreVertical, Check, CheckCheck } from 'lucide-react';
+import {
+  Star,
+  MailOpen,
+  Trash2,
+  MoreVertical,
+  Phone,
+  CheckCheck,
+  Check,
+  Paperclip,
+  Smile,
+  DollarSign,
+  Plus
+} from 'lucide-react';
 import { ChannelTabs, ChannelType } from './ChannelTabs';
 import { MessageInputSMS } from './MessageInputSMS';
 import { MessageInputEmail } from './MessageInputEmail';
@@ -98,6 +110,33 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
     setError(error);
   };
 
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   if (!conversationId) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -116,58 +155,43 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
     );
   }
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {conversation?.contact?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+            <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center">
+              <span className="text-sm font-semibold text-white">
+                {getInitials(conversation?.contact?.full_name || '')}
               </span>
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {conversation?.contact?.full_name || 'Unknown Contact'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {conversation?.contact?.phone || conversation?.contact?.email || 'No contact info'}
-              </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-              <Phone className="w-5 h-5" />
+          <div className="flex items-center space-x-1">
+            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Star className="w-5 h-5" />
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-              <Mail className="w-5 h-5" />
+            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <MailOpen className="w-5 h-5" />
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Trash2 className="w-5 h-5" />
+            </button>
+            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
               <MoreVertical className="w-5 h-5" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-gray-50 dark:bg-gray-900">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-gray-500 dark:text-gray-400">Loading messages...</div>
@@ -184,10 +208,10 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
             </div>
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             {messages[0] && (
-              <div className="text-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full">
+              <div className="text-center mb-4">
+                <span className="inline-block text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm">
                   {formatDate(messages[0].created_at)}
                 </span>
               </div>
@@ -201,79 +225,82 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
               const isOutbound = message.direction === 'outbound';
               const isInternal = message.is_internal;
 
-              const getMessageColor = () => {
-                if (isInternal) return 'bg-yellow-100 dark:bg-yellow-900/20';
-                if (isOutbound) {
-                  return message.message_type === 'email' ? 'bg-blue-500' : 'bg-green-500';
-                }
-                return 'bg-white dark:bg-gray-800';
-              };
-
-              const getBorderColor = () => {
-                if (isInternal) return 'border-l-4 border-yellow-500';
-                if (isOutbound) return '';
-                return message.message_type === 'email'
-                  ? 'border-l-4 border-blue-500'
-                  : 'border-l-4 border-green-500';
-              };
-
-              const getTextColor = () => {
-                if (isInternal) return 'text-gray-900 dark:text-gray-100';
-                if (isOutbound) return 'text-white';
-                return 'text-gray-900 dark:text-white';
-              };
-
               return (
                 <div key={message.id} className="flex flex-col">
-                  {showTimestamp && (
-                    <div className="text-center my-3">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm">
+                  {showTimestamp && index > 0 && (
+                    <div className="text-center my-4">
+                      <span className="inline-block text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm">
                         {formatTime(message.created_at)}
                       </span>
                     </div>
                   )}
+
                   {isInternal && (
-                    <div className="text-center mb-1">
-                      <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded">
+                    <div className="text-center mb-2">
+                      <span className="inline-block text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
                         Internal Comment
                       </span>
                     </div>
                   )}
-                  <div
-                    className={`flex ${isOutbound && !isInternal ? 'justify-end' : 'justify-start'} mb-1`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-3 ${
-                        isOutbound && !isInternal
-                          ? `${getMessageColor()} text-white rounded-[20px] rounded-br-[4px] shadow-md`
-                          : `${getMessageColor()} ${getBorderColor()} ${getTextColor()} rounded-[20px] rounded-bl-[4px] shadow-sm`
-                      }`}
-                    >
-                      <p className="text-[15px] leading-relaxed break-words">{message.content}</p>
-                      {isOutbound && !isInternal && (
-                        <div className="flex items-center justify-end mt-1 space-x-1">
-                          <span className="text-xs opacity-75">
-                            {message.delivery_status === 'read' ? 'Read' :
-                             message.delivery_status === 'delivered' ? 'Delivered' :
-                             message.delivery_status === 'sent' ? 'Sent' : 'Pending'}
+
+                  <div className={`flex ${isOutbound && !isInternal ? 'justify-end' : 'justify-start'}`}>
+                    <div className="flex items-start space-x-2 max-w-[70%]">
+                      {!isOutbound && !isInternal && (
+                        <div className="w-8 h-8 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <span className="text-xs font-semibold text-white">
+                            {getInitials(conversation?.contact?.full_name || '')}
                           </span>
-                          {message.delivery_status === 'read' || message.delivery_status === 'delivered' ? (
-                            <CheckCheck className="w-3 h-3 opacity-75" />
-                          ) : (
-                            <Check className="w-3 h-3 opacity-75" />
-                          )}
                         </div>
                       )}
+
+                      <div
+                        className={`px-4 py-3 rounded-2xl ${
+                          isInternal
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500'
+                            : isOutbound
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        <p className={`text-[15px] leading-relaxed break-words ${
+                          isInternal ? 'text-gray-900 dark:text-gray-100' :
+                          isOutbound ? 'text-white' :
+                          'text-gray-900 dark:text-white'
+                        }`}>
+                          {message.content}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <span className={`text-xs ${
+                            isInternal ? 'text-gray-600 dark:text-gray-400' :
+                            isOutbound ? 'text-blue-100' :
+                            'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {formatTime(message.created_at)}
+                          </span>
+
+                          {isOutbound && !isInternal && (
+                            <div className="flex items-center space-x-1 ml-2">
+                              {message.delivery_status === 'read' || message.delivery_status === 'delivered' ? (
+                                <CheckCheck className="w-4 h-4 text-blue-100" />
+                              ) : (
+                                <Check className="w-4 h-4 text-blue-100" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
             <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
       </div>
 
+      {/* Channel Tabs and Input Area */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <ChannelTabs
           activeChannel={activeChannel}
@@ -282,15 +309,17 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
           hasEmail={hasEmail}
         />
 
-        <div className="p-4">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           {activeChannel === 'sms' && conversationId && (
-            <MessageInputSMS
-              conversationId={conversationId}
-              toNumber={contactData.phone}
-              contactName={conversation?.contact?.full_name || 'Contact'}
-              onSendSuccess={handleSendSuccess}
-              onSendError={handleSendError}
-            />
+            <div className="space-y-3">
+              <MessageInputSMS
+                conversationId={conversationId}
+                toNumber={contactData.phone}
+                contactName={conversation?.contact?.full_name || 'Contact'}
+                onSendSuccess={handleSendSuccess}
+                onSendError={handleSendError}
+              />
+            </div>
           )}
 
           {activeChannel === 'email' && conversationId && (
@@ -310,6 +339,30 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
               onSendError={handleSendError}
             />
           )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center space-x-2">
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <Smile className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <DollarSign className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+
+            {activeChannel === 'sms' && (
+              <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                <span>Chars: 0, Segs: 0</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
