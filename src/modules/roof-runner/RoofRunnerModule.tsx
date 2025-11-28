@@ -32,7 +32,7 @@ import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
-import OAuthCallback from './pages/OAuthCallback';
+import OAuthCallback from './components/file-manager/OAuthCallback';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -80,6 +80,8 @@ export function RoofRunnerModule() {
         <Route path="support" element={<Support />} />
         <Route path="settings/*" element={<Settings />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
+        <Route path="auth/google/callback" element={<OAuthCallback />} />
+        <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
       </Route>
       </Routes>
     </Provider>

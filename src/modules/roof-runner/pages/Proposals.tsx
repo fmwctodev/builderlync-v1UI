@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import ProposalEditor from '../components/ProposalEditor';
+import { getInvoices, Invoice } from '../../../shared/store/services/invoicesApi';
 
 export default function Proposals() {
   const [activeTab, setActiveTab] = useState('Proposals');
@@ -18,6 +19,27 @@ export default function Proposals() {
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const result = await getInvoices();
+      
+      if (result.success) {
+        setInvoices(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,38 +57,40 @@ export default function Proposals() {
     };
   }, [showNewProposalDropdown]);
 
-  const proposals = [
-    {
-      id: '001',
-      title: 'Roof Replacement - Johnson Residence',
-      subtitle: '123 Main St, Anytown, ST 12345',
-      assignedBy: 'Mike Johnson',
-      time: '2 hours ago',
-      amount: '$15,250',
-      status: 'Sent',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '002',
-      title: 'Commercial Roof Repair',
-      subtitle: '456 Oak Ave, Business District',
-      assignedBy: 'Sarah Wilson',
-      time: '1 day ago',
-      amount: '$8,750',
-      status: 'Open',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '003',
-      title: 'Residential Shingle Replacement',
-      subtitle: '789 Pine St, Residential Area',
-      assignedBy: 'John Smith',
-      time: '3 days ago',
-      amount: '$12,500',
-      status: 'Won',
-      image: '/api/placeholder/300/200'
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+  };
+
+  const mapStatusToProposalStatus = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid': return 'Won';
+      case 'open': return 'Open';
+      case 'sent': return 'Sent';
+      case 'draft': return 'Draft';
+      case 'overdue': return 'Lost';
+      default: return 'Open';
     }
-  ];
+  };
+
+  const proposals = invoices.map(invoice => ({
+    id: invoice.doc_number,
+    title: invoice.invoice_line_items[0]?.description || 'Invoice',
+    subtitle: invoice.customer_name,
+    assignedBy: invoice.contacts?.full_name || 'Unknown',
+    time: formatTimeAgo(invoice.created_at),
+    amount: `$${invoice.total_amount.toFixed(2)}`,
+    status: mapStatusToProposalStatus(invoice.status),
+    image: '/api/placeholder/300/200'
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -84,9 +108,9 @@ export default function Proposals() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <nav className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals</span>
+            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals & Invoices</span>
           </nav>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals & Invoices</h1>
         </div>
 
         <div className="relative" ref={dropdownRef}>
@@ -139,18 +163,24 @@ export default function Proposals() {
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {activeTab === 'Proposals' && (
-          <ProposalsList
-            proposals={proposals}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            showFilter={showFilter}
-            setShowFilter={setShowFilter}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            openDropdown={openDropdown}
-            setOpenDropdown={setOpenDropdown}
-            getStatusColor={getStatusColor}
-          />
+          loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-gray-500 dark:text-gray-400">Loading invoices...</div>
+            </div>
+          ) : (
+            <ProposalsList
+              proposals={proposals}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              showFilter={showFilter}
+              setShowFilter={setShowFilter}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              openDropdown={openDropdown}
+              setOpenDropdown={setOpenDropdown}
+              getStatusColor={getStatusColor}
+            />
+          )
         )}
 
         {activeTab === 'Templates' && (
@@ -226,10 +256,10 @@ export default function Proposals() {
                 Create without measurement
               </button>
               <button
-                onClick={() => { setShowMeasurementsModal(false); setShowTemplateModal(true); }}
+                onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
               >
-                Use this measurement
+                Create Proposal
               </button>
             </div>
           </div>

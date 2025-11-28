@@ -124,4 +124,9 @@ export const apiService = {
     const response = await apiClient.get(`/instant-estimators/public/${publicUrl}`);
     return response.data;
   },
+
+  generateEstimate: async (publicUrl: string, formData: any) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/generate-estimate`, formData);
+    return response.data;
+  },
 };

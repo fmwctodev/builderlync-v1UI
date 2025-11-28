@@ -1,4 +1,6 @@
-import { supabase } from '../../lib/supabase';
+import { getAuthToken } from '../../utils/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface CreateStaffRequest {
   firstName: string;
@@ -52,198 +54,135 @@ export interface StaffListResponse {
   total: number;
 }
 
-export const getStaff = async (page: number = 1, limit: number = 100): Promise<StaffListResponse> => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
+class StaffApiService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
 
-    if (!session?.session) {
-      throw new Error('Not authenticated');
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, error, count } = await supabase
-      .from('staff')
-      .select('*', { count: 'exact' })
-      .eq('status', 'active')
-      .order('first_name', { ascending: true })
-      .range(from, to);
-
-    if (error) {
-      console.error('Error fetching staff:', error);
-      throw error;
-    }
-
-    return {
-      success: true,
-      data: data || [],
-      total: count || 0
-    };
-  } catch (error) {
-    console.error('Error in getStaff:', error);
-    return {
-      success: false,
-      data: [],
-      total: 0
-    };
+    return response.json();
   }
-};
 
-export const getAllActiveStaff = async (): Promise<StaffMember[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('status', 'active')
-      .order('first_name', { ascending: true });
+  async getStaff(page: number = 1, limit: number = 100): Promise<StaffListResponse> {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
 
-    if (error) {
-      console.error('Error fetching all active staff:', error);
-      throw error;
+      const result = await this.makeRequest(`/staff?${params}`);
+      return {
+        success: true,
+        data: result.data || [],
+        total: result.total || 0
+      };
+    } catch (error) {
+      console.error('Error in getStaff:', error);
+      return {
+        success: false,
+        data: [],
+        total: 0
+      };
     }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error in getAllActiveStaff:', error);
-    return [];
   }
-};
 
-export const createStaff = async (staffData: CreateStaffRequest): Promise<StaffResponse> => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
-
-    if (!session?.session) {
-      throw new Error('Not authenticated');
+  async getAllActiveStaff(): Promise<StaffMember[]> {
+    try {
+      const result = await this.makeRequest('/staff/active');
+      return result.data || [];
+    } catch (error) {
+      console.error('Error in getAllActiveStaff:', error);
+      return [];
     }
-
-    const { data, error } = await supabase
-      .from('staff')
-      .insert({
-        first_name: staffData.firstName,
-        last_name: staffData.lastName,
-        email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension,
-        title: staffData.title,
-        department: staffData.department,
-        image: staffData.image,
-        status: 'active',
-        created_by: session.session.user.id
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating staff:', error);
-      throw error;
-    }
-
-    return {
-      success: true,
-      message: 'Staff member created successfully',
-      data: data as StaffMember
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      message: error.message || 'Failed to create staff member',
-      data: {} as StaffMember
-    };
   }
-};
 
-export const updateStaff = async (id: string, staffData: UpdateStaffRequest): Promise<StaffResponse> => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
+  async createStaff(staffData: CreateStaffRequest): Promise<StaffResponse> {
+    try {
+      const result = await this.makeRequest('/staff', {
+        method: 'POST',
+        body: JSON.stringify(staffData),
+      });
 
-    if (!session?.session) {
-      throw new Error('Not authenticated');
+      return {
+        success: true,
+        message: 'Staff member created successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to create staff member',
+        data: {} as StaffMember
+      };
     }
-
-    const { data, error } = await supabase
-      .from('staff')
-      .update({
-        first_name: staffData.firstName,
-        last_name: staffData.lastName,
-        email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension,
-        title: staffData.title,
-        department: staffData.department,
-        image: staffData.image,
-        status: staffData.status || 'active'
-      })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating staff:', error);
-      throw error;
-    }
-
-    return {
-      success: true,
-      message: 'Staff member updated successfully',
-      data: data as StaffMember
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      message: error.message || 'Failed to update staff member',
-      data: {} as StaffMember
-    };
   }
-};
 
-export const deleteStaff = async (id: string): Promise<{ success: boolean; message: string }> => {
-  try {
-    const { data: session } = await supabase.auth.getSession();
+  async updateStaff(id: string, staffData: UpdateStaffRequest): Promise<StaffResponse> {
+    try {
+      const result = await this.makeRequest(`/staff/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(staffData),
+      });
 
-    if (!session?.session) {
-      throw new Error('Not authenticated');
+      return {
+        success: true,
+        message: 'Staff member updated successfully',
+        data: result.data
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to update staff member',
+        data: {} as StaffMember
+      };
     }
-
-    const { error } = await supabase
-      .from('staff')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting staff:', error);
-      throw error;
-    }
-
-    return {
-      success: true,
-      message: 'Staff member deleted successfully'
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      message: error.message || 'Failed to delete staff member'
-    };
   }
-};
 
-export const getStaffById = async (id: string): Promise<StaffMember | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('id', id)
-      .single();
+  async deleteStaff(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.makeRequest(`/staff/${id}`, {
+        method: 'DELETE',
+      });
 
-    if (error) {
-      console.error('Error fetching staff by ID:', error);
-      throw error;
+      return {
+        success: true,
+        message: 'Staff member deleted successfully'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to delete staff member'
+      };
     }
-
-    return data as StaffMember;
-  } catch (error) {
-    console.error('Error in getStaffById:', error);
-    return null;
   }
-};
+
+  async getStaffById(id: string): Promise<StaffMember | null> {
+    try {
+      const result = await this.makeRequest(`/staff/${id}`);
+      return result.data;
+    } catch (error) {
+      console.error('Error in getStaffById:', error);
+      return null;
+    }
+  }
+}
+
+const staffApiService = new StaffApiService();
+
+export const getStaff = staffApiService.getStaff.bind(staffApiService);
+export const getAllActiveStaff = staffApiService.getAllActiveStaff.bind(staffApiService);
+export const createStaff = staffApiService.createStaff.bind(staffApiService);
+export const updateStaff = staffApiService.updateStaff.bind(staffApiService);
+export const deleteStaff = staffApiService.deleteStaff.bind(staffApiService);
+export const getStaffById = staffApiService.getStaffById.bind(staffApiService);

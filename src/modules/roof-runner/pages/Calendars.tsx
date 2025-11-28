@@ -78,7 +78,7 @@ const Calendars: React.FC = () => {
   const fetchContacts = async () => {
     try {
       const response = await getContacts('', '', 1, 1000);
-      setContacts(response.data || []);
+      setContacts(response.data.data || []);
     } catch (error: any) {
       console.error('Error fetching contacts:', error);
       setToast({ message: 'Failed to load contacts', type: 'error' });

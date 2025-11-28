@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Upload, Folder as FolderIcon, Search, Filter } from 'lucide-react';
-import { filesApi, FileRecord, FolderRecord } from '../../../../shared/services/filesApi';
+import { backendFilesApi, FileRecord, FolderRecord } from '../../../../shared/services/backendFilesApi';
 import FolderNavigation from './FolderNavigation';
 import FileGrid from './FileGrid';
 import CreateFolderModal from './CreateFolderModal';
@@ -12,7 +12,7 @@ export default function LocalFilesTab() {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [folders, setFolders] = useState<FolderRecord[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<FolderRecord[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{id: number, name: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -31,7 +31,10 @@ export default function LocalFilesTab() {
   const loadFolderContents = async () => {
     try {
       setIsLoading(true);
-      const { folders: loadedFolders, files: loadedFiles } = await filesApi.getFolderContents(currentFolderId);
+      console.log('Loading folder contents for currentFolderId:', currentFolderId);
+      const { folders: loadedFolders, files: loadedFiles } = await backendFilesApi.getFolderContents(currentFolderId);
+      console.log('Loaded folders:', loadedFolders);
+      console.log('Loaded files:', loadedFiles);
       setFolders(loadedFolders);
       setFiles(loadedFiles);
     } catch (error) {
@@ -45,8 +48,8 @@ export default function LocalFilesTab() {
     if (!currentFolderId) return;
 
     try {
-      const crumbs = await filesApi.getFolderBreadcrumbs(currentFolderId);
-      setBreadcrumbs(crumbs);
+      const crumbs = await backendFilesApi.getFolderBreadcrumbs(currentFolderId);
+      setBreadcrumbs(crumbs.map(c => ({ id: c.id, name: c.name })));
     } catch (error) {
       console.error('Error loading breadcrumbs:', error);
     }
@@ -54,10 +57,10 @@ export default function LocalFilesTab() {
 
   const handleCreateFolder = async (folderName: string) => {
     try {
-      await filesApi.createFolder({
-        folder_name: folderName,
-        parent_folder_id: currentFolderId,
-        storage_type: 'local'
+      await backendFilesApi.createFolder({
+        name: folderName,
+        parentId: currentFolderId,
+        cloudProvider: 'google'
       });
       setIsCreateFolderModalOpen(false);
       await loadFolderContents();
@@ -83,7 +86,7 @@ export default function LocalFilesTab() {
     setSearchTerm(term);
     if (term.trim()) {
       try {
-        const results = await filesApi.searchFiles(term, 'local');
+        const results = await backendFilesApi.searchFiles(term);
         setFiles(results);
         setFolders([]);
       } catch (error) {
@@ -138,7 +141,8 @@ export default function LocalFilesTab() {
         </div>
       </div>
 
-      {breadcrumbs.length > 0 && (
+      {/* Navigation */}
+      <div className="flex items-center justify-between mb-4">
         <nav className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
           <button
             onClick={() => handleBreadcrumbClick(null)}
@@ -155,19 +159,62 @@ export default function LocalFilesTab() {
                   index === breadcrumbs.length - 1 ? 'font-medium text-gray-900 dark:text-white' : ''
                 }`}
               >
-                {crumb.folder_name}
+                {crumb.name}
               </button>
             </span>
           ))}
         </nav>
-      )}
+        
+        {currentFolderId && (
+          <button
+            onClick={() => {
+              const parentBreadcrumb = breadcrumbs[breadcrumbs.length - 2];
+              handleBreadcrumbClick(parentBreadcrumb ? parentBreadcrumb.id : null);
+            }}
+            className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+          >
+            ← Back
+          </button>
+        )}
+      </div>
 
       {folders.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Folders</h3>
           <FolderNavigation
-            folders={folders.map(f => ({ id: f.id, name: f.folder_name }))}
-            onFolderClick={handleFolderClick}
+            folders={folders.map(f => ({ id: f.id.toString(), name: f.name }))}
+            onFolderClick={(id) => handleFolderClick(parseInt(id))}
+            onDeleteFolder={async (id) => {
+              try {
+                await backendFilesApi.deleteFolder(parseInt(id));
+                await loadFolderContents();
+              } catch (error) {
+                console.error('Error deleting folder:', error);
+              }
+            }}
+            onCreateSubfolder={(parentId) => {
+              // Add create subfolder functionality if needed
+              console.log('Create subfolder in:', parentId);
+            }}
+            onUploadToFolder={async (folderId) => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.multiple = true;
+              input.onchange = async (e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (files) {
+                  for (const file of Array.from(files)) {
+                    try {
+                      await backendFilesApi.uploadFile(file, parseInt(folderId));
+                    } catch (error) {
+                      console.error('Error uploading file:', error);
+                    }
+                  }
+                  await loadFolderContents();
+                }
+              };
+              input.click();
+            }}
           />
         </div>
       )}
@@ -178,11 +225,24 @@ export default function LocalFilesTab() {
           <FileGrid
             files={files.map(f => ({
               id: f.id,
-              name: f.file_name,
-              type: f.mime_type.split('/')[1] || 'file',
+              name: f.filename,
+              type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
               pages: 1,
-              thumbnail: f.thumbnail_url || ''
+              thumbnail: f.file_path || '',
+              mime_type: f.mime_type || '',
+              file_size: f.file_size || 0,
+              filename: f.filename,
+              file_path: f.file_path,
+              created_at: f.created_at
             }))}
+            onDeleteFile={async (id) => {
+              try {
+                await backendFilesApi.deleteFile(id);
+                await loadFolderContents();
+              } catch (error) {
+                console.error('Error deleting file:', error);
+              }
+            }}
           />
         </div>
       ) : !isLoading && folders.length === 0 && (

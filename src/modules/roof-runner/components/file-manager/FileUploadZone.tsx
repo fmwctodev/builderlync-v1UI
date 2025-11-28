@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, CheckCircle, AlertCircle, File } from 'lucide-react';
-import { filesApi } from '../../../../shared/services/filesApi';
+import { backendFilesApi } from '../../../../shared/services/backendFilesApi';
 
 interface FileUploadZoneProps {
-  folderId: string | null;
+  folderId: number | null;
   onUploadComplete: () => void;
   onClose: () => void;
 }
@@ -35,7 +35,7 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
       const file = acceptedFiles[i];
 
       try {
-        await filesApi.uploadFile(file, folderId, (progress, fileName) => {
+        await backendFilesApi.uploadFile(file, folderId, (progress, fileName) => {
           setUploadingFiles(prev =>
             prev.map(uf =>
               uf.file.name === fileName
