@@ -1,6 +1,9 @@
 import React from 'react';
 import { Check, ExternalLink } from 'lucide-react';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
+import { connectTwilio, getTwilioStatus, disconnectTwilio, TwilioStatus } from '../../../../shared/store/services/twilioApi';
+import TwilioManagementModal from './TwilioManagementModal';
+
 
 interface Integration {
   id: string;
@@ -17,10 +20,14 @@ interface Integration {
 
 const Integrations: React.FC = () => {
   const [quickbooksStatus, setQuickbooksStatus] = React.useState({ connected: false, companyInfo: null });
+  const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
+  const [showTwilioModal, setShowTwilioModal] = React.useState(false);
+
 
   React.useEffect(() => {
     fetchQuickBooksStatus();
+    fetchTwilioStatus();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -31,6 +38,17 @@ const Integrations: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching QuickBooks status:', error);
+    }
+  };
+
+  const fetchTwilioStatus = async () => {
+    try {
+      const response = await getTwilioStatus();
+      if (response.success) {
+        setTwilioStatus(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching Twilio status:', error);
     }
   };
 
@@ -62,9 +80,17 @@ const Integrations: React.FC = () => {
     }
   };
 
+
+
+  const handleTwilioStatusChange = (status: TwilioStatus) => {
+    setTwilioStatus(status);
+  };
+
   const handleConnect = (integrationId: string) => {
     if (integrationId === 'quickbooks') {
       handleQuickBooksConnect();
+    } else if (integrationId === 'twilio') {
+      setShowTwilioModal(true);
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -73,13 +99,19 @@ const Integrations: React.FC = () => {
   const handleDisconnect = (integrationId: string) => {
     if (integrationId === 'quickbooks') {
       handleQuickBooksDisconnect();
+    } else if (integrationId === 'twilio') {
+      setShowTwilioModal(true);
     } else {
       console.log(`Disconnecting from ${integrationId}...`);
     }
   };
 
   const handleManage = (integrationId: string) => {
-    console.log(`Managing ${integrationId}...`);
+    if (integrationId === 'twilio') {
+      setShowTwilioModal(true);
+    } else {
+      console.log(`Managing ${integrationId}...`);
+    }
   };
 
   const integrations: Integration[] = [
@@ -97,7 +129,8 @@ const Integrations: React.FC = () => {
       name: 'Twilio',
       description: 'SMS and voice communication platform for customer engagement',
       category: 'Communication',
-      connected: false,
+      connected: twilioStatus.connected,
+      hasManage: true,
     },
     {
       id: 'abc-supply',
@@ -230,6 +263,15 @@ const Integrations: React.FC = () => {
               </p>
             )}
 
+            {integration.id === 'twilio' && integration.connected && twilioStatus.accountSid && (
+              <div className="text-xs text-green-600 dark:text-green-400 mb-4">
+                <p>Account: {twilioStatus.accountSid}</p>
+                {twilioStatus.phoneNumbers && twilioStatus.phoneNumbers.length > 0 && (
+                  <p>Phone Numbers: {twilioStatus.phoneNumbers.length}</p>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col space-y-2">
               {integration.connected ? (
                 <>
@@ -287,6 +329,13 @@ const Integrations: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <TwilioManagementModal
+        isOpen={showTwilioModal}
+        onClose={() => setShowTwilioModal(false)}
+        onStatusChange={handleTwilioStatusChange}
+        initialStatus={twilioStatus}
+      />
     </div>
   );
 };

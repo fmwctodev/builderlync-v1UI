@@ -23,7 +23,7 @@ import {
   setIncomingCall,
   setCallStatus,
 } from '../store/slices/callSlice';
-import { twilioService, CallEvent } from '../services/twilioService';
+// import { twilioService, CallEvent } from '../services/twilioService';
 
 interface DialerModalProps {
   isOpen: boolean;
@@ -65,9 +65,9 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
     const initializeTwilio = async () => {
       try {
         if (!callState.isInitialized) {
-          await twilioService.initialize();
+          // await twilioService.initialize();
 
-          twilioService.addEventListener(handleTwilioEvent);
+          // twilioService.addEventListener(handleTwilioEvent);
         }
       } catch (error) {
         console.error('Failed to initialize Twilio:', error);
@@ -98,42 +98,42 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
     }
   }, [callState?.callStatus, durationInterval]);
 
-  const handleTwilioEvent = (event: CallEvent) => {
-    switch (event.type) {
-      case 'connecting':
-        dispatch(setCallStatus('connecting'));
-        break;
-      case 'ringing':
-        dispatch(setCallStatus('ringing'));
-        break;
-      case 'connected':
-        dispatch(connectCall());
-        break;
-      case 'disconnected':
-        dispatch(endCall());
-        setPhoneNumber('');
-        break;
-      case 'incoming':
-        if (event.call) {
-          dispatch(
-            setIncomingCall({
-              callSid: event.call.parameters.CallSid || '',
-              from: event.call.parameters.From || '',
-              contactName: undefined,
-            })
-          );
-        }
-        break;
-      case 'error':
-        console.error('Call error:', event.error);
-        dispatch(endCall());
-        break;
-    }
-  };
+  // const handleTwilioEvent = (event: CallEvent) => {
+  //   switch (event.type) {
+  //     case 'connecting':
+  //       dispatch(setCallStatus('connecting'));
+  //       break;
+  //     case 'ringing':
+  //       dispatch(setCallStatus('ringing'));
+  //       break;
+  //     case 'connected':
+  //       dispatch(connectCall());
+  //       break;
+  //     case 'disconnected':
+  //       dispatch(endCall());
+  //       setPhoneNumber('');
+  //       break;
+  //     case 'incoming':
+  //       if (event.call) {
+  //         dispatch(
+  //           setIncomingCall({
+  //             callSid: event.call.parameters.CallSid || '',
+  //             from: event.call.parameters.From || '',
+  //             contactName: undefined,
+  //           })
+  //         );
+  //       }
+  //       break;
+  //     case 'error':
+  //       console.error('Call error:', event.error);
+  //       dispatch(endCall());
+  //       break;
+  //   }
+  // };
 
   const handleNumberClick = (digit: string) => {
     if (callState.isOnCall) {
-      twilioService.sendDigits(digit);
+      // twilioService.sendDigits(digit);
     } else {
       setPhoneNumber((prev) => prev + digit);
     }
@@ -150,7 +150,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
       const cleanNumber = phoneNumber.replace(/\D/g, '');
       const formattedNumber = cleanNumber.length === 10 ? `+1${cleanNumber}` : `+${cleanNumber}`;
 
-      await twilioService.makeCall(formattedNumber, selectedNumber);
+      // await twilioService.makeCall(formattedNumber, selectedNumber);
 
       dispatch(
         startCall({
@@ -165,19 +165,19 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
   };
 
   const handleHangup = () => {
-    twilioService.hangup();
+    // twilioService.hangup();
     dispatch(endCall());
     setPhoneNumber('');
   };
 
   const handleMute = () => {
     const newMuteState = !callState.currentCall.isMuted;
-    twilioService.mute(newMuteState);
+    // twilioService.mute(newMuteState);
     dispatch(toggleMute());
   };
 
   const handleAcceptCall = () => {
-    twilioService.acceptCall();
+    // twilioService.acceptCall();
     if (callState.incomingCall) {
       dispatch(
         startCall({
@@ -192,7 +192,7 @@ const DialerModalEnhanced: React.FC<DialerModalProps> = ({ isOpen, onClose }) =>
   };
 
   const handleRejectCall = () => {
-    twilioService.rejectCall();
+    // twilioService.rejectCall();
     dispatch(setIncomingCall(null));
   };
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Phone, PhoneOff } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { startCall, setIncomingCall } from '../store/slices/callSlice';
-import { twilioService } from '../services/twilioService';
+// import { twilioService } from '../services/twilioService';
 
 const IncomingCallNotification: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,22 +24,22 @@ const IncomingCallNotification: React.FC = () => {
   }, [incomingCall]);
 
   const handleAccept = () => {
-    if (incomingCall) {
-      twilioService.acceptCall();
-      dispatch(
-        startCall({
-          callSid: incomingCall.callSid,
-          phoneNumber: incomingCall.from,
-          direction: 'inbound',
-          contactName: incomingCall.contactName || undefined,
-        })
-      );
-      dispatch(setIncomingCall(null));
-    }
+    // if (incomingCall) {
+    //   twilioService.acceptCall();
+    //   dispatch(
+    //     startCall({
+    //       callSid: incomingCall.callSid,
+    //       phoneNumber: incomingCall.from,
+    //       direction: 'inbound',
+    //       contactName: incomingCall.contactName || undefined,
+    //     })
+    //   );
+    //   dispatch(setIncomingCall(null));
+    // }
   };
 
   const handleReject = () => {
-    twilioService.rejectCall();
+    // twilioService.rejectCall();
     dispatch(setIncomingCall(null));
     setIsRinging(false);
   };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Search, RefreshCw, MoreVertical, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, RefreshCw, MoreVertical, Lock, Loader2 } from 'lucide-react';
+import { getTwilioPhoneNumbers, getTwilioStatus } from '../../../../shared/store/services/twilioApi';
 
 interface PhoneNumber {
   id: number;
@@ -23,54 +24,48 @@ const Communications: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [autoDeleteRecordings, setAutoDeleteRecordings] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('twilio');
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [twilioConnected, setTwilioConnected] = useState(false);
 
-  const [phoneNumbers] = useState<PhoneNumber[]>([
-    {
-      id: 1,
-      number: '+1 512-777-1219',
-      friendlyName: 'Local',
-      forwardingNumber: '+1 386-575-8489',
-      callTimeout: '',
-      isDefault: true,
-      countryCode: 'US'
-    },
-    {
-      id: 2,
-      number: '+1 737-258-8840',
-      friendlyName: 'Local',
-      forwardingNumber: '+1 386-575-8489',
-      callTimeout: '',
-      isDefault: false,
-      countryCode: 'US'
-    },
-    {
-      id: 3,
-      number: '+1 512-710-1138',
-      friendlyName: 'Local',
-      forwardingNumber: '',
-      callTimeout: '',
-      isDefault: false,
-      countryCode: 'US'
-    },
-    {
-      id: 4,
-      number: '+1 979-596-5774',
-      friendlyName: 'Local',
-      forwardingNumber: '+1 386-575-8489',
-      callTimeout: '',
-      isDefault: false,
-      countryCode: 'US'
-    },
-    {
-      id: 5,
-      number: '+1 800-470-3660',
-      friendlyName: 'Toll Free',
-      forwardingNumber: '+1 386-575-8489',
-      callTimeout: '',
-      isDefault: false,
-      countryCode: 'US'
+  useEffect(() => {
+    checkTwilioConnection();
+  }, []);
+
+  const checkTwilioConnection = async () => {
+    try {
+      const response = await getTwilioStatus();
+      if (response.success && response.data.connected) {
+        setTwilioConnected(true);
+        fetchPhoneNumbers();
+      }
+    } catch (error) {
+      console.error('Error checking Twilio status:', error);
     }
-  ]);
+  };
+
+  const fetchPhoneNumbers = async () => {
+    setLoading(true);
+    try {
+      const response = await getTwilioPhoneNumbers();
+      if (response.success && response.data) {
+        const formattedNumbers = response.data.map((number, index) => ({
+          id: index + 1,
+          number: number,
+          friendlyName: number.startsWith('+1800') || number.startsWith('+1888') || number.startsWith('+1877') || number.startsWith('+1866') ? 'Toll Free' : 'Local',
+          forwardingNumber: '',
+          callTimeout: '',
+          isDefault: index === 0,
+          countryCode: 'US'
+        }));
+        setPhoneNumbers(formattedNumbers);
+      }
+    } catch (error) {
+      console.error('Error fetching phone numbers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatPhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, '');
@@ -152,12 +147,16 @@ const Communications: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Manage your Phone Numbers and their configuration here
+                    Phone numbers are fetched from your Twilio account. To add new numbers, purchase them via Twilio Console.
                   </p>
                 </div>
-                <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                <button 
+                  onClick={() => window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/search', '_blank')}
+                  className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                  title="Opens Twilio Console to purchase numbers"
+                >
                   <Plus size={16} />
-                  <span>Add Number</span>
+                  <span>Buy Number</span>
                 </button>
               </div>
 
@@ -202,8 +201,12 @@ const Communications: React.FC = () => {
                     />
                     <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                   </div>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg">
-                    <RefreshCw size={16} />
+                  <button 
+                    onClick={fetchPhoneNumbers}
+                    disabled={loading || !twilioConnected}
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                   </button>
                 </div>
               </div>
@@ -233,7 +236,25 @@ const Communications: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredPhoneNumbers.length === 0 ? (
+                      {!twilioConnected ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <div className="space-y-2">
+                              <p>Twilio not connected</p>
+                              <p className="text-sm">Please connect Twilio in Integrations to view phone numbers</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : loading ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center justify-center space-x-2">
+                              <Loader2 size={16} className="animate-spin" />
+                              <span>Loading phone numbers...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : filteredPhoneNumbers.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                             No phone numbers found
