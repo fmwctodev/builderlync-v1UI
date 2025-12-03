@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Users, Filter, Edit, ChevronDown } from 'lucide-react';
+import { Search, Users, Filter, Edit, ChevronDown, Trash2, MoreVertical } from 'lucide-react';
 import { TeamConversationListItem } from '../../types/teamMessaging';
 
 interface ConversationListProps {
@@ -7,6 +7,7 @@ interface ConversationListProps {
   selectedConversationId: string | null;
   onConversationSelect: (conversationId: string) => void;
   onNewMessage: () => void;
+  onDeleteTeam?: (teamId: string) => void;
   loading?: boolean;
 }
 
@@ -17,13 +18,15 @@ const ConversationList: React.FC<ConversationListProps> = ({
   selectedConversationId,
   onConversationSelect,
   onNewMessage,
+  onDeleteTeam,
   loading = false,
 }) => {
-  const [activeFilter, setActiveFilter] = React.useState<FilterTab>('unread');
+  const [activeFilter, setActiveFilter] = React.useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [showDropdown, setShowDropdown] = React.useState<string | null>(null);
 
   const filteredConversations = conversations.filter((conv) => {
-    if (activeFilter === 'unread' && conv.unread_count === 0) {
+    if (activeFilter === 'unread' && (conv.unread_count || 0) === 0) {
       return false;
     }
 
@@ -31,7 +34,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
       const query = searchQuery.toLowerCase();
       return (
         conv.display_name.toLowerCase().includes(query) ||
-        conv.last_message.toLowerCase().includes(query)
+        (conv.last_message || '').toLowerCase().includes(query)
       );
     }
 
@@ -135,7 +138,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
               return (
                 <div
                   key={conversation.id}
-                  onClick={() => onConversationSelect(conversation.id)}
+                  onClick={() => {
+                    if (showDropdown !== conversation.id) {
+                      onConversationSelect(conversation.id);
+                    }
+                  }}
                   className={`p-3 cursor-pointer transition-all ${
                     isSelected
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
@@ -165,9 +172,40 @@ const ConversationList: React.FC<ConversationListProps> = ({
                         >
                           {conversation.display_name}
                         </h3>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
-                          {formatDate(conversation.last_message_time)}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatDate(conversation.last_message_time)}
+                          </span>
+                          {conversation.is_group && onDeleteTeam && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDropdown(showDropdown === conversation.id ? null : conversation.id);
+                                }}
+                                className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                              >
+                                <MoreVertical className="w-3 h-3" />
+                              </button>
+                              {showDropdown === conversation.id && (
+                                <div className="absolute right-0 top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const teamId = conversation.id.replace('team_', '');
+                                      onDeleteTeam(teamId);
+                                      setShowDropdown(null);
+                                    }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Delete Team</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {conversation.is_group && (

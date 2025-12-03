@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../shared/lib/supabase';
 import { ConversationsList } from '../../../modules/crm/components/conversations/ConversationsList';
 import { ChatArea } from '../../../shared/components/ChatArea';
 import ConversationList from '../components/team-messaging/ConversationList';
 import MessageThread from '../components/team-messaging/MessageThread';
-import NewMessageModal from '../components/team-messaging/NewMessageModal';
+import { CreateTeamModal } from '../../../shared/components/CreateTeamModal';
 import {
   getTeamConversations,
   getConversationMessages,
-  createTeamConversation,
   sendTeamMessage,
-  markConversationAsRead,
-  getTeamContacts,
-  findConversationByParticipants,
 } from '../../../shared/store/services/teamMessagingApi';
-import { TeamConversationListItem, TeamMessageItem, TeamContact, MessageType } from '../types/teamMessaging';
+import { TeamConversationListItem, TeamMessageItem } from '../types/teamMessaging';
 import { formatDistanceToNow } from 'date-fns';
 
 const ConversationsNew: React.FC = () => {
@@ -27,8 +22,8 @@ const ConversationsNew: React.FC = () => {
   const [teamConversations, setTeamConversations] = useState<TeamConversationListItem[]>([]);
   const [selectedTeamConversationId, setSelectedTeamConversationId] = useState<string | null>(null);
   const [conversationMessages, setConversationMessages] = useState<TeamMessageItem[]>([]);
-  const [teamContacts, setTeamContacts] = useState<TeamContact[]>([]);
-  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [teamMessagingLoading, setTeamMessagingLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
 
@@ -138,26 +133,21 @@ const ConversationsNew: React.FC = () => {
     try {
       setMessagesLoading(true);
       const messages = await getConversationMessages(conversationId);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
       const formattedMessages: TeamMessageItem[] = messages.map((msg) => ({
         id: msg.id,
         conversation_id: msg.conversation_id,
         sender_id: msg.sender_id,
-        sender_name: msg.sender?.email || 'Unknown',
+        sender_name: 'User',
         content: msg.content,
         timestamp: msg.created_at,
-        is_own_message: msg.sender_id === user?.id,
+        is_own_message: true,
         is_read: msg.is_read || false,
+        message_type: msg.message_type || 'sms',
+        subject: msg.subject
       }));
 
       setConversationMessages(formattedMessages);
-
-      // Mark conversation as read
-      await markConversationAsRead(conversationId);
-      await loadTeamConversations();
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -167,85 +157,40 @@ const ConversationsNew: React.FC = () => {
 
   const loadTeamContacts = async () => {
     try {
-      const contacts = await getTeamContacts();
-
-      const formattedContacts: TeamContact[] = contacts.map((contact) => {
-        const fullName = contact.full_name || 'Unknown Contact';
-        return {
-          id: contact.id,
-          full_name: fullName,
-          first_name: contact.first_name || '',
-          last_name: contact.last_name || '',
-          email: contact.email || '',
-          phone: contact.phone || '',
-          type: contact.type as 'staff' | 'sub-contractor',
-          initials: getInitials(fullName),
-          avatar_color: getAvatarColor(fullName),
-        };
-      });
-
-      setTeamContacts(formattedContacts);
+      // Team contacts loading is handled by CreateTeamModal
     } catch (error) {
       console.error('Failed to load team contacts:', error);
-      setTeamContacts([]);
     }
   };
 
-  const handleNewMessage = async (
-    messageType: MessageType,
-    contactIds: string[],
-    groupName: string,
-    message: string
-  ) => {
-    try {
-      setTeamMessagingLoading(true);
 
-      // For individual messages, check if conversation already exists
-      if (messageType === 'individual') {
-        const existingConvId = await findConversationByParticipants(contactIds);
-        if (existingConvId) {
-          // Send message to existing conversation
-          await sendTeamMessage({
-            conversation_id: existingConvId,
-            content: message,
-          });
-          setSelectedTeamConversationId(existingConvId);
-          await loadTeamConversations();
-          await loadConversationMessages(existingConvId);
-          setShowNewMessageModal(false);
-          return;
-        }
-      }
 
-      // Create new conversation
-      const conversation = await createTeamConversation({
-        name: messageType === 'group' ? groupName : undefined,
-        is_group: messageType === 'group',
-        participant_ids: contactIds,
-        initial_message: message,
-      });
-
-      setSelectedTeamConversationId(conversation.id);
-      await loadTeamConversations();
-      await loadConversationMessages(conversation.id);
-      setShowNewMessageModal(false);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setTeamMessagingLoading(false);
-    }
-  };
-
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, messageType: 'sms' | 'email' | 'team' = 'team', subject?: string) => {
     if (!selectedTeamConversationId) return;
+
+    // Add message instantly to UI
+    const newMessage: TeamMessageItem = {
+      id: Date.now().toString(),
+      conversation_id: selectedTeamConversationId,
+      sender_id: 'current_user',
+      sender_name: 'You',
+      content,
+      timestamp: new Date().toISOString(),
+      is_own_message: true,
+      is_read: true,
+      message_type: messageType,
+      subject
+    };
+    
+    setConversationMessages(prev => [...prev, newMessage]);
 
     try {
       await sendTeamMessage({
         conversation_id: selectedTeamConversationId,
         content,
+        messageType,
+        subject
       });
-      await loadConversationMessages(selectedTeamConversationId);
       await loadTeamConversations();
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -258,39 +203,33 @@ const ConversationsNew: React.FC = () => {
     await loadConversationMessages(conversationId);
   };
 
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!confirm('Are you sure you want to delete this team?')) return;
+    
+    try {
+      const { smtpApi } = await import('../../../shared/services/smtpApi');
+      await smtpApi.deleteTeam(teamId);
+      await loadTeamConversations();
+      
+      // Clear selection if deleted team was selected
+      if (selectedTeamConversationId === `team_${teamId}`) {
+        setSelectedTeamConversationId(null);
+        setConversationMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to delete team:', error);
+      alert('Failed to delete team. Please try again.');
+    }
+  };
+
   // Load team messaging data when tab is active
   useEffect(() => {
     if (activeTab === 'team-messaging') {
       loadTeamConversations();
-      loadTeamContacts();
     }
   }, [activeTab]);
 
-  // Set up real-time subscription for team messages
-  useEffect(() => {
-    if (activeTab === 'team-messaging' && selectedTeamConversationId) {
-      const subscription = supabase
-        .channel(`team_messages:${selectedTeamConversationId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'team_messages',
-            filter: `conversation_id=eq.${selectedTeamConversationId}`,
-          },
-          () => {
-            loadConversationMessages(selectedTeamConversationId);
-            loadTeamConversations();
-          }
-        )
-        .subscribe();
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [activeTab, selectedTeamConversationId]);
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800">
@@ -350,7 +289,8 @@ const ConversationsNew: React.FC = () => {
               conversations={teamConversations}
               selectedConversationId={selectedTeamConversationId}
               onConversationSelect={handleConversationSelect}
-              onNewMessage={() => setShowNewMessageModal(true)}
+              onNewMessage={() => setShowCreateTeamModal(true)}
+              onDeleteTeam={handleDeleteTeam}
               loading={teamMessagingLoading}
             />
             <MessageThread
@@ -359,13 +299,14 @@ const ConversationsNew: React.FC = () => {
               onSendMessage={handleSendMessage}
               loading={messagesLoading}
             />
-            {showNewMessageModal && (
-              <NewMessageModal
-                contacts={teamContacts}
-                onClose={() => setShowNewMessageModal(false)}
-                onSend={handleNewMessage}
-              />
-            )}
+            <CreateTeamModal
+              isOpen={showCreateTeamModal}
+              onClose={() => setShowCreateTeamModal(false)}
+              onTeamCreated={() => {
+                setShowCreateTeamModal(false);
+                loadTeamConversations();
+              }}
+            />
           </div>
         )}
 

@@ -32,6 +32,8 @@ export interface TeamMessageItem {
   timestamp: string;
   is_own_message: boolean;
   is_read: boolean;
+  message_type?: 'sms' | 'email' | 'team';
+  subject?: string;
 }
 
 export type MessageType = 'individual' | 'group';

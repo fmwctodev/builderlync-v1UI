@@ -3,9 +3,11 @@ import { MessageSquare, Phone, Mail, Search, Filter, Edit, ChevronDown } from 'l
 import {
   getConversations,
   subscribeToConversations,
+  createConversationAPI,
   Conversation,
 } from '../../../../shared/services/conversationsApi';
 import { supabase } from '../../../../shared/lib/supabase';
+import { ConversationEditModal } from './ConversationEditModal';
 
 interface ConversationsListProps {
   selectedConversation: string | null;
@@ -15,11 +17,12 @@ interface ConversationsListProps {
 type FilterTab = 'unread' | 'recents' | 'starred' | 'all';
 
 export function ConversationsList({ selectedConversation, onSelectConversation }: ConversationsListProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('unread');
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -46,8 +49,10 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading conversations...');
       const data = await getConversations();
-      setConversations(data);
+      console.log('Conversations loaded:', data);
+      setConversations(data || []);
     } catch (err: any) {
       console.error('Failed to load conversations:', err);
       setError(err.message || 'Failed to load conversations');
@@ -108,10 +113,17 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   };
 
   const filteredConversations = conversations.filter((conv) => {
+    // Filter by tab
     if (activeFilter === 'unread' && (!conv.unread_count || conv.unread_count === 0)) {
       return false;
     }
+    
+    // For other filters, show all conversations for now
+    if (activeFilter === 'recents' || activeFilter === 'starred' || activeFilter === 'all') {
+      // Continue to search filter
+    }
 
+    // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const name = conv.contact?.full_name?.toLowerCase() || '';
@@ -124,8 +136,31 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
     return true;
   });
 
+  const handleEditClick = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleConversationTypeSelect = (type: 'direct' | 'group') => {
+    setIsEditModalOpen(false);
+    console.log('Selected conversation type:', type);
+  };
+
+  const handleCreateConversation = async (contactId: string) => {
+    try {
+      console.log('Creating conversation for contact:', contactId);
+      const conversation = await createConversationAPI(contactId, 'sms');
+      console.log('Conversation created:', conversation);
+      setIsEditModalOpen(false);
+      onSelectConversation(conversation.id);
+      loadConversations(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      alert('Failed to create conversation: ' + error.message);
+    }
+  };
+
   return (
-    <div className="w-[380px] border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
+    <div className="w-[320px] border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
       {/* Filter Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex">
@@ -177,7 +212,10 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
             <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
               <Filter className="w-4 h-4" />
             </button>
-            <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <button 
+              onClick={handleEditClick}
+              className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            >
               <Edit className="w-4 h-4" />
             </button>
             <button className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
@@ -287,6 +325,13 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
           </div>
         )}
       </div>
+      
+      <ConversationEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSelectType={handleConversationTypeSelect}
+        onCreateConversation={handleCreateConversation}
+      />
     </div>
   );
 }

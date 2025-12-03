@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X } from 'lucide-react';
+import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X, AlertTriangle, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { smtpApi } from '../../../../shared/services/smtpApi';
 
 interface MessageInputEmailProps {
   onSend: (message: string, metadata: any) => void;
   contactEmail?: string;
   contactName?: string;
+  contactId?: string;
 }
 
-export function MessageInputEmail({ onSend, contactEmail, contactName }: MessageInputEmailProps) {
-  const [fromName, setFromName] = useState('Sean Richard');
-  const [fromEmail, setFromEmail] = useState('sean@autom8ionlab.com');
+export function MessageInputEmail({ onSend, contactEmail, contactName, contactId }: MessageInputEmailProps) {
+  const navigate = useNavigate();
   const [toEmail, setToEmail] = useState(contactEmail || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -19,15 +21,24 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
   const [bccEmails, setBccEmails] = useState<string[]>([]);
   const [ccInput, setCcInput] = useState('');
   const [bccInput, setBccInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSmtpError, setShowSmtpError] = useState(false);
 
   // Calculate word count
   const wordCount = message.trim() ? message.trim().split(/\s+/).length : 0;
 
-  const handleSend = () => {
-    if (message.trim() && toEmail && subject.trim()) {
+  const handleSend = async () => {
+    if (!message.trim() || !toEmail || !subject.trim() || !contactId) return;
+    
+    setSending(true);
+    setError(null);
+    setShowSmtpError(false);
+    
+    try {
+      await smtpApi.sendEmailMessage(contactId, subject, message);
+      
       onSend(message, {
-        from_name: fromName,
-        from_email: fromEmail,
         to_emails: [toEmail],
         cc_emails: ccEmails.length > 0 ? ccEmails : undefined,
         bcc_emails: bccEmails.length > 0 ? bccEmails : undefined,
@@ -39,6 +50,15 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
       setBccEmails([]);
       setShowCc(false);
       setShowBcc(false);
+    } catch (error: any) {
+      if (error.error === 'SMTP not configured') {
+        setShowSmtpError(true);
+        setError(error.message);
+      } else {
+        setError(error.error || error.message || 'Failed to send email');
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -73,40 +93,47 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
 
   return (
     <div className="flex flex-col space-y-3">
-      {/* From Fields */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            From Name:
-          </label>
-          <input
-            type="text"
-            value={fromName}
-            onChange={(e) => setFromName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        <div className="flex-1 relative">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            From email:
-          </label>
-          <div className="flex items-center space-x-2">
-            <input
-              type="email"
-              value={fromEmail}
-              onChange={(e) => setFromEmail(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <button className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" title="Email settings">
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-white rounded-full" />
-                <div className="w-2 h-2 bg-white rounded-full" />
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </div>
+      {/* SMTP Error Alert */}
+      {showSmtpError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800 dark:text-red-200">Email Service Not Configured</h4>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+              <button
+                onClick={() => navigate('/settings/email-service')}
+                className="mt-2 inline-flex items-center space-x-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Configure Email Service</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowSmtpError(false)}
+              className="text-red-400 hover:text-red-600 dark:hover:text-red-200"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
-      </div>
+      )}
+      
+      {/* General Error Alert */}
+      {error && !showSmtpError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600 dark:hover:text-red-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* To Field with CC/BCC */}
       <div>
@@ -274,10 +301,10 @@ export function MessageInputEmail({ onSend, contactEmail, contactName }: Message
           </button>
           <button
             onClick={handleSend}
-            disabled={!message.trim() || !toEmail || !subject.trim()}
+            disabled={!message.trim() || !toEmail || !subject.trim() || sending}
             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            <span>Send</span>
+            <span>{sending ? 'Sending...' : 'Send'}</span>
             <Clock className="w-4 h-4" />
           </button>
         </div>
