@@ -9,6 +9,11 @@ import MessageThread from '../components/team-messaging/MessageThread';
 import NewMessageModal from '../components/team-messaging/NewMessageModal';
 import { TeamConversationListItem, TeamMessageItem, TeamContact, MessageType } from '../types/teamMessaging';
 import { formatDistanceToNow } from 'date-fns';
+import { ChannelTabs, ChannelType } from '../../../shared/components/ChannelTabs';
+import { MessageInputSMS } from '../../../shared/components/MessageInputSMS';
+import { MessageInputEmail } from '../../../shared/components/MessageInputEmail';
+import { MessageInputInternalComment } from '../../../shared/components/MessageInputInternalComment';
+import ComingSoonOverlay from '../../../shared/components/ComingSoonOverlay';
 
 interface Contact {
   id: number;
@@ -37,7 +42,7 @@ const Conversations: React.FC = () => {
   const [snippetView, setSnippetView] = useState('all-snippets');
   const [inboxTab, setInboxTab] = useState('unread');
   const [message, setMessage] = useState('');
-  const [activeChannel, setActiveChannel] = useState('SMS');
+  const [activeChannel, setActiveChannel] = useState<ChannelType>('sms');
   const [showTriggerDropdown, setShowTriggerDropdown] = useState(false);
   const [showAddFolderModal, setShowAddFolderModal] = useState(false);
   const [folderName, setFolderName] = useState('');
@@ -209,8 +214,6 @@ const Conversations: React.FC = () => {
 
   const currentMessages = contactMessages[contacts[selectedContact]?.id] || [];
   const currentContact = contacts[selectedContact];
-
-  const channels = ['SMS', 'Email'];
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -675,241 +678,54 @@ const Conversations: React.FC = () => {
               </div>
 
               {/* Message Input */}
-              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-                {/* Channel Selection */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    {channels.map((channel) => (
-                      <button
-                        key={channel}
-                        onClick={() => setActiveChannel(channel)}
-                        className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                          activeChannel === channel
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700'
-                        }`}
-                      >
-                        {channel}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
-                      Internal Comment
-                    </button>
-                  </div>
-                </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                {/* Channel Tabs */}
+                <ChannelTabs
+                  activeChannel={activeChannel}
+                  onChannelChange={setActiveChannel}
+                  hasPhone={Boolean(currentContact?.lastMessage)}
+                  hasEmail={Boolean(currentContact?.name)}
+                />
 
-                {/* Email Form */}
-                {/* {activeChannel === 'Email' && ( */}
-                  <div className="space-y-3 mb-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">From Name:</label>
-                        <input
-                          type="text"
-                          value=""
-                          placeholder="Enter Full Name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">From email:</label>
-                        <input
-                          type="email"
-                          placeholder="Enter Email Address"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1">
-                        <label className="block text-sm text-gray-600 mb-1">To:</label>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm dark:bg-red-900 dark:text-red-200">
-                            {currentContact?.id === 1 ? 'ttran@caretrusteit.com (Primary)' : 
-                             currentContact?.id === 2 ? 'info@mountainsolutions.com (Primary)' :
-                             currentContact?.id === 3 ? '(512) 632-1109 (Primary)' :
-                             currentContact?.id === 4 ? 'barla.diane@email.com (Primary)' :
-                             currentContact?.id === 5 ? 'kelsey.kearny@email.com (Primary)' : 'No email'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="text-sm text-gray-600 hover:text-gray-800">CC</button>
-                        <button className="text-sm text-gray-600 hover:text-gray-800">BCC</button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">Subject:</label>
-                      <input
-                        type="text"
-                        placeholder="Type a message"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      />
-                    </div>
-                  </div>
-                {/* )} */}
-
-                {/* Message Input */}
-                <div className="relative">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type a message"
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Paperclip size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Smile size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <DollarSign size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-500">0 word</span>
-                    <button className="px-3 py-1 text-gray-600 hover:text-gray-800">
-                      Clear
-                    </button>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 dark:bg-red-700 dark:hover:bg-red-600">
-                      <span>Send</span>
-                      <Send size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Sidebar - Contact Details */}
-            <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto">
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {currentContact?.name || 'Select a contact'}
-                  </h3>
-                  <button className="text-primary-600 hover:text-primary-800">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Contact Info */}
-                <div className="space-y-4">
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Contact</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Email</span>
-                        <button className="text-primary-600 hover:text-primary-800">
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {currentContact?.id === 1 ? 'ttran@caretrusteit.com' : 
-                         currentContact?.id === 2 ? 'info@mountainsolutions.com' :
-                         currentContact?.id === 3 ? '(512) 632-1109' :
-                         currentContact?.id === 4 ? 'barla.diane@email.com' :
-                         currentContact?.id === 5 ? 'kelsey.kearny@email.com' : 'No email'}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Phone</span>
-                        <button className="text-primary-600 hover:text-primary-800">
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {currentContact?.id === 1 ? '(714) 280-2680' : 
-                         currentContact?.id === 2 ? '(555) 123-4567' :
-                         currentContact?.id === 3 ? '(512) 632-1109' :
-                         currentContact?.id === 4 ? '(555) 987-6543' :
-                         currentContact?.id === 5 ? '(555) 456-7890' : 'No phone'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Owner */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Owner (Assigned to)
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white">
-                      <option>Unassigned</option>
-                    </select>
-                  </div>
-
-                  {/* Followers */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Followers
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Search followers"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+                {/* Dynamic Message Input */}
+                <div className="p-4">
+                  {activeChannel === 'sms' && (
+                    <MessageInputSMS
+                      onSend={(message, metadata) => {
+                        console.log('Sending SMS:', message, metadata);
+                        setMessage('');
+                      }}
+                      fromNumber="+1 813-527-9352"
+                      toNumber={currentContact?.id === 3 ? '(512) 632-1109' : '+1 815-479-4734'}
+                      contactName={currentContact?.name}
                     />
-                  </div>
+                  )}
 
-                  {/* Tags */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Tags</span>
-                      <button className="text-primary-600 hover:text-primary-800">
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
+                  {activeChannel === 'email' && (
+                    <MessageInputEmail
+                      onSend={(message, metadata) => {
+                        console.log('Sending Email:', message, metadata);
+                        setMessage('');
+                      }}
+                      contactEmail={
+                        currentContact?.id === 1 ? 'ttran@caretrusteit.com' :
+                        currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                        currentContact?.id === 4 ? 'barla.diane@email.com' :
+                        currentContact?.id === 5 ? 'kelsey.kearny@email.com' :
+                        'contact@email.com'
+                      }
+                      contactName={currentContact?.name}
+                    />
+                  )}
 
-                  {/* Active Automations */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      Active Automations
-                    </span>
-                  </div>
-
-                  {/* DND Settings */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">DND</h4>
-                    <div className="space-y-3">
-                      {[
-                        'DND All',
-                        'DND Calls & Voicemails', 
-                        'DND Text Messages',
-                        'DND Emails',
-                        'DND Incoming'
-                      ].map((item) => (
-                        <div key={item} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{item}</span>
-                          <input type="checkbox" className="rounded" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Add opportunity by zapier */}
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <button className="text-sm text-primary-600 hover:text-primary-800">
-                      Add opportunity by zapier
-                    </button>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Wed Oct 15 2025 03:20:45
-                    </p>
-                  </div>
+                  {activeChannel === 'internal_comment' && (
+                    <MessageInputInternalComment
+                      onSend={(message, metadata) => {
+                        console.log('Sending Internal Comment:', message, metadata);
+                        setMessage('');
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -917,7 +733,12 @@ const Conversations: React.FC = () => {
         )}
 
         {activeTab === 'snippets' && (
-          <div className="flex-1 bg-white dark:bg-gray-800">
+          <div className="flex-1 bg-white dark:bg-gray-800 relative">
+            <ComingSoonOverlay
+              message="Coming Soon"
+              subtitle="The Snippets feature is currently under development and will be available soon."
+              icon="rocket"
+            />
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Snippets</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">

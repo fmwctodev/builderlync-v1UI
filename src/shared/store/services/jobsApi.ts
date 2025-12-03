@@ -1,6 +1,6 @@
-import axios from 'axios';
+import { getAuthToken } from '../../utils/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface Job {
   id: number;
@@ -13,7 +13,7 @@ export interface Job {
   jobValue: number;
   source: string;
   details: string;
-  createdBy: number;
+  createdBy: string;
   insuranceEnabled: boolean;
   insuranceCompany: string;
   policyAccountNumber: string;
@@ -37,7 +37,10 @@ export interface Job {
   updatedAt: string;
   createdByName: string;
   editedByName: string | null;
-  jobType?: 'residential' | 'commercial';
+  editedBy: string | null;
+  jobType?: 'residential' | 'commercial' | 'insurance';
+  contactId?: number | null;
+  contactName?: string | null;
 }
 
 export interface JobsResponse {
@@ -72,101 +75,73 @@ export interface CreateJobRequest {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: number;
+  createdBy: string;
   createdByName: string;
-  editedBy: number;
+  editedBy: string;
   editedByName: string;
-  jobType?: 'residential' | 'commercial';
+  jobType?: 'residential' | 'commercial' | 'insurance';
+  contactId?: number | null;
+  contactName?: string | null;
 }
 
-export const getJobs = async (page: number = 1, limit: number = 10): Promise<JobsResponse> => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.get<JobsResponse>(
-    `${API_BASE_URL}/jobs?page=${page}&limit=${limit}`,
-    {
+class JobsApiService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
       headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const createJob = async (jobData: CreateJobRequest) => {
-  const token = localStorage.getItem('token');
-  
-  const payload: any = { ...jobData };
-  if (!payload.closeDate) delete payload.closeDate;
-  if (!payload.dateOfLoss) delete payload.dateOfLoss;
-
-  const response = await axios.post(
-    `${API_BASE_URL}/jobs`,
-    payload,
-    {
-      headers: {
-        'accept': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-  );
 
-  return response.data;
-};
+    return response.json();
+  }
 
-export const updateJob = async (id: number, jobData: CreateJobRequest) => {
-  const token = localStorage.getItem('token');
-  
-  const payload: any = { ...jobData };
-  if (!payload.closeDate) delete payload.closeDate;
-  if (!payload.dateOfLoss) delete payload.dateOfLoss;
+  async getJobs(page: number = 1, limit: number = 10): Promise<JobsResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
 
-  const response = await axios.put(
-    `${API_BASE_URL}/jobs/${id}`,
-    payload,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+    return this.makeRequest(`/jobs?${params}`);
+  }
 
-  return response.data;
-};
+  async createJob(jobData: CreateJobRequest) {
+    return this.makeRequest('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(jobData),
+    });
+  }
 
-export const deleteJob = async (id: number) => {
-  const token = localStorage.getItem('token');
+  async updateJob(id: number, jobData: CreateJobRequest) {
+    return this.makeRequest(`/jobs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(jobData),
+    });
+  }
 
-  const response = await axios.delete(
-    `${API_BASE_URL}/jobs/${id}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  async deleteJob(id: number) {
+    return this.makeRequest(`/jobs/${id}`, {
+      method: 'DELETE',
+    });
+  }
 
-  return response.data;
-};
+  async getJobById(id: number) {
+    return this.makeRequest(`/jobs/${id}`);
+  }
+}
 
-export const getJobById = async (id: number) => {
-  const token = localStorage.getItem('token');
+const jobsApiService = new JobsApiService();
 
-  const response = await axios.get(
-    `${API_BASE_URL}/jobs/${id}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
+export const getJobs = jobsApiService.getJobs.bind(jobsApiService);
+export const createJob = jobsApiService.createJob.bind(jobsApiService);
+export const updateJob = jobsApiService.updateJob.bind(jobsApiService);
+export const deleteJob = jobsApiService.deleteJob.bind(jobsApiService);
+export const getJobById = jobsApiService.getJobById.bind(jobsApiService);

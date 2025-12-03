@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { Bell, Calendar, ChevronDown, HelpCircle, Menu, Search, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Search, Moon, Sun, Phone } from 'lucide-react';
 import { useTheme } from '../../../../shared/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../../../shared/store/slices/authSlice';
+import DialerModalEnhanced from '../../../../shared/components/DialerModalEnhanced';
 
 interface TopBarProps {
   toggleSidebar: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
-  const [dateRange, setDateRange] = useState('Last 30 days');
   const [notifications, setNotifications] = useState(3);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dialerOpen, setDialerOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -47,16 +48,6 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <button
-              className="flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
-            >
-              <Calendar size={16} className="mr-1.5 text-gray-500" />
-              <span className="text-sm whitespace-nowrap text-gray-700 dark:text-gray-300">{dateRange}</span>
-              <ChevronDown size={16} className="ml-1.5 text-gray-500" />
-            </button>
-          </div>
-
           <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative text-gray-700 dark:text-gray-300">
             <Bell size={20} />
             {notifications > 0 && (
@@ -73,8 +64,11 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300">
-            <HelpCircle size={20} />
+          <button
+            onClick={() => setDialerOpen(true)}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
+          >
+            <Phone size={20} />
           </button>
 
           <div className="relative">
@@ -140,6 +134,8 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
           </div>
         </div>
       </div>
+
+      <DialerModalEnhanced isOpen={dialerOpen} onClose={() => setDialerOpen(false)} />
     </header>
   );
 };

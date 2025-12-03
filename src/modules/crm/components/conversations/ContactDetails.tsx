@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Phone, Mail, User, Tag, Bell, BellOff, Clock, Users } from 'lucide-react';
+import { Phone, Mail, User, Tag, Bell, BellOff, Clock, Users, Shield, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { VerificationModal } from './VerificationModal';
 
 interface ContactDetailsProps {
   conversationId: string | null;
@@ -8,14 +9,19 @@ interface ContactDetailsProps {
 
 export function ContactDetails({ conversationId }: ContactDetailsProps) {
   const [followers, setFollowers] = useState('');
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationType, setVerificationType] = useState<'phone' | 'email'>('phone');
 
   if (!conversationId) {
     return null;
   }
 
   const contactData = {
+    id: '123',
     phone: '+13073727509',
     email: 'john.smith@email.com',
+    phoneVerified: false,
+    emailVerified: true,
     owner: 'Unassigned',
     dndSettings: {
       dnd: false,
@@ -28,6 +34,15 @@ export function ContactDetails({ conversationId }: ContactDetailsProps) {
     lastInboundCall: 'Tue Oct 14 2025 03:54:02'
   };
 
+  const handleVerify = (type: 'phone' | 'email') => {
+    setVerificationType(type);
+    setShowVerificationModal(true);
+  };
+
+  const handleVerified = () => {
+    console.log(`${verificationType} verified successfully`);
+  };
+
   return (
     <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
       <div className="p-4 space-y-6">
@@ -35,20 +50,57 @@ export function ContactDetails({ conversationId }: ContactDetailsProps) {
         <Card className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact</h3>
           
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <Mail className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Email</span>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <Phone className="w-4 h-4 text-gray-400" />
-              <div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Phone</span>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {contactData.phone}
-                </p>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</span>
+                </div>
+                {contactData.emailVerified ? (
+                  <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-xs font-medium">Verified</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleVerify('email')}
+                    className="flex items-center space-x-1 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span className="text-xs font-medium">Verify</span>
+                  </button>
+                )}
               </div>
+              <p className="text-sm text-gray-900 dark:text-white ml-6">
+                {contactData.email}
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-green-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</span>
+                </div>
+                {contactData.phoneVerified ? (
+                  <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-xs font-medium">Verified</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleVerify('phone')}
+                    className="flex items-center space-x-1 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span className="text-xs font-medium">Verify</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-sm text-gray-900 dark:text-white ml-6">
+                {contactData.phone}
+              </p>
             </div>
           </div>
         </Card>
@@ -127,6 +179,15 @@ export function ContactDetails({ conversationId }: ContactDetailsProps) {
           </p>
         </Card>
       </div>
+
+      <VerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        verificationType={verificationType}
+        contactValue={verificationType === 'email' ? contactData.email : contactData.phone}
+        contactId={contactData.id}
+        onVerified={handleVerified}
+      />
     </div>
   );
 }

@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
+import ContactSearchDropdown from './ContactSearchDropdown';
+import QuickCreateContactModal from './QuickCreateContactModal';
+import ViewContactModal from './ViewContactModal';
+import EditContactModal from './EditContactModal';
 import TasksTab from './TasksTab';
 import CalendarTab from './CalendarTab';
 import MeasurementsTab from './MeasurementsTab';
 import ProposalsTab from './ProposalsTab';
 import ProposalEditor from './ProposalEditor';
-import PDFSignerTab from './PDFSignerTab';
 import MaterialOrdersTab from './MaterialOrdersTab';
-import WorkOrdersTab from './WorkOrdersTab';
 import InvoicesTab from './InvoicesTab';
 import JobCostingTab from './JobCostingTab';
 import AttachmentsTab from './AttachmentsTab';
 import InstantEstimateTab from './InstantEstimateTab';
-import IntegrationsTab from './IntegrationsTab';
 
 interface JobDetailsModalProps {
   isOpen: boolean;
@@ -44,18 +45,30 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+  const [showCreateContactModal, setShowCreateContactModal] = useState(false);
+  const [showViewContactModal, setShowViewContactModal] = useState(false);
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [contactError, setContactError] = useState(false);
 
   if (!isOpen) return null;
 
   console.log('Staff data in modal:', staff);
 
   const stages = [
-    'Default','New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
-    'Adjuster Meeting Complete', 'Under Service Agreement/Contin', 'Estimate Received',
-    'Proposal sent/presented', 'Proposal follow-up', 'Reinspection', 'Public Adjuster',
-    'Proposal signed/Pre-Production', 'Supplementing', 'Pre-production', 'Materials Ordered',
-    'Production', 'Post-production', 'Payments/Invoicing', 'Post-job completion follow-up',
-    'Job completed', 'Lost', 'Unqualified'
+    'Inspection/Estimate Booked',
+    'Inspection/Estimate Complete',
+    'Proposal Drafted',
+    'Proposal Sent',
+    'Proposal Accepted',
+    'Job Lost',
+    'Job Won',
+    'Under Contract',
+    'Invoice Sent',
+    'Invoice Paid',
+    'Job Scheduled',
+    'Materials Ordered',
+    'Job Started',
+    'Job Complete'
   ];
 
   return (
@@ -83,9 +96,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
             <div className="p-4 space-y-2 overflow-y-auto flex-1">
               {[
-                'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals', 'PDF Signer',
-                'Material orders', 'Work orders', 'Invoices', 'Job costing',
-                'Attachments', 'Instant Estimate', 'Integration'
+                'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals',
+                'Material orders', 'Invoices', 'Job Cost',
+                'Attachments', 'Instant Estimate'
               ].map((item) => (
                 <button
                   key={item}
@@ -144,7 +157,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         name="jobType"
                         value="residential"
                         checked={formData.jobType === 'residential'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
                         className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
@@ -155,12 +168,52 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         name="jobType"
                         value="commercial"
                         checked={formData.jobType === 'commercial'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial'})}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
                         className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                       />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
                     </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value="insurance"
+                        checked={formData.jobType === 'insurance'}
+                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
+                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
+                    </label>
                   </div>
+                </div>
+
+                {/* Customer/Lead Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Customer/Lead <span className="text-red-500">*</span>
+                  </label>
+                  <ContactSearchDropdown
+                    selectedContact={formData.contactId && formData.contactName ? {
+                      id: formData.contactId.toString(),
+                      name: formData.contactName
+                    } : null}
+                    onSelectContact={(contact) => {
+                      setFormData({
+                        ...formData,
+                        contactId: contact ? Number(contact.id) : null,
+                        contactName: contact ? contact.name : null
+                      });
+                      setContactError(false);
+                    }}
+                    required
+                    hasError={contactError}
+                    onCreateNew={() => setShowCreateContactModal(true)}
+                    onViewProfile={(contactId) => setShowViewContactModal(true)}
+                    onEditContact={(contactId) => setShowEditContactModal(true)}
+                  />
+                  {contactError && (
+                    <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
@@ -203,14 +256,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Workflow & stages</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Stage</label>
                     <div className="space-y-2">
                       <select
                         value={formData.workflowStages}
                         onChange={(e) => setFormData({...formData, workflowStages: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       >
-                        <option value="New lead">New lead</option>
                         {stages.map(stage => (
                           <option key={stage} value={stage}>{stage}</option>
                         ))}
@@ -219,7 +271,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Close date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
                     <input
                       type="date"
                       value={formData.closeDate}
@@ -371,14 +423,26 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </div>
               )}
 
-              {activeTab === 'Tasks' && <TasksTab />}
+              {activeTab === 'Tasks' && viewingJob && (
+                <TasksTab
+                  jobId={viewingJob.id!}
+                  currentStage={formData.workflowStages}
+                />
+              )}
 
-              {activeTab === 'Calendar' && <CalendarTab />}
+              {activeTab === 'Calendar' && (
+                <CalendarTab
+                  jobId={viewingJob?.id}
+                  jobData={viewingJob || undefined}
+                  staff={staff}
+                />
+              )}
 
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
               {activeTab === 'Proposals' && (
-                <ProposalsTab 
+                <ProposalsTab
+                  jobId={viewingJob?.id}
                   onOpenProposalEditor={(templateId) => {
                     setSelectedTemplateId(templateId);
                     setShowProposalEditor(true);
@@ -386,23 +450,22 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 />
               )}
 
-              {activeTab === 'PDF Signer' && <PDFSignerTab />}
-
               {activeTab === 'Material orders' && <MaterialOrdersTab />}
-
-              {activeTab === 'Work orders' && <WorkOrdersTab />}
 
               {activeTab === 'Invoices' && <InvoicesTab />}
 
-              {activeTab === 'Job costing' && <JobCostingTab />}
+              {activeTab === 'Job Cost' && <JobCostingTab />}
 
               {activeTab === 'Attachments' && <AttachmentsTab />}
 
-              {activeTab === 'Instant Estimate' && <InstantEstimateTab />}
+              {activeTab === 'Instant Estimate' && (
+                <InstantEstimateTab
+                  jobId={viewingJob?.id}
+                  jobAddress={viewingJob?.location}
+                />
+              )}
 
-              {activeTab === 'Integration' && <IntegrationsTab />}
-
-              {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'PDF Signer' && activeTab !== 'Material orders' && activeTab !== 'Work orders' && activeTab !== 'Invoices' && activeTab !== 'Job costing' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && activeTab !== 'Integration' && (
+              {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'Proposals' && activeTab !== 'Material orders' && activeTab !== 'Invoices' && activeTab !== 'Job Cost' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{activeTab}</h2>
                   <p className="text-gray-600 dark:text-gray-400">Content for {activeTab} will be implemented here.</p>
@@ -457,6 +520,40 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           setSelectedTemplateId(undefined);
         }}
         templateId={selectedTemplateId}
+      />
+
+      <QuickCreateContactModal
+        isOpen={showCreateContactModal}
+        onClose={() => setShowCreateContactModal(false)}
+        onContactCreated={(contact) => {
+          setFormData({
+            ...formData,
+            contactId: Number(contact.id),
+            contactName: contact.name
+          });
+          setContactError(false);
+          setShowCreateContactModal(false);
+        }}
+      />
+
+      <ViewContactModal
+        isOpen={showViewContactModal}
+        onClose={() => setShowViewContactModal(false)}
+        contactId={formData.contactId?.toString() || null}
+      />
+
+      <EditContactModal
+        isOpen={showEditContactModal}
+        onClose={() => setShowEditContactModal(false)}
+        contactId={formData.contactId?.toString() || null}
+        onContactUpdated={(contact) => {
+          setFormData({
+            ...formData,
+            contactId: Number(contact.id),
+            contactName: contact.name
+          });
+          setShowEditContactModal(false);
+        }}
       />
     </div>
   );

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
+import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
 import JobsHeader from '../components/JobsHeader';
 import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
 import JobsSettings from '../components/JobsSettings';
 import FiltersSidebar from '../components/FiltersSidebar';
-import JobModal from '../components/JobModal';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
@@ -16,7 +16,6 @@ const Jobs: React.FC = () => {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
-  const [showJobModal, setShowJobModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
@@ -54,11 +53,13 @@ const Jobs: React.FC = () => {
     claimAmount: 0,
     deductible: 0,
     claimDetails: '',
-    createdBy: 1,
+    createdBy: '',
     createdByName: 'Current User',
-    editedBy: 1,
+    editedBy: '',
     editedByName: 'Current User',
-    jobType: 'residential'
+    jobType: 'residential',
+    contactId: null,
+    contactName: null
   });
 
   const fetchJobs = async (page: number = 1) => {
@@ -70,7 +71,15 @@ const Jobs: React.FC = () => {
       filterJobsByType(fetchedJobs, selectedJobType);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
-      setToast({ message: 'Failed to load jobs', type: 'error' });
+      const errorMessage = error.message || 'Failed to load jobs';
+      if (errorMessage.includes('Supabase client not initialized')) {
+        setToast({
+          message: 'Database connection error. Please refresh the page or contact support.',
+          type: 'error'
+        });
+      } else {
+        setToast({ message: errorMessage, type: 'error' });
+      }
     } finally {
       setLoading(false);
     }
@@ -87,25 +96,72 @@ const Jobs: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const response:any = await getStaff(1, 100);
+      const response = await getStaff(1, 100);
       setStaff(response.data || []);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
+      setStaff([]);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.contactId || !formData.contactName) {
+      setToast({ message: 'Please select a customer or lead before saving', type: 'error' });
+      return;
+    }
+
     try {
       setLoading(true);
+      const previousStage = editingJob?.workflowStages;
+      const newStage = formData.workflowStages;
+
       if (editingJob) {
         await updateJob(editingJob.id!, formData);
-        setToast({ message: 'Job updated successfully!', type: 'success' });
+
+        if (previousStage !== newStage && editingJob.id) {
+          try {
+            const createdTasks = await autoCreateTasksForStage(editingJob.id, newStage);
+            if (createdTasks.length > 0) {
+              setToast({
+                message: `Job updated! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
+                type: 'success'
+              });
+            } else {
+              setToast({ message: 'Job updated successfully!', type: 'success' });
+            }
+          } catch (taskError) {
+            console.error('Error auto-creating tasks:', taskError);
+            setToast({ message: 'Job updated, but some tasks could not be created', type: 'success' });
+          }
+        } else {
+          setToast({ message: 'Job updated successfully!', type: 'success' });
+        }
       } else {
-        await createJob(formData);
-        setToast({ message: 'Job created successfully!', type: 'success' });
+        const response = await createJob(formData);
+        const newJobId = response.data.id;
+
+        if (newJobId) {
+          try {
+            const createdTasks = await autoCreateTasksForStage(newJobId, newStage);
+            if (createdTasks.length > 0) {
+              setToast({
+                message: `Job created! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
+                type: 'success'
+              });
+            } else {
+              setToast({ message: 'Job created successfully!', type: 'success' });
+            }
+          } catch (taskError) {
+            console.error('Error auto-creating tasks:', taskError);
+            setToast({ message: 'Job created successfully!', type: 'success' });
+          }
+        } else {
+          setToast({ message: 'Job created successfully!', type: 'success' });
+        }
       }
-      setShowJobModal(false);
+
       setShowJobDetails(false);
       setEditingJob(null);
       resetForm();
@@ -132,6 +188,7 @@ const Jobs: React.FC = () => {
   };
 
   const handleEdit = (job: Job) => {
+    setViewingJob(job);
     setEditingJob(job);
     setFormData({
       name: job.name,
@@ -158,7 +215,7 @@ const Jobs: React.FC = () => {
       editedByName: 'Current User',
       jobType: job.jobType || 'residential'
     });
-    setShowJobModal(true);
+    setShowJobDetails(true);
   };
 
   const handleView = (job: Job) => {
@@ -212,11 +269,13 @@ const Jobs: React.FC = () => {
       claimAmount: 0,
       deductible: 0,
       claimDetails: '',
-      createdBy: 1,
+      createdBy: '',
       createdByName: 'Current User',
-      editedBy: 1,
+      editedBy: '',
       editedByName: 'Current User',
-      jobType: 'residential'
+      jobType: 'residential',
+      contactId: null,
+      contactName: null
     });
   };
 
@@ -357,22 +416,6 @@ const Jobs: React.FC = () => {
         viewingJob={viewingJob}
         editingJob={editingJob}
       />
-
-      <JobModal
-        isOpen={showJobModal}
-        onClose={() => {
-          setShowJobModal(false);
-          setEditingJob(null);
-          resetForm();
-        }}
-        onSubmit={handleSubmit}
-        formData={formData}
-        setFormData={setFormData}
-        staff={staff}
-        editingJob={editingJob}
-        loading={loading}
-      />
-
 
     </div>
   );

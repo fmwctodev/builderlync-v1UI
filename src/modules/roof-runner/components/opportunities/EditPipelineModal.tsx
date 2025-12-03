@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, GripVertical } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
-import type { PipelineWithStages, PipelineStage } from '../../types/opportunities';
+import type { PipelineWithStages, PipelineStage, JobType } from '../../types/opportunities';
+import { JOB_TYPES, JOB_TYPE_COLORS } from '../../types/opportunities';
 
 interface EditPipelineModalProps {
   isOpen: boolean;
@@ -21,8 +22,9 @@ interface StageFormData {
 
 export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSuccess }: EditPipelineModalProps) {
   const [pipelineName, setPipelineName] = useState('');
+  const [jobType, setJobType] = useState<JobType>('Commercial');
   const [stages, setStages] = useState<StageFormData[]>([]);
-  const [originalData, setOriginalData] = useState<{ name: string; stages: StageFormData[] } | null>(null);
+  const [originalData, setOriginalData] = useState<{ name: string; jobType: JobType; stages: StageFormData[] } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
 
       if (pipeline) {
         setPipelineName(pipeline.name);
+        setJobType(pipeline.job_type);
         const stageData: StageFormData[] = (pipeline.stages || [])
           .sort((a, b) => a.order_position - b.order_position)
           .map(stage => ({
@@ -52,7 +55,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
             order: stage.order_position,
           }));
         setStages(stageData);
-        setOriginalData({ name: pipeline.name, stages: stageData });
+        setOriginalData({ name: pipeline.name, jobType: pipeline.job_type, stages: stageData });
       }
     } catch (error) {
       console.error('Error loading pipeline:', error);
@@ -116,9 +119,10 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
     try {
       await pipelinesApi.updatePipeline(pipelineId, {
         name: pipelineName,
+        job_type: jobType,
       });
 
-      alert('Pipeline name updated successfully!');
+      alert('Pipeline updated successfully!');
       onSuccess();
       handleClose();
     } catch (error) {
@@ -131,7 +135,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
 
   const hasUnsavedChanges = (): boolean => {
     if (!originalData) return false;
-    return pipelineName !== originalData.name;
+    return pipelineName !== originalData.name || jobType !== originalData.jobType;
   };
 
   const handleClose = () => {
@@ -142,6 +146,7 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
     }
 
     setPipelineName('');
+    setJobType('Commercial');
     setStages([]);
     setOriginalData(null);
     setErrors({});
@@ -189,6 +194,40 @@ export default function EditPipelineModal({ isOpen, pipelineId, onClose, onSucce
                 {errors.pipelineName && (
                   <p className="mt-1 text-sm text-red-600">{errors.pipelineName}</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Job Type <span className="text-red-600">*</span>
+                </label>
+                <div className="flex gap-4">
+                  {JOB_TYPES.map((type) => (
+                    <label
+                      key={type}
+                      className={`flex items-center space-x-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                        jobType === type
+                          ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="jobType"
+                        value={type}
+                        checked={jobType === type}
+                        onChange={(e) => setJobType(e.target.value as JobType)}
+                        className="text-primary-600 focus:ring-primary-500"
+                      />
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: JOB_TYPE_COLORS[type] }}
+                      />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {type}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>

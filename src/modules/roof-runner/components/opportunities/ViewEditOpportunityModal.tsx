@@ -4,6 +4,11 @@ import { opportunitiesApi } from '../../services/opportunitiesApi';
 import { pipelinesApi } from '../../services/pipelinesApi';
 import type { OpportunityWithDetails, OpportunityFormData, PipelineWithStages, OpportunityStatus } from '../../types/opportunities';
 import { OPPORTUNITY_SOURCES } from '../../types/opportunities';
+import OpportunityAppointmentTab from './OpportunityAppointmentTab';
+import OpportunityTasksTab from './OpportunityTasksTab';
+import OpportunityNotesTab from './OpportunityNotesTab';
+import OpportunityPaymentsTab from './OpportunityPaymentsTab';
+import OpportunityAssociatedObjectsTab from './OpportunityAssociatedObjectsTab';
 
 interface ViewEditOpportunityModalProps {
   isOpen: boolean;
@@ -15,12 +20,11 @@ interface ViewEditOpportunityModalProps {
 
 type SidebarSection =
   | 'opportunity-details'
-  | 'project-details'
+  | 'book-appointment'
   | 'tasks'
   | 'notes'
-  | 'appointments'
-  | 'photos'
-  | 'payments';
+  | 'payments'
+  | 'associated-objects';
 
 export default function ViewEditOpportunityModal({
   isOpen,
@@ -267,14 +271,14 @@ export default function ViewEditOpportunityModal({
                   Opportunity Details
                 </button>
                 <button
-                  onClick={() => setActiveSection('project-details')}
+                  onClick={() => setActiveSection('book-appointment')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'project-details'
+                    activeSection === 'book-appointment'
                       ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  Project Details
+                  Book/Update Appointment
                 </button>
                 <button
                   onClick={() => setActiveSection('tasks')}
@@ -297,26 +301,6 @@ export default function ViewEditOpportunityModal({
                   Notes
                 </button>
                 <button
-                  onClick={() => setActiveSection('appointments')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'appointments'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  Book/Update Appointment
-                </button>
-                <button
-                  onClick={() => setActiveSection('photos')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'photos'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  Photos
-                </button>
-                <button
                   onClick={() => setActiveSection('payments')}
                   className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
                     activeSection === 'payments'
@@ -325,6 +309,16 @@ export default function ViewEditOpportunityModal({
                   }`}
                 >
                   Payments
+                </button>
+                <button
+                  onClick={() => setActiveSection('associated-objects')}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
+                    activeSection === 'associated-objects'
+                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  Associated Objects
                 </button>
               </nav>
             </div>
@@ -573,16 +567,19 @@ export default function ViewEditOpportunityModal({
                     </div>
                   </div>
                 </div>
+              ) : activeSection === 'book-appointment' ? (
+                <OpportunityAppointmentTab opportunityId={opportunityId!} />
+              ) : activeSection === 'tasks' ? (
+                <OpportunityTasksTab opportunityId={opportunityId!} />
+              ) : activeSection === 'notes' ? (
+                <OpportunityNotesTab opportunityId={opportunityId!} />
+              ) : activeSection === 'payments' ? (
+                <OpportunityPaymentsTab opportunityId={opportunityId!} opportunityValue={formData.value} />
+              ) : activeSection === 'associated-objects' ? (
+                <OpportunityAssociatedObjectsTab opportunityId={opportunityId!} />
               ) : (
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {activeSection === 'project-details' && 'Project details coming soon...'}
-                    {activeSection === 'tasks' && 'Tasks section coming soon...'}
-                    {activeSection === 'notes' && 'Notes section coming soon...'}
-                    {activeSection === 'appointments' && 'Appointments section coming soon...'}
-                    {activeSection === 'photos' && 'Photos section coming soon...'}
-                    {activeSection === 'payments' && 'Payments section coming soon...'}
-                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">Section not implemented</p>
                 </div>
               )}
             </div>

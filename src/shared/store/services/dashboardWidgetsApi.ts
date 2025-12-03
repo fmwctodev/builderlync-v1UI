@@ -1,8 +1,13 @@
 import { supabase } from '../../lib/supabase';
 import type { DashboardWidget, UserDashboardPreference, WidgetPreferenceUpdate, WidgetWithPreference } from '../../../modules/roof-runner/types/dashboard';
+import { getMetricsForDashboard } from '../../constants/metricsData';
 
 export const dashboardWidgetsApi = {
   async getAvailableWidgets(): Promise<DashboardWidget[]> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { data, error } = await supabase
       .from('dashboard_widgets')
       .select('*')
@@ -11,10 +16,42 @@ export const dashboardWidgetsApi = {
       .order('name');
 
     if (error) throw error;
-    return data || [];
+
+    const dbWidgets = data || [];
+    const metricsCategories = getMetricsForDashboard();
+    const allMetricWidgets: DashboardWidget[] = [];
+
+    metricsCategories.forEach(category => {
+      category.widgets.forEach(widget => {
+        const existingWidget = dbWidgets.find(w => w.widget_key === widget.id || w.metric_id === widget.id);
+
+        if (existingWidget) {
+          allMetricWidgets.push(existingWidget);
+        } else {
+          allMetricWidgets.push({
+            id: widget.id,
+            widget_key: widget.id,
+            name: widget.label,
+            description: widget.description || null,
+            category: category.dashboardCategory || 'reporting',
+            icon_name: null,
+            is_active: true,
+            default_visible: widget.defaultVisible || false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        }
+      });
+    });
+
+    return allMetricWidgets;
   },
 
   async getUserPreferences(userId: string): Promise<UserDashboardPreference[]> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { data, error } = await supabase
       .from('user_dashboard_preferences')
       .select('*')
@@ -48,6 +85,10 @@ export const dashboardWidgetsApi = {
     userId: string,
     updates: WidgetPreferenceUpdate[]
   ): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const upsertData = updates.map((update, index) => ({
       user_id: userId,
       widget_key: update.widget_key,
@@ -70,6 +111,10 @@ export const dashboardWidgetsApi = {
     widgetKey: string,
     isVisible: boolean
   ): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const { error } = await supabase
       .from('user_dashboard_preferences')
       .upsert({
@@ -85,6 +130,10 @@ export const dashboardWidgetsApi = {
   },
 
   async initializeDefaultPreferences(userId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
+    }
+
     const widgets = await this.getAvailableWidgets();
     const defaultWidgets = widgets
       .filter(w => w.default_visible)

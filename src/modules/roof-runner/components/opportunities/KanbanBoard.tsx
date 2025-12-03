@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import ViewEditOpportunityModal from './ViewEditOpportunityModal';
-import { pipelinesApi } from '../../services/pipelinesApi';
+import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
-import type { PipelineStage, OpportunityWithDetails } from '../../types/opportunities';
+import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
+import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
 
-export default function KanbanBoard() {
+interface KanbanBoardProps {
+  selectedJobType: JobType | 'all';
+}
+
+export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
   const [draggedItem, setDraggedItem] = useState<OpportunityWithDetails | null>(null);
   const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -15,18 +20,30 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedJobType]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const pipeline = await pipelinesApi.getOrCreateDefaultPipeline();
-      setStages(pipeline.stages);
 
-      const opportunities = await opportunitiesApi.getOpportunities({
-        pipeline_id: pipeline.id,
-      });
-      setOpportunitiesList(opportunities);
+      if (selectedJobType === 'all') {
+        const pipelines = await embeddedPipelinesService.getEmbeddedPipelines();
+        const allStages = pipelines.flatMap(p => p.stages);
+        setStages(allStages);
+        const opportunities = await opportunitiesApi.getOpportunities();
+        setOpportunitiesList(opportunities);
+      } else {
+        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
+
+        if (pipeline) {
+          setStages(pipeline.stages);
+          const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+          setOpportunitiesList(opportunities);
+        } else {
+          setStages([]);
+          setOpportunitiesList([]);
+        }
+      }
     } catch (error) {
       console.error('Error loading kanban data:', error);
     } finally {
@@ -99,40 +116,42 @@ export default function KanbanBoard() {
 
   return (
     <>
-      <div className="flex space-x-4 overflow-x-auto pb-4">
-      {stages.map((stage) => {
-        const stageOpportunities = getStageOpportunities(stage.id);
-        const stageValue = getStageValue(stage.id);
+      <div className="h-full p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div className="flex gap-4 min-w-max">
+          {stages.map((stage) => {
+            const stageOpportunities = getStageOpportunities(stage.id);
+            const stageValue = getStageValue(stage.id);
 
-        return (
-          <div
-            key={stage.id}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, stage.id)}
-          >
-            <KanbanColumn
-              stage={{
-                id: stage.id,
-                title: stage.name,
-                opportunitiesCount: stageOpportunities.length,
-                value: stageValue,
-                color: `border-[${stage.color}]`,
-              }}
-              opportunities={stageOpportunities.map(opp => ({
-                id: opp.id,
-                stage: opp.stage_id,
-                name: opp.opportunity_name,
-                source: opp.source,
-                business: opp.business_name,
-                value: opp.value,
-                initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-              }))}
-              onDragStart={handleDragStart}
-              onCardClick={handleCardClick}
-            />
-          </div>
-        );
-      })}
+            return (
+              <div
+                key={stage.id}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.id)}
+              >
+                <KanbanColumn
+                  stage={{
+                    id: stage.id,
+                    title: stage.name,
+                    opportunitiesCount: stageOpportunities.length,
+                    value: stageValue,
+                    color: `border-[${stage.color}]`,
+                  }}
+                  opportunities={stageOpportunities.map(opp => ({
+                    id: opp.id,
+                    stage: opp.stage_id,
+                    name: opp.opportunity_name,
+                    source: opp.source,
+                    business: opp.business_name,
+                    value: opp.value,
+                    initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+                  }))}
+                  onDragStart={handleDragStart}
+                  onCardClick={handleCardClick}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <ViewEditOpportunityModal

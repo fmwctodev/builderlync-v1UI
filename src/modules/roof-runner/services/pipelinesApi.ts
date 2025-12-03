@@ -4,18 +4,24 @@ import type {
   PipelineStage,
   PipelineWithStages,
   PipelineFormData,
+  JobType,
 } from '../types/opportunities';
 
 export const pipelinesApi = {
-  async getPipelines(): Promise<PipelineWithStages[]> {
+  async getPipelines(jobType?: JobType): Promise<PipelineWithStages[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('pipelines')
         .select(`
           *,
           stages:pipeline_stages(*)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (jobType) {
+        query = query.eq('job_type', jobType);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -27,6 +33,10 @@ export const pipelinesApi = {
       console.error('Error fetching pipelines:', error);
       throw error;
     }
+  },
+
+  async getPipelinesByJobType(jobType: JobType): Promise<PipelineWithStages[]> {
+    return this.getPipelines(jobType);
   },
 
   async getPipelineById(id: string): Promise<PipelineWithStages | null> {
@@ -109,6 +119,7 @@ export const pipelinesApi = {
         name: formData.name,
         description: formData.description || null,
         is_default: formData.is_default,
+        job_type: formData.job_type,
       };
 
       console.log('Inserting pipeline:', pipelineData);
@@ -172,6 +183,7 @@ export const pipelinesApi = {
         ...(formData.name && { name: formData.name }),
         ...(formData.description !== undefined && { description: formData.description }),
         ...(formData.is_default !== undefined && { is_default: formData.is_default }),
+        ...(formData.job_type && { job_type: formData.job_type }),
         updated_at: new Date().toISOString(),
       };
 
@@ -215,11 +227,18 @@ export const pipelinesApi = {
     }
   },
 
-  async createDefaultPipeline(): Promise<PipelineWithStages> {
+  async createDefaultPipeline(jobType: JobType = 'Commercial'): Promise<PipelineWithStages> {
+    const pipelineNames: Record<JobType, string> = {
+      Commercial: 'Commercial Leads',
+      Residential: 'Residential Leads',
+      Insurance: 'Insurance Leads',
+    };
+
     const defaultPipeline: PipelineFormData = {
-      name: '001a.Commercial Leads',
-      description: 'Default sales pipeline',
-      is_default: true,
+      name: pipelineNames[jobType],
+      description: `Pipeline for ${jobType.toLowerCase()} opportunities`,
+      is_default: jobType === 'Commercial',
+      job_type: jobType,
       stages: [
         { name: 'New Lead', color: '#dc2626', order_position: 0 },
         { name: 'Follow-up 1', color: '#2563eb', order_position: 1 },

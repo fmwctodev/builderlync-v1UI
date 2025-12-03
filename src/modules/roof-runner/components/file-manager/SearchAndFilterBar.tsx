@@ -1,10 +1,20 @@
+import { useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 
 interface SearchAndFilterBarProps {
+  onSearch?: (searchTerm: string) => void;
   onFilterSortClick: () => void;
 }
 
-export default function SearchAndFilterBar({ onFilterSortClick }: SearchAndFilterBarProps) {
+export default function SearchAndFilterBar({ onSearch, onFilterSortClick }: SearchAndFilterBarProps) {
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    onSearch?.(value);
+  };
+
   return (
     <div className="mb-6 flex items-center justify-between">
       <div className="relative w-96">
@@ -13,6 +23,8 @@ export default function SearchAndFilterBar({ onFilterSortClick }: SearchAndFilte
         </div>
         <input
           type="text"
+          value={searchValue}
+          onChange={handleSearchChange}
           className="block w-full rounded-md border-gray-300 dark:border-gray-600 pl-10 pr-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-[#dc2626] focus:ring-[#dc2626]"
           placeholder="Search files..."
         />

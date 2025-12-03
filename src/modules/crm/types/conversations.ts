@@ -10,16 +10,24 @@ export interface User {
   full_name: string;
 }
 
+export interface Contact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  email_verified_at?: string;
+  phone_verified_at?: string;
+  avatar_url?: string;
+}
+
 export interface Conversation {
   id: string;
   contact_id: string;
-  contact?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email?: string;
-    avatar_url?: string;
-  };
+  contact?: Contact;
   channel: Channel;
   direction: Direction;
   status: ConversationStatus;
@@ -51,4 +59,11 @@ export interface NewMessageData {
   conversation_id: string;
   content: string;
   message_type: MessageType;
+}
+
+export interface VerificationStatus {
+  phoneVerified: boolean;
+  emailVerified: boolean;
+  phoneVerifiedAt?: string;
+  emailVerifiedAt?: string;
 }

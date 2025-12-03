@@ -37,6 +37,20 @@ export interface Appointment {
   notes?: string;
   created_at: string;
   updated_at: string;
+  contacts?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+  };
+  calendars?: {
+    name: string;
+    color: string;
+  };
+  staff?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface ServiceMenuItem {
@@ -204,7 +218,11 @@ export const getAppointments = async (filters?: {
 }): Promise<Appointment[]> => {
   let query = supabase
     .from('appointments')
-    .select('*, calendars(name, color)');
+    .select(`
+      *,
+      calendars(name, color),
+      contacts(id, first_name, last_name, email)
+    `);
 
   if (filters?.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
@@ -219,10 +237,29 @@ export const getAppointments = async (filters?: {
     query = query.lte('appointment_time', filters.end_date);
   }
 
-  const { data, error } = await query.order('appointment_time', { ascending: true });
+  const { data: appointments, error } = await query.order('appointment_time', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+
+  if (!appointments || appointments.length === 0) return [];
+
+  const ownerIds = [...new Set(appointments.map(apt => apt.owner_id))];
+
+  const { data: staffMembers } = await supabase
+    .from('staff')
+    .select('user_id, first_name, last_name')
+    .in('user_id', ownerIds);
+
+  const staffMap = new Map(
+    (staffMembers || []).map(staff => [staff.user_id, staff])
+  );
+
+  const enrichedAppointments = appointments.map(appointment => ({
+    ...appointment,
+    staff: staffMap.get(appointment.owner_id) || undefined
+  }));
+
+  return enrichedAppointments;
 };
 
 export const createAppointment = async (appointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Promise<Appointment> => {

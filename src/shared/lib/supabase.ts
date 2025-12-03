@@ -1,43 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
+// Supabase removed - using manual APIs instead
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables - using mock data');
-}
-
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export const supabase = null;
 
 export async function getCurrentUser() {
-  if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  return null;
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
-  if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id || null;
+  return null;
 }
 
 export async function updatePassword(currentPassword: string, newPassword: string) {
-  if (!supabase) throw new Error('Supabase client not initialized');
-
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword
-  });
-
-  if (error) throw error;
-  return data;
+  throw new Error('Use manual API for password update');
 }
 
 export async function signOutEverywhere() {
-  if (!supabase) throw new Error('Supabase client not initialized');
-
-  const { error } = await supabase.auth.signOut({ scope: 'global' });
-
-  if (error) throw error;
+  throw new Error('Use manual API for sign out');
 }

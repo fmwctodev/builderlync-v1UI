@@ -94,8 +94,6 @@ export default function FolderNavigation({
           >
             <MoreHorizontal className="h-5 w-5" />
           </button>
-
-
         </div>
       ))}
       

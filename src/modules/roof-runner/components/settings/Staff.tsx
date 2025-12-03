@@ -40,7 +40,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
   const handleAddMember = async (member: any) => {
     try {
       const { createStaff } = await import('../../../../shared/store/services/staffApi');
-      await createStaff({
+      const staffResponse = await createStaff({
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
@@ -49,7 +49,61 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         password: member.password || 'defaultPassword123',
         image: member.image
       });
-      setToast({ message: 'Staff member added successfully!', type: 'success' });
+
+      const staffId = staffResponse?.data?.id;
+
+      if (member.roleId && staffId) {
+        try {
+          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+
+          let organizationRoleId: string;
+
+          if (member.roleId.startsWith('role:')) {
+            organizationRoleId = member.roleId.replace('role:', '');
+          } else if (member.roleId.startsWith('template:')) {
+            const templateId = member.roleId.replace('template:', '');
+            const rolesResponse = await getRoles();
+            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
+
+            if (existingRole) {
+              organizationRoleId = existingRole.id;
+            } else {
+              const roleResponse = await createRoleFromTemplate(templateId);
+              if (roleResponse.success && roleResponse.data) {
+                organizationRoleId = roleResponse.data.id;
+              } else {
+                throw new Error('Failed to create role from template');
+              }
+            }
+          } else {
+            organizationRoleId = member.roleId;
+          }
+
+          await assignRoleToStaffMember(staffId, organizationRoleId);
+        } catch (roleError: any) {
+          console.error('Error assigning role to staff member:', roleError);
+        }
+      }
+
+      try {
+        const { createContact } = await import('../../../../shared/store/services/contactsApi');
+        await createContact({
+          fullName: `${member.firstName} ${member.lastName}`,
+          type: 'staff',
+          labelOrRole: 'Staff Member',
+          email: member.email,
+          phone: member.phone || '',
+          company: '',
+          address: '',
+          latitude: 0,
+          longitude: 0
+        });
+        setToast({ message: 'Staff member added and contact created successfully!', type: 'success' });
+      } catch (contactError: any) {
+        console.error('Error creating contact for staff member:', contactError);
+        setToast({ message: 'Staff member added but contact creation failed', type: 'success' });
+      }
+
       setShowAddModal(false);
       fetchStaff(currentPage);
     } catch (error: any) {
@@ -70,7 +124,77 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         password: member.password,
         image: member.image
       });
-      setToast({ message: 'Staff member updated successfully!', type: 'success' });
+
+      if (member.roleId) {
+        try {
+          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+
+          let organizationRoleId: string;
+
+          if (member.roleId.startsWith('role:')) {
+            organizationRoleId = member.roleId.replace('role:', '');
+          } else if (member.roleId.startsWith('template:')) {
+            const templateId = member.roleId.replace('template:', '');
+            const rolesResponse = await getRoles();
+            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
+
+            if (existingRole) {
+              organizationRoleId = existingRole.id;
+            } else {
+              const roleResponse = await createRoleFromTemplate(templateId);
+              if (roleResponse.success && roleResponse.data) {
+                organizationRoleId = roleResponse.data.id;
+              } else {
+                throw new Error('Failed to create role from template');
+              }
+            }
+          } else {
+            organizationRoleId = member.roleId;
+          }
+
+          await assignRoleToStaffMember(selectedMember.id, organizationRoleId);
+        } catch (roleError: any) {
+          console.error('Error assigning role to staff member:', roleError);
+        }
+      }
+
+      try {
+        const { getContacts, updateContact, createContact } = await import('../../../../shared/store/services/contactsApi');
+        const contactsResponse = await getContacts(selectedMember.email, 'staff', 1, 10);
+
+        if (contactsResponse.data?.data && contactsResponse.data.data.length > 0) {
+          const existingContact = contactsResponse.data.data[0];
+          await updateContact(existingContact.id, {
+            fullName: `${member.firstName} ${member.lastName}`,
+            type: 'staff',
+            labelOrRole: 'Staff Member',
+            email: member.email,
+            phone: member.phone || '',
+            company: existingContact.company || '',
+            address: existingContact.address || '',
+            latitude: existingContact.latitude || 0,
+            longitude: existingContact.longitude || 0
+          });
+          setToast({ message: 'Staff member and contact updated successfully!', type: 'success' });
+        } else {
+          await createContact({
+            fullName: `${member.firstName} ${member.lastName}`,
+            type: 'staff',
+            labelOrRole: 'Staff Member',
+            email: member.email,
+            phone: member.phone || '',
+            company: '',
+            address: '',
+            latitude: 0,
+            longitude: 0
+          });
+          setToast({ message: 'Staff member updated and contact created successfully!', type: 'success' });
+        }
+      } catch (contactError: any) {
+        console.error('Error updating contact for staff member:', contactError);
+        setToast({ message: 'Staff member updated but contact sync failed', type: 'success' });
+      }
+
       setShowEditModal(false);
       setSelectedMember(null);
       fetchStaff(currentPage);

@@ -93,9 +93,6 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
-          <button className="px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-            + Smart list
-          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -206,7 +203,10 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                         {appointment.title}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {appointment.contact_id || '-'}
+                        {appointment.contacts
+                          ? `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim() || appointment.contacts.email || '-'
+                          : '-'
+                        }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -223,10 +223,13 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                         {format(new Date(appointment.appointment_time), 'MMM dd, yyyy h:mm a')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {(appointment as any).calendars?.name || '-'}
+                        {appointment.calendars?.name || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        Owner
+                        {appointment.staff
+                          ? `${appointment.staff.first_name} ${appointment.staff.last_name}`.trim()
+                          : '-'
+                        }
                       </td>
                     </tr>
                   ))}

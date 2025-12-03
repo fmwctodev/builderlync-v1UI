@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, Cloud, ArrowLeft, Home } from 'lucide-react';
+import { Cloud, HardDrive, AlertCircle, ArrowLeft, Home } from 'lucide-react';
+import MyCloudTab from '../components/file-manager/MyCloudTab';
+import LocalFilesTab from '../components/file-manager/LocalFilesTab';
 import FileManagerHeader from '../components/file-manager/FileManagerHeader';
 import SearchAndFilterBar from '../components/file-manager/SearchAndFilterBar';
 import FolderNavigation from '../components/file-manager/FolderNavigation';
@@ -9,33 +11,42 @@ import FilterSortDrawer from '../components/file-manager/FilterSortDrawer';
 import ConnectCloudDriveModal from '../components/file-manager/ConnectCloudDriveModal';
 import UploadProgressModal from '../components/file-manager/UploadProgressModal';
 import FileManagerDashboard from '../components/file-manager/FileManagerDashboard';
-import { fileManagerApi, FileItem, FolderItem, UploadProgress } from '../../../shared/services/fileManagerApi';
+import { backendFilesApi, FileRecord, FolderRecord } from '../../../shared/services/backendFilesApi';
+import { FileItem, FolderItem, UploadProgress } from '../../../shared/services/fileManagerApi';
 import { cloudDriveApi, CloudDriveConnection } from '../../../shared/services/cloudDriveApi';
 
-
-
 export default function FileManager() {
+  const [activeTab, setActiveTab] = useState<'my-cloud' | 'local-files'>('local-files');
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isFilterSortDrawerOpen, setIsFilterSortDrawerOpen] = useState(false);
   const [isCloudDriveModalOpen, setIsCloudDriveModalOpen] = useState(false);
-  const [folders, setFolders] = useState<FolderItem[]>([]);
-  const [files, setFiles] = useState<FileItem[]>([]);
+  const [folders, setFolders] = useState<FolderRecord[]>([]);
+  const [files, setFiles] = useState<FileRecord[]>([]);
   const [connection, setConnection] = useState<CloudDriveConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
+  const [currentFolderId, setCurrentFolderId] = useState<number | undefined>();
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 });
   const [uploadStatus, setUploadStatus] = useState<'uploading' | 'success' | 'error' | null>(null);
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showDashboard, setShowDashboard] = useState(true);
-  const [targetFolderId, setTargetFolderId] = useState<string | undefined>();
-  const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
+  const [targetFolderId, setTargetFolderId] = useState<number | undefined>();
+  const [folderPath, setFolderPath] = useState<Array<{id: number, name: string}>>([]);
+
+  const tabs = [
+    { id: 'my-cloud' as const, label: 'My Cloud', icon: Cloud },
+    { id: 'local-files' as const, label: 'Local Files', icon: HardDrive },
+  ];
 
   const handleCreateFolder = async (folderName: string) => {
     try {
       const parentId = targetFolderId || currentFolderId;
-      const newFolder = await fileManagerApi.createFolder(folderName, parentId);
+      const newFolder = await backendFilesApi.createFolder({
+        name: folderName,
+        parentId: parentId,
+        cloudProvider: 'google'
+      });
       setFolders([...folders, newFolder]);
       setIsCreateFolderModalOpen(false);
       setTargetFolderId(undefined);
@@ -46,11 +57,12 @@ export default function FileManager() {
   };
 
   const handleFolderClick = (folderId: string) => {
-    const folder = folders.find(f => f.id === folderId);
+    const id = parseInt(folderId);
+    const folder = folders.find(f => f.id === id);
     if (folder) {
-      setFolderPath([...folderPath, { id: folderId, name: folder.name }]);
+      setFolderPath([...folderPath, { id: id, name: folder.name }]);
     }
-    setCurrentFolderId(folderId);
+    setCurrentFolderId(id);
   };
 
   const handleBackClick = () => {
@@ -76,11 +88,12 @@ export default function FileManager() {
   };
 
   const handleCreateSubfolder = (parentId: string) => {
-    setTargetFolderId(parentId);
+    setTargetFolderId(parseInt(parentId));
     setIsCreateFolderModalOpen(true);
   };
 
   const handleUploadToFolder = (folderId: string) => {
+    const id = parseInt(folderId);
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -88,25 +101,24 @@ export default function FileManager() {
       const files = (e.target as HTMLInputElement).files;
       if (files) {
         Array.from(files).forEach(file => {
-          handleFileUploadToFolder(file, folderId);
+          handleFileUploadToFolder(file, id);
         });
       }
     };
     input.click();
   };
 
-  const handleFileUploadToFolder = async (file: File, folderId: string) => {
+  const handleFileUploadToFolder = async (file: File, folderId: number) => {
     try {
       setUploadFileName(file.name);
       setUploadStatus('uploading');
       setUploadError(null);
       
-      const uploadedFile = await fileManagerApi.uploadFile(
+      const uploadedFile = await backendFilesApi.uploadFile(
         file,
         folderId,
-        undefined,
         (progress) => {
-          setUploadProgress(progress);
+          setUploadProgress({ loaded: 0, total: 0, percentage: progress });
         }
       );
       
@@ -133,19 +145,16 @@ export default function FileManager() {
       setLoading(true);
       setError(null);
 
-      // Check cloud drive connection
+      // Check cloud drive connection first
       const conn = await cloudDriveApi.getCurrentUserConnection();
       setConnection(conn);
 
       if (conn) {
         // Load folders and files
-        const [foldersData, filesData] = await Promise.all([
-          fileManagerApi.getFolders(currentFolderId),
-          fileManagerApi.getFiles(currentFolderId)
-        ]);
+        const { folders: foldersData, files: filesData } = await backendFilesApi.getFolderContents(currentFolderId);
         
         setFolders(foldersData);
-        setFiles(filesData.files);
+        setFiles(filesData);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -161,12 +170,11 @@ export default function FileManager() {
       setUploadStatus('uploading');
       setUploadError(null);
       
-      const uploadedFile = await fileManagerApi.uploadFile(
+      const uploadedFile = await backendFilesApi.uploadFile(
         file,
         currentFolderId,
-        undefined,
         (progress) => {
-          setUploadProgress(progress);
+          setUploadProgress({ loaded: 0, total: 0, percentage: progress });
         }
       );
       
@@ -183,10 +191,11 @@ export default function FileManager() {
     }
   };
 
-  const handleDeleteFile = async (fileId: number) => {
+  const handleDeleteFile = async (fileId: string) => {
     try {
-      await fileManagerApi.deleteFile(fileId.toString());
-      setFiles(files.filter(f => f.id !== fileId));
+      const id = parseInt(fileId);
+      await backendFilesApi.deleteFile(id);
+      setFiles(files.filter(f => f.id !== id));
     } catch (err) {
       console.error('Error deleting file:', err);
       setError('Failed to delete file');
@@ -195,8 +204,9 @@ export default function FileManager() {
 
   const handleDeleteFolder = async (folderId: string) => {
     try {
-      await fileManagerApi.deleteFolder(folderId);
-      setFolders(folders.filter(f => f.id !== folderId));
+      const id = parseInt(folderId);
+      await backendFilesApi.deleteFolder(id);
+      setFolders(folders.filter(f => f.id !== id));
     } catch (err) {
       console.error('Error deleting folder:', err);
       setError('Failed to delete folder');
@@ -215,13 +225,34 @@ export default function FileManager() {
     );
   }
 
-  if (!connection) {
+  if (!connection && activeTab === 'my-cloud') {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-        <FileManagerHeader
-          onCreateFolder={() => setIsCreateFolderModalOpen(true)}
-          onConnectCloudDrive={() => setIsCloudDriveModalOpen(true)}
-        />
+      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+          <div className="py-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">File Manager</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-primary-600 text-white rounded-t-lg'
+                      : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         
         <main className="flex-grow flex items-center justify-center p-6">
           <div className="text-center max-w-md">
@@ -244,20 +275,39 @@ export default function FileManager() {
         <ConnectCloudDriveModal
           isOpen={isCloudDriveModalOpen}
           onClose={() => setIsCloudDriveModalOpen(false)}
+          provider={null}
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <FileManagerHeader
-        onCreateFolder={() => setIsCreateFolderModalOpen(true)}
-        onConnectCloudDrive={() => setIsCloudDriveModalOpen(true)}
-        onFileUpload={handleFileUpload}
-        showDashboard={showDashboard}
-        onToggleDashboard={() => setShowDashboard(!showDashboard)}
-      />
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">File Manager</h1>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
+              >
+                <Icon size={16} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {error && (
         <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
@@ -272,61 +322,77 @@ export default function FileManager() {
         </div>
       )}
 
-      <main className="flex-grow">
-        {showDashboard ? (
-          <FileManagerDashboard 
-            connection={connection} 
-            onRefresh={loadData}
-          />
-        ) : (
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'my-cloud' && connection && (
           <div className="p-6">
-            <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
-            
-            {/* Breadcrumb Navigation */}
-            <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <button
-                onClick={handleHomeClick}
-                className="flex items-center gap-1 hover:text-primary-600 transition-colors"
-              >
-                <Home className="h-4 w-4" />
-                Home
-              </button>
-              {folderPath.map((folder, index) => (
-                <div key={folder.id} className="flex items-center gap-2">
-                  <span>/</span>
+            {showDashboard ? (
+              <FileManagerDashboard 
+                connection={connection} 
+                onRefresh={loadData}
+              />
+            ) : (
+              <>
+                <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
+                
+                {/* Breadcrumb Navigation */}
+                <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <button
-                    onClick={() => handleBreadcrumbClick(index)}
-                    className="hover:text-primary-600 transition-colors"
+                    onClick={handleHomeClick}
+                    className="flex items-center gap-1 hover:text-primary-600 transition-colors"
                   >
-                    {folder.name}
+                    <Home className="h-4 w-4" />
+                    Home
                   </button>
+                  {folderPath.map((folder, index) => (
+                    <div key={folder.id} className="flex items-center gap-2">
+                      <span>/</span>
+                      <button
+                        onClick={() => handleBreadcrumbClick(index)}
+                        className="hover:text-primary-600 transition-colors"
+                      >
+                        {folder.name}
+                      </button>
+                    </div>
+                  ))}
+                  {folderPath.length > 0 && (
+                    <button
+                      onClick={handleBackClick}
+                      className="ml-4 flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back
+                    </button>
+                  )}
                 </div>
-              ))}
-              {folderPath.length > 0 && (
-                <button
-                  onClick={handleBackClick}
-                  className="ml-4 flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </button>
-              )}
-            </div>
 
-            <FolderNavigation 
-              folders={folders} 
-              onFolderClick={handleFolderClick}
-              onDeleteFolder={handleDeleteFolder}
-              onCreateSubfolder={handleCreateSubfolder}
-              onUploadToFolder={handleUploadToFolder}
-            />
-            <FileGrid 
-              files={files} 
-              onDeleteFile={handleDeleteFile}
-            />
+                <FolderNavigation 
+                  folders={folders.map(f => ({ id: f.id.toString(), name: f.name }))}
+                  onFolderClick={handleFolderClick}
+                  onDeleteFolder={handleDeleteFolder}
+                  onCreateSubfolder={handleCreateSubfolder}
+                  onUploadToFolder={handleUploadToFolder}
+                />
+                <FileGrid 
+                  files={files.map(f => ({
+                    id: f.id,
+                    name: f.filename,
+                    type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
+                    pages: 1,
+                    thumbnail: f.file_path,
+                    mime_type: f.mime_type || '',
+                    file_size: f.file_size || 0,
+                    filename: f.filename,
+                    file_path: f.file_path,
+                    created_at: f.created_at
+                  }))}
+                  onDeleteFile={(id) => handleDeleteFile(id.toString())}
+                />
+              </>
+            )}
           </div>
         )}
-      </main>
+        {activeTab === 'local-files' && <LocalFilesTab />}
+      </div>
 
       <CreateFolderModal
         isOpen={isCreateFolderModalOpen}
@@ -346,6 +412,7 @@ export default function FileManager() {
           setIsCloudDriveModalOpen(false);
           loadData(); // Reload data after connecting
         }}
+        provider={null}
       />
       
       <UploadProgressModal

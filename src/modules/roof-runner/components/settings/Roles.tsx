@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Users, Check, X, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Check, X, AlertTriangle, Sparkles } from 'lucide-react';
 import { Role, getRoles, deleteRole } from '../../../../shared/store/services/rolesApi';
 import CreateRoleModal from './CreateRoleModal';
+import { ROLE_TEMPLATES } from '../../../../shared/constants/roleTemplates';
 
 interface RolesProps {
   userRole?: string;
@@ -93,13 +94,22 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
   const getRoleBadgeColor = (roleName: string): string => {
     switch (roleName.toLowerCase()) {
       case 'owner':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
       case 'admin':
-        return 'bg-primary-100 text-blue-700 dark:bg-primary-900/20 dark:text-primary-400';
-      case 'user':
+        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+      case 'manager':
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'sales':
         return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
+      case 'project manager':
+        return 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400';
+      case 'finance':
+        return 'bg-teal-100 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400';
+      case 'office/dispatcher':
+        return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400';
+      case 'field tech':
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
       default:
-        return 'bg-primary-100 text-primary-700 dark:bg-purple-900/20 dark:text-purple-400';
+        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
     }
   };
 
@@ -142,7 +152,54 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <>
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+              <Sparkles size={20} className="text-red-600" />
+              <span>Available Role Templates</span>
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Quick-start templates based on common roles. Click to view permissions or create a role from template.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {ROLE_TEMPLATES.map((template) => (
+                <div
+                  key={template.id}
+                  className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-750 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+                >
+                  <div className="mb-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRoleBadgeColor(template.name)}`}>
+                      Template
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{template.name}</h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{template.description}</p>
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mb-3">
+                    <strong>Ideal for:</strong> {template.ideal_for.join(', ')}
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    <span>Permissions:</span>
+                    <span className="font-medium">{countPermissions(template.permissions as any)}</span>
+                  </div>
+                  {canManageRoles && (
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="w-full px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+                    >
+                      Use Template
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Active Roles</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Roles created for your organization. Assign these to staff members.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roles.map((role) => (
             <div
               key={role.id}
@@ -200,7 +257,9 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
               )}
             </div>
           ))}
-        </div>
+            </div>
+          </div>
+        </>
       )}
 
       {showCreateModal && (

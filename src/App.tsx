@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navigation } from './shared/components/Navigation';
 import { Dashboard } from './shared/components/Dashboard';
 import { ThemeProvider } from './shared/context/ThemeContext';
+import IncomingCallNotification from './shared/components/IncomingCallNotification';
 
 // Module imports
 import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
@@ -20,6 +21,7 @@ function App() {
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <IncomingCallNotification />
           <Routes>
             <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
             <Route path="/*" element={<RoofRunnerModule />} />

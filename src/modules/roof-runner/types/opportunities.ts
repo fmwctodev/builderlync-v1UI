@@ -1,11 +1,17 @@
 export type OpportunityStatus = 'open' | 'won' | 'lost' | 'abandoned';
 
+export type JobType = 'Residential' | 'Commercial' | 'Insurance';
+
+export type PipelineType = 'system' | 'custom';
+
 export interface Pipeline {
   id: string;
   user_id: string;
   name: string;
   description?: string;
   is_default: boolean;
+  job_type: JobType;
+  pipeline_type: PipelineType;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +62,13 @@ export interface Opportunity {
   source?: string;
   tags?: string[];
   appointment_time?: string;
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  property_country?: string;
+  property_latitude?: number;
+  property_longitude?: number;
   created_at: string;
   updated_at: string;
 }
@@ -82,6 +95,13 @@ export interface OpportunityFormData {
   contact_email?: string;
   contact_phone?: string;
   follower_ids?: string[];
+  property_address?: string;
+  property_city?: string;
+  property_state?: string;
+  property_zip?: string;
+  property_country?: string;
+  property_latitude?: number;
+  property_longitude?: number;
 }
 
 export interface CreateOpportunityRequest {
@@ -94,6 +114,7 @@ export interface PipelineFormData {
   name: string;
   description?: string;
   is_default: boolean;
+  job_type: JobType;
   stages: Array<{
     name: string;
     color: string;
@@ -113,6 +134,14 @@ export const OPPORTUNITY_SOURCES = [
   'Partner',
   'Other'
 ] as const;
+
+export const JOB_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance'];
+
+export const JOB_TYPE_COLORS: Record<JobType, string> = {
+  Residential: '#10b981',
+  Commercial: '#2563eb',
+  Insurance: '#ea580c',
+};
 
 export const STAGE_COLORS = [
   { name: 'Red', value: '#dc2626', tw: 'border-red-600' },

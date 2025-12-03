@@ -471,6 +471,15 @@ const Contacts: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
+                      setTypeFilter('lead');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Lead
+                  </button>
+                  <button
+                    onClick={() => {
                       setTypeFilter('customer');
                       setShowTypeFilter(false);
                     }}
@@ -480,12 +489,12 @@ const Contacts: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      setTypeFilter('insurance');
+                      setTypeFilter('partner');
                       setShowTypeFilter(false);
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
-                    Insurance
+                    Partner
                   </button>
                   <button
                     onClick={() => {
@@ -495,6 +504,33 @@ const Contacts: React.FC = () => {
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     Vendor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('sub-contractor');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Sub-Contractor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('adjuster');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Adjuster
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('staff');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Staff
                   </button>
                 </div>
               </div>
