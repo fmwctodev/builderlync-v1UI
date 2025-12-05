@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { Search, Filter, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Plus, ShoppingCart } from 'lucide-react';
+import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Product } from '../../abc-supply/types';
+import ShoppingCartComponent from './ShoppingCart';
 
 interface ProductCatalogProps {
   onBack: () => void;
@@ -7,18 +10,105 @@ interface ProductCatalogProps {
 
 const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const products = [
-    { id: '1', sku: 'GAF-001', manufacturer: 'GAF', name: 'Timberline HD Shingles', description: 'Architectural shingles with advanced protection' },
-    { id: '2', sku: 'OC-002', manufacturer: 'Owens Corning', name: 'Duration Shingles', description: 'Premium architectural shingles' },
-    { id: '3', sku: 'CT-003', manufacturer: 'CertainTeed', name: 'Landmark Shingles', description: 'Designer shingles with enhanced durability' },
-    { id: '4', sku: 'IKO-004', manufacturer: 'IKO', name: 'Cambridge Shingles', description: 'Dual-layered architectural shingles' },
-    { id: '5', sku: 'TAM-005', manufacturer: 'Tamko', name: 'Heritage Shingles', description: 'Premium laminated shingles' }
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [cart, setCart] = useState<Array<Product & { quantity: number }>>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedManufacturers, setSelectedManufacturers] = useState<string[]>([]);
 
-  const handleAddToCart = (product: any) => {
-    console.log('Added to cart:', product);
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await abcSupplyApi.getItems(1, 50);
+      setProducts(response.items);
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      loadProducts();
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const data = await abcSupplyApi.searchItems(query, 50);
+      setProducts(data);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setProducts([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleAddToCart = (product: Product) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.id === product.id);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+  };
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.id === productId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+  };
+
+  const handleCheckout = () => {
+    console.log('Proceeding to checkout with:', cart);
+    // Implement checkout logic here
+  };
+
+  const handleCategoryFilter = (category: string, checked: boolean) => {
+    setSelectedCategories(prev => 
+      checked ? [...prev, category] : prev.filter(c => c !== category)
+    );
+  };
+
+  const handleManufacturerFilter = (manufacturer: string, checked: boolean) => {
+    setSelectedManufacturers(prev => 
+      checked ? [...prev, manufacturer] : prev.filter(m => m !== manufacturer)
+    );
+  };
+
+  const filteredProducts = (products || []).filter(product => {
+    const matchesSearch = searchQuery === '' || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategories.length === 0 || 
+      selectedCategories.includes(product.category || '');
+    
+    const matchesManufacturer = selectedManufacturers.length === 0 || 
+      selectedManufacturers.includes(product.manufacturer);
+    
+    return matchesSearch && matchesCategory && matchesManufacturer;
+  });
 
   return (
     <div className="space-y-6">
@@ -35,22 +125,44 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
             <p className="text-gray-400 mt-1">Browse our complete selection of construction materials</p>
           </div>
 
+          <button
+            onClick={() => setShowCart(true)}
+            className="relative inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Cart
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </button>
+
           <form className="flex gap-2">
             <div className="relative flex-1">
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.length > 2) {
+                    handleSearch(e.target.value);
+                  } else if (e.target.value.length === 0) {
+                    loadProducts();
+                  }
+                }}
                 className="pl-10 pr-4 py-2 w-full bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
             <button 
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              type="button"
+              onClick={() => handleSearch(searchQuery)}
+              disabled={searchLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50"
             >
-              Search
+              {searchLoading ? 'Searching...' : 'Search'}
             </button>
           </form>
         </div>
@@ -70,7 +182,12 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                 <div className="space-y-2">
                   {['Roofing', 'Siding', 'Gutters', 'Insulation'].map((category) => (
                     <label key={category} className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" />
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" 
+                        checked={selectedCategories.includes(category)}
+                        onChange={(e) => handleCategoryFilter(category, e.target.checked)}
+                      />
                       <span className="ml-2 text-sm text-gray-300">{category}</span>
                     </label>
                   ))}
@@ -82,7 +199,12 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                 <div className="space-y-2">
                   {['GAF', 'Owens Corning', 'CertainTeed', 'IKO'].map((brand) => (
                     <label key={brand} className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" />
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" 
+                        checked={selectedManufacturers.includes(brand)}
+                        onChange={(e) => handleManufacturerFilter(brand, e.target.checked)}
+                      />
                       <span className="ml-2 text-sm text-gray-300">{brand}</span>
                     </label>
                   ))}
@@ -105,12 +227,23 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {products
-                  .filter(product => 
-                    searchQuery === '' || 
-                    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="flex justify-center items-center">
+                        <div className="w-6 h-6 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mr-3"></div>
+                        <span className="text-gray-400">Loading products...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : products.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                      No products found
+                    </td>
+                  </tr>
+                ) : (
+                (filteredProducts || [])
                   .map((product) => (
                     <tr key={product.id} className="hover:bg-gray-800 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{product.sku}</td>
@@ -136,12 +269,22 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      <ShoppingCartComponent
+        isOpen={showCart}
+        onClose={() => setShowCart(false)}
+        items={cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onCheckout={handleCheckout}
+      />
     </div>
   );
 };

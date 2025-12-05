@@ -61,51 +61,124 @@ interface EagleViewReport {
 }
 
 class EagleViewService {
-  private baseUrl = 'https://eagleview-backend-7pe3.onrender.com/api';
+  private baseUrl = 'https://api.eagleview.com';
+  private sandboxUrl = 'https://sandbox-api.eagleview.com';
+  private apiKey = import.meta.env.VITE_EAGLEVIEW_API_KEY;
+  private useSandbox = true; // Set to false for production
 
-  async submitOrder(orderData: EagleViewOrderRequest): Promise<EagleViewOrderResponse> {
+  private getApiUrl(): string {
+    return this.useSandbox ? this.sandboxUrl : this.baseUrl;
+  }
+
+  private getHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.apiKey}`,
+      'X-API-Version': '1.0'
+    };
+  }
+
+  async getImagery(address: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}/order`, {
+      const response = await fetch(`${this.getApiUrl()}/imagery/v1/search`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          address: address,
+          radius: 100,
+          limit: 10
+        })
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      return await response.json();
+    } catch (error) {
+      console.error('EagleView imagery search failed:', error);
+      throw error;
+    }
+  }
+
+  async getImageryById(imageId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.getApiUrl()}/imagery/v1/images/${imageId}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('EagleView imagery fetch failed:', error);
+      throw error;
+    }
+  }
+
+  async downloadImage(imageId: string, format: 'jpeg' | 'tiff' = 'jpeg'): Promise<Blob> {
+    try {
+      const response = await fetch(`${this.getApiUrl()}/imagery/v1/images/${imageId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Accept': format === 'tiff' ? 'image/tiff' : 'image/jpeg'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('EagleView image download failed:', error);
+      throw error;
+    }
+  }
+
+  async submitOrder(orderData: EagleViewOrderRequest): Promise<EagleViewOrderResponse> {
+    try {
+      const response = await fetch(`${this.getApiUrl()}/orders/v1/submit`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
       const result = await response.json();
       return {
         success: true,
-        orderId: result.orderId,
-        message: result.message,
+        orderId: result.orderId || result.id,
+        message: result.message || 'Order submitted successfully'
       };
     } catch (error) {
       console.error('EagleView order submission failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }
 
   async getOrderStatus(orderId: string): Promise<EagleViewReport | null> {
-    // API endpoint doesn't exist, return null
     console.log('Order status endpoint not available');
     return null;
   }
 
   async getReports(): Promise<EagleViewReport[]> {
-    // API endpoint doesn't exist, return empty array to use sample data
     console.log('Reports endpoint not available, using sample data');
     return [];
   }
 
   async downloadReport(reportId: string, format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
-    // API endpoint doesn't exist, return null
     console.log('Download endpoint not available');
     return null;
   }

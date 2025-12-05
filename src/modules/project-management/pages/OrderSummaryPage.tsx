@@ -69,7 +69,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
           </button>
           <div>
             <h1 className="text-2xl font-bold">Finalize Order</h1>
-            <p className="text-blue-100">Review and complete your measurement order</p>
+            <p className="text-blue-100">Review and complete your measurement order1</p>
           </div>
         </div>
       </div>

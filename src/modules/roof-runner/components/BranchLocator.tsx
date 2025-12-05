@@ -1,45 +1,196 @@
-import React, { useState } from 'react';
-import { MapPin, Phone, Clock, Navigation } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { MapPin, Phone, Clock, Navigation, Search } from 'lucide-react';
+import { Wrapper } from '@googlemaps/react-wrapper';
+import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Branch } from '../../abc-supply/types';
+
+interface MapComponentProps {
+  branches: Branch[];
+  selectedBranch: Branch | null;
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return;
+
+    const map = new google.maps.Map(mapRef.current, {
+      zoom: 6,
+      center: { lat: 39.8283, lng: -98.5795 },
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+    });
+    mapInstanceRef.current = map;
+
+    return () => {
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || branches.length === 0) return;
+
+    console.log('Branches data:', branches);
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    const bounds = new google.maps.LatLngBounds();
+    let hasValidCoordinates = false;
+
+    // Always show all branches
+    branches.forEach(branch => {
+      if (branch.coordinates && branch.coordinates.latitude && branch.coordinates.longitude) {
+        hasValidCoordinates = true;
+        
+        const isSelected = selectedBranch?.id === branch.id;
+        const marker = new google.maps.Marker({
+          position: { 
+            lat: branch.coordinates.latitude, 
+            lng: branch.coordinates.longitude 
+          },
+          map: mapInstanceRef.current,
+          title: branch.name,
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="color: black; padding: 8px;">
+              <h3 style="margin: 0 0 8px 0; font-weight: bold;">${branch.name}</h3>
+              <p style="margin: 4px 0;">${branch.address.street1}</p>
+              ${branch.address.street2 ? `<p style="margin: 4px 0;">${branch.address.street2}</p>` : ''}
+              <p style="margin: 4px 0;">${branch.address.city}, ${branch.address.state} ${branch.address.zipCode}</p>
+              <p style="margin: 4px 0;">📞 ${branch.phone}</p>
+            </div>
+          `,
+        });
+
+        marker.addListener('click', () => {
+          infoWindow.open(mapInstanceRef.current, marker);
+        });
+
+        markersRef.current.push(marker);
+        bounds.extend({ 
+          lat: branch.coordinates.latitude, 
+          lng: branch.coordinates.longitude 
+        });
+      }
+    });
+
+    // Fit map to show all branches, or zoom to selected branch
+    if (selectedBranch && selectedBranch.coordinates) {
+      mapInstanceRef.current.setCenter({ 
+        lat: selectedBranch.coordinates.latitude, 
+        lng: selectedBranch.coordinates.longitude 
+      });
+      mapInstanceRef.current.setZoom(15);
+    } else if (hasValidCoordinates) {
+      mapInstanceRef.current.fitBounds(bounds);
+    }
+  }, [branches, selectedBranch]);
+
+  return <div ref={mapRef} style={{ width: '100%', height: '400px' }} />;
+};
 
 interface BranchLocatorProps {
   onBack: () => void;
 }
 
 const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
-  const [searchLocation, setSearchLocation] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const branches = [
-    {
-      id: '1',
-      name: 'ABC Supply - Austin North',
-      address: '8319 North Lamar Boulevard, Austin, TX 78753',
-      city: 'Austin',
-      state: 'TX',
-      phone: '(512) 555-0123',
-      distance: '2.5 km',
-      hours: 'Mon-Fri: 7:00 AM - 5:00 PM'
-    },
-    {
-      id: '2',
-      name: 'ABC Supply - Austin South',
-      address: '4700 South Congress Ave, Austin, TX 78745',
-      city: 'Austin',
-      state: 'TX',
-      phone: '(512) 555-0124',
-      distance: '3.2 km',
-      hours: 'Mon-Fri: 7:00 AM - 5:00 PM'
-    },
-    {
-      id: '3',
-      name: 'ABC Supply - Round Rock',
-      address: '1821 Central Commerce Court, Round Rock, TX 78664',
-      city: 'Round Rock',
-      state: 'TX',
-      phone: '(512) 555-0125',
-      distance: '15.8 km',
-      hours: 'Mon-Fri: 7:00 AM - 5:00 PM'
+  const filteredBranches = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    
+    const query = searchQuery.toLowerCase();
+    return branches.filter(branch => 
+      branch.name.toLowerCase().includes(query) ||
+      branch.address.street1.toLowerCase().includes(query) ||
+      branch.address.city.toLowerCase().includes(query) ||
+      branch.address.state.toLowerCase().includes(query) ||
+      branch.address.zipCode.includes(query)
+    ).slice(0, 5);
+  }, [branches, searchQuery]);
+
+  const handleBranchSelect = useCallback((branch: Branch) => {
+    setSelectedBranch(branch);
+    setSearchQuery(branch.name);
+    setShowSuggestions(false);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSuggestions(value.trim().length > 0);
+    if (!value.trim()) {
+      setSelectedBranch(null);
     }
-  ];
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSelectedBranch(null);
+    setShowSuggestions(false);
+  }, []);
+
+  useEffect(() => {
+    loadBranches();
+  }, []);
+
+  useEffect(() => {
+    console.log('Branches state changed:', branches.length, 'branches');
+    if (branches.length > 0) {
+      console.log('First branch sample:', branches[0]);
+    }
+  }, [branches]);
+
+  const loadBranches = async () => {
+    try {
+      setLoading(true);
+      console.log('Loading branches...');
+      const data = await abcSupplyApi.getBranches();
+      console.log('Received branches data:', data);
+      console.log('Setting branches state with:', data.length, 'items');
+      setBranches(data);
+      console.log('Branches state should be updated');
+    } catch (error) {
+      console.error('Failed to load branches:', error);
+      setBranches([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
+          <button 
+            onClick={onBack}
+            className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+          >
+            ← Back to Dashboard
+          </button>
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin className="h-6 w-6 text-green-400" />
+            <h1 className="text-2xl font-bold text-white">Branch Locator</h1>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-8 text-center">
+          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading branches...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -55,53 +206,78 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
           <h1 className="text-2xl font-bold text-white">Branch Locator</h1>
         </div>
         
-        <div className="max-w-md">
+        <div className="max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Enter your location"
-            value={searchLocation}
-            onChange={(e) => setSearchLocation(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none"
+            placeholder="Search branches by name or address..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onFocus={() => {
+            if (searchQuery.trim()) {
+              setShowSuggestions(true);
+            }
+          }}
+          onBlur={(e) => {
+            // Delay hiding suggestions to allow clicking on them
+            setTimeout(() => {
+              if (!e.currentTarget.contains(document.activeElement)) {
+                setShowSuggestions(false);
+              }
+            }, 200);
+          }}
+            className="w-full pl-10 pr-20 py-2 bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none"
           />
+          {searchQuery && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white px-2 py-1 text-sm"
+            >
+              Clear
+            </button>
+          )}
+          
+          {showSuggestions && filteredBranches.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+              {filteredBranches.map((branch) => (
+                <button
+                  key={branch.id}
+                  onClick={() => handleBranchSelect(branch)}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-700 border-b border-gray-600 last:border-b-0 focus:outline-none focus:bg-gray-700"
+                >
+                  <div className="text-white font-medium">{branch.name}</div>
+                  <div className="text-gray-400 text-sm">
+                    {branch.address.street1}, {branch.address.city}, {branch.address.state}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-        <div className="h-[400px] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900">
-            {/* Simulated map with branch markers */}
-            <div className="absolute top-1/4 left-1/3 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
-            <div className="absolute top-2/3 left-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
-            <div className="absolute top-1/2 right-1/4 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
-            
-            {/* Map grid */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="grid grid-cols-8 grid-rows-6 h-full w-full">
-                {Array.from({ length: 48 }).map((_, i) => (
-                  <div key={i} className="border border-gray-400"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="absolute bottom-2 left-2 bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-400">
-            Interactive Map
-          </div>
+        <div className="mb-6">
+          <Wrapper apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+            <MapComponent branches={branches} selectedBranch={selectedBranch} />
+          </Wrapper>
         </div>
 
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nearby Branches</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          {selectedBranch ? 'Selected Branch' : 'All Branches'}
+        </h2>
+        
         <div className="space-y-4">
-          {branches.map((branch) => (
+          {(selectedBranch ? [selectedBranch] : branches).map((branch) => (
             <div key={branch.id} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-medium text-gray-900 dark:text-white">{branch.name}</h3>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{branch.distance} away</span>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin size={14} />
-                  <span>{branch.address}</span>
+                  <span>{branch.address.street1}, {branch.address.city}, {branch.address.state} {branch.address.zipCode}</span>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -109,10 +285,12 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
                   <span>{branch.phone}</span>
                 </div>
                 
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Clock size={14} />
-                  <span>{branch.hours}</span>
-                </div>
+                {branch.hours && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Clock size={14} />
+                    <span>Store Hours Available</span>
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-2 mt-3">

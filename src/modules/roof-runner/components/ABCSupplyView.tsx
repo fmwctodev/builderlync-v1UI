@@ -3,58 +3,57 @@ import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
+import { abcSupplyApi } from '../../abc-supply/services/api';
 
 const ABCSupplyView: React.FC = () => {
   const [currentView, setCurrentView] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
-  const [recentOrders, setRecentOrders] = useState([
-    {
-      id: '1',
-      orderNumber: 'ABC-2024-001',
-      total: 2450.00,
-      items: [{ name: 'Roofing Shingles' }, { name: 'Underlayment' }],
-      status: 'processing',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      orderNumber: 'ABC-2024-002',
-      total: 1875.50,
-      items: [{ name: 'Gutters' }],
-      status: 'shipped',
-      createdAt: '2024-01-12'
-    }
-  ]);
+  const [recentOrders, setRecentOrders] = useState([]);
 
-  const [featuredProducts] = useState([
-    { id: '1', name: 'GAF Timberline HD Shingles', manufacturer: 'GAF', sku: 'TL-HD-001' },
-    { id: '2', name: 'Owens Corning Duration', manufacturer: 'Owens Corning', sku: 'OC-DUR-002' },
-    { id: '3', name: 'CertainTeed Landmark', manufacturer: 'CertainTeed', sku: 'CT-LM-003' },
-    { id: '4', name: 'Atlas StormMaster', manufacturer: 'Atlas', sku: 'AT-SM-004' }
-  ]);
+  useEffect(() => {
+    const loadRecentOrders = async () => {
+      try {
+        const orders = await abcSupplyApi.getOrders();
+        setRecentOrders(orders.slice(0, 3));
+      } catch (error) {
+        console.error('Failed to load recent orders:', error);
+        setRecentOrders([]);
+      }
+    };
+    loadRecentOrders();
+  }, []);
 
-  const [nearestBranches] = useState([
-    {
-      id: '1',
-      name: 'ABC Supply - Austin North',
-      address: { city: 'Austin', state: 'TX' },
-      phone: '(512) 555-0123'
-    },
-    {
-      id: '2',
-      name: 'ABC Supply - Austin South',
-      address: { city: 'Austin', state: 'TX' },
-      phone: '(512) 555-0124'
-    },
-    {
-      id: '3',
-      name: 'ABC Supply - Round Rock',
-      address: { city: 'Round Rock', state: 'TX' },
-      phone: '(512) 555-0125'
-    }
-  ]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      try {
+        const response = await abcSupplyApi.getItems(1, 4);
+        setFeaturedProducts(response.items);
+      } catch (error) {
+        console.error('Failed to load featured products:', error);
+        setFeaturedProducts([]);
+      }
+    };
+    loadFeaturedProducts();
+  }, []);
+
+  const [nearestBranches, setNearestBranches] = useState([]);
+
+  useEffect(() => {
+    const loadNearestBranches = async () => {
+      try {
+        const branches = await abcSupplyApi.getBranches();
+        setNearestBranches(branches.slice(0, 3));
+      } catch (error) {
+        console.error('Failed to load nearest branches:', error);
+        setNearestBranches([]);
+      }
+    };
+    loadNearestBranches();
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();

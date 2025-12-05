@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Filter, Package, Truck, CheckCircle, Clock, Plus } from 'lucide-react';
+import { eagleViewService } from '../../services/eagleViewService';
 
 interface OrderHistoryPageProps {
   onBack: () => void;
   onPlaceNewOrder: () => void;
 }
 
-interface Order {
+interface EagleViewOrder {
   id: string;
   orderNumber: string;
   product: string;
@@ -14,63 +15,66 @@ interface Order {
   datePlaced: string;
   delivery: string;
   cost: number;
-  status: 'created' | 'in-process' | 'completed' | 'delivered';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  measurements?: {
+    totalRoofArea: number;
+    perimeterLength: number;
+    pitch: string;
+  };
 }
 
 const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewOrder }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [orders, setOrders] = useState<EagleViewOrder[]>([]);
 
-  // Sample order data
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-2024-001',
-      product: 'Full House™',
-      address: '123 Main St, Anytown, ST 12345',
-      datePlaced: '2024-01-15',
-      delivery: 'Regular',
-      cost: 105.00,
-      status: 'completed'
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-2024-002',
-      product: 'Premium Roof',
-      address: '456 Oak Ave, Somewhere, ST 67890',
-      datePlaced: '2024-01-12',
-      delivery: 'Express',
-      cost: 64.50,
-      status: 'in-process'
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-2024-003',
-      product: 'Walls, Windows & Doors',
-      address: '789 Pine Rd, Elsewhere, ST 54321',
-      datePlaced: '2024-01-08',
-      delivery: 'Regular',
-      cost: 78.00,
-      status: 'delivered'
-    }
-  ];
+  // Load Eagle View orders from API
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const reports = await eagleViewService.getReports();
+        const formattedOrders: EagleViewOrder[] = reports.map(report => ({
+          id: report.id,
+          orderNumber: report.id,
+          product: report.reportType,
+          address: report.address,
+          datePlaced: report.createdDate || new Date().toISOString().split('T')[0],
+          delivery: 'Standard',
+          cost: report.reportType.includes('Premium') ? 25.00 : 
+                report.reportType.includes('Insurance') ? 35.00 : 15.00,
+          status: report.status,
+          measurements: report.measurements ? {
+            totalRoofArea: report.measurements.totalRoofArea,
+            perimeterLength: report.measurements.perimeterLength,
+            pitch: report.measurements.pitch
+          } : undefined
+        }));
+        setOrders(formattedOrders);
+      } catch (error) {
+        console.error('Error loading orders from Eagle View API:', error);
+        setOrders([]);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'created': return <Clock className="h-4 w-4" />;
-      case 'in-process': return <Package className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'processing': return <Package className="h-4 w-4" />;
       case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'delivered': return <Truck className="h-4 w-4" />;
+      case 'failed': return <Truck className="h-4 w-4" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'created': return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
-      case 'in-process': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'pending': return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
+      case 'processing': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
       case 'completed': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
-      case 'delivered': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'failed': return 'text-red-600 bg-red-100 dark:bg-red-900/20 dark:text-red-400';
       default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
     }
   };
@@ -118,7 +122,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
           </button>
           <div>
             <h1 className="text-2xl font-bold">Order History</h1>
-            <p className="text-primary-100">View and track your measurement orders</p>
+            <p className="text-primary-100">View and track your measurement orders3</p>
           </div>
         </div>
         
@@ -140,10 +144,10 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
             className="px-3 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300"
           >
             <option value="all">All Status</option>
-            <option value="created">Created</option>
-            <option value="in-process">In Process</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
             <option value="completed">Completed</option>
-            <option value="delivered">Delivered</option>
+            <option value="failed">Failed</option>
           </select>
           
           <button
@@ -173,12 +177,13 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
         {filteredOrders.length > 0 ? (
           <>
             {/* Desktop Header */}
-            <div className="hidden md:grid grid-cols-6 gap-4 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-300 p-4 rounded-t-lg">
+            <div className="hidden md:grid grid-cols-7 gap-4 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-300 p-4 rounded-t-lg">
               <div>Order #</div>
-              <div>Product</div>
+              <div>Report Type</div>
               <div>Address</div>
-              <div>Date</div>
-              <div>Delivery</div>
+              <div>Date Ordered</div>
+              <div>Cost</div>
+              <div>Measurements</div>
               <div>Status</div>
             </div>
 
@@ -192,7 +197,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                   }`}
                 >
                   {/* Desktop Layout */}
-                  <div className="hidden md:grid grid-cols-6 gap-4 items-center">
+                  <div className="hidden md:grid grid-cols-7 gap-4 items-center">
                     <div className="font-medium text-gray-900 dark:text-white">
                       {highlightText(order.orderNumber, searchQuery)}
                     </div>
@@ -205,19 +210,29 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                     <div className="text-gray-600 dark:text-gray-400 text-sm">
                       {new Date(order.datePlaced).toLocaleDateString()}
                     </div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                      ${order.cost.toFixed(2)}
+                    </div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm">
-                      {order.delivery}
+                      {order.measurements ? (
+                        <div>
+                          <div>{order.measurements.totalRoofArea.toLocaleString()} sq ft</div>
+                          <div className="text-xs">{order.measurements.pitch} pitch</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Pending</span>
+                      )}
                     </div>
                     <div>
                       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
-                        <span className="capitalize">{order.status.replace('-', ' ')}</span>
+                        <span className="capitalize">{order.status}</span>
                       </span>
                     </div>
                   </div>
 
                   {/* Mobile Layout */}
-                  <div className="md:hidden space-y-2">
+                  <div className="md:hidden space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">
@@ -229,15 +244,23 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                       </div>
                       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
-                        <span className="capitalize">{order.status.replace('-', ' ')}</span>
+                        <span className="capitalize">{order.status}</span>
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {highlightText(order.address, searchQuery)}
                     </div>
-                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>{new Date(order.datePlaced).toLocaleDateString()}</span>
-                      <span>{order.delivery} Delivery</span>
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="text-gray-500 dark:text-gray-400">
+                        <div>{new Date(order.datePlaced).toLocaleDateString()}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">${order.cost.toFixed(2)}</div>
+                      </div>
+                      {order.measurements && (
+                        <div className="text-right text-gray-600 dark:text-gray-400">
+                          <div className="font-medium">{order.measurements.totalRoofArea.toLocaleString()} sq ft</div>
+                          <div className="text-xs">{order.measurements.pitch} pitch</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

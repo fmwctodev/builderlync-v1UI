@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Truck, ChevronRight, Search, Filter } from 'lucide-react';
+import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Order } from '../../abc-supply/types';
 
 interface OrderHistoryProps {
   onBack: () => void;
@@ -7,45 +9,25 @@ interface OrderHistoryProps {
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const orders = [
-    {
-      id: '1',
-      orderNumber: 'ABC-2024-001',
-      total: 2450.00,
-      items: [
-        { name: 'GAF Timberline HD Shingles', quantity: 20 },
-        { name: 'Underlayment Roll', quantity: 5 }
-      ],
-      status: 'processing',
-      createdAt: '2024-01-15',
-      estimatedDelivery: '2024-01-20'
-    },
-    {
-      id: '2',
-      orderNumber: 'ABC-2024-002',
-      total: 1875.50,
-      items: [
-        { name: 'Aluminum Gutters', quantity: 100 },
-        { name: 'Gutter Guards', quantity: 50 }
-      ],
-      status: 'shipped',
-      createdAt: '2024-01-12',
-      estimatedDelivery: '2024-01-18'
-    },
-    {
-      id: '3',
-      orderNumber: 'ABC-2024-003',
-      total: 3200.75,
-      items: [
-        { name: 'Owens Corning Duration Shingles', quantity: 25 },
-        { name: 'Ridge Vent', quantity: 10 }
-      ],
-      status: 'delivered',
-      createdAt: '2024-01-08',
-      estimatedDelivery: '2024-01-15'
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await abcSupplyApi.getOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,7 +84,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        {filteredOrders.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mr-3"></div>
+            <span className="text-gray-600 dark:text-gray-400">Loading orders...</span>
+          </div>
+        ) : filteredOrders.length > 0 ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredOrders.map((order) => (
               <div key={order.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
