@@ -27,11 +27,7 @@
     "@tiptap/pm": "^2.2.4",
     "@tiptap/react": "^2.2.4",
     "@tiptap/starter-kit": "^2.2.4",
-<<<<<<< HEAD
-    "@twilio/voice-sdk": "^2.16.0",
-=======
     "@twilio/voice-sdk": "^2.17.0",
->>>>>>> d1e8596503b988c00a19feb138bcf162456c3f04
     "axios": "^1.6.7",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
