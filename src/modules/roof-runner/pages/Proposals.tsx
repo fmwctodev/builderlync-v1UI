@@ -3,6 +3,7 @@ import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import ProposalEditor from '../components/ProposalEditor';
 import { getInvoices, Invoice } from '../../../shared/store/services/invoicesApi';
+import { templateApi } from '../services/templateApi';
 
 export default function Proposals() {
   const [activeTab, setActiveTab] = useState('Proposals');
@@ -16,6 +17,7 @@ export default function Proposals() {
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
@@ -187,7 +189,22 @@ export default function Proposals() {
           <TemplatesGrid
             openDropdown={openDropdown}
             setOpenDropdown={setOpenDropdown}
-            onCreateTemplate={() => setShowTemplateBuilder(true)}
+            onCreateTemplate={async () => {
+              try {
+                console.log('Creating template...');
+                const newTemplate = await templateApi.createTemplate({ name: 'New Template' });
+                console.log('Template created:', newTemplate);
+                setEditingTemplateId(newTemplate.id);
+                setShowTemplateBuilder(true);
+              } catch (error) {
+                console.error('Error creating template:', error);
+                alert('Failed to create template. Please check console for details.');
+              }
+            }}
+            onEditTemplate={(id) => {
+              setEditingTemplateId(id);
+              setShowTemplateBuilder(true);
+            }}
           />
         )}
 
@@ -380,8 +397,14 @@ export default function Proposals() {
         </div>
       )}
 
-      {showTemplateBuilder && (
-        <TemplateBuilder onClose={() => setShowTemplateBuilder(false)} />
+      {showTemplateBuilder && editingTemplateId && (
+        <TemplateBuilder 
+          templateId={editingTemplateId}
+          onClose={() => {
+            setShowTemplateBuilder(false);
+            setEditingTemplateId(null);
+          }} 
+        />
       )}
 
       <ProposalEditor

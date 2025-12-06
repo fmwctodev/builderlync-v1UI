@@ -18,6 +18,7 @@ import {
 import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
 
 interface TemplateBuilderProps {
+  templateId: string;
   onClose: () => void;
 }
 
@@ -55,7 +56,7 @@ interface Section {
   };
 }
 
-export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
+export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const [templateName, setTemplateName] = useState("demo");
   const [activeSection, setActiveSection] = useState("Estimate");
   const [showAddModal, setShowAddModal] = useState(false);
