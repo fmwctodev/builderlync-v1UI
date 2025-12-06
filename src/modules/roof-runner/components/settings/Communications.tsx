@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, RefreshCw, MoreVertical, Lock, Loader2 } from 'lucide-react';
+import { Plus, Search, RefreshCw, MoreVertical, Lock, Loader2, Zap } from 'lucide-react';
 import { getTwilioPhoneNumbers, getTwilioStatus } from '../../../../shared/store/services/twilioApi';
+import PurchaseNumberModal from './PurchaseNumberModal';
+import AssignCampaignModal from './AssignCampaignModal';
 
 interface PhoneNumber {
   id: number;
   number: string;
+  sid?: string;
   friendlyName: string;
   forwardingNumber: string;
   callTimeout?: string;
@@ -27,6 +30,9 @@ const Communications: React.FC = () => {
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(false);
   const [twilioConnected, setTwilioConnected] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
 
   useEffect(() => {
     checkTwilioConnection();
@@ -147,13 +153,14 @@ const Communications: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Phone numbers are fetched from your Twilio account. To add new numbers, purchase them via Twilio Console.
+                    Manage your Twilio phone numbers. Purchase new numbers or configure existing ones.
                   </p>
                 </div>
                 <button 
-                  onClick={() => window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/search', '_blank')}
-                  className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                  title="Opens Twilio Console to purchase numbers"
+                  onClick={() => setShowPurchaseModal(true)}
+                  disabled={!twilioConnected}
+                  className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  title={twilioConnected ? 'Purchase a new phone number' : 'Connect Twilio first'}
                 >
                   <Plus size={16} />
                   <span>Buy Number</span>
@@ -295,6 +302,17 @@ const Communications: React.FC = () => {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-end space-x-2">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedNumber(phone);
+                                    setShowCampaignModal(true);
+                                  }}
+                                  className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                  title="Assign to A2P/10DLC Campaign"
+                                >
+                                  <Zap size={14} />
+                                  <span>Campaign</span>
+                                </button>
                                 {!phone.forwardingNumber ? (
                                   <button className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
                                     Add
@@ -570,6 +588,32 @@ const Communications: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        <PurchaseNumberModal
+          isOpen={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          onPurchaseSuccess={() => {
+            setShowPurchaseModal(false);
+            fetchPhoneNumbers();
+          }}
+        />
+
+        {selectedNumber && (
+          <AssignCampaignModal
+            isOpen={showCampaignModal}
+            onClose={() => {
+              setShowCampaignModal(false);
+              setSelectedNumber(null);
+            }}
+            phoneNumber={selectedNumber.number}
+            phoneNumberSid={selectedNumber.sid || selectedNumber.number}
+            onSuccess={() => {
+              setShowCampaignModal(false);
+              setSelectedNumber(null);
+              fetchPhoneNumbers();
+            }}
+          />
         )}
       </div>
     </div>
