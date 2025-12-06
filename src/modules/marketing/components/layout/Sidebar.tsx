@@ -9,7 +9,8 @@ import {
   Globe,
   BarChart,
   Settings,
-  Star
+  Star,
+  Package
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,7 +28,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
     { name: 'Ads Manager', href: '/marketing/ads-manager', icon: 'Zap' },
     { name: 'Social Planner', href: '/marketing/social-planner', icon: 'Globe' },
     { name: 'Reputation', href: '/marketing/reputation', icon: 'Star' },
-    { name: 'Opportunities', href: '/marketing/opportunities', icon: 'Award' }
+    { name: 'Opportunities', href: '/marketing/opportunities', icon: 'Award' },
+    { name: 'Catalog', href: '/marketing/catalog', icon: 'Package' }
   ];
 
   const getIcon = (iconName: string, active: boolean = false) => {
@@ -47,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
       case 'Globe': return <Globe {...props} />;
       case 'BarChart': return <BarChart {...props} />;
       case 'Settings': return <Settings {...props} />;
+      case 'Package': return <Package {...props} />;
       default: return <LayoutDashboard {...props} />;
     }
   };

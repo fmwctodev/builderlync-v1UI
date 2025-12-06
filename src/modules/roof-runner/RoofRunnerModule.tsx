@@ -29,6 +29,7 @@ import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
+import Catalog from './pages/Catalog';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
 import QuickBooksCallback from './pages/QuickBooksCallback';
@@ -76,6 +77,7 @@ export function RoofRunnerModule() {
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<Reputation />} />
+        <Route path="catalog" element={<Catalog />} />
         <Route path="reporting" element={<BlankPage title="Reporting" />} />
         <Route path="support" element={<Support />} />
         <Route path="settings/*" element={<Settings />} />
