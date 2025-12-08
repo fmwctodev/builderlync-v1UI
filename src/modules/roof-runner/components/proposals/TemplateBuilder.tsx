@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   X,
   Plus,
-  Edit,
   FileText,
   Image,
   FileType,
@@ -16,6 +15,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
+import { templateApi } from '../../services/templateApi';
 
 interface TemplateBuilderProps {
   templateId: string;
@@ -44,8 +44,10 @@ interface Upgrade {
 }
 
 interface Section {
+  id: string;
   name: string;
   active: boolean;
+  order: number;
   subsections?: string[];
   type?: "photos" | "pdf" | "text" | "estimate";
   content?: {
@@ -136,10 +138,99 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [draggedUpgradeItem, setDraggedUpgradeItem] = useState<{upgradeId: string, itemIndex: number} | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectedUpgradeItems, setSelectedUpgradeItems] = useState<Map<string, Set<string>>>(new Map());
+  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [catalogItems, setCatalogItems] = useState<APICatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [sections, setSections] = useState<Section[]>([
+    { id: 'cover', name: "Cover", active: true, order: 0 },
+    {
+      id: 'estimate',
+      name: "Estimate",
+      active: true,
+      order: 1,
+      subsections: ["Demo", "Summary"],
+      type: "estimate",
+    },
+  ]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const content = {
+        templateName,
+        sections: sections.map((s, index) => ({ ...s, order: index })),
+        items: items.map((item, index) => ({ ...item, order: index })),
+        upgrades: upgrades.map((upgrade, index) => ({
+          ...upgrade,
+          order: index,
+          items: upgrade.items.map((item, itemIndex) => ({ ...item, order: itemIndex }))
+        })),
+        settings: {
+          optionTitle,
+          optionDescription,
+          itemSectionTitle,
+          upgradesTitle,
+          companyName,
+          companyPhone,
+          companyEmail,
+          defaultMargin,
+          minimumMargin,
+          coverContent,
+          companyLogo: companyLogo || undefined,
+        },
+      };
+
+      await templateApi.updateTemplate(templateId, {
+        name: templateName,
+        content,
+      });
+      console.log("Template saved successfully!");
+    } catch (error) {
+      console.error("Error saving template:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
+    const loadTemplate = async () => {
+      setLoading(true);
+      try {
+        const data = await templateApi.getTemplateById(templateId);
+        
+        // Load template data into state
+        setTemplateName(data.name);
+        
+        if (data.content) {
+          setSections(data.content.sections || []);
+          setItems(data.content.items || []);
+          setUpgrades(data.content.upgrades || []);
+          
+          if (data.content.settings) {
+            setOptionTitle(data.content.settings.optionTitle || "Add title");
+            setOptionDescription(data.content.settings.optionDescription || "Add description");
+            setItemSectionTitle(data.content.settings.itemSectionTitle || "Item");
+            setUpgradesTitle(data.content.settings.upgradesTitle || "Upgrades");
+            setCompanyName(data.content.settings.companyName || "");
+            setCompanyPhone(data.content.settings.companyPhone || "");
+            setCompanyEmail(data.content.settings.companyEmail || "");
+            setDefaultMargin(data.content.settings.defaultMargin || "10");
+            setMinimumMargin(data.content.settings.minimumMargin || "5");
+            setCoverContent(data.content.settings.coverContent || "Click to edit cover page content...");
+            setCompanyLogo(data.content.settings.companyLogo || null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load template:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const loadCatalogItems = async () => {
       setLoadingCatalog(true);
       try {
@@ -153,35 +244,21 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         setLoadingCatalog(false);
       }
     };
+
+    loadTemplate();
     loadCatalogItems();
-  }, []);
+  }, [templateId]);
 
-  const [sections, setSections] = useState<Section[]>([
-    { name: "Cover", active: true },
-    {
-      name: "Estimate",
-      active: true,
-      subsections: ["Demo", "Summary"],
-      type: "estimate",
-    },
-  ]);
-
-  useEffect(() => {
-    return () => {
-      sections.forEach((section) => {
-        section.content?.photos?.forEach((url) => URL.revokeObjectURL(url));
-        section.content?.pdfs?.forEach((pdf) => URL.revokeObjectURL(pdf.url));
-      });
-      if (companyLogo) URL.revokeObjectURL(companyLogo);
-    };
-  }, [sections, companyLogo]);
+  // Removed blob URL cleanup since we're now using permanent URLs
 
   // Add functions
   const addSection = (type: string) => {
     const sectionType = type.toLowerCase() as "photos" | "pdf" | "text";
     const newSection: Section = {
+      id: crypto.randomUUID(),
       name: type,
       active: true,
+      order: sections.length,
       type: sectionType,
       content: {
         photos: sectionType === "photos" ? [] : undefined,
@@ -195,13 +272,53 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     setShowAddModal(false);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, sectionName: string) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, sectionName: string) => {
     const files = e.target.files;
     if (files) {
-      Array.from(files).forEach((file) => {
-        const url = URL.createObjectURL(file);
-        uploadPhoto(sectionName, url);
-      });
+      for (const file of Array.from(files)) {
+        const blobUrl = URL.createObjectURL(file);
+        uploadPhoto(sectionName, blobUrl);
+        
+        try {
+          const section = sections.find(s => s.name === sectionName);
+          if (!section) return;
+
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+          const token = localStorage.getItem('token');
+          
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('sectionId', section.id);
+          formData.append('type', 'photo');
+
+          const response = await fetch(`${API_BASE_URL}/templates/${templateId}/media`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            const permanentUrl = result.data.url;
+            setSections(prev => prev.map(s => 
+              s.name === sectionName && s.content?.photos
+                ? {
+                    ...s,
+                    content: {
+                      ...s.content,
+                      photos: s.content.photos.map(url => url === blobUrl ? permanentUrl : url)
+                    }
+                  }
+                : s
+            ));
+            URL.revokeObjectURL(blobUrl);
+          }
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+        }
+      }
     }
   };
 
@@ -221,29 +338,86 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     );
   };
 
-  const deletePhoto = (sectionName: string, index: number) => {
+  const deletePhoto = async (sectionName: string, index: number) => {
+    const section = sections.find(s => s.name === sectionName);
+    if (!section?.content?.photos) return;
+    
+    const photoUrl = section.content.photos[index];
+    
+    // Delete from S3 if it's not a blob URL
+    if (!photoUrl.startsWith('blob:')) {
+      try {
+        await templateApi.deleteMedia(templateId, section.id, photoUrl, 'photo');
+      } catch (error) {
+        console.error('Error deleting photo from S3:', error);
+      }
+    }
+    
     setSections(
-      sections.map((section) =>
-        section.name === sectionName && section.content?.photos
+      sections.map((s) =>
+        s.name === sectionName && s.content?.photos
           ? {
-              ...section,
+              ...s,
               content: {
-                ...section.content,
-                photos: section.content.photos.filter((_, i) => i !== index),
+                ...s.content,
+                photos: s.content.photos.filter((_, i) => i !== index),
               },
             }
-          : section
+          : s
       )
     );
   };
 
-  const handlePDFUpload = (e: React.ChangeEvent<HTMLInputElement>, sectionName: string) => {
+  const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>, sectionName: string) => {
     const files = e.target.files;
     if (files) {
-      Array.from(files).forEach((file) => {
-        const url = URL.createObjectURL(file);
-        uploadPDF(sectionName, { name: file.name, url });
-      });
+      for (const file of Array.from(files)) {
+        const blobUrl = URL.createObjectURL(file);
+        uploadPDF(sectionName, { name: file.name, url: blobUrl });
+        
+        try {
+          const section = sections.find(s => s.name === sectionName);
+          if (!section) return;
+
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+          const token = localStorage.getItem('token');
+          
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('sectionId', section.id);
+          formData.append('type', 'pdf');
+
+          const response = await fetch(`${API_BASE_URL}/templates/${templateId}/media`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            const permanentUrl = result.data.url;
+            setSections(prev => prev.map(s => {
+              if (s.name === sectionName && s.content?.pdfs) {
+                return {
+                  ...s,
+                  content: {
+                    ...s.content,
+                    pdfs: s.content.pdfs.map(pdf => 
+                      pdf.url === blobUrl ? { ...pdf, url: permanentUrl } : pdf
+                    )
+                  }
+                };
+              }
+              return s;
+            }));
+            URL.revokeObjectURL(blobUrl);
+          }
+        } catch (error) {
+          console.error('Error uploading PDF:', error);
+        }
+      }
     }
   };
 
@@ -266,27 +440,66 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     );
   };
 
-  const deletePDF = (sectionName: string, index: number) => {
+  const deletePDF = async (sectionName: string, index: number) => {
+    const section = sections.find(s => s.name === sectionName);
+    if (!section?.content?.pdfs) return;
+    
+    const pdf = section.content.pdfs[index];
+    
+    // Delete from S3 if it's not a blob URL
+    if (!pdf.url.startsWith('blob:')) {
+      try {
+        await templateApi.deleteMedia(templateId, section.id, pdf.url, 'pdf');
+      } catch (error) {
+        console.error('Error deleting PDF from S3:', error);
+      }
+    }
+    
     setSections(
-      sections.map((section) =>
-        section.name === sectionName && section.content?.pdfs
+      sections.map((s) =>
+        s.name === sectionName && s.content?.pdfs
           ? {
-              ...section,
+              ...s,
               content: {
-                ...section.content,
-                pdfs: section.content.pdfs.filter((_, i) => i !== index),
+                ...s.content,
+                pdfs: s.content.pdfs.filter((_, i) => i !== index),
               },
             }
-          : section
+          : s
       )
     );
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setCompanyLogo(url);
+      const blobUrl = URL.createObjectURL(file);
+      setCompanyLogo(blobUrl);
+      
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+        const token = localStorage.getItem('token');
+        
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/templates/${templateId}/logo`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          const permanentUrl = result.data.url;
+          setCompanyLogo(permanentUrl);
+          URL.revokeObjectURL(blobUrl);
+        }
+      } catch (error) {
+        console.error('Error uploading logo:', error);
+      }
     }
   };
 
@@ -351,7 +564,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
   const addItemFromCatalog = (catalogItem: APICatalogItem) => {
     if (editingItemId) {
-      setItems(items.map(i => i.id === editingItemId ? {
+      setItems(prevItems => prevItems.map(i => i.id === editingItemId ? {
         ...i,
         name: catalogItem.name,
         description: catalogItem.description || "",
@@ -375,7 +588,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         visible: true,
         checked: false,
       };
-      setItems([...items, newItem]);
+      setItems(prevItems => [...prevItems, newItem]);
     }
     setShowCatalogDropdown(false);
     setCatalogSearch("");
@@ -388,7 +601,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
   const addItemToUpgradeFromCatalog = (upgradeId: string, catalogItem: APICatalogItem) => {
     if (editingUpgradeItemId && editingUpgradeItemId.upgradeId === upgradeId) {
-      setUpgrades(upgrades.map(u => u.id === upgradeId ? {
+      setUpgrades(prevUpgrades => prevUpgrades.map(u => u.id === upgradeId ? {
         ...u,
         items: u.items.map(i => i.id === editingUpgradeItemId.itemId ? {
           ...i,
@@ -415,8 +628,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         visible: true,
         checked: false,
       };
-      setUpgrades(
-        upgrades.map((u) =>
+      setUpgrades(prevUpgrades =>
+        prevUpgrades.map((u) =>
           u.id === upgradeId ? { ...u, items: [...u.items, newItem] } : u
         )
       );
@@ -588,29 +801,24 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     setSelectedUpgradeItems(newMap);
   };
 
-  const handleSave = () => {
-    const templateData = {
-      templateName,
-      sections,
-      optionTitle,
-      optionDescription,
-      itemSectionTitle,
-      itemDescription1,
-      itemDescription2,
-      estimateSubtotal: calculateEstimateSubtotal(),
-      upgradesTitle,
-      upgradeItem,
-      upgradeSubtotal: calculateUpgradeSubtotal(),
-      companyName,
-      companyPhone,
-      companyEmail,
-      items,
-      upgrades,
-      defaultMargin,
-      minimumMargin,
-    };
-    console.log("Saving template:", templateData);
-    alert("Template saved successfully!");
+  const handleSectionDragStart = (index: number) => {
+    if (sections[index].name === 'Cover' || sections[index].name === 'Estimate') return;
+    setDraggedSectionIndex(index);
+  };
+
+  const handleSectionDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (index <= 1 || draggedSectionIndex === null || draggedSectionIndex === index) return;
+    const newSections = [...sections];
+    const draggedSection = newSections[draggedSectionIndex];
+    newSections.splice(draggedSectionIndex, 1);
+    newSections.splice(index, 0, draggedSection);
+    setSections(newSections.map((s, i) => ({ ...s, order: i })));
+    setDraggedSectionIndex(index);
+  };
+
+  const handleSectionDragEnd = () => {
+    setDraggedSectionIndex(null);
   };
 
   interface EditableTextProps {
@@ -701,6 +909,14 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-gray-400">Loading template...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex">
       {/* Left Sidebar */}
@@ -743,18 +959,83 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             </div>
 
             <div className="space-y-2">
-              {sections.map((section) => (
-                <div key={section.name}>
-                  <button
-                    className={`flex items-center justify-between p-2 rounded w-full text-left ${
+              {sections.map((section, index) => (
+                <div 
+                  key={section.id}
+                  draggable={section.name !== 'Cover'}
+                  onDragStart={() => handleSectionDragStart(index)}
+                  onDragOver={(e) => handleSectionDragOver(e, index)}
+                  onDragEnd={handleSectionDragEnd}
+                  className={section.name !== 'Cover' && section.name !== 'Estimate' ? 'cursor-move' : ''}
+                >
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded ${
                       activeSection === section.name
                         ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
                         : "hover:bg-gray-100 dark:hover:bg-gray-700"
                     }`}
-                    onClick={() => setActiveSection(section.name)}
                   >
-                    <span className="text-sm font-medium">{section.name}</span>
-                  </button>
+                    {section.name !== 'Cover' && section.name !== 'Estimate' && (
+                      <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
+                    )}
+                    <button
+                      className="flex items-center justify-between flex-1 text-left"
+                      onClick={() => setActiveSection(section.name)}
+                    >
+                      {editingSectionId === section.id ? (
+                        <input
+                          type="text"
+                          value={section.name}
+                          onChange={(e) => {
+                            setSections(sections.map(s => s.id === section.id ? { ...s, name: e.target.value } : s));
+                          }}
+                          onBlur={() => setEditingSectionId(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') setEditingSectionId(null);
+                          }}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm font-medium bg-transparent border-0 focus:outline-none focus:border-b border-gray-300 dark:border-gray-600 w-full"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium">{section.name}</span>
+                      )}
+                    </button>
+                    {section.name !== 'Cover' && section.name !== 'Estimate' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSectionId(section.id);
+                          }}
+                          className="text-gray-400 hover:text-primary-600"
+                          title="Rename section"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSections(sections.map(s => s.id === section.id ? { ...s, active: !s.active } : s));
+                          }}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          title={section.active ? 'Hide section' : 'Show section'}
+                        >
+                          {section.active ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSections(sections.filter(s => s.id !== section.id));
+                          }}
+                          className="text-gray-400 hover:text-red-600"
+                          title="Delete section"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {section.subsections && (
                     <div className="ml-4 space-y-1">
                       {section.subsections.map((sub) => (
@@ -810,10 +1091,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center gap-2"
+              disabled={saving}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={16} />
-              Save Template
+              {saving ? 'Saving...' : 'Save Template'}
             </button>
             <button className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium">
               Use this template
@@ -1032,15 +1314,20 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                               <div className="font-semibold text-gray-900 dark:text-white mb-2">{item.name}</div>
                             </>
                           ) : (
-                            <div className="mb-2 pl-3">
+                            <div className="mb-2 pl-3 text-sm">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                  <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
-                                  {item.description && <div className="text-gray-600 dark:text-gray-400 text-sm">{item.description}</div>}
+                                  <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
+                                  {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
                                   {item.mapping && <div className="text-gray-500 dark:text-gray-500 text-xs">{item.mapping}</div>}
+                                  <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
+                                    {item.qty && <span>Qty: {item.qty}</span>}
+                                    {item.unit && <span>Unit: {item.unit}</span>}
+                                  </div>
                                 </div>
                                 {item.unitCost && item.qty && (
-                                  <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                  <div className="font-medium text-gray-900 dark:text-white">
                                     ${(parseFloat(item.unitCost) * parseFloat(item.qty)).toFixed(2)}
                                   </div>
                                 )}
@@ -1501,7 +1788,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                   <input
                                     type="text"
                                     value={item.description}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       setItems(
                                         items.map((i) =>
                                           i.id === item.id
@@ -1511,8 +1798,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                               }
                                             : i
                                         )
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
                                   />
                                 </td>
@@ -1520,15 +1807,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                   <input
                                     type="text"
                                     value={item.mapping}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       setItems(
                                         items.map((i) =>
                                           i.id === item.id
                                             ? { ...i, mapping: e.target.value }
                                             : i
                                         )
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
                                   />
                                 </td>
@@ -1587,15 +1874,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                   <input
                                     type="text"
                                     value={item.qty}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       setItems(
                                         items.map((i) =>
                                           i.id === item.id
                                             ? { ...i, qty: e.target.value }
                                             : i
                                         )
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
                                   />
                                 </td>
@@ -1725,23 +2012,23 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                               <input
                                 type="text"
                                 value={upgrade.name}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   setUpgrades(
                                     upgrades.map((u) =>
                                       u.id === upgrade.id
                                         ? { ...u, name: e.target.value }
                                         : u
                                     )
-                                  )
-                                }
+                                  );
+                                }}
                                 className="text-sm font-medium bg-transparent border-0 border-b border-gray-300 dark:border-gray-600 focus:outline-none focus:border-primary-500 text-gray-900 dark:text-white"
                               />
                               <button
-                                onClick={() =>
+                                onClick={() => {
                                   setUpgrades(
                                     upgrades.filter((u) => u.id !== upgrade.id)
-                                  )
-                                }
+                                  );
+                                }}
                                 className="text-red-500 hover:text-red-600"
                               >
                                 <Trash2 size={14} />
@@ -2079,7 +2366,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       <input
                                         type="text"
                                         value={uItem.qty}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                           setUpgrades(
                                             upgrades.map((u) =>
                                               u.id === upgrade.id
@@ -2096,8 +2383,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                                   }
                                                 : u
                                             )
-                                          )
-                                        }
+                                          );
+                                        }}
                                         className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
                                       />
                                     </td>

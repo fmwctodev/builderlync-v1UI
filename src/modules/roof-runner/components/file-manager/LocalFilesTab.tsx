@@ -11,7 +11,7 @@ import FilterSortDrawer from './FilterSortDrawer';
 export default function LocalFilesTab() {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [folders, setFolders] = useState<FolderRecord[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Array<{id: number, name: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
@@ -45,7 +45,10 @@ export default function LocalFilesTab() {
   };
 
   const loadBreadcrumbs = async () => {
-    if (!currentFolderId) return;
+    if (!currentFolderId) {
+      setBreadcrumbs([]);
+      return;
+    }
 
     try {
       const crumbs = await backendFilesApi.getFolderBreadcrumbs(currentFolderId);
@@ -70,11 +73,11 @@ export default function LocalFilesTab() {
   };
 
   const handleFolderClick = (folderId: string) => {
-    setCurrentFolderId(folderId);
+    setCurrentFolderId(parseInt(folderId));
   };
 
   const handleBreadcrumbClick = (folderId: string | null) => {
-    setCurrentFolderId(folderId);
+    setCurrentFolderId(folderId ? parseInt(folderId) : null);
   };
 
   const handleUploadComplete = () => {
@@ -145,7 +148,7 @@ export default function LocalFilesTab() {
       <div className="flex items-center justify-between mb-4">
         <nav className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
           <button
-            onClick={() => handleBreadcrumbClick(null)}
+            onClick={() => setCurrentFolderId(null)}
             className="hover:text-gray-900 dark:hover:text-white hover:underline"
           >
             Home
@@ -154,7 +157,7 @@ export default function LocalFilesTab() {
             <span key={crumb.id} className="flex items-center">
               <span className="mx-2">/</span>
               <button
-                onClick={() => handleBreadcrumbClick(crumb.id)}
+                onClick={() => setCurrentFolderId(crumb.id)}
                 className={`hover:text-gray-900 dark:hover:text-white hover:underline ${
                   index === breadcrumbs.length - 1 ? 'font-medium text-gray-900 dark:text-white' : ''
                 }`}
@@ -169,7 +172,7 @@ export default function LocalFilesTab() {
           <button
             onClick={() => {
               const parentBreadcrumb = breadcrumbs[breadcrumbs.length - 2];
-              handleBreadcrumbClick(parentBreadcrumb ? parentBreadcrumb.id : null);
+              setCurrentFolderId(parentBreadcrumb ? parentBreadcrumb.id : null);
             }}
             className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
           >

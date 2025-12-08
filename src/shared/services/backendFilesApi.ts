@@ -80,9 +80,10 @@ class BackendFilesApiService {
   }
 
   async getFiles(folderId?: number | null): Promise<{ data: FileRecord[]; pagination: any }> {
-    const params = new URLSearchParams({
-      ...(folderId && { folderId: folderId.toString() }),
-    });
+    const params = new URLSearchParams();
+    if (folderId !== null && folderId !== undefined) {
+      params.append('folderId', folderId.toString());
+    }
 
     console.log('Getting files with params:', params.toString());
     const result = await this.makeRequest(`/oauth/documents?${params}`);
@@ -191,9 +192,10 @@ class BackendFilesApiService {
   }
 
   async getFolders(parentId?: number | null): Promise<FolderRecord[]> {
-    const params = new URLSearchParams({
-      ...(parentId && { parentId: parentId.toString() }),
-    });
+    const params = new URLSearchParams();
+    if (parentId !== null && parentId !== undefined) {
+      params.append('parentId', parentId.toString());
+    }
 
     console.log('Getting folders with params:', params.toString());
     const result = await this.makeRequest(`/oauth/documents/folders?${params}`);
