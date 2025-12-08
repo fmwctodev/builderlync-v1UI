@@ -69,7 +69,7 @@ export const smtpApi = {
         // Show error with redirect option
         const shouldRedirect = confirm(`${error.error}\n\nWould you like to configure SMS service now?`);
         if (shouldRedirect) {
-          window.location.href = error.redirectUrl;
+          window.location.href = '/settings/integrations';
         }
       }
       throw error;
