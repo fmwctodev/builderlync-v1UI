@@ -13,9 +13,48 @@ import {
   Pencil,
   Save,
   GripVertical,
+  Upload,
 } from "lucide-react";
+import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
 import { templateApi } from '../../services/templateApi';
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.src = url;
+  });
+
+const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<string> => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return canvas.toDataURL('image/jpeg');
+};
+
 
 interface TemplateBuilderProps {
   templateId: string;
@@ -76,6 +115,19 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   } | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const [coverTitle, setCoverTitle] = useState("Project Proposal");
+  const [coverDate, setCoverDate] = useState(new Date().toLocaleDateString());
+  const [customerName, setCustomerName] = useState("Customer Name");
+  const [customerAddress, setCustomerAddress] = useState("Customer Address");
+  const [customerPhone, setCustomerPhone] = useState("(000) 000-0000");
+  const [customerEmail, setCustomerEmail] = useState("customer@email.com");
 
   // Template data states
   const [optionTitle, setOptionTitle] = useState("Add title");
@@ -181,6 +233,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           minimumMargin,
           coverContent,
           companyLogo: companyLogo || undefined,
+          coverImage: coverImage || undefined,
+          coverTitle,
+          coverDate,
+          customerName,
+          customerAddress,
+          customerPhone: customerPhone,
+          customerEmail,
         },
       };
 
@@ -222,6 +281,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             setMinimumMargin(data.content.settings.minimumMargin || "5");
             setCoverContent(data.content.settings.coverContent || "Click to edit cover page content...");
             setCompanyLogo(data.content.settings.companyLogo || null);
+            setCoverImage(data.content.settings.coverImage || null);
+            setCoverTitle(data.content.settings.coverTitle || "Project Proposal");
+            setCoverDate(data.content.settings.coverDate || new Date().toLocaleDateString());
+            setCustomerName(data.content.settings.customerName || "Customer Name");
+            setCustomerAddress(data.content.settings.customerAddress || "Customer Address");
+            setCustomerPhone(data.content.settings.customerPhone || "(000) 000-0000");
+            setCustomerEmail(data.content.settings.customerEmail || "customer@email.com");
           }
         }
       } catch (error) {
@@ -1109,13 +1175,141 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             <div className="p-8">
               {/* Render active section content */}
               {activeSection === "Cover" && (
-                <div>
-                  <EditableText
-                    value={coverContent}
-                    onChange={setCoverContent}
-                    className="text-gray-900 dark:text-white min-h-[400px] whitespace-pre-wrap"
-                    multiline={true}
-                  />
+                <div className="h-full flex flex-col">
+                  {/* Top 60% - Cover Image */}
+                  <div className="relative h-[60%] bg-gray-100 dark:bg-gray-700 rounded-t-lg overflow-hidden group">
+                    {coverImage && (
+                      <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {!coverImage && (
+                        <div className="text-center">
+                          <Upload size={48} className="text-gray-400 mx-auto mb-2" />
+                          <span className="text-gray-500 dark:text-gray-400">Cover Image Area</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => coverImageInputRef.current?.click()}
+                        className="p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700"
+                      >
+                        <Upload size={16} />
+                      </button>
+                      {coverImage && (
+                        <button
+                          onClick={() => setCoverImage(null)}
+                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      ref={coverImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setCropImage(reader.result as string);
+                            setShowCropModal(true);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Middle Section - Title, Date, Customer Details */}
+                  <div className="flex-1 p-6 flex items-center justify-between">
+                    <div className="flex-1">
+                      <EditableText
+                        value={coverTitle}
+                        onChange={setCoverTitle}
+                        className="text-2xl font-bold text-gray-900 dark:text-white block mb-2"
+                      />
+                      <EditableText
+                        value={coverDate}
+                        onChange={setCoverDate}
+                        className="text-sm text-gray-500 dark:text-gray-400 block"
+                      />
+                    </div>
+                    <div className="text-right text-sm">
+                      <EditableText
+                        value={customerName}
+                        onChange={setCustomerName}
+                        className="font-medium text-gray-900 dark:text-white block mb-1"
+                      />
+                      <EditableText
+                        value={customerAddress}
+                        onChange={setCustomerAddress}
+                        className="text-gray-600 dark:text-gray-400 block mb-1"
+                      />
+                      <EditableText
+                        value={customerPhone}
+                        onChange={setCustomerPhone}
+                        className="text-gray-600 dark:text-gray-400 block mb-1"
+                      />
+                      <EditableText
+                        value={customerEmail}
+                        onChange={setCustomerEmail}
+                        className="text-gray-600 dark:text-gray-400 block"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bottom 40% - Footer (Company Info) */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Company representative name
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <EditableText
+                            value={companyName}
+                            onChange={setCompanyName}
+                            className="font-medium text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <EditableText
+                          value={companyPhone}
+                          onChange={setCompanyPhone}
+                          className="text-sm text-gray-500 dark:text-gray-400 block"
+                        />
+                        <EditableText
+                          value={companyEmail}
+                          onChange={setCompanyEmail}
+                          className="text-sm text-gray-500 dark:text-gray-400 block"
+                        />
+                      </div>
+                      <div className="relative">
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                          {companyLogo ? (
+                            <img
+                              src={companyLogo}
+                              alt="Company Logo"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              LOGO
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => logoInputRef.current?.click()}
+                          className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
+                        >
+                          <Pencil size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2635,6 +2829,77 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               className="w-full h-full"
               title={viewingPdf.name}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Image Crop Modal */}
+      {showCropModal && cropImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Crop Cover Image</h3>
+              <button
+                onClick={() => {
+                  setShowCropModal(false);
+                  setCropImage(null);
+                }}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="relative h-96 bg-gray-900">
+              <Cropper
+                image={cropImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={16 / 9}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_, croppedAreaPixels) => setCroppedAreaPixels(croppedAreaPixels)}
+              />
+            </div>
+            <div className="p-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Zoom
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowCropModal(false);
+                    setCropImage(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (croppedAreaPixels && cropImage) {
+                      const croppedImage = await getCroppedImg(cropImage, croppedAreaPixels);
+                      setCoverImage(croppedImage);
+                      setShowCropModal(false);
+                      setCropImage(null);
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
