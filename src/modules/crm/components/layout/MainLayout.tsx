@@ -15,6 +15,7 @@ export function MainLayout() {
     if (path.includes('/calendar')) return 'Calendar';
     if (path.includes('/conversations')) return 'Conversations';
     if (path.includes('/jobs')) return 'Jobs';
+    if (path.includes('/snippets')) return 'Snippets';
     if (path.includes('/settings')) return 'Settings';
     return 'Dashboard';
   };

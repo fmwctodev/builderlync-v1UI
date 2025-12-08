@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, Plus, X, AlertTriangle, Settings } from 'lucide-react';
+import { Send, Users, Plus, X, AlertTriangle, Settings, FileText } from 'lucide-react';
+import { SnippetSelector } from './SnippetSelector';
 import { useNavigate } from 'react-router-dom';
 import { smtpApi } from '../services/smtpApi';
 import { CreateTeamModal } from './CreateTeamModal';
@@ -18,6 +19,7 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [showSnippetSelector, setShowSnippetSelector] = useState(false);
 
   useEffect(() => {
     loadTeams();
@@ -156,7 +158,15 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
       </div>
 
       {/* Send Button */}
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-between items-center">
+        <button 
+          onClick={() => setShowSnippetSelector(true)}
+          className="p-2 text-gray-500 hover:text-gray-700"
+          title="Insert snippet"
+        >
+          <FileText className="w-5 h-5" />
+        </button>
+        <div className="flex space-x-3">
         <button
           onClick={() => {setMessage(''); setSubject('');}}
           className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
@@ -171,6 +181,7 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
           <Users className="w-4 h-4" />
           <span>{sending ? 'Sending...' : `Send ${messageType.toUpperCase()} to Team`}</span>
         </button>
+        </div>
       </div>
 
       <CreateTeamModal 
@@ -186,6 +197,13 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
         }}
       />
       {showCreateTeam && console.log('showCreateTeam is true')}
+
+      <SnippetSelector
+        isOpen={showSnippetSelector}
+        onClose={() => setShowSnippetSelector(false)}
+        onSelectSnippet={(body) => setMessage(body)}
+        type={messageType === 'email' ? 'email' : 'text'}
+      />
     </div>
   );
 }

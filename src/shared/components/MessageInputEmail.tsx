@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X, AlertTriangle, Settings } from 'lucide-react';
+import { SnippetSelector } from './SnippetSelector';
 import { useNavigate } from 'react-router-dom';
 import { smtpApi } from '../services/smtpApi';
 
@@ -26,6 +27,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
   const [bccEmails, setBccEmails] = useState<string[]>([]);
   const [ccInput, setCcInput] = useState('');
   const [bccInput, setBccInput] = useState('');
+  const [showSnippetSelector, setShowSnippetSelector] = useState(false);
 
   // Calculate word count
   const wordCount = message.trim() ? message.trim().split(/\s+/).length : 0;
@@ -251,7 +253,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
       </div>
 
       {/* Message Textarea */}
-      <div className="relative">
+      <div>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -266,11 +268,15 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
       <div className="flex items-center justify-between">
         {/* Left: Action Buttons */}
         <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => setShowSnippetSelector(true)}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" 
+            title="Insert snippet"
+          >
+            <FileText className="w-5 h-5" />
+          </button>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Text formatting">
             <Type className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Attach document">
-            <FileText className="w-5 h-5" />
           </button>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert link">
             <LinkIcon className="w-5 h-5" />
@@ -318,6 +324,16 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
           </button>
         </div>
       </div>
+
+      <SnippetSelector
+        isOpen={showSnippetSelector}
+        onClose={() => setShowSnippetSelector(false)}
+        onSelectSnippet={(body, subjectText) => {
+          setMessage(body);
+          if (subjectText) setSubject(subjectText);
+        }}
+        type="email"
+      />
     </div>
   );
 }

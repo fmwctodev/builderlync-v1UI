@@ -37,6 +37,7 @@ import OAuthCallback from './components/file-manager/OAuthCallback';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import VerifyOtp from './pages/auth/VerifyOtp';
 import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
 import { AuthRoute } from '../../shared/components/AuthRoute';
 
@@ -46,6 +47,7 @@ export function RoofRunnerModule() {
       <Routes>
       <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+      <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
       <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
       <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
       <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
