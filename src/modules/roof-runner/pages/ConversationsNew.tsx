@@ -4,6 +4,7 @@ import { ChatArea } from '../../../shared/components/ChatArea';
 import ConversationList from '../components/team-messaging/ConversationList';
 import MessageThread from '../components/team-messaging/MessageThread';
 import { CreateTeamModal } from '../../../shared/components/CreateTeamModal';
+import { SnippetsPanel } from '../../../modules/crm/components/conversations/SnippetsPanel';
 import {
   getTeamConversations,
   getConversationMessages,
@@ -168,6 +169,9 @@ const ConversationsNew: React.FC = () => {
   const handleSendMessage = async (content: string, messageType: 'sms' | 'email' | 'team' = 'team', subject?: string) => {
     if (!selectedTeamConversationId) return;
 
+    // Convert 'team' to 'sms' for API compatibility
+    const apiMessageType: 'sms' | 'email' = messageType === 'team' ? 'sms' : messageType;
+
     // Add message instantly to UI
     const newMessage: TeamMessageItem = {
       id: Date.now().toString(),
@@ -188,7 +192,7 @@ const ConversationsNew: React.FC = () => {
       await sendTeamMessage({
         conversation_id: selectedTeamConversationId,
         content,
-        messageType,
+        messageType: apiMessageType,
         subject
       });
       await loadTeamConversations();
@@ -312,15 +316,14 @@ const ConversationsNew: React.FC = () => {
 
         {/* Snippets Tab */}
         {activeTab === 'snippets' && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                Snippets Coming Soon
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400">
-                Save and reuse common message templates
-              </p>
-            </div>
+          <div className="flex-1">
+            <SnippetsPanel
+              isOpen={true}
+              onClose={() => {}}
+              onSelectSnippet={(snippet) => {
+                console.log('Selected snippet:', snippet);
+              }}
+            />
           </div>
         )}
       </div>

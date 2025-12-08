@@ -97,3 +97,152 @@ export const processTwilioCallback = async (accountSid: string, authToken: strin
   );
   return response.data;
 };
+
+export interface AvailableNumber {
+  phoneNumber: string;
+  locality: string;
+  region: string;
+  postalCode: string;
+  capabilities: {
+    voice: boolean;
+    sms: boolean;
+  };
+}
+
+export const getAvailableNumbers = async (areaCode?: string, country = 'US'): Promise<{ success: boolean; data?: AvailableNumber[]; message?: string }> => {
+  try {
+    const params = new URLSearchParams({ country });
+    if (areaCode) params.append('areaCode', areaCode);
+    
+    const response = await axios.get(`${API_BASE_URL}/twilio/available-numbers?${params}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to search for available numbers'
+    };
+  }
+};
+
+export const purchaseNumber = async (phoneNumber: string): Promise<TwilioResponse> => {
+  try {
+    const response = await axios.post<TwilioResponse>(
+      `${API_BASE_URL}/twilio/purchase-number`,
+      { phoneNumber },
+      {
+        headers: getAuthHeaders()
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.log(`error ${JSON.stringify(error)}`);
+    console.log(error.response?.data?.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to purchase number'
+    };
+  }
+};
+
+// A2P/10DLC APIs
+
+export interface Brand {
+  sid: string;
+  status: string;
+  brandType: string;
+  dateCreated?: string;
+}
+
+export interface Campaign {
+  sid: string;
+  status: string;
+  campaignType?: string;
+  description?: string;
+}
+
+export const registerBrand = async (customerProfileBundleSid: string, a2pProfileBundleSid: string): Promise<{ success: boolean; data?: Brand; message?: string }> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/twilio/brands`,
+      { customerProfileBundleSid, a2pProfileBundleSid },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to register brand'
+    };
+  }
+};
+
+export const getBrands = async (): Promise<{ success: boolean; data?: Brand[]; message?: string }> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/twilio/brands`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to get brands'
+    };
+  }
+};
+
+export const createCampaign = async (params: {
+  brandSid: string;
+  campaignType: string;
+  description: string;
+  messageSamples: string[];
+  useCases: string[];
+}): Promise<{ success: boolean; data?: Campaign; message?: string }> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/twilio/campaigns`,
+      params,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to create campaign'
+    };
+  }
+};
+
+export const getCampaigns = async (brandSid?: string): Promise<{ success: boolean; data?: Campaign[]; message?: string }> => {
+  try {
+    const params = brandSid ? `?brandSid=${brandSid}` : '';
+    const response = await axios.get(
+      `${API_BASE_URL}/twilio/campaigns${params}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to get campaigns'
+    };
+  }
+};
+
+export const assignNumberToCampaign = async (phoneNumberSid: string, campaignSid: string): Promise<{ success: boolean; data?: { sid: string; phoneNumberSid: string; campaignSid: string }; message?: string }> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/twilio/assign-number`,
+      { phoneNumberSid, campaignSid },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to assign number to campaign'
+    };
+  }
+};

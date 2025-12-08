@@ -1,0 +1,213 @@
+import axios from 'axios';
+import { Product, Branch, Order, CartItem } from '../types';
+import { getAuthToken } from '../../../shared/utils/auth';
+
+const api = axios.create({
+  baseURL: 'https://builderlyncapi.testenvapp.com/api',
+  timeout: 10000,
+});
+
+// Add request interceptor to include dynamic auth token
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export interface ItemsResponse {
+  items: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PriceRequest {
+  branchId: string;
+  items: Array<{
+    sku: string;
+    quantity: number;
+  }>;
+}
+
+export const abcSupplyApi = {
+  // Products
+  getItems: async (page: number = 1, limit: number = 20): Promise<ItemsResponse> => {
+    const response = await api.get('/abc-supply/items', {
+      params: { page, limit }
+    });
+    return response.data;
+  },
+
+  searchItems: async (query: string, limit: number = 20): Promise<Product[]> => {
+    const response = await api.get('/abc-supply/search', {
+      params: { q: query, limit }
+    });
+    return response.data.items || response.data;
+  },
+
+  // Branches
+  getBranches: async (): Promise<Branch[]> => {
+    try {
+      const response = await api.get('/abc-supply/branches', {
+        params: {
+          lat: 42.35,
+          lng: -89.04,
+          distance: 100
+        }
+      });
+      
+      console.log('Full API response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      
+      // Handle the actual API response structure
+      let branches = [];
+      if (response.data.success && response.data.data) {
+        branches = response.data.data.map(item => ({
+          id: item.branch.number,
+          name: item.branch.name,
+          address: {
+            street1: item.address.addressLine1,
+            street2: item.address.addressLine2,
+            city: item.address.city,
+            state: item.address.state,
+            zipCode: item.address.postal
+          },
+          phone: item.contact.phones[0] || 'N/A',
+          coordinates: {
+            latitude: parseFloat(item.locale.lat),
+            longitude: parseFloat(item.locale.long)
+          },
+          hours: item.hoursOfOperation,
+          services: []
+        }));
+      }
+      
+      return branches;
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      console.error('Error details:', error.response?.data);
+      return [];
+    }
+  },
+
+  // Pricing
+  getPrices: async (priceRequest: PriceRequest): Promise<any> => {
+    const response = await api.post('/abc-supply/prices', priceRequest);
+    return response.data;
+  },
+
+  searchItemsByPrice: async (query: string, branchId: string): Promise<Product[]> => {
+    const response = await api.get('/abc-supply/search-with-price', {
+      params: { q: query, branchId }
+    });
+    return response.data.items || response.data;
+  },
+
+  // Orders
+  getOrders: async (): Promise<Order[]> => {
+    const response = await api.get('/abc-supply/orders');
+    return response.data.orders || response.data;
+  },
+
+  createOrder: async (orderData: {
+    items: Array<{
+      productId: string;
+      sku: string;
+      name: string;
+      quantity: number;
+      unitPrice: number;
+      uom: string;
+    }>;
+    branchNumber: string;
+    deliveryAddress: {
+      name: string;
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      postal: string;
+    };
+    contact: {
+      name: string;
+      email: string;
+      phone: string;
+    };
+    deliveryDate?: string;
+    instructions?: string;
+  }): Promise<Order> => {
+    const orderPayload = {
+      requestId: `REQ-${Date.now()}`,
+      purchaseOrder: `PO-${Date.now()}`,
+      branchNumber: orderData.branchNumber,
+      deliveryService: "OTG",
+      typeCode: "SO",
+      dates: {
+        deliveryRequestedFor: orderData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      },
+      deliveryAppointment: {
+        instructionsTypeCode: "AT",
+        instructions: orderData.instructions || "Standard delivery",
+        fromTime: "09:00",
+        toTime: "17:00",
+        timeZoneCode: "CT"
+      },
+      currency: "USD",
+      shipTo: {
+        name: orderData.deliveryAddress.name,
+        number: "1008710",
+        address: {
+          line1: orderData.deliveryAddress.line1,
+          line2: orderData.deliveryAddress.line2 || "",
+          line3: "",
+          city: orderData.deliveryAddress.city,
+          state: orderData.deliveryAddress.state,
+          postal: orderData.deliveryAddress.postal,
+          country: "USA"
+        },
+        contacts: [{
+          name: orderData.contact.name,
+          functionCode: "SM",
+          email: orderData.contact.email,
+          phones: [{
+            number: orderData.contact.phone.replace(/\D/g, ''),
+            type: "MOBILE",
+            ext: ""
+          }]
+        }]
+      },
+      orderComments: [{
+        code: "H",
+        description: orderData.instructions || "Order created via BuilderLynk"
+      }],
+      lines: orderData.items.map((item, index) => ({
+        id: (index + 1).toString(),
+        itemNumber: item.sku,
+        itemDescription: item.name,
+        orderedQty: {
+          value: item.quantity,
+          uom: item.uom
+        },
+        unitPrice: {
+          value: item.unitPrice,
+          uom: item.uom,
+          instructions: `Quote: REQ-${Date.now()}`
+        },
+        comments: {
+          code: "D",
+          description: `Line item: ${item.name}`
+        }
+      }))
+    };
+
+    const response = await api.post('/abc-supply/orders', orderPayload);
+    return response.data;
+  },
+
+  getOrderById: async (orderId: string): Promise<Order> => {
+    const response = await api.get(`/abc-supply/orders/${orderId}`);
+    return response.data;
+  }
+};

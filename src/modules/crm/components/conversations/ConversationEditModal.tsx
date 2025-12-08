@@ -32,7 +32,7 @@ export function ConversationEditModal({ isOpen, onClose, onSelectType, onCreateC
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
       
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+      {/* <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             New Conversation
@@ -82,7 +82,7 @@ export function ConversationEditModal({ isOpen, onClose, onSelectType, onCreateC
             </button>
           </div>
         </div>
-      </div>
+      </div> */}
       
       <DirectMessageModal
         isOpen={showDirectModal}

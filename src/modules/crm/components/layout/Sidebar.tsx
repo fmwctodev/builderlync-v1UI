@@ -8,7 +8,8 @@ import {
   HardHat,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { NavItem } from '../../types';
 import Logo from '../../../../shared/components/Logo';
@@ -44,6 +45,11 @@ const navItems: NavItem[] = [
     icon: 'HardHat'
   },
   {
+    title: 'Snippets',
+    href: '/crm/snippets',
+    icon: 'FileText'
+  },
+  {
     title: 'Settings',
     href: '/crm/settings',
     icon: 'Settings'
@@ -56,6 +62,7 @@ const iconComponents: Record<string, React.ElementType> = {
   Calendar,
   MessageSquare,
   HardHat,
+  FileText,
   Settings
 };
 
