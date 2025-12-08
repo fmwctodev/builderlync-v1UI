@@ -38,7 +38,8 @@ export function SnippetSelector({ isOpen, onClose, onSelectSnippet, type = 'text
   const loadFolders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3100/api/snippets/folders', {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const response = await fetch(`${API_BASE_URL}/snippets/folders`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
@@ -52,7 +53,8 @@ export function SnippetSelector({ isOpen, onClose, onSelectSnippet, type = 'text
   const loadSnippets = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3100/api/snippets', {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const response = await fetch(`${API_BASE_URL}/snippets`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
