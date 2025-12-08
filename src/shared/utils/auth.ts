@@ -2,7 +2,10 @@ import { getEncryptedStorage } from './encryption';
 
 export const getAuthToken = (): string | null => {
   const authData = getEncryptedStorage('auth');
-  return authData?.token || null;
+  if (authData?.token) return authData.token;
+  
+  // Fallback to localStorage
+  return localStorage.getItem('token') || null;
 };
 
 export const getAuthUser = () => {

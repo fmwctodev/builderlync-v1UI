@@ -15,13 +15,15 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
-  Mail
+  Mail,
+  FileText
 } from 'lucide-react';
 import { ChannelTabs, ChannelType } from './ChannelTabs';
 import { MessageInputSMS } from './MessageInputSMS';
 import { MessageInputEmail } from './MessageInputEmail';
 import { MessageInputInternalComment } from './MessageInputInternalComment';
 import { TeamMessageInput } from './TeamMessageInput';
+import { SnippetSelector } from './SnippetSelector';
 import {
   getConversation,
   getConversationMessages,
@@ -43,6 +45,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
   const [error, setError] = useState<string | null>(null);
   const [messageContent, setMessageContent] = useState('');
   const [subject, setSubject] = useState('');
+  const [showSnippetSelector, setShowSnippetSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -311,7 +314,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
             >
               Email
             </button>
-            <button 
+            {/* <button 
               onClick={() => setActiveChannel('team')}
               className={`px-4 py-2 text-sm font-medium ${
                 activeChannel === 'team' 
@@ -320,7 +323,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
               }`}
             >
               Team Message
-            </button>
+            </button> */}
             <button className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 ml-auto">
               Internal Comment
             </button>
@@ -329,7 +332,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
           <div className="p-3">
             {activeChannel === 'team' ? (
               <TeamMessageInput
-                onSend={async (message, metadata) => {
+                onSend={async (message: string, metadata: any) => {
                   const newMessage = {
                     id: Date.now().toString(),
                     conversation_id: conversationId!,
@@ -350,43 +353,31 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
               />
             ) : activeChannel === 'email' ? (
               <MessageInputEmail
-                onSend={async (message, metadata) => {
-                  // Add email message instantly to UI
-                  const newMessage = {
-                    id: Date.now().toString(),
-                    conversation_id: conversationId!,
-                    message_type: 'email' as any,
-                    direction: 'outbound' as const,
-                    sender_id: 'current_user',
-                    content: message,
-                    is_internal: false,
-                    email_metadata: metadata,
-                    sms_metadata: {},
-                    delivery_status: 'sent' as const,
-                    external_id: null,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                  };
-                  setMessages(prev => [...prev, newMessage]);
-                }}
-                contactEmail={conversation?.contact?.email}
-                contactName={conversation?.contact?.full_name}
+                conversationId={conversationId!}
+                contactEmail={conversation?.contact?.email || undefined}
+                contactName={conversation?.contact?.full_name || undefined}
                 contactId={conversation?.contact?.id?.toString()}
+                onSendSuccess={handleSendSuccess}
+                onSendError={handleSendError}
               />
             ) : (
-              <>
-                <div className="relative">
-                  <textarea
-                    value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    placeholder="Type SMS message..."
-                    className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                  />
-                </div>
-
+              <div>
+                <textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  placeholder="Type SMS message..."
+                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setShowSnippetSelector(true)}
+                      className="p-1 text-gray-500 hover:text-gray-700"
+                      title="Insert snippet"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
                     <button className="p-1 text-gray-500 hover:text-gray-700">
                       <Paperclip className="w-4 h-4" />
                     </button>
@@ -394,7 +385,6 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
                       <Smile className="w-4 h-4" />
                     </button>
                   </div>
-                  
                   <div className="flex items-center space-x-3">
                     <span className="text-sm text-gray-500">{messageContent.split(' ').filter(w => w.length > 0).length} words</span>
                     <button 
@@ -412,10 +402,17 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
+
+        <SnippetSelector
+          isOpen={showSnippetSelector}
+          onClose={() => setShowSnippetSelector(false)}
+          onSelectSnippet={(body) => setMessageContent(body)}
+          type="text"
+        />
     </div>
   );
 }

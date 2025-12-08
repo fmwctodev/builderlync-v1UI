@@ -9,6 +9,7 @@ interface AuthState {
   error: string | null;
   resetToken: string | null;
   email: string | null;
+  registrationEmail: string | null;
 }
 
 const getInitialState = (): AuthState => {
@@ -20,6 +21,7 @@ const getInitialState = (): AuthState => {
     error: null,
     resetToken: null,
     email: null,
+    registrationEmail: null,
   };
 };
 
@@ -33,12 +35,9 @@ const authSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    registerSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    registerSuccess: (state, action: PayloadAction<{ message: string; email?: string }>) => {
       state.loading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      setEncryptedStorage('auth', action.payload);
-      localStorage.setItem('token', action.payload.token);
+      state.registrationEmail = action.payload.email || null;
     },
     registerFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
@@ -96,12 +95,39 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+    verifyRegistrationOtpRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    verifyRegistrationOtpSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+      state.loading = false;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      setEncryptedStorage('auth', action.payload);
+      localStorage.setItem('token', action.payload.token);
+    },
+    verifyRegistrationOtpFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+    resendRegistrationOtpRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    resendRegistrationOtpSuccess: (state) => {
+      state.loading = false;
+    },
+    resendRegistrationOtpFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.error = null;
       state.resetToken = null;
       state.email = null;
+      state.registrationEmail = null;
       localStorage.removeItem('auth');
       localStorage.removeItem('token');
     },
@@ -127,6 +153,12 @@ export const {
   resetPasswordRequest,
   resetPasswordSuccess,
   resetPasswordFailure,
+  verifyRegistrationOtpRequest,
+  verifyRegistrationOtpSuccess,
+  verifyRegistrationOtpFailure,
+  resendRegistrationOtpRequest,
+  resendRegistrationOtpSuccess,
+  resendRegistrationOtpFailure,
   logout,
   clearError,
 } = authSlice.actions;
