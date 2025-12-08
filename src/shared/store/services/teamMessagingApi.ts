@@ -40,6 +40,8 @@ export interface TeamMessage {
     email: string;
   };
   is_read?: boolean;
+  message_type?: 'sms' | 'email';
+  subject?: string;
 }
 
 export interface CreateConversationRequest {

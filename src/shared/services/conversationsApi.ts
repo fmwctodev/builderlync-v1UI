@@ -86,17 +86,27 @@ export interface SendInternalCommentRequest {
  */
 export const getConversations = async (): Promise<Conversation[]> => {
   const token = getAuthToken();
-  if (!token) throw new Error('Not authenticated');
+  if (!token) {
+    console.error('No auth token found');
+    throw new Error('Not authenticated');
+  }
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  console.log('Fetching conversations with token:', token.substring(0, 20) + '...');
+  
   const response = await fetch(`${API_BASE_URL}/conversations`, {
     headers: {
       'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get conversations');
+    console.error('API Response:', response.status, response.statusText);
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    throw new Error(`Failed to get conversations: ${response.statusText}`);
   }
 
   return response.json();

@@ -7,6 +7,7 @@ import { Conversations } from './pages/Conversations';
 import { Jobs } from './pages/Opportunities';
 import { Automations } from './pages/Automations';
 import { Settings } from './pages/Settings';
+import { Snippets } from './pages/Snippets';
 
 export function CRMModule() {
   return (
@@ -18,6 +19,7 @@ export function CRMModule() {
         <Route path="conversations" element={<Conversations />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="automations" element={<Automations />} />
+        <Route path="snippets" element={<Snippets />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

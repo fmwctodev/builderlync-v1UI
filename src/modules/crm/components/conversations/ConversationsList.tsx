@@ -8,11 +8,15 @@ import {
 } from '../../../../shared/services/conversationsApi';
 import { supabase } from '../../../../shared/lib/supabase';
 import { ConversationEditModal } from './ConversationEditModal';
+import { DirectMessageModal } from './DirectMessageModal';
 
 interface ConversationsListProps {
   selectedConversation: string | null;
   onSelectConversation: (id: string) => void;
 }
+
+
+
 
 type FilterTab = 'unread' | 'recents' | 'starred' | 'all';
 
@@ -23,27 +27,44 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+   const [showDirectModal, setShowDirectModal] = useState(false);
 
   useEffect(() => {
     loadConversations();
   }, []);
 
-  useEffect(() => {
-    const setupSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
 
-      const subscription = subscribeToConversations(user.id, () => {
-        loadConversations();
-      });
+  const handleDirectModalClose = () => {
+    setShowDirectModal(false);
+  };
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    };
 
-    setupSubscription();
-  }, []);
+  
+  const handleConversationCreated = (contactId: string) => {
+    setShowDirectModal(false);
+    handleCreateConversation(contactId);
+  };
+
+
+  // Subscription disabled - Supabase not in use
+  // useEffect(() => {
+  //   const setupSubscription = async () => {
+  //     if (!supabase?.auth) return;
+  //     
+  //     const { data: { user } } = await supabase.auth.getUser();
+  //     if (!user) return;
+
+  //     const subscription = subscribeToConversations(user.id, () => {
+  //       loadConversations();
+  //     });
+
+  //     return () => {
+  //       subscription.unsubscribe();
+  //     };
+  //   };
+
+  //   setupSubscription();
+  // }, []);
 
   const loadConversations = async () => {
     try {
@@ -137,7 +158,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   });
 
   const handleEditClick = () => {
-    setIsEditModalOpen(true);
+    setShowDirectModal(true);
   };
 
   const handleConversationTypeSelect = (type: 'direct' | 'group') => {
@@ -155,7 +176,8 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
       loadConversations(); // Refresh the list
     } catch (error) {
       console.error('Failed to create conversation:', error);
-      alert('Failed to create conversation: ' + error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert('Failed to create conversation: ' + message);
     }
   };
 
@@ -326,11 +348,16 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
         )}
       </div>
       
-      <ConversationEditModal
+      {/* <ConversationEditModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSelectType={handleConversationTypeSelect}
         onCreateConversation={handleCreateConversation}
+      /> */}
+      <DirectMessageModal
+        isOpen={showDirectModal}
+        onClose={handleDirectModalClose}
+        onCreateConversation={handleConversationCreated}
       />
     </div>
   );

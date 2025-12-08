@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Paperclip, Smile, X, Phone, MessageSquare, Mail } from 'lucide-react';
+import { Send, Users, Paperclip, Smile, X, Phone, MessageSquare, Mail, FileText } from 'lucide-react';
 import { TeamMessageItem } from '../../types/teamMessaging';
+import { SnippetSelector } from '../../../../shared/components/SnippetSelector';
 
 interface MessageThreadProps {
   conversationId: string | null;
@@ -18,6 +19,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   const [activeChannel, setActiveChannel] = useState<'sms' | 'email'>('sms');
   const [messageText, setMessageText] = useState('');
   const [subject, setSubject] = useState('');
+  const [showSnippetSelector, setShowSnippetSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -203,6 +205,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => setShowSnippetSelector(true)}
+                    className="p-1 text-gray-500 hover:text-gray-700"
+                    title="Insert snippet"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
                   <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Paperclip className="w-4 h-4" />
                   </button>
@@ -248,6 +257,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => setShowSnippetSelector(true)}
+                    className="p-1 text-gray-500 hover:text-gray-700"
+                    title="Insert snippet"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
                   <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Paperclip className="w-4 h-4" />
                   </button>
@@ -281,6 +297,16 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           )}
         </div>
       </div>
+
+      <SnippetSelector
+        isOpen={showSnippetSelector}
+        onClose={() => setShowSnippetSelector(false)}
+        onSelectSnippet={(body, subjectText) => {
+          setMessageText(body);
+          if (subjectText && activeChannel === 'email') setSubject(subjectText);
+        }}
+        type={activeChannel === 'email' ? 'email' : 'text'}
+      />
     </div>
   );
 };

@@ -64,7 +64,16 @@ export default function MaterialOrders() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Material Orders</h1>
         </div>
 
-        <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+        <button 
+          onClick={() => {
+            // Trigger navigation to products view in ABCSupplyView
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('view', 'products');
+            window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
+            window.location.reload();
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+        >
           <Plus size={16} />
           <span>Create Material Order</span>
         </button>

@@ -18,7 +18,7 @@ const Signup: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const { loading, error, user, registrationEmail } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +33,12 @@ const Signup: React.FC = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (registrationEmail && !user) {
+      navigate('/auth/verify-otp', { state: { email: registrationEmail } });
+    }
+  }, [registrationEmail, user, navigate]);
 
   useEffect(() => {
     if (error) {
