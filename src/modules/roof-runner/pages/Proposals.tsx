@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import ProposalEditor from '../components/ProposalEditor';
@@ -6,7 +7,9 @@ import { getInvoices, Invoice } from '../../../shared/store/services/invoicesApi
 import { templateApi } from '../services/templateApi';
 
 export default function Proposals() {
-  const [activeTab, setActiveTab] = useState('Proposals');
+  const location = useLocation();
+  const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
@@ -16,13 +19,13 @@ export default function Proposals() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   const fetchInvoices = async () => {
     try {
@@ -42,6 +45,30 @@ export default function Proposals() {
   useEffect(() => {
     fetchInvoices();
   }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const data = await templateApi.getTemplates();
+      setTemplates(data);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showTemplateModal) {
+      fetchTemplates();
+    }
+  }, [showTemplateModal]);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -189,22 +216,6 @@ export default function Proposals() {
           <TemplatesGrid
             openDropdown={openDropdown}
             setOpenDropdown={setOpenDropdown}
-            onCreateTemplate={async () => {
-              try {
-                console.log('Creating template...');
-                const newTemplate = await templateApi.createTemplate({ name: 'New Template' });
-                console.log('Template created:', newTemplate);
-                setEditingTemplateId(newTemplate.id);
-                setShowTemplateBuilder(true);
-              } catch (error) {
-                console.error('Error creating template:', error);
-                alert('Failed to create template. Please check console for details.');
-              }
-            }}
-            onEditTemplate={(id) => {
-              setEditingTemplateId(id);
-              setShowTemplateBuilder(true);
-            }}
           />
         )}
 
@@ -346,36 +357,45 @@ export default function Proposals() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  'New template',
-                  'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
-                  'Commercial Roof Repair Template',
-                  'Commercial - TPO/PVC',
-                  'NEW COMMERCIAL',
-                  'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
-                  'Retail - Multifamily IKO/Dynasty',
-                  'Multi Family - Retail (Shingle)',
-                  'Insurance Scope Template (IKO Dynasty & Nordic)',
-                  'Roofing Labor',
-                  'Insurance Restoration Work Authorization',
-                  'Service Agreement',
-                  'Shingle Coatings'
-                ].map((template, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      setSelectedTemplateId(template);
-                      setShowTemplateModal(false);
-                      setShowProposalEditor(true);
-                    }}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{template}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Template cover image</div>
-                    </div>
+                {loadingTemplates ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
                   </div>
-                ))}
+                ) : templates.length === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No templates found</div>
+                  </div>
+                ) : (
+                  templates.map((template) => (
+                    <div 
+                      key={template.id} 
+                      className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => {
+                        setSelectedTemplateId(template.id);
+                        setShowTemplateModal(false);
+                        setShowProposalEditor(true);
+                      }}
+                    >
+                      {template.content?.settings?.coverImage ? (
+                        <img 
+                          src={template.content.settings.coverImage} 
+                          alt={template.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No Image</span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{template.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {template.summary?.sectionCount || 0} sections, {template.summary?.itemCount || 0} items
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -395,16 +415,6 @@ export default function Proposals() {
             </div>
           </div>
         </div>
-      )}
-
-      {showTemplateBuilder && editingTemplateId && (
-        <TemplateBuilder 
-          templateId={editingTemplateId}
-          onClose={() => {
-            setShowTemplateBuilder(false);
-            setEditingTemplateId(null);
-          }} 
-        />
       )}
 
       <ProposalEditor

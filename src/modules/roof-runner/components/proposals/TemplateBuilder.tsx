@@ -1172,37 +1172,50 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         {/* Template Preview */}
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="p-8">
+            <div className={activeSection === "Cover" ? "" : "p-8"}>
               {/* Render active section content */}
               {activeSection === "Cover" && (
-                <div className="h-full flex flex-col">
+                <div className="flex flex-col min-h-[800px]">
                   {/* Top 60% - Cover Image */}
-                  <div className="relative h-[60%] bg-gray-100 dark:bg-gray-700 rounded-t-lg overflow-hidden group">
+                  <div 
+                    className="relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    onClick={() => !coverImage && coverImageInputRef.current?.click()}
+                  >
                     {coverImage && (
                       <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
                     )}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {!coverImage && (
+                    {!coverImage && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-center">
                           <Upload size={48} className="text-gray-400 mx-auto mb-2" />
-                          <span className="text-gray-500 dark:text-gray-400">Cover Image Area</span>
+                          <span className="text-gray-500 dark:text-gray-400">Click to Upload Cover Image</span>
                         </div>
-                      )}
-                    </div>
-                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => coverImageInputRef.current?.click()}
-                        className="p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700"
-                      >
-                        <Upload size={16} />
-                      </button>
+                      </div>
+                    )}
+                    <div className="absolute top-4 right-4 flex gap-2">
                       {coverImage && (
-                        <button
-                          onClick={() => setCoverImage(null)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              coverImageInputRef.current?.click();
+                            }}
+                            className="p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 shadow-lg"
+                            title="Change Cover Image"
+                          >
+                            <Upload size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverImage(null);
+                            }}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                            title="Remove Cover Image"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
                       )}
                     </div>
                     <input
@@ -1225,7 +1238,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   </div>
 
                   {/* Middle Section - Title, Date, Customer Details */}
-                  <div className="flex-1 p-6 flex items-center justify-between">
+                  <div className="p-6 flex items-center justify-between">
                     <div className="flex-1">
                       <EditableText
                         value={coverTitle}
@@ -2890,6 +2903,36 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     if (croppedAreaPixels && cropImage) {
                       const croppedImage = await getCroppedImg(cropImage, croppedAreaPixels);
                       setCoverImage(croppedImage);
+                      
+                      // Upload to server using same API as photos/PDFs
+                      try {
+                        const blob = await fetch(croppedImage).then(r => r.blob());
+                        const file = new File([blob], 'cover-image.jpg', { type: 'image/jpeg' });
+                        
+                        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+                        const token = localStorage.getItem('token');
+                        
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('sectionId', 'cover');
+                        formData.append('type', 'photo');
+
+                        const response = await fetch(`${API_BASE_URL}/templates/${templateId}/media`, {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: formData
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                          setCoverImage(result.data.url);
+                        }
+                      } catch (error) {
+                        console.error('Error uploading cover image:', error);
+                      }
+                      
                       setShowCropModal(false);
                       setCropImage(null);
                     }

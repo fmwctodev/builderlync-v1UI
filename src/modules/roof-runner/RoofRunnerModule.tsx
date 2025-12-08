@@ -7,6 +7,7 @@ import BlankPage from './pages/BlankPage';
 import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
+import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import MaterialOrders from './pages/MaterialOrders';
 import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
@@ -71,6 +72,7 @@ export function RoofRunnerModule() {
         <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
+        <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
         <Route path="material-orders" element={<MaterialOrders />} />
         <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<Automations />} />
