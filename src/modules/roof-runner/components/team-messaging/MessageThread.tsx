@@ -212,12 +212,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                   >
                     <FileText className="w-4 h-4" />
                   </button>
-                  <button className="p-1 text-gray-500 hover:text-gray-700">
+                  {/* <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Paperclip className="w-4 h-4" />
                   </button>
                   <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Smile className="w-4 h-4" />
-                  </button>
+                  </button> */}
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-500">{messageText.split(' ').filter(w => w.length > 0).length} words</span>
@@ -264,12 +264,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                   >
                     <FileText className="w-4 h-4" />
                   </button>
-                  <button className="p-1 text-gray-500 hover:text-gray-700">
+                  {/* <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Paperclip className="w-4 h-4" />
                   </button>
                   <button className="p-1 text-gray-500 hover:text-gray-700">
                     <Smile className="w-4 h-4" />
-                  </button>
+                  </button> */}
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-500">{messageText.split(' ').filter(w => w.length > 0).length} words</span>
