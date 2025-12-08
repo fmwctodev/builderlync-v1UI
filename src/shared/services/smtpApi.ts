@@ -115,7 +115,7 @@ export const smtpApi = {
       if (error.error && error.error.includes('Twilio account not configured')) {
         const shouldRedirect = confirm(`${error.error}\n\nWould you like to configure SMS service now?`);
         if (shouldRedirect) {
-          window.location.href = '/settings/sms-service';
+          window.location.href = '/settings/integrations';
         }
       }
       throw error;
