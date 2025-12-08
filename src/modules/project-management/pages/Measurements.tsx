@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Ruler, Plus, History, FileText } from 'lucide-react';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
-import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
+import OrderSummary from '../components/measurements/OrderSummary';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
 
 type ViewType = 'dashboard' | 'place-order' | 'order-summary' | 'order-history';
@@ -49,11 +49,21 @@ const Measurements = () => {
         );
       case 'order-summary':
         return (
-          <OrderSummaryPage 
-            orderData={orderData!}
-            onBack={() => setCurrentView('place-order')}
-            onComplete={handleBackToDashboard}
-          />
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setCurrentView('place-order')}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                ← Back to Order
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Summary</h1>
+            </div>
+            <OrderSummary 
+              totalCost={orderData!.totalCost}
+              onNext={handleBackToDashboard}
+            />
+          </div>
         );
       case 'order-history':
         return (
