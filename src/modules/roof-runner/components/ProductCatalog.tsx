@@ -26,7 +26,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     try {
       setLoading(true);
       const response = await abcSupplyApi.getItems(1, 50);
-      setProducts(response.items);
+      setProducts(Array.isArray(response?.items) ? response.items : []);
     } catch (error) {
       console.error('Failed to load products:', error);
       setProducts([]);
@@ -44,7 +44,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     try {
       setSearchLoading(true);
       const data = await abcSupplyApi.searchItems(query, 50);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Search failed:', error);
       setProducts([]);
@@ -98,11 +98,11 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
   const filteredProducts = (products || []).filter(product => {
     const matchesSearch = searchQuery === '' ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase());
+      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory = selectedCategories.length === 0 ||
-      selectedCategories.includes(product.category || '');
+      selectedCategories.includes(product.category?.name || '');
 
     const matchesManufacturer = selectedManufacturers.length === 0 ||
       selectedManufacturers.includes(product.manufacturer);
