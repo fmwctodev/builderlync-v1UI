@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown, CreditCard, MapPin } from 'lucide-react';
 import { eagleViewService } from '../../services/eagleViewService';
+import { getEncryptedStorage } from '../../../../shared/utils/encryption';
 
 interface OrderData {
   address: string;
+  addressComponents?: any;
   propertyType: string;
   isComplex: boolean;
   buildingId: string;
@@ -101,14 +103,90 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
     setIsPlacingOrder(true);
     
     try {
+      // Extract address components from Google Places API
+      let street = '', city = '', state = '', zip = '', lat = 0, lng = 0;
+      
+      if (orderData.addressComponents) {
+        lat = orderData.addressComponents.lat || 0;
+        lng = orderData.addressComponents.lng || 0;
+        
+        console.log('Address components from Google:', orderData.addressComponents.components);
+        
+        orderData.addressComponents.components?.forEach((component: any) => {
+          const types = component.types;
+          console.log('Component:', component.long_name, 'Types:', types);
+          
+          if (types.includes('street_number')) {
+            street = component.long_name + ' ';
+          } else if (types.includes('route')) {
+            street += component.long_name;
+          } else if (types.includes('locality')) {
+            city = component.long_name;
+          } else if (types.includes('administrative_area_level_1')) {
+            state = component.short_name;
+          } else if (types.includes('postal_code') || types.includes('postal_code_prefix')) {
+            zip = component.long_name;
+          }
+        });
+      }
+      
+      // Fallback to parsing if components not available
+      if (!street || !city || !state || !zip) {
+        const addressParts = orderData.address.split(',').map(p => p.trim());
+        street = street || addressParts[0] || orderData.address;
+        city = city || addressParts[1] || '';
+        const stateZip = addressParts[2] || '';
+        const stateZipParts = stateZip.split(' ').filter(p => p);
+        state = state || stateZipParts[0] || '';
+        zip = zip || stateZipParts[1] || '';
+      }
+      
+      console.log('Parsed address:', { street, city, state, zip, lat, lng, original: orderData.address });
+      
+      // If still no zip, try to fetch it using Geocoding API
+      if (!zip && lat && lng) {
+        console.warn('No zip code found, fetching from Geocoding API');
+        try {
+          const geocodeResponse = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+          );
+          const geocodeData = await geocodeResponse.json();
+          if (geocodeData.results && geocodeData.results[0]) {
+            geocodeData.results[0].address_components.forEach((component: any) => {
+              if (component.types.includes('postal_code')) {
+                zip = component.long_name;
+                console.log('Found zip from Geocoding API:', zip);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch zip from Geocoding API:', error);
+        }
+      }
+      
+      // Get user info from encrypted storage
+      const authData = getEncryptedStorage('auth');
+      const user = authData?.user;
+      const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      
+      console.log('User name:', userName);
+      
       const orderRequest = eagleViewService.createOrderData({
-        address: orderData.address,
+        address: street,
+        city: city,
+        state: state,
+        zip: zip,
+        latitude: lat,
+        longitude: lng,
         buildingId: orderData.buildingId,
         productId: 1,
         claimInfo,
         paymentInfo,
-        specialInstructions
+        specialInstructions,
+        userName
       });
+      
+      console.log('Order request created:', orderRequest);
       
       const result = await eagleViewService.submitOrder(orderRequest);
       

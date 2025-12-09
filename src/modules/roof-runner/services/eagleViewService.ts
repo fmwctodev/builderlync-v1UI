@@ -1,33 +1,43 @@
 interface EagleViewOrderRequest {
   orderReports: {
-    reportAddresses: Record<string, any>;
-    BuildingId: string;
-    PrimaryProductId: number;
-    DeliveryProductId: number;
-    AddOnProductIds: number[];
-    MeasurementInstructionType: number;
-    ReportAttributes: Record<string, any>;
-    ClaimNumber?: string;
-    ClaimInfo?: string;
-    BatchId?: string;
-    CatId?: string;
-    ChangesInLast4Years: boolean;
-    PONumber?: string;
-    Comments?: string;
-    ReferenceId?: string;
-    InsuredName?: string;
-    UpgradeFromReportId?: number;
-    PolicyNumber?: string;
-    DateOfLoss?: string;
+    reportAddresses: {
+      address: string;
+      city: string;
+      state: string;
+      zip: string;
+      country: string;
+      latitude: number;
+      longitude: number;
+      addressType: number;
+    };
+    buildingId: string;
+    primaryProductId: number;
+    deliveryProductId: number;
+    addOnProductIds: number[];
+    measurementInstructionType: number;
+    reportAttributes: Record<string, any>;
+    claimNumber?: string;
+    claimInfo?: string;
+    batchId?: string;
+    catId?: string;
+    changesInLast4Years: boolean;
+    pONumber?: string;
+    comments?: string;
+    referenceId?: string;
+    insuredName?: string;
+    upgradeFromReportId?: number;
+    policyNumber?: string;
+    dateOfLoss?: string;
   };
   promoCode?: string;
+  placeOrderUser: string;
   creditCardData: {
-    CardFirstName: string;
-    CardLastName: string;
-    ExpirationMonth: number;
-    ExpirationYear: number;
-    CreditCardNumber: string;
-    CreditCardType: number;
+    cardFirstName: string;
+    cardLastName: string;
+    expirationMonth: number;
+    expirationYear: number;
+    creditCardNumber: string;
+    creditCardType: number;
   };
 }
 
@@ -142,18 +152,27 @@ class EagleViewService {
 
   async submitOrder(orderData: EagleViewOrderRequest): Promise<EagleViewOrderResponse> {
     try {
-      const response = await fetch(`${this.getApiUrl()}/orders/v1/submit`, {
+      const token = localStorage.getItem('token');
+      console.log('Submitting order with data:', JSON.stringify(orderData, null, 2));
+      const response = await fetch('https://builderlyncapi.testenvapp.com/api/eagleview/orders', {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(orderData)
       });
+      console.log('API Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('API Success:', result);
       return {
         success: true,
         orderId: result.orderId || result.id,
@@ -173,9 +192,32 @@ class EagleViewService {
     return null;
   }
 
-  async getReports(): Promise<EagleViewReport[]> {
-    console.log('Reports endpoint not available, using sample data');
-    return [];
+  async getReports(referenceId?: string, reportId?: number): Promise<EagleViewReport[]> {
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (referenceId) params.append('referenceId', referenceId);
+      if (reportId) params.append('reportId', reportId.toString());
+      
+      const url = `https://builderlyncapi.testenvapp.com/api/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return Array.isArray(result) ? result : result.data || [];
+    } catch (error) {
+      console.error('Failed to fetch Eagle View orders:', error);
+      return [];
+    }
   }
 
   async downloadReport(reportId: string, format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
@@ -185,6 +227,12 @@ class EagleViewService {
 
   createOrderData(formData: {
     address: string;
+    city: string;
+    state: string;
+    zip: string;
+    country?: string;
+    latitude?: number;
+    longitude?: number;
     buildingId: string;
     productId: number;
     claimInfo?: {
@@ -192,6 +240,8 @@ class EagleViewService {
       claimInformation?: string;
       poNumber?: string;
       dateOfLoss?: string;
+      insuredName?: string;
+      policyNumber?: string;
       catId?: string;
     };
     paymentInfo: {
@@ -203,38 +253,49 @@ class EagleViewService {
       cvv: string;
     };
     specialInstructions?: string;
+    userName: string;
   }): EagleViewOrderRequest {
     return {
       orderReports: {
-        reportAddresses: { [formData.address]: formData.address },
-        BuildingId: formData.buildingId,
-        PrimaryProductId: formData.productId,
-        DeliveryProductId: 1,
-        AddOnProductIds: [],
-        MeasurementInstructionType: 1,
-        ReportAttributes: {},
-        ClaimNumber: formData.claimInfo?.claimNumber || '',
-        ClaimInfo: formData.claimInfo?.claimInformation || '',
-        BatchId: `Batch-${Date.now()}`,
-        CatId: formData.claimInfo?.catId || '',
-        ChangesInLast4Years: false,
-        PONumber: formData.claimInfo?.poNumber || '',
-        Comments: formData.specialInstructions || '',
-        ReferenceId: `Ref-${Date.now()}`,
-        InsuredName: '',
-        UpgradeFromReportId: 0,
-        PolicyNumber: '',
-        DateOfLoss: formData.claimInfo?.dateOfLoss || '',
+        reportAddresses: {
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip: formData.zip,
+          country: formData.country || 'USA',
+          latitude: formData.latitude || 0,
+          longitude: formData.longitude || 0,
+          addressType: 0
+        },
+        buildingId: formData.buildingId,
+        primaryProductId: formData.productId,
+        deliveryProductId: 1,
+        addOnProductIds: [],
+        measurementInstructionType: 1,
+        reportAttributes: {},
+        claimNumber: formData.claimInfo?.claimNumber || '',
+        claimInfo: formData.claimInfo?.claimInformation || '',
+        batchId: `Batch-${Date.now()}`,
+        catId: formData.claimInfo?.catId || '',
+        changesInLast4Years: false,
+        pONumber: formData.claimInfo?.poNumber || '',
+        comments: formData.specialInstructions || '',
+        referenceId: `Ref-${Date.now()}`,
+        insuredName: formData.claimInfo?.insuredName || '',
+        upgradeFromReportId: 0,
+        policyNumber: formData.claimInfo?.policyNumber || '',
+        dateOfLoss: formData.claimInfo?.dateOfLoss || new Date().toISOString().split('T')[0],
       },
       promoCode: '',
+      placeOrderUser: formData.userName,
       creditCardData: {
-        CardFirstName: formData.paymentInfo.firstName,
-        CardLastName: formData.paymentInfo.lastName,
-        ExpirationMonth: Number(formData.paymentInfo.expiryMonth),
-        ExpirationYear: Number(formData.paymentInfo.expiryYear),
-        CreditCardNumber: formData.paymentInfo.cardNumber,
-        CreditCardType: 2,
-      },
+        cardFirstName: formData.paymentInfo.firstName,
+        cardLastName: formData.paymentInfo.lastName,
+        expirationMonth: Number(formData.paymentInfo.expiryMonth),
+        expirationYear: Number(formData.paymentInfo.expiryYear),
+        creditCardNumber: formData.paymentInfo.cardNumber,
+        creditCardType: 2
+      }
     };
   }
 }

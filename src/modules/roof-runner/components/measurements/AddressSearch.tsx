@@ -8,7 +8,7 @@ declare global {
 }
 
 interface AddressSearchProps {
-  onAddressSelect: (address: string) => void;
+  onAddressSelect: (address: string, addressComponents?: any) => void;
   buildingId: string;
   setBuildingId: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -62,8 +62,14 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
             if (!place.geometry?.location) return;
 
             const selectedAddress = place.formatted_address || '';
+            const addressComponents = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+              components: place.address_components
+            };
+            
             setAddress(selectedAddress);
-            onAddressSelect(selectedAddress);
+            onAddressSelect(selectedAddress, addressComponents);
             setBuildingId(selectedAddress);
             setIsAddressSelected(true);
             setShowAlert(true);

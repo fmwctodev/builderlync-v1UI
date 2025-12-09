@@ -8,19 +8,17 @@ interface OrderHistoryPageProps {
 }
 
 interface EagleViewOrder {
-  id: string;
-  orderNumber: string;
-  product: string;
+  id: number;
+  referenceId: string;
+  orderId: number;
+  reportId: number | null;
   address: string;
-  datePlaced: string;
-  delivery: string;
-  cost: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  measurements?: {
-    totalRoofArea: number;
-    perimeterLength: number;
-    pitch: string;
-  };
+  city: string;
+  state: string;
+  zip: string;
+  primaryProductId: number;
+  createdAt: string;
+  status: string;
 }
 
 const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewOrder }) => {
@@ -32,23 +30,23 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const reports = await eagleViewService.getReports();
-        const formattedOrders: EagleViewOrder[] = reports.map(report => ({
-          id: report.id,
-          orderNumber: report.id,
-          product: report.reportType,
-          address: report.address,
-          datePlaced: report.createdDate || new Date().toISOString().split('T')[0],
-          delivery: 'Standard',
-          cost: report.reportType.includes('Premium') ? 25.00 : 
-                report.reportType.includes('Insurance') ? 35.00 : 15.00,
-          status: report.status,
-          measurements: report.measurements ? {
-            totalRoofArea: report.measurements.totalRoofArea,
-            perimeterLength: report.measurements.perimeterLength,
-            pitch: report.measurements.pitch
-          } : undefined
+        const response = await eagleViewService.getReports();
+        const apiData = Array.isArray(response) ? response : response.data || [];
+        
+        const formattedOrders: EagleViewOrder[] = apiData.map((order: any) => ({
+          id: order.id,
+          referenceId: order.reference_id,
+          orderId: order.response_data?.OrderId || 0,
+          reportId: order.report_id,
+          address: order.address,
+          city: order.city,
+          state: order.state,
+          zip: order.zip,
+          primaryProductId: order.primary_product_id,
+          createdAt: order.created_at,
+          status: order.reportId ? 'completed' : 'pending'
         }));
+        
         setOrders(formattedOrders);
       } catch (error) {
         console.error('Error loading orders from Eagle View API:', error);
@@ -81,9 +79,10 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchQuery === '' || 
-      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.address.toLowerCase().includes(searchQuery.toLowerCase());
+      order.referenceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.orderId.toString().includes(searchQuery.toLowerCase()) ||
+      order.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.city.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
@@ -122,7 +121,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
           </button>
           <div>
             <h1 className="text-2xl font-bold">Order History</h1>
-            <p className="text-primary-100">View and track your measurement orders3</p>
+            <p className="text-primary-100">View and track your measurement orders</p>
           </div>
         </div>
         
@@ -177,13 +176,12 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
         {filteredOrders.length > 0 ? (
           <>
             {/* Desktop Header */}
-            <div className="hidden md:grid grid-cols-7 gap-4 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-300 p-4 rounded-t-lg">
-              <div>Order #</div>
-              <div>Report Type</div>
+            <div className="hidden md:grid grid-cols-6 gap-4 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-300 p-4 rounded-t-lg">
+              <div>Reference ID</div>
+              <div>Order ID</div>
               <div>Address</div>
+              <div>Location</div>
               <div>Date Ordered</div>
-              <div>Cost</div>
-              <div>Measurements</div>
               <div>Status</div>
             </div>
 
@@ -197,31 +195,21 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                   }`}
                 >
                   {/* Desktop Layout */}
-                  <div className="hidden md:grid grid-cols-7 gap-4 items-center">
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {highlightText(order.orderNumber, searchQuery)}
+                  <div className="hidden md:grid grid-cols-6 gap-4 items-center">
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">
+                      {highlightText(order.referenceId, searchQuery)}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      {highlightText(order.product, searchQuery)}
+                    <div className="text-gray-600 dark:text-gray-400 font-medium">
+                      {order.orderId || 'N/A'}
                     </div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm">
                       {highlightText(order.address, searchQuery)}
                     </div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm">
-                      {new Date(order.datePlaced).toLocaleDateString()}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">
-                      ${order.cost.toFixed(2)}
+                      {order.city}, {order.state} {order.zip}
                     </div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm">
-                      {order.measurements ? (
-                        <div>
-                          <div>{order.measurements.totalRoofArea.toLocaleString()} sq ft</div>
-                          <div className="text-xs">{order.measurements.pitch} pitch</div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Pending</span>
-                      )}
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </div>
                     <div>
                       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
@@ -235,11 +223,11 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                   <div className="md:hidden space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {highlightText(order.orderNumber, searchQuery)}
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {highlightText(order.referenceId, searchQuery)}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {highlightText(order.product, searchQuery)}
+                          Order ID: {order.orderId || 'N/A'}
                         </div>
                       </div>
                       <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
@@ -249,18 +237,10 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {highlightText(order.address, searchQuery)}
+                      <div>{order.city}, {order.state} {order.zip}</div>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="text-gray-500 dark:text-gray-400">
-                        <div>{new Date(order.datePlaced).toLocaleDateString()}</div>
-                        <div className="font-medium text-gray-900 dark:text-white">${order.cost.toFixed(2)}</div>
-                      </div>
-                      {order.measurements && (
-                        <div className="text-right text-gray-600 dark:text-gray-400">
-                          <div className="font-medium">{order.measurements.totalRoofArea.toLocaleString()} sq ft</div>
-                          <div className="text-xs">{order.measurements.pitch} pitch</div>
-                        </div>
-                      )}
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
