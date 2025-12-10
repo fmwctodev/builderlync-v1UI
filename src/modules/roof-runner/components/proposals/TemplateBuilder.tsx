@@ -100,6 +100,7 @@ interface Section {
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const [templateName, setTemplateName] = useState("demo");
   const [activeSection, setActiveSection] = useState("Estimate");
+  const [activeSubsection, setActiveSubsection] = useState("Option 1");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [activeTab, setActiveTab] = useState("Estimate");
@@ -130,7 +131,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [customerEmail, setCustomerEmail] = useState("customer@email.com");
 
   // Template data states
-  const [optionTitle, setOptionTitle] = useState("Add title");
+  const [optionTitle, setOptionTitle] = useState("Option 1");
   const [optionDescription, setOptionDescription] = useState("Add description");
   const [itemSectionTitle, setItemSectionTitle] = useState("Item");
   const [itemDescription1, setItemDescription1] = useState("This is a testing");
@@ -204,7 +205,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       name: "Estimate",
       active: true,
       order: 1,
-      subsections: ["Demo", "Summary"],
+      subsections: [optionTitle, "Summary"],
       type: "estimate",
     },
   ]);
@@ -270,7 +271,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           setUpgrades(data.content.upgrades || []);
           
           if (data.content.settings) {
-            setOptionTitle(data.content.settings.optionTitle || "Add title");
+            const loadedOptionTitle = data.content.settings.optionTitle || "Option 1";
+            setOptionTitle(loadedOptionTitle);
+            // Update subsection name to match option title
+            setSections(prev => prev.map(s => 
+              s.id === 'estimate' ? { ...s, subsections: [loadedOptionTitle, "Summary"] } : s
+            ));
             setOptionDescription(data.content.settings.optionDescription || "Add description");
             setItemSectionTitle(data.content.settings.itemSectionTitle || "Item");
             setUpgradesTitle(data.content.settings.upgradesTitle || "Upgrades");
@@ -1104,14 +1110,21 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   </div>
                   {section.subsections && (
                     <div className="ml-4 space-y-1">
-                      {section.subsections.map((sub) => (
+                      {section.subsections.map((sub, idx) => (
                         <button
                           key={sub}
-                          onClick={() => setActiveSection(section.name)}
-                          className="flex items-center justify-between p-2 rounded w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => {
+                            setActiveSection(section.name);
+                            setActiveSubsection(sub);
+                            const targetId = idx === 0 ? 'estimate-page-1' : 'estimate-page-2';
+                            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className={`flex items-center justify-between p-2 rounded w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                            activeSubsection === sub ? 'bg-gray-100 dark:bg-gray-700' : ''
+                          }`}
                         >
                           <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {sub}
+                            {idx === 0 ? optionTitle : sub}
                           </span>
                         </button>
                       ))}
@@ -1171,8 +1184,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
         {/* Template Preview */}
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className={activeSection === "Cover" ? "" : "p-8"}>
+          <div className="max-w-4xl mx-auto">
+            <div className={activeSection === "Estimate" ? "space-y-8" : `bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${activeSection === "Cover" ? "" : "p-8"}`}>
               {/* Render active section content */}
               {activeSection === "Cover" && (
                 <div className="flex flex-col min-h-[800px]">
@@ -1481,234 +1494,291 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
               {activeSection === "Estimate" && (
                 <>
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <EditableText
-                        value={optionTitle || "Add title"}
-                        onChange={setOptionTitle}
-                        className="text-lg font-medium text-gray-900 dark:text-white"
-                        triggerFocus={triggerFocus}
-                        onFocusComplete={() => setTriggerFocus(false)}
-                      />
-                      <button
-                        onClick={() => setShowEditModal(true)}
-                        className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
-                      >
-                        <Pencil size={14} />
-                        Edit option
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <EditableText
-                        value={optionDescription || "Add description"}
-                        onChange={setOptionDescription}
-                        className="text-sm text-gray-500 dark:text-gray-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                        <div className="font-medium text-gray-900 dark:text-white">{itemSectionTitle}</div>
-                      </div>
-
-                      {items.filter(item => item.visible).map((item, idx) => (
-                        <div key={item.id}>
-                          {item.isHeading ? (
-                            <>
-                              <hr className="border-gray-300 dark:border-gray-600 my-3" />
-                              <div className="font-semibold text-gray-900 dark:text-white mb-2">{item.name}</div>
-                            </>
-                          ) : (
-                            <div className="mb-2 pl-3 text-sm">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                                  {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
-                                  {item.mapping && <div className="text-gray-500 dark:text-gray-500 text-xs">{item.mapping}</div>}
-                                  <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
-                                    {item.qty && <span>Qty: {item.qty}</span>}
-                                    {item.unit && <span>Unit: {item.unit}</span>}
-                                  </div>
-                                </div>
-                                {item.unitCost && item.qty && (
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    ${(parseFloat(item.unitCost) * parseFloat(item.qty)).toFixed(2)}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      <div className="flex gap-4 mt-3 text-sm">
-                        <button
-                          onClick={() => {
-                            setActiveTab("Estimate");
-                            setShowEditModal(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                        >
-                          <Plus size={14} />
-                          Add item from catalog
-                        </button>
-                        <button
-                          onClick={() => {
-                            setActiveTab("Estimate");
-                            setShowEditModal(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                        >
-                          <Plus size={14} />
-                          Add section heading
-                        </button>
-                        <button
-                          onClick={() => {
-                            setActiveTab("Upgrade");
-                            setShowEditModal(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                        >
-                          <Plus size={14} />
-                          Add upgrade
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        Estimate subtotal
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        ${calculateEstimateSubtotal()}
-                      </span>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
+                  {/* Page 1: Option Details */}
+                  <div id="estimate-page-1" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 min-h-[1000px] flex flex-col mb-8">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-4">
                         <EditableText
-                          value={upgradesTitle}
-                          onChange={setUpgradesTitle}
-                          className="font-medium text-gray-900 dark:text-white"
+                          value={optionTitle || "Add title"}
+                          onChange={setOptionTitle}
+                          className="text-lg font-medium text-gray-900 dark:text-white"
+                          triggerFocus={triggerFocus}
+                          onFocusComplete={() => setTriggerFocus(false)}
+                        />
+                        <button
+                          onClick={() => setShowEditModal(true)}
+                          className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
+                        >
+                          <Pencil size={14} />
+                          Edit option
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <EditableText
+                          value={optionDescription || "Add description"}
+                          onChange={setOptionDescription}
+                          className="text-sm text-gray-500 dark:text-gray-400"
                         />
                       </div>
-                      
-                      {upgrades.map((upgrade) => (
-                        <div key={upgrade.id} className="mb-4">
-                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                            <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
-                          </div>
-                          {upgrade.items.filter(item => item.visible).map((item) => (
-                            <div key={item.id}>
-                              {item.isHeading ? (
-                                <>
-                                  <hr className="border-gray-300 dark:border-gray-600 my-3" />
-                                  <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">{item.name}</div>
-                                </>
-                              ) : (
-                                <div className="mb-2 pl-3 text-sm">
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                      <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                                      {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
-                                      {item.mapping && <div className="text-gray-500 dark:text-gray-500 text-xs">{item.mapping}</div>}
-                                      <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
-                                        {item.qty && <span>Qty: {item.qty}</span>}
-                                        {item.unit && <span>Unit: {item.unit}</span>}
-                                      </div>
-                                    </div>
-                                    {item.unitCost && item.qty && (
-                                      <div className="font-medium text-gray-900 dark:text-white">
-                                        ${(parseFloat(item.unitCost) * parseFloat(item.qty)).toFixed(2)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-
-                      <button
-                        onClick={() => {
-                          setActiveTab("Upgrade");
-                          setShowEditModal(true);
-                        }}
-                        className="text-primary-600 hover:text-primary-700 text-sm mt-2 flex items-center gap-1"
-                      >
-                        <Plus size={14} />
-                        Add summary
-                      </button>
                     </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Upgrade subtotal
-                        </span>
-                        <span className="text-gray-900 dark:text-white">
-                          ${calculateUpgradeSubtotal()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
+                    <div className="space-y-6">
                       <div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Company representative name
+                        <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                          <div className="font-medium text-gray-900 dark:text-white">{itemSectionTitle}</div>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        {items.filter(item => item.visible).map((item, idx) => (
+                          <div key={item.id}>
+                            {item.isHeading ? (
+                              <>
+                                <hr className="border-gray-300 dark:border-gray-600 my-3" />
+                                <div className="font-semibold text-gray-900 dark:text-white mb-2">{item.name}</div>
+                              </>
+                            ) : (
+                              <div className="mb-2 pl-3 text-sm">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
+                                    {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
+                                    {item.mapping && <div className="text-gray-500 dark:text-gray-500 text-xs">{item.mapping}</div>}
+                                    <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                      {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
+                                      {item.qty && <span>Qty: {item.qty}</span>}
+                                      {item.unit && <span>Unit: {item.unit}</span>}
+                                    </div>
+                                  </div>
+                                  {item.unitCost && item.qty && (
+                                    <div className="font-medium text-gray-900 dark:text-white">
+                                      ${(parseFloat(item.unitCost) * parseFloat(item.qty)).toFixed(2)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        <div className="flex gap-4 mt-3 text-sm">
+                          <button
+                            onClick={() => {
+                              setActiveTab("Estimate");
+                              setShowEditModal(true);
+                            }}
+                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                          >
+                            <Plus size={14} />
+                            Add item from catalog
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveTab("Estimate");
+                              setShowEditModal(true);
+                            }}
+                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                          >
+                            <Plus size={14} />
+                            Add section heading
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveTab("Upgrade");
+                              setShowEditModal(true);
+                            }}
+                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                          >
+                            <Plus size={14} />
+                            Add upgrade
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
                           <EditableText
-                            value={companyName}
-                            onChange={setCompanyName}
+                            value={upgradesTitle}
+                            onChange={setUpgradesTitle}
                             className="font-medium text-gray-900 dark:text-white"
                           />
                         </div>
-                        <EditableText
-                          value={companyPhone}
-                          onChange={setCompanyPhone}
-                          className="text-sm text-gray-500 dark:text-gray-400 block"
-                        />
-                        <EditableText
-                          value={companyEmail}
-                          onChange={setCompanyEmail}
-                          className="text-sm text-gray-500 dark:text-gray-400 block"
-                        />
+                        
+                        {upgrades.map((upgrade) => (
+                          <div key={upgrade.id} className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                            <div className="font-medium text-gray-900 dark:text-white mb-3">{upgrade.name}</div>
+                            {upgrade.items.filter(item => item.visible).map((item) => (
+                              <div key={item.id}>
+                                {item.isHeading ? (
+                                  <>
+                                    <hr className="border-gray-300 dark:border-gray-600 my-3" />
+                                    <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">{item.name}</div>
+                                  </>
+                                ) : (
+                                  <div className="mb-2 pl-3 text-sm">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
+                                        {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
+                                        {item.mapping && <div className="text-gray-500 dark:text-gray-500 text-xs">{item.mapping}</div>}
+                                        <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                          {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
+                                          {item.qty && <span>Qty: {item.qty}</span>}
+                                          {item.unit && <span>Unit: {item.unit}</span>}
+                                        </div>
+                                      </div>
+                                      {item.unitCost && item.qty && (
+                                        <div className="font-medium text-gray-900 dark:text-white">
+                                          ${(parseFloat(item.unitCost) * parseFloat(item.qty)).toFixed(2)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+
                       </div>
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
-                          {companyLogo ? (
-                            <img
-                              src={companyLogo}
-                              alt="Company Logo"
-                              className="w-full h-full object-cover"
+                    </div>
+
+                    <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Company representative name
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <EditableText
+                              value={companyName}
+                              onChange={setCompanyName}
+                              className="font-medium text-gray-900 dark:text-white"
                             />
-                          ) : (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              LOGO
-                            </span>
-                          )}
+                          </div>
+                          <EditableText
+                            value={companyPhone}
+                            onChange={setCompanyPhone}
+                            className="text-sm text-gray-500 dark:text-gray-400 block"
+                          />
+                          <EditableText
+                            value={companyEmail}
+                            onChange={setCompanyEmail}
+                            className="text-sm text-gray-500 dark:text-gray-400 block"
+                          />
                         </div>
-                        <button
-                          onClick={() => logoInputRef.current?.click()}
-                          className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                        >
-                          <Pencil size={10} />
-                        </button>
-                        <input
-                          ref={logoInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          className="hidden"
-                        />
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                            {companyLogo ? (
+                              <img
+                                src={companyLogo}
+                                alt="Company Logo"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                LOGO
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => logoInputRef.current?.click()}
+                            className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
+                          >
+                            <Pencil size={10} />
+                          </button>
+                          <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page 2: Summary */}
+                  <div id="estimate-page-2" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 min-h-[1000px] flex flex-col">
+                    <div className="flex-1">
+                      <div className="mb-6">
+                        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Summary</h2>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                            <div className="font-medium text-gray-900 dark:text-white">{optionTitle}</div>
+                          </div>
+                          <div className="flex justify-between items-center py-2 pl-3">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {optionDescription}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                            <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                            <span className="font-medium text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                            <div className="font-medium text-gray-900 dark:text-white">{upgradesTitle}</div>
+                          </div>
+                          {upgrades.map((upgrade) => (
+                            <div key={upgrade.id} className="mb-2 pl-3 text-sm">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
+                                </div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  ${upgrade.items.filter(item => item.visible && !item.isHeading).reduce((sum, item) => sum + (parseFloat(item.unitCost || '0') * parseFloat(item.qty || '0')), 0).toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                            <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                            <span className="font-medium text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t-2 border-gray-300 dark:border-gray-600">
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">Overall Total</span>
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) + parseFloat(calculateUpgradeSubtotal())).toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                            By signing this document you agree to the statement of works provided by {companyName} and in accordance with any terms described within.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Company representative name</div>
+                          <div className="flex items-center gap-2">
+                            <EditableText value={companyName} onChange={setCompanyName} className="font-medium text-gray-900 dark:text-white" />
+                          </div>
+                          <EditableText value={companyPhone} onChange={setCompanyPhone} className="text-sm text-gray-500 dark:text-gray-400 block" />
+                          <EditableText value={companyEmail} onChange={setCompanyEmail} className="text-sm text-gray-500 dark:text-gray-400 block" />
+                        </div>
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                            {companyLogo ? (
+                              <img src={companyLogo} alt="Company Logo" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">LOGO</span>
+                            )}
+                          </div>
+                          <button onClick={() => logoInputRef.current?.click()} className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm">
+                            <Pencil size={10} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

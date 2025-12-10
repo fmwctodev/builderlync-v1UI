@@ -1,85 +1,126 @@
-import { supabase } from '../../../shared/lib/supabase';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5175/api';
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+  };
+};
+
+export interface Address {
+  uuid?: string;
+  address: string;
+  locality?: string;
+  region_code?: string;
+  postal_code?: string;
+  lat?: string;
+  lng?: string;
+}
+
+export interface ContractorSignature {
+  name: string;
+  font_type: string;
+}
 
 export interface Proposal {
-  id: string;
+  id: number;
+  type: string;
   title: string;
-  type: 'proposal' | 'estimate' | 'contract';
-  customer_id?: string;
-  opportunity_id?: string;
-  status: 'draft' | 'waiting' | 'completed' | 'payments' | 'archived';
-  value: number;
-  content: any;
-  date_modified: string;
-  created_by?: string;
+  status: 'incomplete' | 'complete' | 'sent' | 'signed';
+  identifier: string;
+  template_id?: string;
+  sections: any[];
+  author_id: number;
+  assignee_id: number;
+  job_id?: number;
+  total: number;
+  address?: Address;
+  contractor_signature?: ContractorSignature;
   created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProposalRequest {
+  template_id: string;
+  job_id?: number;
+  title?: string;
+  address?: Address;
+  contractor_signature?: ContractorSignature;
+}
+
+export interface UpdateProposalRequest {
+  title?: string;
+  status?: 'incomplete' | 'complete' | 'sent' | 'signed';
+  sections?: any[];
+  total?: number;
+  total_manual?: number;
+  notes?: string;
+  address?: Address;
+  contractor_signature?: ContractorSignature;
 }
 
 export const proposalsApi = {
-  async getProposalsByOpportunity(opportunityId: string): Promise<Proposal[]> {
+  async createProposal(data: CreateProposalRequest): Promise<Proposal> {
     try {
-      const { data, error } = await supabase
-        .from('documents_contracts')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .in('type', ['proposal', 'contract'])
-        .order('created_at', { ascending: false });
+      const response = await axios.post(`${API_BASE_URL}/proposals`, data, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating proposal:', error);
+      throw error;
+    }
+  },
 
-      if (error) throw error;
-      return data || [];
+  async getProposals(filters?: { status?: string; job_id?: number }): Promise<Proposal[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.job_id) params.append('job_id', filters.job_id.toString());
+
+      const response = await axios.get(`${API_BASE_URL}/proposals?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data || [];
     } catch (error) {
       console.error('Error fetching proposals:', error);
       throw error;
     }
   },
 
-  async getAvailableProposals(excludeOpportunityId?: string): Promise<Proposal[]> {
+  async getProposalById(id: number): Promise<Proposal> {
     try {
-      let query = supabase
-        .from('documents_contracts')
-        .select('*')
-        .in('type', ['proposal', 'contract'])
-        .order('created_at', { ascending: false });
-
-      if (excludeOpportunityId) {
-        query = query.or(`opportunity_id.is.null,opportunity_id.neq.${excludeOpportunityId}`);
-      } else {
-        query = query.is('opportunity_id', null);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
+      const response = await axios.get(`${API_BASE_URL}/proposals/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
     } catch (error) {
-      console.error('Error fetching available proposals:', error);
+      console.error('Error fetching proposal:', error);
       throw error;
     }
   },
 
-  async linkProposalToOpportunity(proposalId: string, opportunityId: string): Promise<void> {
+  async updateProposal(id: number, data: UpdateProposalRequest): Promise<Proposal> {
     try {
-      const { error } = await supabase
-        .from('documents_contracts')
-        .update({ opportunity_id: opportunityId })
-        .eq('id', proposalId);
-
-      if (error) throw error;
+      const response = await axios.put(`${API_BASE_URL}/proposals/${id}`, data, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
     } catch (error) {
-      console.error('Error linking proposal to opportunity:', error);
+      console.error('Error updating proposal:', error);
       throw error;
     }
   },
 
-  async unlinkProposalFromOpportunity(proposalId: string): Promise<void> {
+  async deleteProposal(id: number): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('documents_contracts')
-        .update({ opportunity_id: null })
-        .eq('id', proposalId);
-
-      if (error) throw error;
+      await axios.delete(`${API_BASE_URL}/proposals/${id}`, {
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
-      console.error('Error unlinking proposal from opportunity:', error);
+      console.error('Error deleting proposal:', error);
       throw error;
     }
   },

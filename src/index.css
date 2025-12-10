@@ -100,3 +100,24 @@
     animation: fadeIn 0.3s ease-in-out;
   }
 }
+
+.pdf-page {
+  width: 8.5in !important;
+  height: 11in !important;
+  display: block !important;
+  overflow: hidden !important;
+  position: relative !important;
+  page-break-inside: avoid !important;
+  page-break-after: always !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-page:last-child {
+  page-break-after: avoid !important;
+}
+
+/* Prevent Tailwind/Flex parents from influencing PDF */
+#pdf-container {
+  display: block !important;
+  width: 8.5in !important;
+}

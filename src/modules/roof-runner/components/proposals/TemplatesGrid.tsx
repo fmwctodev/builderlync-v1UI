@@ -101,7 +101,7 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
             className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => navigate(`/proposals/template/${template.id}`, { state: { from: 'templates' } })}
           >
-            <div className="h-32 bg-gray-200 dark:bg-gray-600 overflow-hidden">
+            <div className="h-48 bg-gray-200 dark:bg-gray-600 overflow-hidden">
               {template.content?.settings?.coverImage ? (
                 <img 
                   src={template.content.settings.coverImage} 
