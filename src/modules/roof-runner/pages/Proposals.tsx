@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
-import ProposalEditor from '../components/ProposalEditor';
-import { getInvoices, Invoice } from '../../../shared/store/services/invoicesApi';
 import { templateApi } from '../services/templateApi';
+import { proposalsApi } from '../services/proposalsApi';
+import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
 export default function Proposals() {
-  const [activeTab, setActiveTab] = useState('Proposals');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
@@ -16,32 +20,54 @@ export default function Proposals() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [showProposalEditor, setShowProposalEditor] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [creatingProposal, setCreatingProposal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
 
-  const fetchInvoices = async () => {
+  const fetchProposals = async () => {
     try {
       setLoading(true);
-      const result = await getInvoices();
-      
-      if (result.success) {
-        setInvoices(result.data);
-      }
+      const data = await proposalsApi.getProposals();
+      setProposals(data);
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      console.error('Error fetching proposals:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInvoices();
+    fetchProposals();
   }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const data = await templateApi.getTemplates();
+      setTemplates(data);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showTemplateModal) {
+      fetchTemplates();
+    }
+  }, [showTemplateModal]);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -74,24 +100,41 @@ export default function Proposals() {
 
   const mapStatusToProposalStatus = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'paid': return 'Won';
-      case 'open': return 'Open';
+      case 'incomplete': return 'Draft';
+      case 'complete': return 'Open';
       case 'sent': return 'Sent';
-      case 'draft': return 'Draft';
-      case 'overdue': return 'Lost';
+      case 'signed': return 'Won';
       default: return 'Open';
     }
   };
 
-  const proposals = invoices.map(invoice => ({
-    id: invoice.doc_number,
-    title: invoice.invoice_line_items[0]?.description || 'Invoice',
-    subtitle: invoice.customer_name,
-    assignedBy: invoice.contacts?.full_name || 'Unknown',
-    time: formatTimeAgo(invoice.created_at),
-    amount: `$${invoice.total_amount.toFixed(2)}`,
-    status: mapStatusToProposalStatus(invoice.status),
-    image: '/api/placeholder/300/200'
+  const handleDeleteProposal = async () => {
+    if (!deletingProposalId) return;
+    
+    try {
+      await proposalsApi.deleteProposal(Number(deletingProposalId));
+      setProposals(proposals.filter(p => p.id !== Number(deletingProposalId)));
+      setShowDeleteModal(false);
+      setDeletingProposalId(null);
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      alert('Failed to delete proposal. Please try again.');
+    }
+  };
+
+  const getCoverImage = (sections: any) => {
+    return sections?.settings?.coverImage || null;
+  };
+
+  const proposalsList = proposals.map(proposal => ({
+    id: String(proposal.id),
+    title: proposal.title,
+    subtitle: proposal.address?.address || 'No address',
+    assignedBy: proposal.author?.name || 'Unknown',
+    time: formatTimeAgo(proposal.created_at),
+    amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
+    status: mapStatusToProposalStatus(proposal.status),
+    image: getCoverImage(proposal.sections)
   }));
 
   const getStatusColor = (status: string) => {
@@ -167,11 +210,11 @@ export default function Proposals() {
         {activeTab === 'Proposals' && (
           loading ? (
             <div className="flex items-center justify-center p-8">
-              <div className="text-gray-500 dark:text-gray-400">Loading invoices...</div>
+              <div className="text-gray-500 dark:text-gray-400">Loading proposals...</div>
             </div>
           ) : (
             <ProposalsList
-              proposals={proposals}
+              proposals={proposalsList}
               filterStatus={filterStatus}
               setFilterStatus={setFilterStatus}
               showFilter={showFilter}
@@ -181,6 +224,11 @@ export default function Proposals() {
               openDropdown={openDropdown}
               setOpenDropdown={setOpenDropdown}
               getStatusColor={getStatusColor}
+              onDelete={(id) => {
+                setDeletingProposalId(id);
+                setShowDeleteModal(true);
+              }}
+              onProposalClick={(id) => navigate(`/proposals/editor/${id}`)}
             />
           )
         )}
@@ -189,22 +237,6 @@ export default function Proposals() {
           <TemplatesGrid
             openDropdown={openDropdown}
             setOpenDropdown={setOpenDropdown}
-            onCreateTemplate={async () => {
-              try {
-                console.log('Creating template...');
-                const newTemplate = await templateApi.createTemplate({ name: 'New Template' });
-                console.log('Template created:', newTemplate);
-                setEditingTemplateId(newTemplate.id);
-                setShowTemplateBuilder(true);
-              } catch (error) {
-                console.error('Error creating template:', error);
-                alert('Failed to create template. Please check console for details.');
-              }
-            }}
-            onEditTemplate={(id) => {
-              setEditingTemplateId(id);
-              setShowTemplateBuilder(true);
-            }}
           />
         )}
 
@@ -298,12 +330,11 @@ export default function Proposals() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Job address
                 </label>
-                <input
-                  type="text"
+                <GooglePlacesAutocomplete
                   value={proposalAddress}
-                  onChange={(e) => setProposalAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  onChange={(address) => setProposalAddress(address)}
                   placeholder="Enter address and select"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -346,36 +377,64 @@ export default function Proposals() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  'New template',
-                  'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
-                  'Commercial Roof Repair Template',
-                  'Commercial - TPO/PVC',
-                  'NEW COMMERCIAL',
-                  'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
-                  'Retail - Multifamily IKO/Dynasty',
-                  'Multi Family - Retail (Shingle)',
-                  'Insurance Scope Template (IKO Dynasty & Nordic)',
-                  'Roofing Labor',
-                  'Insurance Restoration Work Authorization',
-                  'Service Agreement',
-                  'Shingle Coatings'
-                ].map((template, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      setSelectedTemplateId(template);
-                      setShowTemplateModal(false);
-                      setShowProposalEditor(true);
-                    }}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{template}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Template cover image</div>
-                    </div>
+                {creatingProposal && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                    <div className="text-white text-sm">Creating proposal...</div>
                   </div>
-                ))}
+                )}
+                {loadingTemplates ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No templates found</div>
+                  </div>
+                ) : (
+                  templates.map((template) => (
+                    <div 
+                      key={template.id} 
+                      className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={async () => {
+                        try {
+                          setCreatingProposal(true);
+                          const proposal = await proposalsApi.createProposal({
+                            template_id: template.id,
+                            title: template.name,
+                            address: {
+                              address: proposalAddress,
+                            },
+                          });
+                          setShowTemplateModal(false);
+                          navigate(`/proposals/editor/${proposal.id}`);
+                        } catch (error) {
+                          console.error('Error creating proposal:', error);
+                          alert('Failed to create proposal. Please try again.');
+                        } finally {
+                          setCreatingProposal(false);
+                        }
+                      }}
+                    >
+                      {template.content?.settings?.coverImage ? (
+                        <img 
+                          src={template.content.settings.coverImage} 
+                          alt={template.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No Image</span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{template.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {template.summary?.sectionCount || 0} sections, {template.summary?.itemCount || 0} items
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -397,24 +456,35 @@ export default function Proposals() {
         </div>
       )}
 
-      {showTemplateBuilder && editingTemplateId && (
-        <TemplateBuilder 
-          templateId={editingTemplateId}
-          onClose={() => {
-            setShowTemplateBuilder(false);
-            setEditingTemplateId(null);
-          }} 
-        />
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to delete this proposal? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingProposalId(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProposal}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-
-      <ProposalEditor
-        isOpen={showProposalEditor}
-        onClose={() => {
-          setShowProposalEditor(false);
-          setSelectedTemplateId(undefined);
-        }}
-        templateId={selectedTemplateId}
-      />
     </div>
   );
 }

@@ -7,6 +7,10 @@ import BlankPage from './pages/BlankPage';
 import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import Proposals from './pages/Proposals';
+import TemplateBuilderPage from './pages/TemplateBuilderPage';
+import ProposalEditorPage from './pages/ProposalEditorPage';
+import ProposalPreview from './pages/ProposalPreview';
+import PublicProposalView from './pages/PublicProposalView';
 import MaterialOrders from './pages/MaterialOrders';
 import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
@@ -51,6 +55,8 @@ export function RoofRunnerModule() {
       <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
       <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
       <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
+      <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
+      <Route path="proposal/view" element={<PublicProposalView />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
 
@@ -71,6 +77,8 @@ export function RoofRunnerModule() {
         <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
         <Route path="measurements" element={<Measurements />} />
         <Route path="proposals" element={<Proposals />} />
+        <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
+        <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
         <Route path="material-orders" element={<MaterialOrders />} />
         <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<Automations />} />

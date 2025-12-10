@@ -2,6 +2,13 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+  };
+};
+
 export interface Section {
   id: string;
   name: string;
@@ -106,7 +113,9 @@ export const templateApi = {
    */
   async getTemplates(): Promise<Template[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/templates`);
+      const response = await axios.get(`${API_BASE_URL}/templates`, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data || [];
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -119,7 +128,9 @@ export const templateApi = {
    */
   async createTemplate(data: CreateTemplateRequest): Promise<Template> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/templates`, data);
+      const response = await axios.post(`${API_BASE_URL}/templates`, data, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data;
     } catch (error) {
       console.error('Error creating template:', error);
@@ -132,7 +143,9 @@ export const templateApi = {
    */
   async getTemplateById(id: string): Promise<Template> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/templates/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/templates/${id}`, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data;
     } catch (error) {
       console.error('Error fetching template:', error);
@@ -145,7 +158,9 @@ export const templateApi = {
    */
   async updateTemplate(id: string, data: UpdateTemplateRequest): Promise<Template> {
     try {
-      const response = await axios.put(`${API_BASE_URL}/templates/${id}`, data);
+      const response = await axios.put(`${API_BASE_URL}/templates/${id}`, data, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data;
     } catch (error) {
       const axiosError = error as AxiosError<{ success: false; error: ConflictError }>;
@@ -162,7 +177,9 @@ export const templateApi = {
    */
   async duplicateTemplate(id: string, data?: DuplicateTemplateRequest): Promise<Template> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/templates/${id}/duplicate`, data || {});
+      const response = await axios.post(`${API_BASE_URL}/templates/${id}/duplicate`, data || {}, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data;
     } catch (error) {
       console.error('Error duplicating template:', error);
@@ -175,7 +192,9 @@ export const templateApi = {
    */
   async setDefaultTemplate(id: string, data?: SetDefaultRequest): Promise<Template> {
     try {
-      const response = await axios.patch(`${API_BASE_URL}/templates/${id}/set-default`, data || {});
+      const response = await axios.patch(`${API_BASE_URL}/templates/${id}/set-default`, data || {}, {
+        headers: getAuthHeaders(),
+      });
       return response.data.data;
     } catch (error) {
       console.error('Error setting default template:', error);
@@ -203,6 +222,7 @@ export const templateApi = {
         formData,
         {
           headers: {
+            ...getAuthHeaders(),
             'Content-Type': 'multipart/form-data',
           },
         }
@@ -227,6 +247,7 @@ export const templateApi = {
         formData,
         {
           headers: {
+            ...getAuthHeaders(),
             'Content-Type': 'multipart/form-data',
           },
         }
@@ -249,6 +270,7 @@ export const templateApi = {
   ): Promise<void> {
     try {
       await axios.delete(`${API_BASE_URL}/templates/${templateId}/media`, {
+        headers: getAuthHeaders(),
         data: { sectionId, mediaUrl, type }
       });
     } catch (error) {
@@ -262,7 +284,9 @@ export const templateApi = {
    */
   async deleteTemplate(id: string): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/templates/${id}`);
+      await axios.delete(`${API_BASE_URL}/templates/${id}`, {
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       console.error('Error deleting template:', error);
       throw error;
