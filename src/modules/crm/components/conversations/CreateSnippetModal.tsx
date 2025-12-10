@@ -80,7 +80,7 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={type === 'text' ? 'Test' : 'Test'}
+                // placeholder={type === 'text' ? 'Test' : 'Test'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -96,7 +96,7 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Testing"
+                  // placeholder="Testing"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -109,18 +109,18 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
                 Snippets Body *
               </label>
               <div className="border border-gray-300 rounded-lg">
-                <div className="flex items-center space-x-2 p-2 border-b border-gray-300">
+                {/* <div className="flex items-center space-x-2 p-2 border-b border-gray-300">
                   <button type="button" className="p-1 hover:bg-gray-100 rounded">
                     <Smile className="w-4 h-4 text-gray-600" />
                   </button>
                   <button type="button" className="p-1 hover:bg-gray-100 rounded">
                     <Paperclip className="w-4 h-4 text-gray-600" />
                   </button>
-                </div>
+                </div> */}
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder={type === 'text' ? 'Testing' : 'Testing email'}
+                  // placeholder={type === 'text' ? 'Testing' : 'Testing email'}
                   rows={6}
                   className="w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-b-lg"
                   required

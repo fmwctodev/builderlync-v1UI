@@ -14,15 +14,17 @@ interface PlaceOrderPageProps {
 
 const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack }) => {
   const [address, setAddress] = useState('');
+  const [addressComponents, setAddressComponents] = useState<any>(null);
   const [propertyType, setPropertyType] = useState('Residential');
   const [isComplex, setIsComplex] = useState(false);
   const [buildingId, setBuildingId] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Record<string, boolean>>({});
   const [measurementInstructions, setMeasurementInstructions] = useState('Primary Structure + Detached Garage');
 
-  const handleAddressSelect = (selectedAddress: string) => {
+  const handleAddressSelect = (selectedAddress: string, components?: any) => {
     setAddress(selectedAddress);
     setBuildingId(selectedAddress);
+    setAddressComponents(components);
   };
 
   const handlePropertyTypeChange = (type: string, complex: boolean) => {
@@ -69,6 +71,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const handleNext = () => {
     const orderData = {
       address,
+      addressComponents,
       propertyType,
       isComplex,
       buildingId,
@@ -123,11 +126,11 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
         propertyType={propertyType}
       />
 
-      {/* <OrderSummary
+      <OrderSummary
         totalCost={calculateTotalCost()}
         onNext={handleNext}
         disabled={!address || Object.keys(selectedProducts).length === 0}
-      /> */}
+      />
     </div>
   );
 };

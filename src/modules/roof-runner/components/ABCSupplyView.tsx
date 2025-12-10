@@ -4,19 +4,22 @@ import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Order, Product, Branch } from '../../abc-supply/types';
 
 const ABCSupplyView: React.FC = () => {
   const [currentView, setCurrentView] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
 
   useEffect(() => {
     const loadRecentOrders = async () => {
       try {
         const orders = await abcSupplyApi.getOrders();
-        setRecentOrders(orders.slice(0, 3));
+        setRecentOrders(Array.isArray(orders) ? orders.slice(0, 3) : []);
       } catch (error) {
         console.error('Failed to load recent orders:', error);
         setRecentOrders([]);
@@ -25,13 +28,13 @@ const ABCSupplyView: React.FC = () => {
     loadRecentOrders();
   }, []);
 
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
         const response = await abcSupplyApi.getItems(1, 4);
-        setFeaturedProducts(response.items);
+        setFeaturedProducts(Array.isArray(response?.items) ? response.items : []);
       } catch (error) {
         console.error('Failed to load featured products:', error);
         setFeaturedProducts([]);
@@ -40,13 +43,13 @@ const ABCSupplyView: React.FC = () => {
     loadFeaturedProducts();
   }, []);
 
-  const [nearestBranches, setNearestBranches] = useState([]);
+  const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
 
   useEffect(() => {
     const loadNearestBranches = async () => {
       try {
         const branches = await abcSupplyApi.getBranches();
-        setNearestBranches(branches.slice(0, 3));
+        setNearestBranches(Array.isArray(branches) ? branches.slice(0, 3) : []);
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
         setNearestBranches([]);
@@ -278,7 +281,7 @@ const ABCSupplyView: React.FC = () => {
                         {branch.name}
                       </h4>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {branch.address.city}, {branch.address.state}
+                        {branch.address?.city}, {branch.address?.state}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {branch.phone}
