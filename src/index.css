@@ -116,8 +116,4 @@
   page-break-after: avoid !important;
 }
 
-/* Prevent Tailwind/Flex parents from influencing PDF */
-#pdf-container {
-  display: block !important;
-  width: 8.5in !important;
-}
+

@@ -234,6 +234,7 @@ export default function ProposalBuilder({
   const [emailType, setEmailType] = useState<"marketing" | "plain">("marketing");
   const [buttonLabel, setButtonLabel] = useState("View & Review Proposal");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [proposalStatus, setProposalStatus] = useState<string>('draft');
 
   const [sections, setSections] = useState<Section[]>([
     { id: "cover", name: "Cover", active: true, order: 0 },
@@ -302,6 +303,7 @@ export default function ProposalBuilder({
         const response = await proposalsApi.getProposalById(Number(proposalId));
         const proposal = response.data || response;
 
+        if (proposal.status) setProposalStatus(proposal.status);
         if (proposal.title) setTemplateName(proposal.title);
         if (proposal.address?.address) setCustomerAddress(proposal.address.address);
 
@@ -1113,9 +1115,10 @@ export default function ProposalBuilder({
   }: EditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
+    const isDisabled = proposalStatus === 'sent';
 
     useEffect(() => {
-      if (triggerFocus) {
+      if (triggerFocus && !isDisabled) {
         setIsEditing(true);
         if (onFocusComplete) onFocusComplete();
       }
@@ -1130,7 +1133,7 @@ export default function ProposalBuilder({
       onChange(tempValue);
     };
 
-    if (isEditing) {
+    if (isEditing && !isDisabled) {
       return multiline ? (
         <textarea
           value={tempValue}
@@ -1153,8 +1156,8 @@ export default function ProposalBuilder({
 
     return (
       <span
-        onClick={() => setIsEditing(true)}
-        className={`${className} cursor-pointer inline-block w-full py-1`}
+        onClick={() => !isDisabled && setIsEditing(true)}
+        className={`${className} ${isDisabled ? 'cursor-default' : 'cursor-pointer'} inline-block w-full py-1`}
       >
         {value}
       </span>
@@ -1231,8 +1234,9 @@ export default function ProposalBuilder({
                   Contact
                 </label>
                 <button
-                  onClick={() => setShowContactModal(true)}
-                  className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm"
+                  onClick={() => proposalStatus !== 'sent' && setShowContactModal(true)}
+                  disabled={proposalStatus === 'sent'}
+                  className="w-full px-3 py-2 text-left border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {selectedContact ? (
                     <div>
@@ -1317,7 +1321,7 @@ export default function ProposalBuilder({
                             </span>
                           )}
                         </button>
-                        {index > 0 && (
+                        {index > 0 && proposalStatus !== 'sent' && (
                           <div className="flex items-center gap-1">
                               <button
                                 onClick={(e) => {
@@ -1403,13 +1407,15 @@ export default function ProposalBuilder({
                     </div>
                   ))}
 
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                  >
-                    <Plus size={16} />
-                    <span className="text-sm">Add section</span>
-                  </button>
+                  {proposalStatus !== 'sent' && (
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+                    >
+                      <Plus size={16} />
+                      <span className="text-sm">Add section</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1438,14 +1444,16 @@ export default function ProposalBuilder({
                 )}
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save size={16} />
-                  {saving ? "Saving..." : "Save Proposal"}
-                </button>
+                {proposalStatus !== 'sent' && (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save size={16} />
+                    {saving ? "Saving..." : "Save Proposal"}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     window.open(`/proposals/preview/${proposalId}`, '_blank');
@@ -1455,20 +1463,27 @@ export default function ProposalBuilder({
                   <Eye size={16} />
                   Preview
                 </button>
-                <button
-                  onClick={() => {
-                    if (items.length === 0 || customerName === "Customer Name" || !customerName) {
-                      setShowValidationModal(true);
-                      return;
-                    }
-                    setEmailSubject(`Proposal for ${customerName}`);
-                    setShowEmailSidebar(true);
-                  }}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium flex items-center gap-2"
-                >
-                  <Send size={16} />
-                  Send
-                </button>
+                {proposalStatus === 'sent' ? (
+                  <div className="px-4 py-2 bg-gray-400 text-white rounded-md text-sm font-medium flex items-center gap-2 cursor-not-allowed">
+                    <Send size={16} />
+                    Sent
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (items.length === 0 || customerName === "Customer Name" || !customerName) {
+                        setShowValidationModal(true);
+                        return;
+                      }
+                      setEmailSubject(`Proposal for ${customerName}`);
+                      setShowEmailSidebar(true);
+                    }}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium flex items-center gap-2"
+                  >
+                    <Send size={16} />
+                    Send
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1489,9 +1504,9 @@ export default function ProposalBuilder({
                     <div className="flex flex-col min-h-[800px]">
                       {/* Top 60% - Cover Image */}
                       <div
-                        className="relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        className={`relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden ${proposalStatus !== 'sent' ? 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600' : 'cursor-default'} transition-colors`}
                         onClick={() =>
-                          !coverImage && coverImageInputRef.current?.click()
+                          !coverImage && proposalStatus !== 'sent' && coverImageInputRef.current?.click()
                         }
                       >
                         {coverImage && (
@@ -1514,32 +1529,34 @@ export default function ProposalBuilder({
                             </div>
                           </div>
                         )}
-                        <div className="absolute top-4 right-4 flex gap-2">
-                          {coverImage && (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  coverImageInputRef.current?.click();
-                                }}
-                                className="p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 shadow-lg"
-                                title="Change Cover Image"
-                              >
-                                <Upload size={16} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCoverImage(null);
-                                }}
-                                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
-                                title="Remove Cover Image"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {proposalStatus !== 'sent' && (
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            {coverImage && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    coverImageInputRef.current?.click();
+                                  }}
+                                  className="p-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 shadow-lg"
+                                  title="Change Cover Image"
+                                >
+                                  <Upload size={16} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCoverImage(null);
+                                  }}
+                                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                                  title="Remove Cover Image"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                         <input
                           ref={coverImageInputRef}
                           type="file"
@@ -1668,23 +1685,27 @@ export default function ProposalBuilder({
                                 alt={`Photo ${idx + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                              <button
-                                onClick={() => deletePhoto(activeSection, idx)}
-                                className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X size={16} />
-                              </button>
+                              {proposalStatus !== 'sent' && (
+                                <button
+                                  onClick={() => deletePhoto(activeSection, idx)}
+                                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={16} />
+                                </button>
+                              )}
                             </div>
                           ))}
-                        <button
-                          onClick={() => photoInputRef.current?.click()}
-                          className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <Plus className="w-8 h-8 text-gray-400" />
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            Upload Photo
-                          </span>
-                        </button>
+                        {proposalStatus !== 'sent' && (
+                          <button
+                            onClick={() => photoInputRef.current?.click()}
+                            className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          >
+                            <Plus className="w-8 h-8 text-gray-400" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              Upload Photo
+                            </span>
+                          </button>
+                        )}
                         <input
                           ref={photoInputRef}
                           type="file"
@@ -1727,14 +1748,16 @@ export default function ProposalBuilder({
                                     <Eye size={16} />
                                     View Fullscreen
                                   </button>
-                                  <button
-                                    onClick={() =>
-                                      deletePDF(activeSection, idx)
-                                    }
-                                    className="text-red-500 hover:text-red-600"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
+                                  {proposalStatus !== 'sent' && (
+                                    <button
+                                      onClick={() =>
+                                        deletePDF(activeSection, idx)
+                                      }
+                                      className="text-red-500 hover:text-red-600"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                               <iframe
@@ -1745,15 +1768,17 @@ export default function ProposalBuilder({
                             </div>
                           ))}
                       </div>
-                      <button
-                        onClick={() => pdfInputRef.current?.click()}
-                        className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      >
-                        <Plus className="w-5 h-5 text-gray-400" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          Upload PDF
-                        </span>
-                      </button>
+                      {proposalStatus !== 'sent' && (
+                        <button
+                          onClick={() => pdfInputRef.current?.click()}
+                          className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
+                          <Plus className="w-5 h-5 text-gray-400" />
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Upload PDF
+                          </span>
+                        </button>
+                      )}
                       <input
                         ref={pdfInputRef}
                         type="file"
@@ -1819,13 +1844,15 @@ export default function ProposalBuilder({
                               triggerFocus={triggerFocus}
                               onFocusComplete={() => setTriggerFocus(false)}
                             />
-                            <button
-                              onClick={() => setShowEditModal(true)}
-                              className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
-                            >
-                              <Pencil size={14} />
-                              Edit option
-                            </button>
+                            {proposalStatus !== 'sent' && (
+                              <button
+                                onClick={() => setShowEditModal(true)}
+                                className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
+                              >
+                                <Pencil size={14} />
+                                Edit option
+                              </button>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mb-4">
                             <EditableText
@@ -1901,38 +1928,40 @@ export default function ProposalBuilder({
                                 </div>
                               ))}
 
-                            <div className="flex gap-4 mt-3 text-sm">
-                              <button
-                                onClick={() => {
-                                  setActiveTab("Estimate");
-                                  setShowEditModal(true);
-                                }}
-                                className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                              >
-                                <Plus size={14} />
-                                Add item from catalog
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setActiveTab("Estimate");
-                                  setShowEditModal(true);
-                                }}
-                                className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                              >
-                                <Plus size={14} />
-                                Add section heading
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setActiveTab("Upgrade");
-                                  setShowEditModal(true);
-                                }}
-                                className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                              >
-                                <Plus size={14} />
-                                Add upgrade
-                              </button>
-                            </div>
+                            {proposalStatus !== 'sent' && (
+                              <div className="flex gap-4 mt-3 text-sm">
+                                <button
+                                  onClick={() => {
+                                    setActiveTab("Estimate");
+                                    setShowEditModal(true);
+                                  }}
+                                  className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                                >
+                                  <Plus size={14} />
+                                  Add item from catalog
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setActiveTab("Estimate");
+                                    setShowEditModal(true);
+                                  }}
+                                  className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                                >
+                                  <Plus size={14} />
+                                  Add section heading
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setActiveTab("Upgrade");
+                                    setShowEditModal(true);
+                                  }}
+                                  className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                                >
+                                  <Plus size={14} />
+                                  Add upgrade
+                                </button>
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -3962,6 +3991,7 @@ export default function ProposalBuilder({
                       });
                       alert('Proposal sent successfully!');
                       setShowEmailSidebar(false);
+                      onClose();
                     } catch (error: any) {
                       alert(error.response?.data?.message || 'Failed to send proposal. Please try again.');
                     } finally {

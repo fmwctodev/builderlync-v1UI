@@ -52,7 +52,7 @@ export interface CreateProposalRequest {
 
 export interface UpdateProposalRequest {
   title?: string;
-  status?: 'incomplete' | 'complete' | 'sent' | 'signed';
+  status?: 'incomplete' | 'complete' | 'sent' | 'signed' | 'lost';
   sections?: any[];
   total?: number;
   total_manual?: number;
@@ -77,10 +77,21 @@ export const proposalsApi = {
   async getProposals(filters?: { status?: string; job_id?: number }): Promise<Proposal[]> {
     try {
       const params = new URLSearchParams();
-      if (filters?.status) params.append('status', filters.status);
+      if (filters?.status && filters.status !== 'All proposals') {
+        const statusMap: Record<string, string> = {
+          'Draft': 'incomplete',
+          'Open': 'open',
+          'Sent': 'sent',
+          'Won': 'signed',
+          'Lost': 'lost'
+        };
+        const apiStatus = statusMap[filters.status] || filters.status;
+        params.append('status', apiStatus);
+      }
       if (filters?.job_id) params.append('job_id', filters.job_id.toString());
 
-      const response = await axios.get(`${API_BASE_URL}/proposals?${params.toString()}`, {
+      const url = params.toString() ? `${API_BASE_URL}/proposals?${params.toString()}` : `${API_BASE_URL}/proposals`;
+      const response = await axios.get(url, {
         headers: getAuthHeaders(),
       });
       return response.data.data || [];
@@ -121,6 +132,18 @@ export const proposalsApi = {
       });
     } catch (error) {
       console.error('Error deleting proposal:', error);
+      throw error;
+    }
+  },
+
+  async duplicateProposal(id: number): Promise<Proposal> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/proposals/${id}/duplicate`, {}, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error duplicating proposal:', error);
       throw error;
     }
   },
