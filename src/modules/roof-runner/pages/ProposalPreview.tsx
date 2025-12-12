@@ -9,6 +9,7 @@ export default function ProposalPreview() {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +34,12 @@ export default function ProposalPreview() {
     if (!contentRef.current || downloading) return;
 
     setDownloading(true);
+    
+    const pages = contentRef.current.querySelectorAll('.pdf-page');
+    pages.forEach((page) => {
+      (page as HTMLElement).style.marginBottom = '0';
+    });
+
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const element = contentRef.current.cloneNode(true) as HTMLElement;
@@ -82,7 +89,11 @@ export default function ProposalPreview() {
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
+      pages.forEach((page) => {
+        (page as HTMLElement).style.marginBottom = '';
+      });
       setDownloading(false);
+      setShowConfirm(false);
     }
   };
 
@@ -94,7 +105,7 @@ export default function ProposalPreview() {
         </h1>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleDownload}
+            onClick={() => setShowConfirm(true)}
             disabled={downloading}
             className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
             title="Download PDF"
@@ -125,11 +136,18 @@ export default function ProposalPreview() {
       ) : (
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
           <style>{`
-            .pdf-page {
-              page-break-after: always;
-              page-break-inside: avoid;
-              break-after: page;
-              break-inside: avoid;
+            @media print {
+              .pdf-page:not(:last-child) {
+                page-break-after: always;
+                page-break-inside: avoid;
+                break-after: page;
+                break-inside: avoid;
+              }
+            }
+            @media screen {
+              .pdf-page:not(:last-child) {
+                margin-bottom: 2rem;
+              }
             }
           `}</style>
           <div ref={contentRef} className="max-w-4xl mx-auto">
@@ -137,14 +155,9 @@ export default function ProposalPreview() {
             {proposal.sections?.settings?.coverImage && (
               <div
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 pdf-page"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  // minHeight: "800px"
-                }}
               >
                 <div
-                  className="relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden"
+                  className="relative h-[600px] bg-gray-100 dark:bg-gray-700 overflow-hidden"
                 >
                   <img
                     src={proposal.sections.settings.coverImage}
@@ -152,7 +165,7 @@ export default function ProposalPreview() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="p-6 flex items-center justify-between flex-1">
+                <div className="p-6 flex items-center justify-between">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                       {proposal.sections.settings.coverTitle ||
@@ -182,7 +195,7 @@ export default function ProposalPreview() {
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                <div className="border-t border-gray-200 dark:border-gray-700 p-6" style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">
@@ -279,24 +292,25 @@ export default function ProposalPreview() {
                 className="bg-white dark:bg-gray-800 pdf-page"
                 style={{
                   width: "816px",
-                  // height: "1056px",
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: "32px"
+                  position: "relative",
+                  padding: "32px",
+                  minHeight: "1056px"
                 }}
               >
-                <div className="mb-6">
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     {proposal.sections.settings?.optionTitle || "Option 1"}
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {proposal.sections.settings?.optionDescription ||
-                      "Add description"}
-                  </p>
+                  {proposal.sections.settings?.optionDescription && 
+                    proposal.sections.settings.optionDescription !== "Add description" && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {proposal.sections.settings.optionDescription}
+                    </p>
+                  )}
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div>
-                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                    <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4">
                       <div className="font-medium text-gray-900 dark:text-white">
                         {proposal.sections.settings?.itemSectionTitle || "Item"}
                       </div>
@@ -404,7 +418,7 @@ export default function ProposalPreview() {
                       </div>
                     )}
                 </div>
-                <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -444,32 +458,33 @@ export default function ProposalPreview() {
                 className="bg-white dark:bg-gray-800 pdf-page"
                 style={{
                   width: "816px",
-                  // height: "1056px",
-                  display: "flex",
-                  flexDirection: "column",
+                  position: "relative",
                   padding: "32px",
+                  minHeight: "1056px"
                 }}
               >
                 <div className="flex-1">
-                  <div className="mb-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                       Summary
                     </h2>
                   </div>
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     <div>
-                      <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                      <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4">
                         <div className="font-medium text-gray-900 dark:text-white">
                           {proposal.sections.settings?.optionTitle ||
                             "Option 1"}
                         </div>
                       </div>
-                      <div className="flex justify-between items-center py-2 pl-3">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {proposal.sections.settings?.optionDescription ||
-                            "Add description"}
-                        </span>
-                      </div>
+                      {proposal.sections.settings?.optionDescription && 
+                        proposal.sections.settings.optionDescription !== "Add description" && (
+                        <div className="flex justify-between items-center py-2 pl-3">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {proposal.sections.settings.optionDescription}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
                         <span className="font-medium text-gray-900 dark:text-white">
                           Subtotal
@@ -546,7 +561,7 @@ export default function ProposalPreview() {
                     {proposal.sections.upgrades &&
                       proposal.sections.upgrades.length > 0 && (
                         <div>
-                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                          <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4">
                             <div className="font-medium text-gray-900 dark:text-white">
                               {proposal.sections.settings?.upgradesTitle ||
                                 "Upgrades"}
@@ -682,7 +697,7 @@ export default function ProposalPreview() {
                         </span>
                       </div>
                     </div>
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="py-4 border-t border-gray-200 dark:border-gray-700">
                       <p className="text-sm text-gray-600 dark:text-gray-400 italic">
                         By signing this document you agree to the statement of
                         works provided by{" "}
@@ -693,7 +708,7 @@ export default function ProposalPreview() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -725,6 +740,42 @@ export default function ProposalPreview() {
                   </div>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Download PDF
+            </h3>
+            {downloading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Generating PDF...</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Are you sure you want to download this proposal as PDF?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                  >
+                    Download
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

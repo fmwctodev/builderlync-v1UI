@@ -29,10 +29,11 @@ export default function Proposals() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
 
-  const fetchProposals = async () => {
+  const fetchProposals = async (status?: string) => {
     try {
       setLoading(true);
-      const data = await proposalsApi.getProposals();
+      const filters = status && status !== 'All proposals' ? { status } : undefined;
+      const data = await proposalsApi.getProposals(filters);
       setProposals(data);
     } catch (error) {
       console.error('Error fetching proposals:', error);
@@ -42,8 +43,8 @@ export default function Proposals() {
   };
 
   useEffect(() => {
-    fetchProposals();
-  }, []);
+    fetchProposals(filterStatus);
+  }, [filterStatus]);
 
   const fetchTemplates = async () => {
     try {
@@ -104,6 +105,7 @@ export default function Proposals() {
       case 'complete': return 'Open';
       case 'sent': return 'Sent';
       case 'signed': return 'Won';
+      case 'lost': return 'Lost';
       default: return 'Open';
     }
   };
@@ -119,6 +121,37 @@ export default function Proposals() {
     } catch (error) {
       console.error('Error deleting proposal:', error);
       alert('Failed to delete proposal. Please try again.');
+    }
+  };
+
+  const handleDuplicateProposal = async (id: string) => {
+    try {
+      const duplicated = await proposalsApi.duplicateProposal(Number(id));
+      await fetchProposals();
+      navigate(`/proposals/editor/${duplicated.id}`);
+    } catch (error) {
+      console.error('Error duplicating proposal:', error);
+      alert('Failed to duplicate proposal. Please try again.');
+    }
+  };
+
+  const handleMoveToWon = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'signed' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to won:', error);
+      alert('Failed to update proposal status. Please try again.');
+    }
+  };
+
+  const handleMoveToLost = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'lost' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to lost:', error);
+      alert('Failed to update proposal status. Please try again.');
     }
   };
 
@@ -228,7 +261,10 @@ export default function Proposals() {
                 setDeletingProposalId(id);
                 setShowDeleteModal(true);
               }}
+              onDuplicate={handleDuplicateProposal}
               onProposalClick={(id) => navigate(`/proposals/editor/${id}`)}
+              onMoveToWon={handleMoveToWon}
+              onMoveToLost={handleMoveToLost}
             />
           )
         )}

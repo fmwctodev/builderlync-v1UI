@@ -24,7 +24,10 @@ interface ProposalsListProps {
   setOpenDropdown: (id: string | null) => void;
   getStatusColor: (status: string) => string;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onProposalClick: (id: string) => void;
+  onMoveToWon: (id: string) => void;
+  onMoveToLost: (id: string) => void;
 }
 
 export default function ProposalsList({
@@ -39,7 +42,10 @@ export default function ProposalsList({
   setOpenDropdown,
   getStatusColor,
   onDelete,
-  onProposalClick
+  onDuplicate,
+  onProposalClick,
+  onMoveToWon,
+  onMoveToLost
 }: ProposalsListProps) {
   const dropdownActions = [
     'Move to won',
@@ -52,6 +58,20 @@ export default function ProposalsList({
     'Download proposal',
     'Delete'
   ];
+
+  const handleAction = (action: string, proposalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (action === 'Delete') {
+      onDelete(proposalId);
+    } else if (action === 'Make copy') {
+      onDuplicate(proposalId);
+    } else if (action === 'Move to won') {
+      onMoveToWon(proposalId);
+    } else if (action === 'Move to lost') {
+      onMoveToLost(proposalId);
+    }
+    setOpenDropdown(null);
+  };
 
   return (
     <>
@@ -147,13 +167,7 @@ export default function ProposalsList({
                             {dropdownActions.map((action) => (
                               <button
                                 key={action}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (action === 'Delete') {
-                                    onDelete(proposal.id);
-                                    setOpenDropdown(null);
-                                  }
-                                }}
+                                onClick={(e) => handleAction(action, proposal.id, e)}
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                   action === 'Delete' ? 'text-error-600' : 'text-gray-700 dark:text-gray-300'
                                 }`}
@@ -243,13 +257,7 @@ export default function ProposalsList({
                             {dropdownActions.map((action) => (
                               <button
                                 key={action}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (action === 'Delete') {
-                                    onDelete(proposal.id);
-                                    setOpenDropdown(null);
-                                  }
-                                }}
+                                onClick={(e) => handleAction(action, proposal.id, e)}
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                   action === 'Delete' ? 'text-error-600' : 'text-gray-700 dark:text-gray-300'
                                 }`}
