@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { Plus, AlertTriangle, Search, Edit2, Trash2, Eye, Copy, Check } from 'lucide-react';
 import { AddEditStaffModal, DeleteConfirmModal } from '../StaffModals';
+import { usePermissions } from '../../../../shared/utils/usePermissions';
 
 interface StaffProps {
   userRole?: string;
 }
 
 const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
-  const canManageStaff = userRole === 'Owner' || userRole === 'Admin';
+  const { can } = usePermissions();
+  const canViewStaff = can('staff', 'view');
+  const canAddStaff = can('staff', 'add');
+  const canEditStaff = can('staff', 'edit');
+  const canDeleteStaff = can('staff', 'delete');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -229,6 +234,10 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
     }
   }, [toast]);
 
+  if (!canViewStaff) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       {toast && (
@@ -241,15 +250,6 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Staff Management</h2>
         <p className="text-gray-600 dark:text-gray-400">Manage team members and their roles</p>
       </div>
-
-      {!canManageStaff && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
-            <p className="text-yellow-800 dark:text-yellow-200">Only owners and admins can manage staff.</p>
-          </div>
-        </div>
-      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -282,7 +282,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
               </div>
             </div>
 
-            {canManageStaff && (
+            {canAddStaff && (
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -375,26 +375,29 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
-                          <button
-                            onClick={() => openEditModal(member)}
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(member)}
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                          <button
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Eye size={16} />
-                          </button>
+                          {canEditStaff && (
+                            <button
+                              onClick={() => openEditModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {canDeleteStaff && (
+                            <button
+                              onClick={() => openDeleteModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                          {canViewStaff && (
+                            <button
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
