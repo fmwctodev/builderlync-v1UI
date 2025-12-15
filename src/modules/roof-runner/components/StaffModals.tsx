@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { getRoleTemplates, RoleTemplate, getRoles, Role } from '../../../shared/store/services/rolesApi';
+import { getRoles, Role } from '../../../shared/store/services/rolesApi';
 
 interface StaffMember {
   id?: number;
@@ -8,7 +8,7 @@ interface StaffMember {
   lastName: string;
   email: string;
   phone: string;
-  extension: string;
+  countryCode: string;
   password?: string;
   profileImage?: string;
   image?: File;
@@ -41,13 +41,13 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    extension: '',
+    phone: '+1',
+    countryCode: '+1',
     password: '',
     profileImage: '',
     roleId: ''
   });
-  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+
   const [organizationRoles, setOrganizationRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
@@ -60,14 +60,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   const fetchRoles = async () => {
     try {
       setLoadingRoles(true);
-      const [templatesResponse, rolesResponse] = await Promise.all([
-        getRoleTemplates(),
-        getRoles()
-      ]);
-
-      if (templatesResponse.success && templatesResponse.data) {
-        setRoleTemplates(templatesResponse.data);
-      }
+      const rolesResponse = await getRoles();
 
       if (rolesResponse.success && rolesResponse.data) {
         setOrganizationRoles(rolesResponse.data);
@@ -81,12 +74,13 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
 
   useEffect(() => {
     if (member && isEdit) {
+      const fullPhone = `${member.countryCode || '+1'}${member.phone || ''}`;
       setFormData({
         firstName: member.firstName || '',
         lastName: member.lastName || '',
         email: member.email || '',
-        phone: member.phone || '',
-        extension: member.extension || '',
+        phone: fullPhone,
+        countryCode: member.countryCode || '+1',
         password: '',
         profileImage: member.profileImage || '',
         roleId: member.roleId || ''
@@ -96,8 +90,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        extension: '',
+        phone: '+1',
+        countryCode: '+1',
         password: '',
         profileImage: '',
         roleId: ''
@@ -106,7 +100,6 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   }, [member, isEdit, isOpen]);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -152,26 +145,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Profile Image */}
-          <div className="text-center">
-            <div className="w-24 h-24 mx-auto mb-2 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-              {formData.profileImage ? (
-                <img src={formData.profileImage} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <Upload size={24} className="text-gray-400" />
-              )}
-            </div>
-            <label className="cursor-pointer text-sm text-primary-600 hover:underline">
-              Upload Profile Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
-            <p className="text-xs text-gray-500 mt-1">512×512 px, max 2.5MB</p>
-          </div>
+
 
           {/* Form Fields */}
           <div className="grid grid-cols-2 gap-4">
@@ -217,38 +191,39 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Extension
-              </label>
-              <input
-                type="text"
-                name="extension"
-                value={formData.extension}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="+1234567890"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role
+              Role (Optional)
             </label>
             <select
               name="roleId"
@@ -256,65 +231,20 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="">Select a role (optional)</option>
+              <option value="">No role assigned</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
               ) : (
-                <>
-                  {organizationRoles.length > 0 && (
-                    <optgroup label="Active Roles">
-                      {organizationRoles.map((role) => (
-                        <option key={`role-${role.id}`} value={`role:${role.id}`}>
-                          {role.name} {role.staff_count ? `(${role.staff_count} staff)` : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {roleTemplates.length > 0 && (
-                    <optgroup label="Role Templates">
-                      {roleTemplates.map((template) => (
-                        <option key={`template-${template.id}`} value={`template:${template.id}`}>
-                          {template.name} Template
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {organizationRoles.length === 0 && roleTemplates.length === 0 && (
-                    <option disabled>No roles available</option>
-                  )}
-                </>
+                organizationRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))
               )}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              {organizationRoles.length === 0 && roleTemplates.length > 0
-                ? 'Create active roles from templates in Roles & Permissions first, or select a template to create one automatically'
-                : 'Assign a role to control this staff member\'s permissions'}
+              Assign a role to control permissions
             </p>
-          </div>
-
-          {/* Advanced Settings */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-primary-600 hover:underline"
-            >
-              Advanced Settings
-            </button>
-            {showAdvanced && (
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}

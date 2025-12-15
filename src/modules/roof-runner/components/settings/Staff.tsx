@@ -20,15 +20,22 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
 
   const fetchStaff = async (page: number = 1) => {
     try {
       setLoading(true);
       const { getStaff } = await import('../../../../shared/store/services/staffApi');
       const response = await getStaff(page, 10);
-      setStaff(response.data.data || []);
-      setCurrentPage(response.data.pagination.page);
-      setTotalPages(response.data.pagination.totalPages);
+      console.log('Fetch Staff Response:', response);
+      
+      if (response.success) {
+        setStaff(response.data || []);
+        setCurrentPage(response.pagination?.page || page);
+        setTotalPages(response.pagination?.totalPages || Math.ceil(response.total / 10) || 1);
+      } else {
+        setToast({ message: 'Failed to load staff members', type: 'error' });
+      }
     } catch (error: any) {
       console.error('Error fetching staff:', error);
       setToast({ message: 'Failed to load staff members', type: 'error' });
@@ -39,75 +46,28 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
   const handleAddMember = async (member: any) => {
     try {
+      // Parse phone number to extract country code
+      const phoneStr = member.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const { createStaff } = await import('../../../../shared/store/services/staffApi');
-      const staffResponse = await createStaff({
+      await createStaff({
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
-        phone: member.phone,
-        extension: member.extension,
-        password: member.password || 'defaultPassword123',
-        image: member.image
+        phone: phone,
+        countryCode: countryCode,
+        password: member.password,
+        role_id: member.roleId || undefined
       });
 
-      const staffId = staffResponse?.data?.id;
-
-      if (member.roleId && staffId) {
-        try {
-          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-
-          let organizationRoleId: string;
-
-          if (member.roleId.startsWith('role:')) {
-            organizationRoleId = member.roleId.replace('role:', '');
-          } else if (member.roleId.startsWith('template:')) {
-            const templateId = member.roleId.replace('template:', '');
-            const rolesResponse = await getRoles();
-            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
-
-            if (existingRole) {
-              organizationRoleId = existingRole.id;
-            } else {
-              const roleResponse = await createRoleFromTemplate(templateId);
-              if (roleResponse.success && roleResponse.data) {
-                organizationRoleId = roleResponse.data.id;
-              } else {
-                throw new Error('Failed to create role from template');
-              }
-            }
-          } else {
-            organizationRoleId = member.roleId;
-          }
-
-          await assignRoleToStaffMember(staffId, organizationRoleId);
-        } catch (roleError: any) {
-          console.error('Error assigning role to staff member:', roleError);
-        }
-      }
-
-      try {
-        const { createContact } = await import('../../../../shared/store/services/contactsApi');
-        await createContact({
-          fullName: `${member.firstName} ${member.lastName}`,
-          type: 'staff',
-          labelOrRole: 'Staff Member',
-          email: member.email,
-          phone: member.phone || '',
-          company: '',
-          address: '',
-          latitude: 0,
-          longitude: 0
-        });
-        setToast({ message: 'Staff member added and contact created successfully!', type: 'success' });
-      } catch (contactError: any) {
-        console.error('Error creating contact for staff member:', contactError);
-        setToast({ message: 'Staff member added but contact creation failed', type: 'success' });
-      }
-
+      setToast({ message: 'Staff member added successfully!', type: 'success' });
       setShowAddModal(false);
       fetchStaff(currentPage);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to add staff member';
+      const errorMessage = error.message || 'Failed to add staff member';
       setToast({ message: errorMessage, type: 'error' });
     }
   };
@@ -127,32 +87,8 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
       if (member.roleId) {
         try {
-          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-
-          let organizationRoleId: string;
-
-          if (member.roleId.startsWith('role:')) {
-            organizationRoleId = member.roleId.replace('role:', '');
-          } else if (member.roleId.startsWith('template:')) {
-            const templateId = member.roleId.replace('template:', '');
-            const rolesResponse = await getRoles();
-            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
-
-            if (existingRole) {
-              organizationRoleId = existingRole.id;
-            } else {
-              const roleResponse = await createRoleFromTemplate(templateId);
-              if (roleResponse.success && roleResponse.data) {
-                organizationRoleId = roleResponse.data.id;
-              } else {
-                throw new Error('Failed to create role from template');
-              }
-            }
-          } else {
-            organizationRoleId = member.roleId;
-          }
-
-          await assignRoleToStaffMember(selectedMember.id, organizationRoleId);
+          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+          await assignRoleToStaffMember(selectedMember.id, member.roleId);
         } catch (roleError: any) {
           console.error('Error assigning role to staff member:', roleError);
         }
@@ -264,14 +200,27 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
       (member.phone && member.phone.includes(searchQuery)) ||
       generateUserId(member.id, member.email).toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole = roleFilter === '' || true;
+    const matchesRole = roleFilter === '' || member.role_id === roleFilter;
 
     return matchesSearch && matchesRole;
   });
 
   React.useEffect(() => {
     fetchStaff(1);
+    fetchUserRoles();
   }, []);
+
+  const fetchUserRoles = async () => {
+    try {
+      const { getRoles } = await import('../../../../shared/store/services/rolesApi');
+      const response = await getRoles();
+      if (response.success) {
+        setUserRoles(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+    }
+  };
 
   React.useEffect(() => {
     if (toast) {
@@ -312,10 +261,12 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
                 >
-                  <option value="">User Role</option>
-                  <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
-                  <option value="member">Member</option>
+                  <option value="">All Roles</option>
+                  {userRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -357,7 +308,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                   Phone
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  User Type
+                  Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Action
@@ -418,8 +369,8 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                         {member.phone || '-'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 uppercase">
-                          ACCOUNT-ADMIN
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {member.role?.name || 'No Role'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
