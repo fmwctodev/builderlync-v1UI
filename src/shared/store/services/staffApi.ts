@@ -7,10 +7,13 @@ export interface CreateStaffRequest {
   lastName: string;
   email: string;
   phone: string;
-  extension: string;
+  countryCode: string;
   title?: string;
   department?: string;
   image?: string;
+  password?: string;
+  user_id?: string;
+  role_id?: string;
 }
 
 export interface UpdateStaffRequest {
@@ -18,7 +21,7 @@ export interface UpdateStaffRequest {
   lastName: string;
   email: string;
   phone: string;
-  extension: string;
+  countryCode: string;
   title?: string;
   department?: string;
   image?: string;
@@ -32,11 +35,16 @@ export interface StaffMember {
   last_name: string;
   email: string;
   phone: string;
-  extension: string;
+  country_code: string;
   image?: string;
   status: string;
   title?: string;
   department?: string;
+  role_id?: string;
+  role?: {
+    id: string;
+    name: string;
+  };
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -52,11 +60,20 @@ export interface StaffListResponse {
   success: boolean;
   data: StaffMember[];
   total: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 class StaffApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
+    
+    console.log('=== API Request ===');
+    console.log('Endpoint:', endpoint);
+    console.log('Token:', token ? 'Present' : 'Missing');
     
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
@@ -67,27 +84,41 @@ class StaffApiService {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    console.log('Response Status:', response.status);
+
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || data.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    return data;
   }
 
   async getStaff(page: number = 1, limit: number = 100): Promise<StaffListResponse> {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
+        limit: limit.toString()
       });
 
+      console.log('=== Fetching Staff ===');
+      console.log('API URL:', `${API_BASE_URL}/staff?${params}`);
       const result = await this.makeRequest(`/staff?${params}`);
+      console.log('Staff API Response:', result);
+      
+      // Handle nested data structure: result.data.data
+      const staffData = result.data?.data || result.data || result || [];
+      const total = result.data?.total || result.total || staffData.length || 0;
+      const pagination = result.data?.pagination || result.pagination;
+      
       return {
         success: true,
-        data: result.data || [],
-        total: result.total || 0
+        data: Array.isArray(staffData) ? staffData : [],
+        total: total,
+        pagination: pagination
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in getStaff:', error);
       return {
         success: false,
@@ -108,24 +139,19 @@ class StaffApiService {
   }
 
   async createStaff(staffData: CreateStaffRequest): Promise<StaffResponse> {
-    try {
-      const result = await this.makeRequest('/staff', {
-        method: 'POST',
-        body: JSON.stringify(staffData),
-      });
+    console.log('=== Creating Staff ===');
+    console.log('Staff Data:', staffData);
+    const result = await this.makeRequest('/staff', {
+      method: 'POST',
+      body: JSON.stringify(staffData)
+    });
+    console.log('Create Staff Response:', result);
 
-      return {
-        success: true,
-        message: 'Staff member created successfully',
-        data: result.data
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'Failed to create staff member',
-        data: {} as StaffMember
-      };
-    }
+    return {
+      success: true,
+      message: 'Staff member created successfully',
+      data: result.data
+    };
   }
 
   async updateStaff(id: string, staffData: UpdateStaffRequest): Promise<StaffResponse> {

@@ -53,6 +53,7 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       setEncryptedStorage('auth', action.payload);
       localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
@@ -105,6 +106,7 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       setEncryptedStorage('auth', action.payload);
       localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
     verifyRegistrationOtpFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
@@ -130,6 +132,7 @@ const authSlice = createSlice({
       state.registrationEmail = null;
       localStorage.removeItem('auth');
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
     },
     clearError: (state) => {
       state.error = null;

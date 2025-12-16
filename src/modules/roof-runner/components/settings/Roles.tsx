@@ -239,20 +239,11 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
                 <div className="flex items-center space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => handleEditRole(role)}
-                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     <Edit2 size={14} />
                     <span>Edit</span>
                   </button>
-                  {role.is_deletable && (
-                    <button
-                      onClick={() => handleDeleteClick(role)}
-                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      <span>Delete</span>
-                    </button>
-                  )}
                 </div>
               )}
             </div>

@@ -28,6 +28,7 @@ const Staff: React.FC = () => {
     try {
       setLoading(true);
       const response = await getStaff(page, 10);
+      console.log(response)
       setStaff(response.data || []);
       setTotalStaff(response.total || 0);
       setTotalPages(Math.ceil((response.total || 0) / 10));
@@ -43,20 +44,28 @@ const Staff: React.FC = () => {
   const handleAddStaff = async (staffData: any) => {
     setIsSubmitting(true);
     try {
+      // Parse phone number to extract country code
+      const phoneStr = staffData.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const createData: CreateStaffRequest = {
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension
+        phone: phone,
+        countryCode: countryCode,
+        password: staffData.password,
+        role_id: staffData.roleId || undefined
       };
 
-      await createStaff(createData);
+      const result = await createStaff(createData);
       setToast({ message: 'Staff member added successfully!', type: 'success' });
       setShowAddModal(false);
       fetchStaff();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to add staff member';
+      const errorMessage = error.message || 'Failed to add staff member';
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -68,12 +77,18 @@ const Staff: React.FC = () => {
     
     setIsSubmitting(true);
     try {
+      // Parse phone number to extract country code
+      const phoneStr = staffData.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const updateData: UpdateStaffRequest = {
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension
+        phone: phone,
+        countryCode: countryCode
       };
 
       await updateStaff(editingStaff.id, updateData);
@@ -82,7 +97,7 @@ const Staff: React.FC = () => {
       setEditingStaff(null);
       fetchStaff();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update staff member';
+      const errorMessage = error.message || 'Failed to update staff member';
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -260,12 +275,10 @@ const Staff: React.FC = () => {
                       <span className="text-gray-500 dark:text-gray-400">Phone:</span>
                       <span className="text-gray-900 dark:text-white">{member.phone}</span>
                     </div>
-                    {member.extension && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">Extension:</span>
-                        <span className="text-gray-900 dark:text-white">{member.extension}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Country Code:</span>
+                      <span className="text-gray-900 dark:text-white">{member.country_code}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -332,7 +345,7 @@ const Staff: React.FC = () => {
           lastName: editingStaff.last_name,
           email: editingStaff.email,
           phone: editingStaff.phone,
-          extension: editingStaff.extension,
+          countryCode: editingStaff.country_code,
           profileImage: editingStaff.image
         } : undefined}
         isEdit={true}
