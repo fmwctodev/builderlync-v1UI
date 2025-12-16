@@ -4,6 +4,7 @@ import {
   Building, Users, Calendar, Mail, CreditCard,
   Zap, Database, Shield, FileText, Palette, Settings as SettingsIcon
 } from 'lucide-react';
+import { usePermissions } from '../../../../shared/utils/usePermissions';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -14,20 +15,23 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+  const { can, canAccess } = usePermissions();
 
-  const tabs = [
+  const allTabs = [
     { id: 'business-info', label: 'Business Info', icon: Building, path: `${orgPrefix}/settings/business-info` },
     { id: 'profile', label: 'Profile', icon: Users, path: `${orgPrefix}/settings/profile` },
-    { id: 'billing', label: 'Billing', icon: CreditCard, path: `${orgPrefix}/settings/billing` },
-    { id: 'staff', label: 'Staff Management', icon: Users, path: `${orgPrefix}/settings/staff` },
-    { id: 'communications', label: 'Communications', icon: Mail, path: `${orgPrefix}/settings/communications` },
-    { id: 'integrations', label: 'Integrations', icon: Zap, path: `${orgPrefix}/settings/integrations` },
+    { id: 'billing', label: 'Billing', icon: CreditCard, path: `${orgPrefix}/settings/billing`, permission: () => canAccess('financial') },
+    { id: 'staff', label: 'Staff Management', icon: Users, path: `${orgPrefix}/settings/staff`, permission: () => can('staff', 'view') },
+    { id: 'communications', label: 'Communications', icon: Mail, path: `${orgPrefix}/settings/communications`, permission: () => canAccess('communications') },
+    { id: 'integrations', label: 'Integrations', icon: Zap, path: `${orgPrefix}/settings/integrations`, permission: () => canAccess('integrations') },
     { id: 'custom-fields', label: 'Custom Fields', icon: Database, path: `${orgPrefix}/settings/custom-fields` },
-    { id: 'permissions', label: 'Permissions', icon: Shield, path: `${orgPrefix}/settings/permissions` },
-    { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs` },
-    { id: 'brand-board', label: 'Brand Board', icon: Palette, path: `${orgPrefix}/settings/brand-board` },
-    { id: 'email-service', label: 'Email Service', icon: Mail, path: `${orgPrefix}/settings/email-service` },
+    { id: 'permissions', label: 'Permissions', icon: Shield, path: `${orgPrefix}/settings/permissions`, permission: () => can('staff', 'assign_roles') },
+    { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs`, permission: () => can('system', 'view_audit_logs') },
+    { id: 'brand-board', label: 'Brand Board', icon: Palette, path: `${orgPrefix}/settings/brand-board`, permission: () => can('system', 'manage_brand') },
+    { id: 'email-service', label: 'Email Service', icon: Mail, path: `${orgPrefix}/settings/email-service`, permission: () => canAccess('communications') },
   ];
+
+  const tabs = allTabs.filter(tab => !tab.permission || tab.permission());
 
   const currentPath = location.pathname;
 

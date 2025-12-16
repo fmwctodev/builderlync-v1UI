@@ -1,29 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Package, 
-  Users, 
-  TrendingUp, 
-  FolderKanban, 
-  Eye, 
-  Zap,
-  Bot
-} from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
-
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'ABC Supply', href: '/abc-supply', icon: Package },
-  { name: 'CRM', href: '/crm', icon: Users },
-  { name: 'Marketing', href: '/marketing', icon: TrendingUp },
-  { name: 'Project Management', href: '/project-management', icon: FolderKanban },
-  { name: 'Edge View', href: '/edge-view', icon: Eye },
-  { name: 'Roof Runner', href: '/roof-runner', icon: Zap },
-  { name: 'AI Agents', href: '/ai-agents', icon: Bot },
-];
+import { routes } from '../utils/routes';
+import { canAccessModule } from '../utils/permissions';
 
 export function Navigation() {
   const location = useLocation();
+
+  const accessibleRoutes = routes.filter(route => {
+    if (!route.requiredPermission) return true;
+    return canAccessModule(route.requiredPermission.module);
+  });
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 topbar shadow-sm">
@@ -34,7 +20,7 @@ export function Navigation() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">BuilderLynk</h1>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigation.map((item) => {
+              {accessibleRoutes.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href || 
                   (item.href !== '/' && location.pathname.startsWith(item.href));

@@ -72,14 +72,21 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
         permissions,
       };
 
+      console.log('=== Role Submission ===');
+      console.log('Mode:', isEdit ? 'Edit' : 'Create');
+      console.log('Role Data:', JSON.stringify(roleData, null, 2));
+
       if (isEdit && role) {
-        await updateRole(role.id, roleData);
+        const result = await updateRole(role.id, roleData);
+        console.log('Update Result:', result);
       } else {
-        await createRole(roleData);
+        const result = await createRole(roleData);
+        console.log('Create Result:', result);
       }
 
       onSuccess();
     } catch (err: any) {
+      console.error('Role submission error:', err);
       setError(err.response?.data?.message || 'Failed to save role');
     } finally {
       setLoading(false);

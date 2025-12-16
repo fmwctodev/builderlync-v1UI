@@ -11,10 +11,12 @@ import { CRMModuleSimple } from './modules/crm/CRMModuleSimple';
 import { MarketingModule } from './modules/marketing/MarketingModule';
 import { ProjectManagementModule } from './modules/project-management/ProjectManagementModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
-import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
+// import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
+
 import { ReportingModule } from './modules/reporting/ReportingModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
 import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
+import { SierraAiModule } from './modules/sierra-ai/SierraAiModule';
 
 function App() {
   return (
@@ -29,7 +31,7 @@ function App() {
             <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
             <Route path="/crm/*" element={<CRMModule />} />
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
-            <Route path="/ai-agents/*" element={<AIAgentsModule />} />
+
             <Route path="/reporting/*" element={<ReportingModule />} />
           </Routes>
         </Router>
