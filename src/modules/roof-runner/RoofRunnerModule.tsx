@@ -44,6 +44,8 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyOtp from './pages/auth/VerifyOtp';
 import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
 import { AuthRoute } from '../../shared/components/AuthRoute';
+import { SierraAiModule } from '../sierra-ai/SierraAiModule';
+import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
 
 export function RoofRunnerModule() {
   return (
@@ -66,7 +68,8 @@ export function RoofRunnerModule() {
         <Route path="contacts/:id" element={<ContactProfile />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="payments" element={<Payments />} />
-        <Route path="ai-agents/*" element={<AIAgentsModule />} />
+        <Route path="ai-agents/*" element={<SierraAiModule />} />
+        <Route path="create-agent" element={<CreateAgentWizard />} />
         <Route path="job-cam" element={<JobCam />} />
         <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
