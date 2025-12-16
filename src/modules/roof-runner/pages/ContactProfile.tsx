@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { getContactByIdRequest } from '../../../shared/store/slices/contactsSlice';
@@ -24,6 +25,7 @@ type DocumentsFilter = 'all' | 'internal' | 'sent' | 'received';
 const ContactProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getOrgPath } = useOrgPath();
   const dispatch = useDispatch();
   const { currentContact, isLoadingContact, error } = useSelector((state: RootState) => state.contacts);
   
@@ -337,7 +339,7 @@ const ContactProfile: React.FC = () => {
     <div className="min-h-screen bg-white dark:bg-gray-800">
       <ContactHeader
         contactName={contact.fullName}
-        onBack={() => navigate('/contacts')}
+        onBack={() => navigate(getOrgPath('contacts'))}
         onCreateJob={() => setShowAddressModal(true)}
         onEdit={handleEdit}
       />

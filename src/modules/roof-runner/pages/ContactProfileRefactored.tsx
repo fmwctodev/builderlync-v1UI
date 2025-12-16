@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { getContactById } from '../../../shared/store/services/contactsApi';
 import Toast from '../../../shared/components/Toast';
 import ContactModal from '../components/ContactModal';
@@ -12,6 +13,7 @@ import { AddTaskModal, AddNoteModal, AddDocumentModal } from '../components/Cont
 const ContactProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getOrgPath } = useOrgPath();
   
   // Core state
   const [contact, setContact] = useState<any>(null);
@@ -102,7 +104,7 @@ const ContactProfile: React.FC = () => {
     <div className="h-full bg-gray-50 dark:bg-gray-900">
       <ContactHeader 
         contactName={contact.fullName} 
-        onBack={() => navigate('/contacts')} 
+        onBack={() => navigate(getOrgPath('contacts'))} 
       />
 
       <div className="flex h-full">

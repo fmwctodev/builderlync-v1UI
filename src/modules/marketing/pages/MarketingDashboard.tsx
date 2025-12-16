@@ -19,13 +19,13 @@ const MarketingDashboard: React.FC = () => {
     { id: 'campaigns', label: 'Campaigns', icon: Target },
     { id: 'ads-manager', label: 'Ads Manager', icon: TrendingUp },
     { id: 'social-planner', label: 'Social Planner', icon: Share2 },
-  ];
+    ];
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing é</h1>
         </div>
 
         <div className="flex items-center gap-4">

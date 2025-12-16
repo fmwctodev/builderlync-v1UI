@@ -14,6 +14,7 @@ import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 import { ReportingModule } from './modules/reporting/ReportingModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
+import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <IncomingCallNotification />
           <Routes>
             <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
+            <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
             <Route path="/*" element={<RoofRunnerModule />} />
             <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
             <Route path="/crm/*" element={<CRMModule />} />

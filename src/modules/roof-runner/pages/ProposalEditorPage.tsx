@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { ArrowLeft, Send } from 'lucide-react';
 import ProposalBuilder from '../components/proposals/ProposalBuilder';
 import { proposalsApi } from '../services/proposalsApi';
@@ -7,6 +8,7 @@ import { proposalsApi } from '../services/proposalsApi';
 export default function ProposalEditorPage() {
   const { proposalId } = useParams<{ proposalId: string}>();
   const navigate = useNavigate();
+  const { getOrgPath } = useOrgPath();
   const [proposal, setProposal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,7 @@ export default function ProposalEditorPage() {
       {/* Proposal Header */}
       <div className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center">
-          <button onClick={() => navigate('/proposals')} className="flex items-center text-primary-600 hover:text-primary-700 mr-4">
+          <button onClick={() => navigate(getOrgPath('proposals'))} className="flex items-center text-primary-600 hover:text-primary-700 mr-4">
             <ArrowLeft className="w-4 h-4 mr-1" />
             Back to proposals
           </button>
@@ -64,7 +66,7 @@ export default function ProposalEditorPage() {
         {proposalId && (
           <ProposalBuilder
             proposalId={proposalId}
-            onClose={() => navigate('/proposals')}
+            onClose={() => navigate(getOrgPath('proposals'))}
           />
         )}
       </div>

@@ -11,6 +11,9 @@ import { Campaign, CampaignFormData } from '../types/campaigns';
 import { Toast } from '../components/Toast';
 import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
 import SettingsModal from '../components/social-planner/SettingsModal';
+import { FormBuilder } from '../../marketing/pages/FormBuilder';
+import { Forms } from '../../marketing/pages/Forms';
+import { OrgProvider } from '../../../shared/context/OrgContext';
 
 const Marketing: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -20,6 +23,7 @@ const Marketing: React.FC = () => {
     { id: 'campaigns', label: 'Campaigns', icon: Target },
     { id: 'ads-manager', label: 'Ads Manager', icon: TrendingUp },
     { id: 'social-planner', label: 'Social Planner', icon: Share2 },
+    { id: 'form', label: 'Form', icon: FileText }
   ];
 
   return (
@@ -57,6 +61,7 @@ const Marketing: React.FC = () => {
         {activeTab === 'campaigns' && <CampaignsTab />}
         {activeTab === 'ads-manager' && <AdsManagerTab />}
         {activeTab === 'social-planner' && <SocialPlannerTab />}
+        {activeTab === 'form' && <Forms />}
       </div>
     </div>
   );

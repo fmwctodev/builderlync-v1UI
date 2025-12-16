@@ -17,19 +17,19 @@ const SettingsRouter: React.FC = () => {
   return (
     <SettingsLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/settings/business-info" replace />} />
-        <Route path="/business-info" element={<BusinessInfo />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/staff" element={<StaffManagement initialTab="staff" />} />
-        <Route path="/staff/roles" element={<StaffManagement initialTab="roles" />} />
-        <Route path="/communications" element={<Communications />} />
-        <Route path="/custom-fields" element={<CustomFields />} />
-        <Route path="/permissions" element={<StaffManagement initialTab="roles" />} />
-        <Route path="/audit-logs" element={<AuditLogs />} />
-        <Route path="/brand-board" element={<BrandBoard />} />
-        <Route path="/email-service" element={<EmailService />} />
+        <Route index element={<Navigate to="business-info" replace />} />
+        <Route path="business-info" element={<BusinessInfo />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="integrations" element={<Integrations />} />
+        <Route path="billing" element={<Billing />} />
+        <Route path="staff" element={<StaffManagement initialTab="staff" />} />
+        <Route path="staff/roles" element={<StaffManagement initialTab="roles" />} />
+        <Route path="communications" element={<Communications />} />
+        <Route path="custom-fields" element={<CustomFields />} />
+        <Route path="permissions" element={<StaffManagement initialTab="roles" />} />
+        <Route path="audit-logs" element={<AuditLogs />} />
+        <Route path="brand-board" element={<BrandBoard />} />
+        <Route path="email-service" element={<EmailService />} />
       </Routes>
     </SettingsLayout>
   );

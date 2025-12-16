@@ -30,7 +30,13 @@ const Signup: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        localStorage.setItem('currentOrganizationSlug', orgSlug);
+        navigate(`/org/${orgSlug}`);
+      } else {
+        navigate('/auth/login');
+      }
     }
   }, [user, navigate]);
 
@@ -144,7 +150,7 @@ const Signup: React.FC = () => {
 
           <div>
             <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
+              Organization Name
             </label>
             <div className="relative">
               <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -158,10 +164,15 @@ const Signup: React.FC = () => {
                 style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
-                placeholder="Your company name"
+                placeholder="Your organization name"
                 required
               />
             </div>
+            {formData.companyName && (
+              <p className="mt-2 text-xs text-gray-500">
+                URL: <span className="font-mono text-red-600">org/{formData.companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}</span>
+              </p>
+            )}
           </div>
 
           <div>

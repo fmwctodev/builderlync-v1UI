@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit, ExternalLink, Copy, QrCode, Code, Plus, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { apiService } from '../store/services/api';
 import Toast from '../../../shared/components/Toast';
 
 const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { getOrgPath } = useOrgPath();
   const [estimatorName, setEstimatorName] = useState('');
   const [publicUrl, setPublicUrl] = useState('');
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -126,7 +128,7 @@ const InstantEstimatorManage: React.FC = () => {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
         <button
-          onClick={() => navigate('/instant-estimator')}
+          onClick={() => navigate(getOrgPath('instant-estimator'))}
           className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm"
         >
           <ArrowLeft className="w-4 h-4" />

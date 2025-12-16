@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAppSelector } from './store/hooks';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import Layout from './components/Layout/Layout';
@@ -44,11 +45,22 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyOtp from './pages/auth/VerifyOtp';
 import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
 import { AuthRoute } from '../../shared/components/AuthRoute';
+import { OrgProvider } from '../../shared/context/OrgContext';
+import { FormBuilder } from '../marketing/pages/FormBuilder';
+import { FormSubmissions } from '../marketing/pages/FormSubmissions';
+
+const RootRedirect = () => {
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
+  return <Navigate to={orgSlug ? `/org/${orgSlug}` : '/auth/login'} replace />;
+};
 
 export function RoofRunnerModule() {
   return (
     <Provider store={store}>
+      <OrgProvider>
       <Routes>
+      <Route path="/" element={<ProtectedRoute><RootRedirect /></ProtectedRoute>} />
       <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
       <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
@@ -57,8 +69,9 @@ export function RoofRunnerModule() {
       <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
       <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
       <Route path="proposal/view" element={<PublicProposalView />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
+      <Route path="org/:orgSlug" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
 
         <Route path="conversations" element={<ConversationsNew />} />
         <Route path="calendars" element={<Calendars />} />
@@ -85,6 +98,8 @@ export function RoofRunnerModule() {
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<Marketing />} />
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
+        <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
+        <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
         <Route path="file-manager" element={<FileManager />} />
         <Route path="reputation" element={<Reputation />} />
         <Route path="catalog" element={<Catalog />} />
@@ -96,6 +111,7 @@ export function RoofRunnerModule() {
         <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
       </Route>
       </Routes>
+      </OrgProvider>
     </Provider>
   );
 }
