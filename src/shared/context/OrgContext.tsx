@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface Organization {
   id: string;
@@ -35,21 +36,128 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      // Mock organization data
-      const mockOrg: Organization = {
-        id: 'mock-org-id',
-        name: 'BuilderLync Demo',
-        slug: orgSlug,
-        logo_url: undefined,
-        primary_color: '#ef4444',
-        enabled_modules: ['abc-supply', 'crm', 'marketing', 'project-management', 'edge-view', 'roof-runner'],
-        subscription_status: 'active',
-        subscription_tier: 'pro'
-      };
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-      setCurrentOrganization(mockOrg);
-      localStorage.setItem('currentOrganizationId', mockOrg.id);
-      localStorage.setItem('currentOrganizationSlug', mockOrg.slug);
+      // Get organization by slug and verify user has access
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select(`
+          id,
+          name,
+          slug,
+          logo_url,
+          primary_color,
+          enabled_modules,
+          subscription_status
+        `)
+        .eq('slug', orgSlug)
+        .maybeSingle();
+
+      if (orgError) throw orgError;
+
+      if (!org) {
+        console.warn(`⚠️ Organization with slug "${orgSlug}" not found`);
+
+        // Check if user has ANY organizations
+        const { data: memberships } = await supabase
+          .from('organization_members')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .limit(1);
+
+        if (!memberships || memberships.length === 0) {
+          // User has no organizations at all - create a default one
+          console.log('ℹ️ User has no organizations, creating default organization...');
+
+          const defaultOrgName = user.user_metadata?.company_name ||
+                                 user.user_metadata?.full_name ||
+                                 user.email?.split('@')[0] ||
+                                 'My Organization';
+
+          const defaultSlug = defaultOrgName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+            .substring(0, 50);
+
+          const { data: newOrgId, error: createError } = await supabase.rpc(
+            'setup_new_organization',
+            {
+              p_user_id: user.id,
+              p_org_name: defaultOrgName,
+              p_org_slug: defaultSlug,
+            }
+          );
+
+          if (createError) {
+            console.error('❌ Failed to create default organization:', {
+              message: createError.message,
+              details: createError.details,
+              hint: createError.hint,
+              code: createError.code
+            });
+            throw new Error(`Failed to create organization: ${createError.message}. Please try again or contact support.`);
+          }
+
+          console.log('✅ Default organization created with ID:', newOrgId);
+
+          // Now load the newly created organization
+          const { data: newOrg, error: newOrgError } = await supabase
+            .from('organizations')
+            .select(`
+              id,
+              name,
+              slug,
+              logo_url,
+              primary_color,
+              enabled_modules,
+              subscription_status
+            `)
+            .eq('slug', defaultSlug)
+            .maybeSingle();
+
+          if (newOrgError || !newOrg) {
+            throw new Error('Failed to load newly created organization');
+          }
+
+          setCurrentOrganization(newOrg);
+          localStorage.setItem('currentOrganizationId', newOrg.id);
+          localStorage.setItem('currentOrganizationSlug', newOrg.slug);
+
+          // Redirect to the correct slug
+          window.location.href = `/org/${newOrg.slug}`;
+          return;
+        } else {
+          // User has organizations but this slug doesn't exist - redirect to selector
+          throw new Error('Organization not found. Please select a different organization.');
+        }
+      }
+
+      // Verify user is a member of this organization
+      const { data: membership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('id, role, is_active')
+        .eq('organization_id', org.id)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (membershipError || !membership) {
+        throw new Error('You do not have access to this organization');
+      }
+
+      setCurrentOrganization(org);
+
+      // Store in localStorage for quick access
+      localStorage.setItem('currentOrganizationId', org.id);
+      localStorage.setItem('currentOrganizationSlug', org.slug);
     } catch (err) {
       console.error('Error loading organization:', err);
       setError(err instanceof Error ? err.message : 'Failed to load organization');
@@ -90,8 +198,30 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         if (cachedSlug) {
           await loadOrganization(cachedSlug);
         } else {
-          // Default to demo organization
-          await loadOrganization('demo');
+          // No org context available, try to load user's first organization
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // First, get the organization_id from memberships (no join to avoid recursion)
+            const { data: memberships } = await supabase
+              .from('organization_members')
+              .select('organization_id')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .limit(1);
+
+            if (memberships && memberships.length > 0) {
+              // Then fetch the organization details separately
+              const { data: org } = await supabase
+                .from('organizations')
+                .select('id, name, slug')
+                .eq('id', memberships[0].organization_id)
+                .single();
+
+              if (org) {
+                await loadOrganization(org.slug);
+              }
+            }
+          }
         }
         setIsLoading(false);
       }

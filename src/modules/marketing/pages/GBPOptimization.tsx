@@ -1,9 +1,10 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function GBPOptimization() {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -66,7 +67,7 @@ export function GBPOptimization() {
           
           {/* Integrate GBP Button */}
           <button 
-            onClick={() => navigate('/marketing/integrations')}
+            onClick={() => navigate(orgSlug ? `/org/${orgSlug}/marketing/integrations` : '/marketing/integrations')}
             className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
           >
             <ExternalLink className="w-4 h-4 mr-2" />

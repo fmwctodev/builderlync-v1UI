@@ -21,7 +21,13 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        localStorage.setItem('currentOrganizationSlug', orgSlug);
+        navigate(`/org/${orgSlug}`);
+      } else {
+        navigate('/auth/login');
+      }
     }
   }, [user, navigate]);
 
