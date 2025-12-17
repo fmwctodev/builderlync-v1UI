@@ -31,7 +31,9 @@ const ABCSupplyView: React.FC = () => {
     const loadFeaturedProducts = async () => {
       try {
         const response = await abcSupplyApi.getItems(1, 4);
-        setFeaturedProducts(response.items);
+        console.log("response:",response.items);
+        
+        setFeaturedProducts(response.items.items);
       } catch (error) {
         console.error('Failed to load featured products:', error);
         setFeaturedProducts([]);
@@ -194,9 +196,9 @@ const ABCSupplyView: React.FC = () => {
             
             <div className="p-4">
               <div className="grid grid-cols-1 gap-3">
-                {featuredProducts.map((product) => (
+                {featuredProducts.map((product,key) => (
                   <div
-                    key={product.id}
+                    key={key}
                     className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
                   >
                     <div className="flex items-center">
@@ -205,10 +207,10 @@ const ABCSupplyView: React.FC = () => {
                       </div>
                       <div className="ml-3 overflow-hidden">
                         <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                          {product.name}
+                          {product.familyName}
                         </h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {product.manufacturer} - {product.sku}
+                          {product.supplierName} - {product.itemNumber}
                         </p>
                       </div>
                     </div>

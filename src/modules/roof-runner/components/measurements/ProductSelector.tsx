@@ -19,11 +19,11 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const getCategoryIcon = (categoryId: string) => {
     switch (categoryId) {
-      case 'full-house': return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'roof': return <Cloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'solar': return <Sun className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'walls': return <Layout className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      default: return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
+      case 'full-house': return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'roof': return <Cloud className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'solar': return <Sun className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'walls': return <Layout className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      default: return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
     }
   };
 
@@ -165,9 +165,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                               </div>
                             )}
                             {product.reportOptions?.warningText && (
-                              <div className="flex gap-2 bg-blue-50 dark:bg-blue-900/20 items-start p-2 rounded">
-                                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                                <p className="text-blue-800 dark:text-blue-200 text-xs">
+                              <div className="flex gap-2 bg-primary-50 dark:bg-primary-900/20 items-start p-2 rounded">
+                                <Info className="w-4 h-4 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-primary-800 dark:text-primary-200 text-xs">
                                   {product.reportOptions.warningText}
                                 </p>
                               </div>
@@ -192,9 +192,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                           )}
 
                           {selectedDeliveryModes[product.id] === "3 Hours" && (
-                            <div className="mt-3 flex gap-3 bg-blue-50 dark:bg-blue-900/20 items-start p-3 rounded-lg">
-                              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                            <div className="mt-3 flex gap-3 bg-primary-50 dark:bg-primary-900/20 items-start p-3 rounded-lg">
+                              <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+                              <p className="text-primary-800 dark:text-primary-200 text-sm">
                                 Note: If we need assistance locating the property, we will contact you by phone and/or email. 
                                 The 3 hour delivery time starts once the structure has been identified.
                               </p>

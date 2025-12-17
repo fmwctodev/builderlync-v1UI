@@ -50,8 +50,8 @@ export default function Measurements() {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <div className="bg-primary-600 h-48 rounded-lg">
-        <div className="px-6 pt-8">
+      <div className="bg-primary-600 h-20 rounded-lg">
+        <div className="px-6 pt-5">
           <h1 className="text-3xl font-bold text-white">Dashboard</h1>
         </div>
       </div>

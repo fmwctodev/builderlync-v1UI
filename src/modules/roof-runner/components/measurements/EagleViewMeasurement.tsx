@@ -66,7 +66,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
     switch (status) {
       case 'completed': return 'text-green-600 bg-green-100';
       case 'processing': return 'text-yellow-600 bg-yellow-100';
-      case 'pending': return 'text-blue-600 bg-blue-100';
+      case 'pending': return 'text-primary-600 bg-primary-100';
       case 'failed': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -127,14 +127,14 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
               placeholder="Enter property address..."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center space-x-2"
+            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center space-x-2"
           >
             {loading ? (
               <>
@@ -200,7 +200,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
                     
                     <button
                       onClick={() => handleDownloadImage(image.id, 'jpeg')}
-                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded text-sm"
                     >
                       <Download className="w-4 h-4" />
                       <span>Download</span>
@@ -240,12 +240,12 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
 
   const renderNewOrderTab = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
         <div className="flex items-center gap-3 mb-4">
           <Camera className="w-8 h-8" />
           <div>
             <h2 className="text-2xl font-bold">EagleView Measurements</h2>
-            <p className="text-blue-100">Precision aerial property intelligence</p>
+            <p className="text-primary-100">Precision aerial property intelligence</p>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Ruler className="w-6 h-6 text-blue-600" />
+            <Ruler className="w-6 h-6 text-primary-600" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Roof Measurements</h3>
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -311,7 +311,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-gray-900 dark:text-white">{report.name}</h4>
-                <span className="text-lg font-bold text-blue-600">{report.price}</span>
+                <span className="text-lg font-bold text-primary-600">{report.price}</span>
               </div>
               <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                 {report.features.map((feature, idx) => (
@@ -331,7 +331,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">EagleView Reports</h2>
         <button
           onClick={() => setActiveTab('new-order')}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
         >
           New Order
         </button>
@@ -361,7 +361,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
                 <div className="flex gap-2">
                   <button
                     onClick={() => onReportSelect?.(report)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md"
+                    className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md"
                     title="View Report"
                   >
                     <Eye className="w-4 h-4" />
@@ -418,7 +418,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             onClick={() => setActiveTab('imagery')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'imagery'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -428,7 +428,7 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
             onClick={() => setActiveTab('new-order')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'new-order'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -436,9 +436,9 @@ const EagleViewMeasurement: React.FC<EagleViewMeasurementProps> = ({ onReportSel
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`py-2 px-1 border-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'reports'
-                ? 'border-blue-500 text-blue-600'
+                ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >

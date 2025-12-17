@@ -110,9 +110,9 @@ const PropertyTypeSelector: React.FC<PropertyTypeSelectorProps> = ({
         </div>
 
         {isComplex && (
-          <div className="flex gap-4 bg-blue-50 dark:bg-blue-900/20 items-center justify-start p-4 rounded-lg">
-            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <p className="text-blue-800 dark:text-blue-200 text-sm">
+          <div className="flex gap-4 bg-primary-50 dark:bg-primary-900/20 items-center justify-start p-4 rounded-lg">
+            <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+            <p className="text-primary-800 dark:text-primary-200 text-sm">
               Add additional buildings on this complex to your order by dropping additional pins on the map.
             </p>
           </div>

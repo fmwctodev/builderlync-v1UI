@@ -13,7 +13,10 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [cart, setCart] = useState<Array<Product & { quantity: number }>>([]);
+  const [cart, setCart] = useState<Array<Product & { quantity: number }>>(() => {
+    const savedCart = localStorage.getItem('abc-supply-cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [showCart, setShowCart] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedManufacturers, setSelectedManufacturers] = useState<string[]>([]);
@@ -26,7 +29,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     try {
       setLoading(true);
       const response = await abcSupplyApi.getItems(1, 50);
-      setProducts(response.items);
+      setProducts(response.items.items);
     } catch (error) {
       console.error('Failed to load products:', error);
       setProducts([]);
@@ -55,33 +58,45 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
   const handleAddToCart = (product: Product) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
+      const existingItem = prevCart.find(item => item.itemNumber === product.itemNumber);
+      let newCart;
       if (existingItem) {
-        return prevCart.map(item =>
-          item.id === product.id
+        newCart = prevCart.map(item =>
+          item.itemNumber === product.itemNumber
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+      } else {
+        newCart = [...prevCart, { ...product, quantity: 1 }];
       }
-      return [...prevCart, { ...product, quantity: 1 }];
+      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      return newCart;
     });
   };
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+    setCart(prevCart => {
+      const newCart = prevCart.map(item =>
+        item.itemNumber === productId ? { ...item, quantity } : item
+      );
+      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      return newCart;
+    });
   };
 
   const handleRemoveItem = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    setCart(prevCart => {
+      const newCart = prevCart.filter(item => item.itemNumber !== productId);
+      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      return newCart;
+    });
   };
 
   const handleCheckout = () => {
     console.log('Proceeding to checkout with:', cart);
-    // Implement checkout logic here
+    // Clear cart after successful checkout
+    setCart([]);
+    localStorage.removeItem('abc-supply-cart');
   };
 
   const handleCategoryFilter = (category: string, checked: boolean) => {
@@ -96,19 +111,20 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     );
   };
 
-  const filteredProducts = (products || []).filter(product => {
+  const filteredProducts = Array.isArray(products) ? products.filter(product => {
     const matchesSearch = searchQuery === '' || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase());
+      product.familyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.itemDescription?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesCategory = selectedCategories.length === 0 || 
-      selectedCategories.includes(product.category || '');
+      selectedCategories.includes(product.hierarchy?.productGroup?.category?.label || '');
     
     const matchesManufacturer = selectedManufacturers.length === 0 || 
-      selectedManufacturers.includes(product.manufacturer);
+      selectedManufacturers.includes(product.supplierName || '');
     
     return matchesSearch && matchesCategory && matchesManufacturer;
-  });
+  }) : [];
 
   return (
     <div className="space-y-6">
@@ -214,16 +230,16 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-auto">
           <div className="bg-gray-900 dark:bg-gray-800 rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-700">
+            <table className="min-w-full table-fixed divide-y divide-gray-700">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Item Number</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Family Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                  <th className="w-32 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Item Number</th>
+                  <th className="w-64 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Family Name</th>
+                  <th className="w-80 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
+                  <th className="w-24 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="w-24 px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -243,20 +259,21 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                     </td>
                   </tr>
                 ) : (
-                (filteredProducts || [])
-                  .map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-800 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{product.sku}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{product.manufacturer}</td>
+                filteredProducts.map((product) => (
+                    <tr key={product.itemNumber} className="hover:bg-gray-800 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 text-sm font-medium text-white truncate">{product.itemNumber}</td>
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        <div className="break-words">{product.familyName}</div>
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
-                          <span className="font-medium text-white">{product.name}</span>
-                          <span className="text-gray-400">{product.description}</span>
+                          <span className="font-medium text-white">{product.supplierName}</span>
+                          <span className="text-gray-400">{product.itemDescription}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900/50 text-green-300">
-                          Active
+                          {product.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
