@@ -33,7 +33,7 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const data = await response.json();
-  return { ...data, data: transformKeys(data.data) };
+  return data;
 };
 import type {
   MarketingForm,
@@ -92,12 +92,25 @@ export const formsApi = {
     }
   },
 
-  async submitPublicForm(publicId: string, submissionData: Record<string, any>): Promise<void> {
+  async submitPublicForm(publicId: string, submissionData: Record<string, any>, metadata?: any): Promise<{ id: string; submittedAt: string }> {
     try {
-      await apiRequest(`/form-builder/forms/public/${publicId}/submit`, {
+      const payload: any = submissionData;
+      
+      const response = await fetch(`${API_BASE_URL}/form-builder/forms/public/${publicId}/submit`, {
         method: 'POST',
-        body: JSON.stringify({ submission_data: submissionData }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(metadata?.ip && { 'X-User-IP': metadata.ip }),
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Submission failed' }));
+        throw new Error(error.error || error.message || 'Submission failed');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Error submitting form:', error);
       throw error;
@@ -226,6 +239,27 @@ export const formsApi = {
       status?: string;
     }
   ): Promise<{ data: FormSubmissionWithDetails[]; count: number }> {
+    try {
+      const response = await apiRequest(`/form-builder/forms/${formId}/submissions`);
+      return {
+        data: response.data || [],
+        count: response.data?.length || 0
+      };
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+      throw error;
+    }
+  },
+
+  async getSubmissionsOld(
+    formId: string,
+    organizationId: string | null,
+    options?: {
+      limit?: number;
+      offset?: number;
+      status?: string;
+    }
+  ): Promise<{ data: FormSubmissionWithDetails[]; count: number }> {
     requireOrganizationId(organizationId, 'getSubmissions');
 
     const limit = options?.limit || 100;
@@ -343,9 +377,37 @@ export const formsApi = {
       limit?: number;
       offset?: number;
       status?: string;
+      startDate?: string;
+      endDate?: string;
     }
   ): Promise<{ data: FormSubmissionWithDetails[]; count: number }> {
-    requireOrganizationId(organizationId, 'getAllSubmissions');
+    try {
+      const params = new URLSearchParams();
+      if (options?.startDate) params.append('start_date', options.startDate);
+      if (options?.endDate) params.append('end_date', options.endDate);
+      
+      const queryString = params.toString();
+      const endpoint = queryString ? `/form-builder/submissions?${queryString}` : '/form-builder/submissions';
+      
+      const response = await apiRequest(endpoint);
+      return {
+        data: response.data || [],
+        count: response.data?.length || 0
+      };
+    } catch (error) {
+      console.error('Error fetching all submissions:', error);
+      return { data: [], count: 0 };
+    }
+  },
+
+  async getAllSubmissionsOld(
+    organizationId: string | null,
+    options?: {
+      limit?: number;
+      offset?: number;
+      status?: string;
+    }
+  ): Promise<{ data: FormSubmissionWithDetails[]; count: number }> {
 
     const limit = options?.limit || 100;
     const offset = options?.offset || 0;

@@ -25,7 +25,6 @@ export const FormsSubmissionsTab: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedForms, setSelectedForms] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('2025-11-09');
   const [endDate, setEndDate] = useState('2025-12-09');
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,7 +37,7 @@ export const FormsSubmissionsTab: React.FC = () => {
   useEffect(() => {
     loadForms();
     loadSubmissions();
-  }, [organizationId]);
+  }, [organizationId, startDate, endDate]);
 
   const loadForms = async () => {
     try {
@@ -55,6 +54,8 @@ export const FormsSubmissionsTab: React.FC = () => {
       setError(null);
       const { data, count } = await formsApi.getAllSubmissions(organizationId, {
         limit: 100,
+        startDate,
+        endDate,
       });
       setSubmissions(data);
       setTotalCount(count);
@@ -101,12 +102,9 @@ export const FormsSubmissionsTab: React.FC = () => {
   };
 
   const filteredSubmissions = submissions.filter((sub) => {
-    const matchesSearch = searchQuery
-      ? JSON.stringify(sub.submission_data).toLowerCase().includes(searchQuery.toLowerCase())
-      : true;
     const matchesForm =
-      selectedForms.length === 0 ? true : selectedForms.includes(sub.form_id);
-    return matchesSearch && matchesForm;
+      selectedForms.length === 0 ? true : selectedForms.includes(sub.formId || sub.form_id || '');
+    return matchesForm;
   });
 
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage);
@@ -272,27 +270,6 @@ export const FormsSubmissionsTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          />
-        </div>
-
-        <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-          <Settings2 size={18} className="text-gray-600 dark:text-gray-400" />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Manage Columns</span>
-        </button>
-      </div>
-
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
@@ -301,13 +278,13 @@ export const FormsSubmissionsTab: React.FC = () => {
                 <input type="checkbox" className="rounded" />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Contact
+                Form Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Name
+                IP Address
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Email
+                Submitted Date
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
@@ -316,10 +293,6 @@ export const FormsSubmissionsTab: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {paginatedSubmissions.map((submission) => {
-              const contactName = submission.contact
-                ? `${submission.contact.first_name} ${submission.contact.last_name}`
-                : 'Unknown Contact';
-
               return (
                 <tr
                   key={submission.id}
@@ -328,23 +301,14 @@ export const FormsSubmissionsTab: React.FC = () => {
                   <td className="px-6 py-4">
                     <input type="checkbox" className="rounded" />
                   </td>
-                  <td className="px-6 py-4">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(
-                        contactName
-                      )}`}
-                    >
-                      {getInitials(contactName)}
-                    </div>
-                  </td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    {contactName}
+                    {submission.formName || 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-2">
-                      <span>✉</span>
-                      <span>{submission.contact?.email || 'N/A'}</span>
-                    </div>
+                    {submission.ipAddress === '::1' ? '127.0.0.1' : (submission.ipAddress || 'N/A')}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {new Date(submission.submittedAt || submission.created_at || '').toUTCString()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
@@ -450,7 +414,7 @@ const SubmissionDetailModal: React.FC<{
             </button>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Submitted on {new Date(submission.created_at).toLocaleString()}
+            Submitted on {new Date(submission.submittedAt).toUTCString()}
           </p>
         </div>
 
@@ -460,12 +424,14 @@ const SubmissionDetailModal: React.FC<{
               Form Data
             </h3>
             <div className="space-y-3">
-              {Object.entries(submission.submission_data).map(([key, value]) => (
-                <div key={key} className="border-b border-gray-200 dark:border-gray-700 pb-2">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{key}</p>
-                  <p className="text-gray-900 dark:text-white mt-1">{String(value)}</p>
-                </div>
-              ))}
+              {Object.entries(submission.submissionData || submission.submission_data || {})
+                .filter(([key]) => key !== 'metadata')
+                .map(([key, value]) => (
+                  <div key={key} className="border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{key}</p>
+                    <p className="text-gray-900 dark:text-white mt-1">{String(value)}</p>
+                  </div>
+                ))}
             </div>
           </div>
 

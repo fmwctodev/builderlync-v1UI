@@ -315,7 +315,7 @@ const SubmissionDetailModal: React.FC<{
             </button>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Submitted on {new Date(submission.created_at).toLocaleString()}
+            Submitted on {new Date(submission.submittedAt).toLocaleString()}
           </p>
         </div>
 
