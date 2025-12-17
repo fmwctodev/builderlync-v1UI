@@ -157,27 +157,32 @@ export interface FormSubmissionMetadata {
 }
 
 export interface FormSubmission {
-  id: string;
-  organization_id: string;
-  form_id: string;
-  submission_data: Record<string, any>;
-  metadata: FormSubmissionMetadata;
-  status: SubmissionStatus;
+  id: string | number;
+  organization_id?: string;
+  form_id?: string;
+  formId?: string;
+  formName?: string;
+  submission_data?: Record<string, any>;
+  submissionData?: Record<string, any>;
+  metadata?: FormSubmissionMetadata;
+  status?: SubmissionStatus;
   contact_id?: string;
   opportunity_id?: string;
   error_message?: string;
   processed_at?: string;
-  created_at: string;
+  created_at?: string;
+  submittedAt?: string;
+  ipAddress?: string;
 }
 
 export interface FormSubmissionWithDetails extends FormSubmission {
-  form?: MarketingForm;
+  form?: MarketingForm | { name: string };
   contact?: {
     id: string;
     first_name: string;
     last_name: string;
     email: string;
-  };
+  } | null;
   opportunity?: {
     id: string;
     name: string;

@@ -378,10 +378,10 @@ export const FormsBuildTab: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(folder.updated_at).toLocaleDateString()}
+                    {new Date(folder.updatedAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {folder.user_name || '-'}
+                    {folder.userName || '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button 
@@ -437,10 +437,10 @@ export const FormsBuildTab: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(form.updated_at).toLocaleDateString()}
+                    {new Date(form.updatedAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {form.user_name || '-'}
+                    {form.userName || form.user_name || '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="relative inline-block" ref={openDropdownId === form.id ? dropdownRef : null}>

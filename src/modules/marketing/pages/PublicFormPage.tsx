@@ -35,7 +35,35 @@ export const PublicFormPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      await formsApi.submitPublicForm(publicId, formData);
+      // Convert field IDs to labels for submission
+      const submissionData: Record<string, any> = {};
+      Object.entries(formData).forEach(([fieldId, value]) => {
+        const field = form.fields?.find(f => f.id === fieldId);
+        if (field) {
+          submissionData[field.label] = value;
+        }
+      });
+      
+      // Get user IP address
+      let userIp = 'Unknown';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        userIp = ipData.ip;
+      } catch (ipError) {
+        console.log('Could not fetch IP address');
+      }
+      
+      // Add metadata
+      const metadata = {
+        ip: userIp,
+        userAgent: navigator.userAgent,
+        referrer: document.referrer,
+        page_url: window.location.href,
+        timestamp: new Date().toISOString(),
+      };
+      
+      await formsApi.submitPublicForm(publicId, submissionData, metadata);
       setSubmitted(true);
     } catch (err) {
       alert('Failed to submit form. Please try again.');
