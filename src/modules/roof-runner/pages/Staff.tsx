@@ -15,7 +15,7 @@ const Staff: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalStaff, setTotalStaff] = useState(0);
-  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -28,10 +28,11 @@ const Staff: React.FC = () => {
     try {
       setLoading(true);
       const response = await getStaff(page, 10);
-      setStaff(response.data.staff || []);
-      setCurrentPage(response.data.pagination.page);
-      setTotalPages(response.data.pagination.totalPages);
-      setTotalStaff(response.data.pagination.total);
+      console.log(response)
+      setStaff(response.data || []);
+      setTotalStaff(response.total || 0);
+      setTotalPages(Math.ceil((response.total || 0) / 10));
+      setCurrentPage(page);
     } catch (error: any) {
       console.error('Error fetching staff:', error);
       setToast({ message: 'Failed to load staff members', type: 'error' });
@@ -43,21 +44,28 @@ const Staff: React.FC = () => {
   const handleAddStaff = async (staffData: any) => {
     setIsSubmitting(true);
     try {
+      // Parse phone number to extract country code
+      const phoneStr = staffData.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const createData: CreateStaffRequest = {
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension,
-        password: staffData.password || 'defaultPassword123'
+        phone: phone,
+        countryCode: countryCode,
+        password: staffData.password,
+        role_id: staffData.roleId || undefined
       };
 
-      await createStaff(createData);
+      const result = await createStaff(createData);
       setToast({ message: 'Staff member added successfully!', type: 'success' });
       setShowAddModal(false);
       fetchStaff();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to add staff member';
+      const errorMessage = error.message || 'Failed to add staff member';
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -69,17 +77,19 @@ const Staff: React.FC = () => {
     
     setIsSubmitting(true);
     try {
+      // Parse phone number to extract country code
+      const phoneStr = staffData.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const updateData: UpdateStaffRequest = {
         firstName: staffData.firstName,
         lastName: staffData.lastName,
         email: staffData.email,
-        phone: staffData.phone,
-        extension: staffData.extension
+        phone: phone,
+        countryCode: countryCode
       };
-
-      if (staffData.password) {
-        updateData.password = staffData.password;
-      }
 
       await updateStaff(editingStaff.id, updateData);
       setToast({ message: 'Staff member updated successfully!', type: 'success' });
@@ -87,7 +97,7 @@ const Staff: React.FC = () => {
       setEditingStaff(null);
       fetchStaff();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update staff member';
+      const errorMessage = error.message || 'Failed to update staff member';
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -112,7 +122,7 @@ const Staff: React.FC = () => {
     }
   };
 
-  const handleDropdownToggle = (staffId: number) => {
+  const handleDropdownToggle = (staffId: string) => {
     setActiveDropdown(activeDropdown === staffId ? null : staffId);
   };
 
@@ -134,7 +144,7 @@ const Staff: React.FC = () => {
   };
 
   const filteredStaff = staff.filter(member =>
-    `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.phone.includes(searchTerm)
   );
@@ -219,16 +229,16 @@ const Staff: React.FC = () => {
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                         {member.image ? (
-                          <img src={member.image} alt={`${member.firstName} ${member.lastName}`} className="w-full h-full rounded-full object-cover" />
+                          <img src={member.image} alt={`${member.first_name} ${member.last_name}`} className="w-full h-full rounded-full object-cover" />
                         ) : (
                           <span className="text-lg font-semibold text-gray-600 dark:text-gray-300">
-                            {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+                            {member.first_name.charAt(0)}{member.last_name.charAt(0)}
                           </span>
                         )}
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900 dark:text-white">
-                          {member.firstName} {member.lastName}
+                          {member.first_name} {member.last_name}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{member.email}</p>
                       </div>
@@ -265,12 +275,10 @@ const Staff: React.FC = () => {
                       <span className="text-gray-500 dark:text-gray-400">Phone:</span>
                       <span className="text-gray-900 dark:text-white">{member.phone}</span>
                     </div>
-                    {member.extension && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500 dark:text-gray-400">Extension:</span>
-                        <span className="text-gray-900 dark:text-white">{member.extension}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Country Code:</span>
+                      <span className="text-gray-900 dark:text-white">{member.country_code}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -331,7 +339,15 @@ const Staff: React.FC = () => {
           setEditingStaff(null);
         }}
         onSave={handleEditStaff}
-        member={editingStaff || undefined}
+        member={editingStaff ? {
+          id: parseInt(editingStaff.id),
+          firstName: editingStaff.first_name,
+          lastName: editingStaff.last_name,
+          email: editingStaff.email,
+          phone: editingStaff.phone,
+          countryCode: editingStaff.country_code,
+          profileImage: editingStaff.image
+        } : undefined}
         isEdit={true}
       />
 
@@ -342,7 +358,7 @@ const Staff: React.FC = () => {
           setDeletingStaff(null);
         }}
         onConfirm={handleDeleteStaff}
-        memberName={deletingStaff ? `${deletingStaff.firstName} ${deletingStaff.lastName}` : ''}
+        memberName={deletingStaff ? `${deletingStaff.first_name} ${deletingStaff.last_name}` : ''}
       />
     </div>
   );

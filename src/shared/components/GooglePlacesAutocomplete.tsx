@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface GooglePlacesAutocompleteProps {
   value: string;
-  onChange: (address: string, lat: number, lng: number) => void;
+  onChange: (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => void;
   placeholder?: string;
   className?: string;
 }
@@ -10,6 +10,13 @@ interface GooglePlacesAutocompleteProps {
 interface Suggestion {
   description: string;
   place_id: string;
+}
+
+declare global {
+  interface Window {
+    google: any;
+    initGooglePlaces: () => void;
+  }
 }
 
 const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
@@ -49,7 +56,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
   }, []);
 
   const handleInputChange = (inputValue: string) => {
-    onChange(inputValue, 0, 0);
+    onChange(inputValue, false);
     
     if (inputValue.length > 2 && isLoaded && serviceRef.current) {
       const allSuggestions: Suggestion[] = [];
@@ -101,7 +108,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
         if (place && place.geometry) {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
-          onChange(suggestion.description, lat, lng);
+          onChange(suggestion.description, true, lat, lng);
           setShowSuggestions(false);
         }
       }

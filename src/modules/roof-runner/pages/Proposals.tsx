@@ -1,49 +1,174 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Grid3X3, List, MoreVertical, Clock, DollarSign, User, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Plus, Search, X, ChevronDown } from 'lucide-react';
+import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
+import { templateApi } from '../services/templateApi';
+import { proposalsApi } from '../services/proposalsApi';
+import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
 export default function Proposals() {
-  const [activeTab, setActiveTab] = useState('Proposals');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showNewProposalDropdown, setShowNewProposalDropdown] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [proposalAddress, setProposalAddress] = useState('');
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [creatingProposal, setCreatingProposal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
 
-  const proposals = [
-    {
-      id: '001',
-      title: 'Roof Replacement - Johnson Residence',
-      subtitle: '123 Main St, Anytown, ST 12345',
-      assignedBy: 'Mike Johnson',
-      time: '2 hours ago',
-      amount: '$15,250',
-      status: 'Sent',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '002',
-      title: 'Commercial Roof Repair',
-      subtitle: '456 Oak Ave, Business District',
-      assignedBy: 'Sarah Wilson',
-      time: '1 day ago',
-      amount: '$8,750',
-      status: 'Open',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '003',
-      title: 'Residential Shingle Replacement',
-      subtitle: '789 Pine St, Residential Area',
-      assignedBy: 'John Smith',
-      time: '3 days ago',
-      amount: '$12,500',
-      status: 'Won',
-      image: '/api/placeholder/300/200'
+  const fetchProposals = async (status?: string) => {
+    try {
+      setLoading(true);
+      const filters = status && status !== 'All proposals' ? { status } : undefined;
+      const data = await proposalsApi.getProposals(filters);
+      setProposals(data);
+    } catch (error) {
+      console.error('Error fetching proposals:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchProposals(filterStatus);
+  }, [filterStatus]);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const data = await templateApi.getTemplates();
+      setTemplates(data);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showTemplateModal) {
+      fetchTemplates();
+    }
+  }, [showTemplateModal]);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowNewProposalDropdown(false);
+      }
+    };
+
+    if (showNewProposalDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNewProposalDropdown]);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+  };
+
+  const mapStatusToProposalStatus = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'incomplete': return 'Draft';
+      case 'complete': return 'Open';
+      case 'sent': return 'Sent';
+      case 'signed': return 'Won';
+      case 'lost': return 'Lost';
+      default: return 'Open';
+    }
+  };
+
+  const handleDeleteProposal = async () => {
+    if (!deletingProposalId) return;
+    
+    try {
+      await proposalsApi.deleteProposal(Number(deletingProposalId));
+      setProposals(proposals.filter(p => p.id !== Number(deletingProposalId)));
+      setShowDeleteModal(false);
+      setDeletingProposalId(null);
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      alert('Failed to delete proposal. Please try again.');
+    }
+  };
+
+  const handleDuplicateProposal = async (id: string) => {
+    try {
+      const duplicated = await proposalsApi.duplicateProposal(Number(id));
+      await fetchProposals();
+      navigate(`/proposals/editor/${duplicated.id}`);
+    } catch (error) {
+      console.error('Error duplicating proposal:', error);
+      alert('Failed to duplicate proposal. Please try again.');
+    }
+  };
+
+  const handleMoveToWon = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'signed' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to won:', error);
+      alert('Failed to update proposal status. Please try again.');
+    }
+  };
+
+  const handleMoveToLost = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'lost' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to lost:', error);
+      alert('Failed to update proposal status. Please try again.');
+    }
+  };
+
+  const getCoverImage = (sections: any) => {
+    return sections?.settings?.coverImage || null;
+  };
+
+  const proposalsList = proposals.map(proposal => ({
+    id: String(proposal.id),
+    title: proposal.title,
+    subtitle: proposal.address?.address || 'No address',
+    assignedBy: proposal.author?.name || 'Unknown',
+    time: formatTimeAgo(proposal.created_at),
+    amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
+    status: mapStatusToProposalStatus(proposal.status),
+    image: getCoverImage(proposal.sections)
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -61,344 +186,97 @@ export default function Proposals() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <nav className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals</span>
+            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals & Invoices</span>
           </nav>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals & Invoices</h1>
         </div>
 
-        <button
-          onClick={() => setShowMeasurementsModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-        >
-          <Plus size={16} />
-          <span>New Proposal</span>
-        </button>
-      </div>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+          >
+            <Plus size={16} />
+            <span>New Proposal</span>
+            <ChevronDown size={16} />
+          </button>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-6">
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setActiveTab('Proposals')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'Proposals'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Proposals
-              </button>
-              <button
-                onClick={() => setActiveTab('Templates')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'Templates'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Templates
-              </button>
-              <button
-                onClick={() => setActiveTab('Settings')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'Settings'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Settings
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {activeTab === 'Proposals' && (
-          <>
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search proposals..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowFilter(!showFilter)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-                    >
-                      <Filter size={16} />
-                      {filterStatus}
-                    </button>
-                    {showFilter && (
-                      <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                        <div className="py-1">
-                          {['All proposals', 'Draft', 'Sent', 'Lost', 'Won', 'Open'].map((status) => (
-                            <button
-                              key={status}
-                              onClick={() => { setFilterStatus(status); setShowFilter(false); }}
-                              className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                filterStatus === status ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20' : 'text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {status}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setViewMode('card')}
-                    className={`p-2 rounded-md ${viewMode === 'card' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
-                  >
-                    <Grid3X3 size={16} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('table')}
-                    className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {viewMode === 'card' ? (
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {proposals.map((proposal) => (
-                    <div key={proposal.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow">
-                      <div className="h-32 bg-gray-200 dark:bg-gray-600"></div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-gray-900 dark:text-white text-sm">{proposal.title}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{proposal.subtitle}</p>
-                          </div>
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenDropdown(openDropdown === proposal.id ? null : proposal.id)}
-                              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
-                            >
-                              <MoreVertical size={16} className="text-gray-400" />
-                            </button>
-                            {openDropdown === proposal.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                                <div className="py-1">
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Move to won</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Move to lost</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel signature request</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Job card</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Proposal</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Material order</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Make copy</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Download proposal</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-gray-100 dark:hover:bg-gray-700">Delete</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                          <User size={12} />
-                          <span>{proposal.assignedBy}</span>
-                          <Clock size={12} />
-                          <span>{proposal.time}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold text-gray-900 dark:text-white">{proposal.amount}</span>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                            {proposal.status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Proposal</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Assigned By</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {proposals.map((proposal) => (
-                      <tr key={proposal.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">{proposal.title}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">{proposal.subtitle}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{proposal.assignedBy}</td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">{proposal.amount}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                            {proposal.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{proposal.time}</td>
-                        <td className="px-6 py-4">
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenDropdown(openDropdown === proposal.id ? null : proposal.id)}
-                              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              <MoreVertical size={16} className="text-gray-400" />
-                            </button>
-                            {openDropdown === proposal.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                                <div className="py-1">
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Move to won</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Move to lost</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel signature request</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Job card</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Proposal</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Material order</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Make copy</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Download proposal</button>
-                                  <button className="block w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-gray-100 dark:hover:bg-gray-700">Delete</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'Templates' && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 flex flex-col items-center justify-center hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer transition-colors">
-                <Plus size={32} className="text-gray-400 dark:text-gray-500 mb-2" />
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Add Template</span>
-              </div>
-
-              {[
-                { id: '1', title: 'Standard Roof Proposal', image: '/api/placeholder/300/200' },
-                { id: '2', title: 'Commercial Roofing Template', image: '/api/placeholder/300/200' },
-                { id: '3', title: 'Residential Repair Template', image: '/api/placeholder/300/200' }
-              ].map((template) => (
-                <div key={template.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="h-32 bg-gray-200 dark:bg-gray-600"></div>
-                  <div className="p-4">
-                    <div className="flex justify-between items-end">
-                      <h3 className="font-medium text-gray-900 dark:text-white text-sm">{template.title}</h3>
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenDropdown(openDropdown === template.id ? null : template.id)}
-                          className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
-                        >
-                          <MoreVertical size={16} className="text-gray-400" />
-                        </button>
-                        {openDropdown === template.id && (
-                          <div className="absolute right-0 bottom-full mb-2 w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                            <div className="py-1">
-                              <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Rename</button>
-                              <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Make a copy</button>
-                              <button className="block w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-gray-100 dark:hover:bg-gray-700">Delete</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'Settings' && (
-          <div className="p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Supplier</h3>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium text-gray-900 dark:text-white">Enable preferred suppliers on future proposals for your team</div>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-600 transition-colors">
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Automatically select your preferred supplier to use their costs instead of unit costs
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No preferred suppliers have been selected. <button className="text-primary-600 hover:text-primary-700">Click here to update your preferences.</button>
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Company representative signatures</h3>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium text-gray-900 dark:text-white">Enable on future proposals for your team</div>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600 transition-colors">
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Proposals will automatically include the job assignee's signature on the authorization page
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Your signature</h3>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Your full name
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue="Vijender Singh"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Below is how your signature will appear on documents to customers
-                  </p>
-                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md p-4">
-                    <div className="text-lg font-script text-gray-900 dark:text-white mb-1">Vijender Singh</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Vijender Singh</div>
-                  </div>
-                </div>
-
-                <button className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                  Save
+          {showNewProposalDropdown && (
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowNewProposalModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Scratch
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowMeasurementsModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Report
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    setShowTemplateModal(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Create From Template
                 </button>
               </div>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        {activeTab === 'Proposals' && (
+          loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-gray-500 dark:text-gray-400">Loading proposals...</div>
+            </div>
+          ) : (
+            <ProposalsList
+              proposals={proposalsList}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              showFilter={showFilter}
+              setShowFilter={setShowFilter}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              openDropdown={openDropdown}
+              setOpenDropdown={setOpenDropdown}
+              getStatusColor={getStatusColor}
+              onDelete={(id) => {
+                setDeletingProposalId(id);
+                setShowDeleteModal(true);
+              }}
+              onDuplicate={handleDuplicateProposal}
+              onProposalClick={(id) => navigate(`/proposals/editor/${id}`)}
+              onMoveToWon={handleMoveToWon}
+              onMoveToLost={handleMoveToLost}
+            />
+          )
         )}
+
+        {activeTab === 'Templates' && (
+          <TemplatesGrid
+            openDropdown={openDropdown}
+            setOpenDropdown={setOpenDropdown}
+          />
+        )}
+
+        {activeTab === 'Settings' && <SettingsPanel />}
       </div>
 
       {showMeasurementsModal && (
@@ -444,7 +322,7 @@ export default function Proposals() {
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {measurement.version} Roofr Report{measurement.latest ? ' - Latest' : ''}
+                        {measurement.version} BuilderLync Report{measurement.latest ? ' - Latest' : ''}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
                     </div>
@@ -463,10 +341,10 @@ export default function Proposals() {
                 Create without measurement
               </button>
               <button
-                onClick={() => { setShowMeasurementsModal(false); setShowTemplateModal(true); }}
+                onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
               >
-                Use this measurement
+                Create Proposal
               </button>
             </div>
           </div>
@@ -488,12 +366,11 @@ export default function Proposals() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Job address
                 </label>
-                <input
-                  type="text"
+                <GooglePlacesAutocomplete
                   value={proposalAddress}
-                  onChange={(e) => setProposalAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  onChange={(address) => setProposalAddress(address)}
                   placeholder="Enter address and select"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -536,28 +413,64 @@ export default function Proposals() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  'New template',
-                  'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
-                  'Commercial Roof Repair Template',
-                  'Commercial - TPO/PVC',
-                  'NEW COMMERCIAL',
-                  'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
-                  'Retail - Multifamily IKO/Dynasty',
-                  'Multi Family - Retail (Shingle)',
-                  'Insurance Scope Template (IKO Dynasty & Nordic)',
-                  'Roofing Labor',
-                  'Insurance Restoration Work Authorization',
-                  'Service Agreement',
-                  'Shingle Coatings'
-                ].map((template, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{template}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Template cover image</div>
-                    </div>
+                {creatingProposal && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                    <div className="text-white text-sm">Creating proposal...</div>
                   </div>
-                ))}
+                )}
+                {loadingTemplates ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No templates found</div>
+                  </div>
+                ) : (
+                  templates.map((template) => (
+                    <div 
+                      key={template.id} 
+                      className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={async () => {
+                        try {
+                          setCreatingProposal(true);
+                          const proposal = await proposalsApi.createProposal({
+                            template_id: template.id,
+                            title: template.name,
+                            address: {
+                              address: proposalAddress,
+                            },
+                          });
+                          setShowTemplateModal(false);
+                          navigate(`/proposals/editor/${proposal.id}`);
+                        } catch (error) {
+                          console.error('Error creating proposal:', error);
+                          alert('Failed to create proposal. Please try again.');
+                        } finally {
+                          setCreatingProposal(false);
+                        }
+                      }}
+                    >
+                      {template.content?.settings?.coverImage ? (
+                        <img 
+                          src={template.content.settings.coverImage} 
+                          alt={template.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No Image</span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{template.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {template.summary?.sectionCount || 0} sections, {template.summary?.itemCount || 0} items
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -565,8 +478,44 @@ export default function Proposals() {
               <button className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
                 Create without template
               </button>
-              <button className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+              <button 
+                onClick={() => {
+                  setShowTemplateModal(false);
+                  setShowProposalEditor(true);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              >
                 Use this template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to delete this proposal? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingProposalId(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProposal}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Delete
               </button>
             </div>
           </div>

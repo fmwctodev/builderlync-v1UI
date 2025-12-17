@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, Upload } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
+import { Search, Filter, Plus, Upload, Download } from "lucide-react";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
@@ -14,16 +14,27 @@ const Contacts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     type: 'customer',
     labelRole: '',
     email: '',
     phone: '',
+    phoneType: 'mobile',
     extension: '',
     company: '',
     address: '',
     latitude: 0,
-    longitude: 0
+    longitude: 0,
+    timezone: '',
+    dndAllChannels: false,
+    dndChannels: {
+      email: false,
+      textMessages: false,
+      callsVoicemail: false,
+      inboundCallsSms: false
+    },
+    secondaryPhoneType: 'mobile'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -44,6 +55,8 @@ const Contacts: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<any>(null);
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -96,8 +109,10 @@ const Contacts: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
     const contactData: CreateContactRequest = {
-      fullName: formData.fullName,
+      fullName: fullName,
       type: formData.type,
       labelOrRole: formData.labelRole,
       email: formData.email,
@@ -112,16 +127,27 @@ const Contacts: React.FC = () => {
       await createContact(contactData);
 
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         type: 'customer',
         labelRole: '',
         email: '',
         phone: '',
+        phoneType: 'mobile',
         extension: '',
         company: '',
         address: '',
         latitude: 0,
-        longitude: 0
+        longitude: 0,
+        timezone: '',
+        dndAllChannels: false,
+        dndChannels: {
+          email: false,
+          textMessages: false,
+          callsVoicemail: false,
+          inboundCallsSms: false
+        },
+        secondaryPhoneType: 'mobile'
       });
       setShowContactModal(false);
       setToast({message: 'Contact created successfully!', type: 'success'});
@@ -141,8 +167,10 @@ const Contacts: React.FC = () => {
 
     setIsLoading(true);
 
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
     const contactData: CreateContactRequest = {
-      fullName: formData.fullName,
+      fullName: fullName,
       type: formData.type,
       labelOrRole: formData.labelRole,
       email: formData.email,
@@ -157,16 +185,27 @@ const Contacts: React.FC = () => {
       await updateContact(editingContact.id, contactData);
 
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         type: 'customer',
         labelRole: '',
         email: '',
         phone: '',
+        phoneType: 'mobile',
         extension: '',
         company: '',
         address: '',
         latitude: 0,
-        longitude: 0
+        longitude: 0,
+        timezone: '',
+        dndAllChannels: false,
+        dndChannels: {
+          email: false,
+          textMessages: false,
+          callsVoicemail: false,
+          inboundCallsSms: false
+        },
+        secondaryPhoneType: 'mobile'
       });
       setShowEditModal(false);
       setEditingContact(null);
@@ -304,21 +343,60 @@ const Contacts: React.FC = () => {
   };
 
   const handleEdit = (contact: any) => {
+    const nameParts = (contact.fullName || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     setEditingContact(contact);
     setFormData({
-      fullName: contact.fullName || '',
+      firstName: firstName,
+      lastName: lastName,
       type: contact.type || 'customer',
       labelRole: contact.label_or_role || '',
       email: contact.email || '',
       phone: contact.phone || '',
+      phoneType: contact.phoneType || 'mobile',
       extension: '',
       company: contact.company || '',
       address: contact.address || '',
       latitude: contact.latitude || 0,
-      longitude: contact.longitude || 0
+      longitude: contact.longitude || 0,
+      timezone: contact.timezone || '',
+      dndAllChannels: contact.dndAllChannels || false,
+      dndChannels: contact.dndChannels || {
+        email: false,
+        textMessages: false,
+        callsVoicemail: false,
+        inboundCallsSms: false
+      },
+      secondaryPhoneType: contact.secondaryPhoneType || 'mobile'
     });
     setShowEditModal(true);
     setActiveDropdown(null);
+  };
+
+  const handleDelete = (contact: any) => {
+    setContactToDelete(contact);
+    setShowDeleteConfirm(true);
+    setActiveDropdown(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!contactToDelete) return;
+    
+    setIsLoading(true);
+    try {
+      await deleteContact(contactToDelete.id);
+      setToast({ message: 'Contact deleted successfully!', type: 'success' });
+      setShowDeleteConfirm(false);
+      setContactToDelete(null);
+      fetchContacts();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete contact';
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -328,6 +406,13 @@ const Contacts: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Contacts</h1>
           <div className="flex gap-3">
+            <button
+              // onClick={() => setShowCsvModal(true)}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
             <button
               onClick={() => setShowCsvModal(true)}
               className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -386,6 +471,15 @@ const Contacts: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
+                      setTypeFilter('lead');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Lead
+                  </button>
+                  <button
+                    onClick={() => {
                       setTypeFilter('customer');
                       setShowTypeFilter(false);
                     }}
@@ -395,12 +489,12 @@ const Contacts: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      setTypeFilter('insurance');
+                      setTypeFilter('partner');
                       setShowTypeFilter(false);
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
-                    Insurance
+                    Partner
                   </button>
                   <button
                     onClick={() => {
@@ -410,6 +504,33 @@ const Contacts: React.FC = () => {
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                   >
                     Vendor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('sub-contractor');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Sub-Contractor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('adjuster');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Adjuster
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('staff');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Staff
                   </button>
                 </div>
               </div>
@@ -429,6 +550,8 @@ const Contacts: React.FC = () => {
         onViewProfile={handleViewProfile}
         onViewJob={handleViewJob}
         onEdit={handleEdit}
+        onDelete={handleDelete}
+        onContactNameClick={handleViewProfile}
       />
 
       <Pagination
@@ -478,6 +601,38 @@ const Contacts: React.FC = () => {
         onFileSelect={handleFileSelect}
         onUpload={handleCsvUpload}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contact</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{contactToDelete?.fullName}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setContactToDelete(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

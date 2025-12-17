@@ -80,7 +80,7 @@ const Measurements = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handlePlaceOrder}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
                 >
                   <Plus className="w-4 h-4" />
                   Start New Order
@@ -98,8 +98,8 @@ const Measurements = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Place New Order Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handlePlaceOrder}>
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg mb-4">
-                  <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg mb-4">
+                  <Plus className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Place Measurement Order</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Order professional property measurements and reports</p>
@@ -116,8 +116,8 @@ const Measurements = () => {
 
               {/* Manual Measurements Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg mb-4">
-                  <Ruler className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-purple-900/20 rounded-lg mb-4">
+                  <Ruler className="w-6 h-6 text-primary-600 dark:text-purple-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Manual Measurements</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Record and manage manual measurements</p>

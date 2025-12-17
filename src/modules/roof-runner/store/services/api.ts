@@ -9,6 +9,15 @@ const apiClient = axios.create({
   },
 });
 
+// Add token to requests
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const apiService = {
   getJobs: async () => {
     const response = await apiClient.get('/jobs');
@@ -42,6 +51,82 @@ export const apiService = {
 
   deleteJob: async (id: string) => {
     const response = await apiClient.delete(`/jobs/${id}`);
+    return response.data;
+  },
+
+  // Instant Estimators API
+  getInstantEstimators: async (page: number = 1, limit: number = 10) => {
+    const response = await apiClient.get(`/instant-estimators?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  createInstantEstimator: async (data: { name: string }) => {
+    const response = await apiClient.post('/instant-estimators', data);
+    return response.data;
+  },
+
+  renameInstantEstimator: async (id: number, data: { name: string }) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/rename`, data);
+    return response.data;
+  },
+
+  duplicateInstantEstimator: async (id: number) => {
+    const response = await apiClient.post(`/instant-estimators/${id}/duplicate`);
+    return response.data;
+  },
+
+  deleteInstantEstimator: async (id: number) => {
+    const response = await apiClient.delete(`/instant-estimators/${id}`);
+    return response.data;
+  },
+
+  getInstantEstimator: async (id: number) => {
+    const response = await apiClient.get(`/instant-estimators/${id}`);
+    return response.data;
+  },
+
+  updateInstantEstimatorQuestions: async (id: number, questions: any[]) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/questions`, { questions });
+    return response.data;
+  },
+
+  updateInstantEstimatorMaterials: async (id: number, materials: any[]) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/materials`, { materials });
+    return response.data;
+  },
+
+  addInstantEstimatorMaterial: async (id: number, material: any) => {
+    const response = await apiClient.post(`/instant-estimators/${id}/materials`, material);
+    return response.data;
+  },
+
+  updateInstantEstimatorMaterial: async (id: number, materialId: string, material: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/materials/${materialId}`, material);
+    return response.data;
+  },
+
+  deleteInstantEstimatorMaterial: async (id: number, materialId: string) => {
+    const response = await apiClient.delete(`/instant-estimators/${id}/materials/${materialId}`);
+    return response.data;
+  },
+
+  updateInstantEstimatorPricingSettings: async (id: number, pricingSettings: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/pricing-settings`, pricingSettings);
+    return response.data;
+  },
+
+  updateInstantEstimatorAdditionalSettings: async (id: number, additionalSettings: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/additional-settings`, additionalSettings);
+    return response.data;
+  },
+
+  getInstantEstimatorByPublicUrl: async (publicUrl: string) => {
+    const response = await apiClient.get(`/instant-estimators/public/${publicUrl}`);
+    return response.data;
+  },
+
+  generateEstimate: async (publicUrl: string, formData: any) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/generate-estimate`, formData);
     return response.data;
   },
 };

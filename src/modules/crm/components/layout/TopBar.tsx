@@ -73,7 +73,7 @@ export function TopBar({ onCreateNew, currentModule }: TopBarProps) {
             <div className="absolute right-0 mt-2 w-80 z-10 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h3 className="font-medium text-gray-800 dark:text-white">Notifications</h3>
-                <button className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                <button className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                   Mark all as read
                 </button>
               </div>
@@ -88,7 +88,7 @@ export function TopBar({ onCreateNew, currentModule }: TopBarProps) {
                       <div
                         key={notification.id}
                         className={`p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 ${
-                          !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                          !notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                         }`}
                       >
                         <div className="flex items-start">

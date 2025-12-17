@@ -69,11 +69,11 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({ isOpen, onClose }) 
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors"
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-500 cursor-pointer transition-colors"
               >
                 <div className="flex items-start gap-3 mb-3">
                   {template.avatar ? (
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                    <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white font-medium">
                       {template.avatar}
                     </div>
                   ) : (
@@ -85,7 +85,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({ isOpen, onClose }) 
                     <h4 className="font-medium text-gray-900 dark:text-white">{template.name}</h4>
                     {template.tone && (
                       <div className="flex gap-2 mt-1">
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{template.tone}</span>
+                        <span className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">{template.tone}</span>
                         {template.tone2 && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">{template.tone2}</span>
                         )}
@@ -107,7 +107,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({ isOpen, onClose }) 
             >
               Cancel
             </button>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg">
               Proceed
             </button>
           </div>

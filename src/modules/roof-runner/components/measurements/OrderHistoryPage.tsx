@@ -30,9 +30,9 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const response = await eagleViewService.getReports();
+        const response:any = await eagleViewService.getReports();
         const apiData = Array.isArray(response) ? response : response.data || [];
-        
+
         const formattedOrders: EagleViewOrder[] = apiData.map((order: any) => ({
           id: order.id,
           referenceId: order.reference_id,
@@ -46,7 +46,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
           createdAt: order.created_at,
           status: order.reportId ? 'completed' : 'pending'
         }));
-        
+
         setOrders(formattedOrders);
       } catch (error) {
         console.error('Error loading orders from Eagle View API:', error);
@@ -78,27 +78,27 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       order.referenceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.orderId.toString().includes(searchQuery.toLowerCase()) ||
       order.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.city.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const highlightText = (text: string, searchQuery: string) => {
     if (!searchQuery.trim()) return text;
-    
+
     const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
-    
+
     return parts.map((part, index) => {
       if (regex.test(part)) {
         return (
-          <span key={index} className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-medium">
+          <span key={index} className="bg-primary-200 dark:bg-primary-800 text-primary-800 dark:text-blue-200 font-medium">
             {part}
           </span>
         );
@@ -124,7 +124,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
             <p className="text-primary-100">View and track your measurement orders</p>
           </div>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
             <input
@@ -136,7 +136,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-primary-200" />
           </div>
-          
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -148,7 +148,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
             <option value="completed">Completed</option>
             <option value="failed">Failed</option>
           </select>
-          
+
           <button
             onClick={onPlaceNewOrder}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-50 font-medium"
@@ -254,7 +254,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
               {searchQuery ? 'No orders found' : 'No orders yet'}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {searchQuery 
+              {searchQuery
                 ? `No orders match your search for "${searchQuery}"`
                 : "You haven't placed any measurement orders yet."
               }

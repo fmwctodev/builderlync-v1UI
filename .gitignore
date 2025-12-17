@@ -1,27 +1,4 @@
-# Laravel specific
-/vendor/
-.env
-.env.backup
-.env.production
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-auth.json
-npm-debug.log
-yarn-error.log
-/.fleet
-/.idea
-/.vscode
-storage/*.key
-public/hot
-public/storage
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/views/*
-storage/logs/*
-bootstrap/cache/*
-
-# Node.js specific
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -29,32 +6,22 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-node_modules/
-dist/
-dist-ssr/
+
+node_modules
+dist
+dist-ssr
 *.local
-coverage/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea/
+.idea
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Testing
-/coverage
-.nyc_output
-
-# Build
-/build
-/dist
-/.next
-/out
 
 # Environment variables
 .env
@@ -65,3 +32,5 @@ coverage/
 
 # Supabase
 .supabase
+
+package-lock.json

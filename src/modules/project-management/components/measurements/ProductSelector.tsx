@@ -19,11 +19,11 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const getCategoryIcon = (categoryId: string) => {
     switch (categoryId) {
-      case 'full-house': return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'roof': return <Cloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'solar': return <Sun className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      case 'walls': return <Layout className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
-      default: return <Home className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
+      case 'full-house': return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'roof': return <Cloud className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'solar': return <Sun className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      case 'walls': return <Layout className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
+      default: return <Home className="h-6 w-6 text-primary-600 dark:text-primary-400" />;
     }
   };
 
@@ -109,7 +109,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                       <label className="flex items-start cursor-pointer">
                         <input
                           type="checkbox"
-                          className="form-checkbox h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mt-0.5"
+                          className="form-checkbox h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded mt-0.5"
                           checked={isSelected}
                           onChange={() => handleProductSelect(category.id, product.id, product.name)}
                         />
@@ -135,9 +135,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                           )}
 
                           {product.reportOptions?.warningText && (
-                            <div className="mt-3 flex gap-3 bg-blue-50 dark:bg-blue-900/20 items-start p-3 rounded-lg">
-                              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                            <div className="mt-3 flex gap-3 bg-primary-50 dark:bg-primary-900/20 items-start p-3 rounded-lg">
+                              <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
+                              <p className="text-primary-800 dark:text-blue-200 text-sm">
                                 {product.reportOptions.warningText}
                               </p>
                             </div>
@@ -147,7 +147,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                             <div className="mt-4 flex items-center justify-between">
                               <span className="text-gray-800 dark:text-gray-200 font-medium">Delivery:</span>
                               <select
-                                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                 value={selectedDeliveryModes[product.id] || ''}
                                 onChange={(e) => handleDeliveryChange(product.id, e.target.value)}
                               >
@@ -161,9 +161,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                           )}
 
                           {selectedDeliveryModes[product.id] === "3 Hours" && (
-                            <div className="mt-3 flex gap-3 bg-blue-50 dark:bg-blue-900/20 items-start p-3 rounded-lg">
-                              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                            <div className="mt-3 flex gap-3 bg-primary-50 dark:bg-primary-900/20 items-start p-3 rounded-lg">
+                              <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+                              <p className="text-primary-800 dark:text-blue-200 text-sm">
                                 Note: If we need assistance locating the property, we will contact you by phone and/or email. 
                                 The 3 hour delivery time starts once the structure has been identified.
                               </p>

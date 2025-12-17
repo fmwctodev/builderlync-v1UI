@@ -1,6 +1,6 @@
-import axios from 'axios';
+import { getAuthToken } from '../../utils/auth';
 
-const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface CreateContactRequest {
   fullName: string;
@@ -14,206 +14,175 @@ export interface CreateContactRequest {
   longitude: number;
 }
 
+export interface Contact {
+  id: string;
+  full_name: string;
+  type: string;
+  label_or_role: string;
+  email: string;
+  phone: string;
+  company: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string | null;
+}
+
 export interface ContactResponse {
   success: boolean;
-  message: string;
+  message?: string;
+  data: Contact;
+}
+
+export interface ContactsListResponse {
+  success: boolean;
   data: {
-    id: number;
-    full_name: string;
-    type: string;
-    label_or_role: string;
-    email: string;
-    phone: string;
-    company: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-    created_at: string;
-    updated_at: string;
-    created_by: null;
+    data: Contact[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   };
 }
 
-export const createContact = async (contactData: CreateContactRequest): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.post<ContactResponse>(
-    `${API_BASE_URL}/contacts`,
-    contactData,
-    {
+class ContactsApiService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
       headers: {
-        'accept': '*/*',
+        'Authorization': token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-  );
 
-  return response.data;
-};
+    return response.json();
+  }
 
-export const getContacts = async (search?: string, type?: string, page: number = 1, limit: number = 10) => {
-  const token = localStorage.getItem('token');
+  async createContact(contactData: CreateContactRequest): Promise<ContactResponse> {
+    return this.makeRequest('/contacts', {
+      method: 'POST',
+      body: JSON.stringify(contactData),
+    });
+  }
 
-  const params = new URLSearchParams();
-  if (search) params.append('search', search);
-  if (type) params.append('type', type);
-  params.append('page', page.toString());
-  params.append('limit', limit.toString());
+  async getContacts(search?: string, type?: string, page: number = 1, limit: number = 10): Promise<ContactsListResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(type && { type }),
+    });
 
-  const response = await axios.get(
-    `${API_BASE_URL}/contacts?${params.toString()}`,
-    {
+    return this.makeRequest(`/contacts?${params}`);
+  }
+
+  async searchContactsByTypeAndName(search: string, types: string[]): Promise<Contact[]> {
+    const params = new URLSearchParams({
+      search,
+      types: types.join(','),
+    });
+
+    const result = await this.makeRequest(`/contacts/search?${params}`);
+    return result.success ? result.data : [];
+  }
+
+  async getContactById(id: string): Promise<ContactResponse> {
+    return this.makeRequest(`/contacts/${id}`);
+  }
+
+  async updateContact(id: string, contactData: CreateContactRequest): Promise<ContactResponse> {
+    return this.makeRequest(`/contacts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(contactData),
+    });
+  }
+
+  async deleteContact(id: string) {
+    return this.makeRequest(`/contacts/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async uploadContactsCsv(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/contacts/upload-csv`, {
+      method: 'POST',
       headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
     }
-  );
 
-  return response.data;
-};
+    return response.json();
+  }
 
-export const getContactById = async (id: number): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
+  async createNote(noteData: { data: string; contactId: number }) {
+    return this.makeRequest('/notes', {
+      method: 'POST',
+      body: JSON.stringify(noteData),
+    });
+  }
 
-  const response = await axios.get<ContactResponse>(
-    `${API_BASE_URL}/contacts/${id}`,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  async getNotes(contactId: number, page: number = 1, limit: number = 10) {
+    const params = new URLSearchParams({
+      contactId: contactId.toString(),
+      page: page.toString(),
+      limit: limit.toString(),
+    });
 
-  return response.data;
-};
+    return this.makeRequest(`/notes?${params}`);
+  }
 
-export const updateContact = async (id: number, contactData: CreateContactRequest): Promise<ContactResponse> => {
-  const token = localStorage.getItem('token');
+  async deleteNote(noteId: number) {
+    return this.makeRequest(`/notes/${noteId}`, {
+      method: 'DELETE',
+    });
+  }
 
-  const response = await axios.put<ContactResponse>(
-    `${API_BASE_URL}/contacts/${id}`,
-    contactData,
-    {
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
+  async updateNote(noteId: number, data: string) {
+    return this.makeRequest(`/notes/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data }),
+    });
+  }
 
-  return response.data;
-};
-
-export const uploadContactsCsv = async (file: File) => {
-  const token = localStorage.getItem('token');
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const response = await axios.post(
-    `${API_BASE_URL}/contacts/upload-csv`,
-    formData,
-    {
-      headers: {
-        'accept': '*/*',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export interface CreateNoteRequest {
-  data: string;
-  contactId: number;
+  async replyToNote(noteId: number, data: string, contactId: number) {
+    return this.makeRequest(`/notes/${noteId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ data, contactId }),
+    });
+  }
 }
 
-export const createNote = async (noteData: CreateNoteRequest) => {
-  const token = localStorage.getItem('token');
+const contactsApiService = new ContactsApiService();
 
-  const response = await axios.post(
-    `${API_BASE_URL}/notes`,
-    noteData,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const getNotes = async (contactId: number, page: number = 1, limit: number = 10) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.get(
-    `${API_BASE_URL}/notes?contactId=${contactId}&page=${page}&limit=${limit}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const deleteNote = async (noteId: number) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.delete(
-    `${API_BASE_URL}/notes/${noteId}`,
-    {
-      headers: {
-        'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const updateNote = async (noteId: number, data: string) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.put(
-    `${API_BASE_URL}/notes/${noteId}`,
-    { data },
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
-
-export const replyToNote = async (noteId: number, data: string, contactId: number) => {
-  const token = localStorage.getItem('token');
-
-  const response = await axios.post(
-    `${API_BASE_URL}/notes/${noteId}/replies`,
-    { data, contactId },
-    {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    }
-  );
-
-  return response.data;
-};
+export const createContact = contactsApiService.createContact.bind(contactsApiService);
+export const getContacts = contactsApiService.getContacts.bind(contactsApiService);
+export const searchContactsByTypeAndName = contactsApiService.searchContactsByTypeAndName.bind(contactsApiService);
+export const getContactById = contactsApiService.getContactById.bind(contactsApiService);
+export const updateContact = contactsApiService.updateContact.bind(contactsApiService);
+export const deleteContact = contactsApiService.deleteContact.bind(contactsApiService);
+export const uploadContactsCsv = contactsApiService.uploadContactsCsv.bind(contactsApiService);
+export const createNote = contactsApiService.createNote.bind(contactsApiService);
+export const getNotes = contactsApiService.getNotes.bind(contactsApiService);
+export const deleteNote = contactsApiService.deleteNote.bind(contactsApiService);
+export const updateNote = contactsApiService.updateNote.bind(contactsApiService);
+export const replyToNote = contactsApiService.replyToNote.bind(contactsApiService);

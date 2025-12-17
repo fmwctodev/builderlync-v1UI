@@ -43,12 +43,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
     branches.forEach(branch => {
       if (branch.coordinates && branch.coordinates.latitude && branch.coordinates.longitude) {
         hasValidCoordinates = true;
-        
+
         const isSelected = selectedBranch?.id === branch.id;
         const marker = new google.maps.Marker({
-          position: { 
-            lat: branch.coordinates.latitude, 
-            lng: branch.coordinates.longitude 
+          position: {
+            lat: branch.coordinates.latitude,
+            lng: branch.coordinates.longitude
           },
           map: mapInstanceRef.current,
           title: branch.name,
@@ -71,18 +71,18 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
         });
 
         markersRef.current.push(marker);
-        bounds.extend({ 
-          lat: branch.coordinates.latitude, 
-          lng: branch.coordinates.longitude 
+        bounds.extend({
+          lat: branch.coordinates.latitude,
+          lng: branch.coordinates.longitude
         });
       }
     });
 
     // Fit map to show all branches, or zoom to selected branch
     if (selectedBranch && selectedBranch.coordinates) {
-      mapInstanceRef.current.setCenter({ 
-        lat: selectedBranch.coordinates.latitude, 
-        lng: selectedBranch.coordinates.longitude 
+      mapInstanceRef.current.setCenter({
+        lat: selectedBranch.coordinates.latitude,
+        lng: selectedBranch.coordinates.longitude
       });
       mapInstanceRef.current.setZoom(15);
     } else if (hasValidCoordinates) {
@@ -106,9 +106,9 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
 
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    
+
     const query = searchQuery.toLowerCase();
-    return branches.filter(branch => 
+    return branches.filter(branch =>
       branch.name.toLowerCase().includes(query) ||
       branch.address.street1.toLowerCase().includes(query) ||
       branch.address.city.toLowerCase().includes(query) ||
@@ -168,7 +168,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
     return (
       <div className="space-y-6">
         <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
-          <button 
+          <button
             onClick={onBack}
             className="text-primary-600 hover:text-primary-700 text-sm mb-2"
           >
@@ -189,10 +189,10 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
-        <button 
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
+        <button
           onClick={onBack}
-          className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+          className="text-white hover:text-white text-sm mb-2"
         >
           ← Back to Dashboard
         </button>
@@ -200,7 +200,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
           <MapPin className="h-6 w-6 text-green-400" />
           <h1 className="text-2xl font-bold text-white">Branch Locator</h1>
         </div>
-        
+
         <div className="max-w-md relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -231,7 +231,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
               Clear
             </button>
           )}
-          
+
           {showSuggestions && filteredBranches.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
               {filteredBranches.map((branch) => (
@@ -261,25 +261,25 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {selectedBranch ? 'Selected Branch' : 'All Branches'}
         </h2>
-        
+
         <div className="space-y-4">
           {(selectedBranch ? [selectedBranch] : branches).map((branch) => (
             <div key={branch.id} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-medium text-gray-900 dark:text-white">{branch.name}</h3>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin size={14} />
                   <span>{branch.address.street1}, {branch.address.city}, {branch.address.state} {branch.address.zipCode}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Phone size={14} />
                   <span>{branch.phone}</span>
                 </div>
-                
+
                 {branch.hours && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Clock size={14} />
@@ -287,7 +287,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex gap-2 mt-3">
                 <button className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-primary-600 hover:text-primary-700">
                   <Navigation size={14} />

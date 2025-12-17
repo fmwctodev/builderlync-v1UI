@@ -1,52 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
+import ViewEditOpportunityModal from './ViewEditOpportunityModal';
+import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
+import { opportunitiesApi } from '../../services/opportunitiesApi';
+import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
+import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
 
-const opportunityStages = [
-  { id: 'inspection-scheduled', title: 'Inspection/Estimate Scheduled', opportunitiesCount: 7, value: 0.00, color: 'border-[#dc2626]' },
-  { id: 'inspection-completed', title: 'Inspection Completed', opportunitiesCount: 0, value: 0.00, color: 'border-blue-500' },
-  { id: 'proposal-sent', title: 'Proposal Sent', opportunitiesCount: 0, value: 0.00, color: 'border-yellow-500' },
-  { id: 'proposal-signed', title: 'Proposal Signed', opportunitiesCount: 0, value: 0.00, color: 'border-green-500' },
-  { id: 'job-scheduled', title: 'Job Scheduled', opportunitiesCount: 0, value: 0.00, color: 'border-purple-500' },
-  { id: 'job-completed', title: 'Job Completed', opportunitiesCount: 0, value: 0.00, color: 'border-emerald-500' },
-  { id: 'closed-won', title: 'Closed Won', opportunitiesCount: 0, value: 0.00, color: 'border-green-600' },
-  { id: 'closed-lost', title: 'Closed Lost', opportunitiesCount: 0, value: 0.00, color: 'border-red-500' },
-];
+interface KanbanBoardProps {
+  selectedJobType: JobType | 'all';
+}
 
-const opportunities = [
-  {
-    id: 'opp1',
-    stage: 'inspection-scheduled',
-    name: 'Youssef Fadil',
-    source: 'Website Lead',
-    value: 8500.00,
-    initials: 'YF',
-    contact: { name: 'Youssef Fadil', email: 'youssef@email.com', phone: '555-0123' }
-  },
-  {
-    id: 'opp2',
-    stage: 'inspection-scheduled',
-    name: 'Mohammad Choudhry',
-    business: 'Holiday inn',
-    value: 12000.00,
-    initials: 'MC',
-    contact: { name: 'Mohammad Choudhry', email: 'mohammad@holidayinn.com', phone: '555-0124' }
-  },
-  {
-    id: 'opp3',
-    stage: 'inspection-scheduled',
-    name: 'Jose Jordan',
-    source: 'Website Lead',
-    value: 6750.00,
-    initials: 'JJ',
-    contact: { name: 'Jose Jordan', email: 'jose@email.com', phone: '555-0125' }
-  },
-];
+export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
+  const [draggedItem, setDraggedItem] = useState<OpportunityWithDetails | null>(null);
+  const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
+  const [stages, setStages] = useState<PipelineStage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
+  const [showViewEditModal, setShowViewEditModal] = useState(false);
 
-export default function KanbanBoard() {
-  const [draggedItem, setDraggedItem] = useState<any>(null);
-  const [opportunitiesList, setOpportunitiesList] = useState(opportunities);
+  useEffect(() => {
+    loadData();
+  }, [selectedJobType]);
 
-  const handleDragStart = (e: React.DragEvent, opportunity: any) => {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      if (selectedJobType === 'all') {
+        const pipelines = await embeddedPipelinesService.getEmbeddedPipelines();
+        const allStages = pipelines.flatMap(p => p.stages);
+        setStages(allStages);
+        const opportunities = await opportunitiesApi.getOpportunities();
+        setOpportunitiesList(opportunities);
+      } else {
+        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
+
+        if (pipeline) {
+          setStages(pipeline.stages);
+          const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+          setOpportunitiesList(opportunities);
+        } else {
+          setStages([]);
+          setOpportunitiesList([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading kanban data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, opportunity: OpportunityWithDetails) => {
     setDraggedItem(opportunity);
   };
 
@@ -54,41 +59,108 @@ export default function KanbanBoard() {
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent, targetStage: string) => {
+  const handleDrop = async (e: React.DragEvent, targetStageId: string) => {
     e.preventDefault();
-    if (draggedItem) {
-      setOpportunitiesList(prev => 
-        prev.map(opp => 
-          opp.id === draggedItem.id 
-            ? { ...opp, stage: targetStage }
-            : opp
-        )
-      );
-      setDraggedItem(null);
-      
-      // Auto-create contact when job is created
-      if (targetStage === 'job-scheduled' && draggedItem.contact) {
-        console.log('Auto-creating contact:', draggedItem.contact);
-        // This would integrate with your contact creation system
+    if (draggedItem && draggedItem.stage_id !== targetStageId) {
+      try {
+        await opportunitiesApi.moveOpportunityToStage(draggedItem.id, targetStageId);
+
+        setOpportunitiesList(prev =>
+          prev.map(opp =>
+            opp.id === draggedItem.id
+              ? { ...opp, stage_id: targetStageId }
+              : opp
+          )
+        );
+      } catch (error) {
+        console.error('Error moving opportunity:', error);
+        alert('Failed to move opportunity. Please try again.');
       }
+      setDraggedItem(null);
     }
   };
 
+  const getStageOpportunities = (stageId: string) => {
+    return opportunitiesList.filter(opp => opp.stage_id === stageId);
+  };
+
+  const getStageValue = (stageId: string) => {
+    return getStageOpportunities(stageId).reduce((sum, opp) => sum + (opp.value || 0), 0);
+  };
+
+  const handleCardClick = (opportunityId: string) => {
+    setSelectedOpportunityId(opportunityId);
+    setShowViewEditModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowViewEditModal(false);
+    setSelectedOpportunityId(null);
+  };
+
+  const handleUpdate = () => {
+    loadData();
+  };
+
+  const handleDelete = () => {
+    loadData();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-600 dark:text-gray-400">Loading opportunities...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex space-x-4 overflow-x-auto pb-4">
-      {opportunityStages.map((stage) => (
-        <div
-          key={stage.id}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, stage.id)}
-        >
-          <KanbanColumn
-            stage={stage}
-            opportunities={opportunitiesList.filter(opp => opp.stage === stage.id)}
-            onDragStart={handleDragStart}
-          />
+    <>
+      <div className="h-full p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div className="flex gap-4 min-w-max">
+          {stages.map((stage) => {
+            const stageOpportunities = getStageOpportunities(stage.id);
+            const stageValue = getStageValue(stage.id);
+
+            return (
+              <div
+                key={stage.id}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, stage.id)}
+              >
+                <KanbanColumn
+                  stage={{
+                    id: stage.id,
+                    title: stage.name,
+                    opportunitiesCount: stageOpportunities.length,
+                    value: stageValue,
+                    color: `border-[${stage.color}]`,
+                  }}
+                  opportunities={stageOpportunities.map(opp => ({
+                    id: opp.id,
+                    stage: opp.stage_id,
+                    name: opp.opportunity_name,
+                    source: opp.source,
+                    business: opp.business_name,
+                    value: opp.value,
+                    initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+                  }))}
+                  onDragStart={handleDragStart}
+                  onCardClick={handleCardClick}
+                />
+              </div>
+            );
+          })}
         </div>
-      ))}
-    </div>
+      </div>
+
+      <ViewEditOpportunityModal
+        isOpen={showViewEditModal}
+        opportunityId={selectedOpportunityId}
+        onClose={handleModalClose}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+      />
+    </>
   );
 }

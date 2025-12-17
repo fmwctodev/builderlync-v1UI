@@ -8,7 +8,8 @@ import {
   HardHat,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { NavItem } from '../../types';
 import Logo from '../../../../shared/components/Logo';
@@ -44,6 +45,11 @@ const navItems: NavItem[] = [
     icon: 'HardHat'
   },
   {
+    title: 'Snippets',
+    href: '/crm/snippets',
+    icon: 'FileText'
+  },
+  {
     title: 'Settings',
     href: '/crm/settings',
     icon: 'Settings'
@@ -56,6 +62,7 @@ const iconComponents: Record<string, React.ElementType> = {
   Calendar,
   MessageSquare,
   HardHat,
+  FileText,
   Settings
 };
 
@@ -76,10 +83,16 @@ bg-dark dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-full fl
     >
       <div className={`h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-800 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center">
-          <Logo type="light" className="h-20 w-auto dark:hidden" />
-          <div className="hidden dark:block bg-dark rounded-lg p-2">
-            <Logo type="dark" className="h-16 w-auto" />
-          </div>
+          {collapsed ? (
+            <Logo type="icon" size="md" />
+          ) : (
+            <>
+              <Logo type="light" className="h-20 w-auto dark:hidden" />
+              <div className="hidden dark:block bg-white rounded-lg p-2">
+                <Logo type="dark" className="h-16 w-auto" />
+              </div>
+            </>
+          )}
         </div>
 
         <button

@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { Bell, Calendar, ChevronDown, HelpCircle, Menu, Search, Moon, Sun } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Search, Moon, Sun, Phone } from 'lucide-react';
 import { useTheme } from '../../../../shared/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../../../shared/store/slices/authSlice';
+import DialerModalEnhanced from '../../../../shared/components/DialerModalEnhanced';
 
 interface TopBarProps {
   toggleSidebar: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
-  const [dateRange, setDateRange] = useState('Last 30 days');
   const [notifications, setNotifications] = useState(3);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dialerOpen, setDialerOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -47,16 +48,6 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <button
-              className="flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
-            >
-              <Calendar size={16} className="mr-1.5 text-gray-500" />
-              <span className="text-sm whitespace-nowrap text-gray-700 dark:text-gray-300">{dateRange}</span>
-              <ChevronDown size={16} className="ml-1.5 text-gray-500" />
-            </button>
-          </div>
-
           <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative text-gray-700 dark:text-gray-300">
             <Bell size={20} />
             {notifications > 0 && (
@@ -73,35 +64,69 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300">
-            <HelpCircle size={20} />
+          <button
+            onClick={() => setDialerOpen(true)}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
+          >
+            <Phone size={20} />
           </button>
 
           <div className="relative">
             <button
               onClick={toggleDropdown}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
-              <div className="h-8 w-8 rounded-full overflow-hidden bg-primary-600 flex items-center justify-center text-white font-medium">
+              <div className="h-8 w-8 rounded-full overflow-hidden bg-primary-600 flex items-center justify-center text-white font-medium shadow-sm">
                 {user?.firstName?.[0]}{user?.lastName?.[0] || 'U'}
               </div>
-              <ChevronDown size={16} className="text-gray-500" />
+              <ChevronDown size={16} className={`text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=4F46E5&color=fff&rounded=true&size=48`}
+                      alt="User Avatar"
+                      className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="py-1">
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profile</button>
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</button>
-                  <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                  {/* <button
+                    onClick={() => {
+                      dispatch(logout());
+                      navigate('/auth/login');
+                      setDropdownOpen(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Login As
+                  </button> */}
                   <button
                     onClick={() => {
                       dispatch(logout());
                       navigate('/auth/login');
+                      setDropdownOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    Logout
+                    <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
                   </button>
                 </div>
               </div>
@@ -109,6 +134,8 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
           </div>
         </div>
       </div>
+
+      <DialerModalEnhanced isOpen={dialerOpen} onClose={() => setDialerOpen(false)} />
     </header>
   );
 };

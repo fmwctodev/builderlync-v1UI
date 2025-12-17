@@ -72,7 +72,7 @@ const Reputation: React.FC = () => {
               </p>
               <button 
                 onClick={() => navigate('/marketing/integrations')}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Integrate GBP
@@ -90,34 +90,36 @@ const Reputation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reputation</h1>
-          
-          <div className="flex space-x-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-red-50 text-red-700 border-b-2 border-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-3 font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {renderTabContent()}
+      <div className="flex-1 overflow-hidden">
+        {renderTabContent()}
+      </div>
 
-      <SendReviewRequestModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <SendReviewRequestModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </div>
   );

@@ -7,17 +7,17 @@ function SimpleDashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <p>CRM module is working! This is a simplified version.</p>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded">
+          <div className="bg-primary-50 p-4 rounded">
             <h3 className="font-semibold">Contacts</h3>
-            <p className="text-2xl font-bold text-blue-600">245</p>
+            <p className="text-2xl font-bold text-primary-600">245</p>
           </div>
           <div className="bg-green-50 p-4 rounded">
             <h3 className="font-semibold">Active Jobs</h3>
             <p className="text-2xl font-bold text-green-600">12</p>
           </div>
-          <div className="bg-purple-50 p-4 rounded">
+          <div className="bg-primary-50 p-4 rounded">
             <h3 className="font-semibold">Revenue</h3>
-            <p className="text-2xl font-bold text-purple-600">$24,500</p>
+            <p className="text-2xl font-bold text-primary-600">$24,500</p>
           </div>
         </div>
       </div>

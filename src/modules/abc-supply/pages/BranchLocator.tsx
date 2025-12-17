@@ -94,9 +94,9 @@ const BranchLocator: React.FC = () => {
 
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    
+
     const query = searchQuery.toLowerCase();
-    return branches.filter(branch => 
+    return branches.filter(branch =>
       branch.name.toLowerCase().includes(query) ||
       branch.address.street1.toLowerCase().includes(query) ||
       branch.address.city.toLowerCase().includes(query) ||
@@ -195,7 +195,7 @@ const BranchLocator: React.FC = () => {
             Clear
           </button>
         )}
-        
+
         {showSuggestions && filteredBranches.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
             {filteredBranches.map((branch) => (
@@ -226,7 +226,7 @@ const BranchLocator: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">{selectedBranch.name}</h3>
             <MapPin className="w-5 h-5 text-blue-400 flex-shrink-0" />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="text-gray-300">
@@ -234,13 +234,13 @@ const BranchLocator: React.FC = () => {
                 {selectedBranch.address.street2 && <p>{selectedBranch.address.street2}</p>}
                 <p>{selectedBranch.address.city}, {selectedBranch.address.state} {selectedBranch.address.zipCode}</p>
               </div>
-              
+
               <div className="flex items-center space-x-2 text-gray-400">
                 <Phone className="w-4 h-4" />
                 <span className="text-sm">{selectedBranch.phone}</span>
               </div>
             </div>
-            
+
             {selectedBranch.services && selectedBranch.services.length > 0 && (
               <div>
                 <h4 className="text-white font-medium mb-2">Services</h4>

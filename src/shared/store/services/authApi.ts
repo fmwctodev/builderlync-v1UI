@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
 export interface RegisterRequest {
   firstName: string;
@@ -25,6 +25,15 @@ export interface VerifyOtpRequest {
 export interface ResetPasswordRequest {
   token: string;
   newPassword: string;
+}
+
+export interface VerifyRegistrationOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResendRegistrationOtpRequest {
+  email: string;
 }
 
 export interface User {
@@ -70,6 +79,21 @@ export interface VerifyOtpResponse {
 }
 
 export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface VerifyRegistrationOtpResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+}
+
+export interface ResendRegistrationOtpResponse {
   success: boolean;
   message: string;
   data: null;
@@ -163,6 +187,42 @@ export const authApi = {
 
     if (!response.ok) {
       throw new Error(result.error || 'Password reset failed');
+    }
+
+    return result;
+  },
+  verifyRegistrationOtp: async (data: VerifyRegistrationOtpRequest): Promise<VerifyRegistrationOtpResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-registration-otp`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'OTP verification failed');
+    }
+
+    return result;
+  },
+  resendRegistrationOtp: async (data: ResendRegistrationOtpRequest): Promise<ResendRegistrationOtpResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-registration-otp`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to resend OTP');
     }
 
     return result;

@@ -7,7 +7,7 @@ import {
   CreateTaskData,
   CreateNoteData,
   CreateDocumentData
-} from '../../types';
+} from '../../../types';
 
 export { AddAppointmentModal } from './AddAppointmentModal';
 export { AddCompanyModal } from './AddCompanyModal';
@@ -39,8 +39,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 text-lg">+</span>
+              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                <span className="text-primary-600 text-lg">+</span>
               </div>
               <h2 className="text-lg font-semibold text-gray-900">New Task</h2>
             </div>
@@ -59,7 +59,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                 placeholder="Task title"
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
@@ -80,7 +80,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={4}
-                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 />
               )}
             </div>
@@ -94,13 +94,13 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
                 <input
                   type="time"
                   value={formData.dueTime}
                   onChange={(e) => setFormData({...formData, dueTime: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
@@ -115,7 +115,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                     onChange={(e) => setFormData({...formData, isRecurring: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                 </label>
               </div>
             </div>
@@ -127,7 +127,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
               <select
                 value={formData.assignedTo}
                 onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="">Select assignee</option>
                 <option value="me">Assign to me</option>
@@ -147,7 +147,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
                     <X className="w-3 h-3" />
                   </button>
                 </span>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <button className="text-primary-600 hover:text-primary-800 text-sm font-medium">
                   + Add
                 </button>
               </div>
@@ -165,7 +165,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onS
               <button
                 onClick={handleSave}
                 disabled={!formData.title.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save
               </button>
@@ -253,8 +253,8 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onCl
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -272,7 +272,7 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onCl
             <select
               value={section}
               onChange={(e) => setSection(e.target.value as 'Internal' | 'Sent' | 'Received')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
             >
               <option value="Internal">Internal</option>
               <option value="Sent">Sent</option>
@@ -309,7 +309,7 @@ export const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ isOpen, onCl
             <button 
               onClick={handleSave}
               disabled={selectedFiles.length === 0}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Upload
             </button>

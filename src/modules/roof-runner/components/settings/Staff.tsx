@@ -1,0 +1,478 @@
+import React, { useState } from 'react';
+import { Plus, AlertTriangle, Search, Edit2, Trash2, Eye, Copy, Check } from 'lucide-react';
+import { AddEditStaffModal, DeleteConfirmModal } from '../StaffModals';
+import { usePermissions } from '../../../../shared/utils/usePermissions';
+
+interface StaffProps {
+  userRole?: string;
+}
+
+const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
+  const { can } = usePermissions();
+  const canViewStaff = can('staff', 'view');
+  const canAddStaff = can('staff', 'add');
+  const canEditStaff = can('staff', 'edit');
+  const canDeleteStaff = can('staff', 'delete');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
+
+  const fetchStaff = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const { getStaff } = await import('../../../../shared/store/services/staffApi');
+      const response = await getStaff(page, 10);
+      console.log('Fetch Staff Response:', response);
+      
+      if (response.success) {
+        setStaff(response.data || []);
+        setCurrentPage(response.pagination?.page || page);
+        setTotalPages(response.pagination?.totalPages || Math.ceil(response.total / 10) || 1);
+      } else {
+        setToast({ message: 'Failed to load staff members', type: 'error' });
+      }
+    } catch (error: any) {
+      console.error('Error fetching staff:', error);
+      setToast({ message: 'Failed to load staff members', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMember = async (member: any) => {
+    try {
+      // Parse phone number to extract country code
+      const phoneStr = member.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
+      const { createStaff } = await import('../../../../shared/store/services/staffApi');
+      await createStaff({
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email,
+        phone: phone,
+        countryCode: countryCode,
+        password: member.password,
+        role_id: member.roleId || undefined
+      });
+
+      setToast({ message: 'Staff member added successfully!', type: 'success' });
+      setShowAddModal(false);
+      fetchStaff(currentPage);
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to add staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
+  };
+
+  const handleEditMember = async (member: any) => {
+    try {
+      const { updateStaff } = await import('../../../../shared/store/services/staffApi');
+      await updateStaff(selectedMember.id, {
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email,
+        phone: member.phone,
+        extension: member.extension,
+        password: member.password,
+        image: member.image
+      });
+
+      if (member.roleId) {
+        try {
+          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
+          await assignRoleToStaffMember(selectedMember.id, member.roleId);
+        } catch (roleError: any) {
+          console.error('Error assigning role to staff member:', roleError);
+        }
+      }
+
+      try {
+        const { getContacts, updateContact, createContact } = await import('../../../../shared/store/services/contactsApi');
+        const contactsResponse = await getContacts(selectedMember.email, 'staff', 1, 10);
+
+        if (contactsResponse.data?.data && contactsResponse.data.data.length > 0) {
+          const existingContact = contactsResponse.data.data[0];
+          await updateContact(existingContact.id, {
+            fullName: `${member.firstName} ${member.lastName}`,
+            type: 'staff',
+            labelOrRole: 'Staff Member',
+            email: member.email,
+            phone: member.phone || '',
+            company: existingContact.company || '',
+            address: existingContact.address || '',
+            latitude: existingContact.latitude || 0,
+            longitude: existingContact.longitude || 0
+          });
+          setToast({ message: 'Staff member and contact updated successfully!', type: 'success' });
+        } else {
+          await createContact({
+            fullName: `${member.firstName} ${member.lastName}`,
+            type: 'staff',
+            labelOrRole: 'Staff Member',
+            email: member.email,
+            phone: member.phone || '',
+            company: '',
+            address: '',
+            latitude: 0,
+            longitude: 0
+          });
+          setToast({ message: 'Staff member updated and contact created successfully!', type: 'success' });
+        }
+      } catch (contactError: any) {
+        console.error('Error updating contact for staff member:', contactError);
+        setToast({ message: 'Staff member updated but contact sync failed', type: 'success' });
+      }
+
+      setShowEditModal(false);
+      setSelectedMember(null);
+      fetchStaff(currentPage);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    try {
+      const { deleteStaff } = await import('../../../../shared/store/services/staffApi');
+      await deleteStaff(selectedMember.id);
+      setToast({ message: 'Staff member deleted successfully!', type: 'success' });
+      setShowDeleteModal(false);
+      setSelectedMember(null);
+      fetchStaff(currentPage);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete staff member';
+      setToast({ message: errorMessage, type: 'error' });
+    }
+  };
+
+  const openEditModal = (member: any) => {
+    setSelectedMember(member);
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (member: any) => {
+    setSelectedMember(member);
+    setShowDeleteModal(true);
+  };
+
+  const copyToClipboard = (id: number, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  const getAvatarColor = (index: number) => {
+    const colors = [
+      'bg-teal-500',
+      'bg-red-600',
+      'bg-primary-500',
+      'bg-red-500',
+      'bg-primary-500',
+      'bg-indigo-500',
+      'bg-pink-500',
+      'bg-orange-500'
+    ];
+    return colors[index % colors.length];
+  };
+
+  const generateUserId = (id: number, email: string) => {
+    const hash = email.slice(0, 3) + id.toString().padStart(3, '0');
+    return hash.toUpperCase();
+  };
+
+  const filteredStaff = staff.filter(member => {
+    const matchesSearch = searchQuery === '' ||
+      `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (member.phone && member.phone.includes(searchQuery)) ||
+      generateUserId(member.id, member.email).toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = roleFilter === '' || member.role_id === roleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+
+  React.useEffect(() => {
+    fetchStaff(1);
+    fetchUserRoles();
+  }, []);
+
+  const fetchUserRoles = async () => {
+    try {
+      const { getRoles } = await import('../../../../shared/store/services/rolesApi');
+      const response = await getRoles();
+      if (response.success) {
+        setUserRoles(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  if (!canViewStaff) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-6">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+          {toast.message}
+        </div>
+      )}
+
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Staff Management</h2>
+        <p className="text-gray-600 dark:text-gray-400">Manage team members and their roles</p>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative w-64">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
+                >
+                  <option value="">All Roles</option>
+                  {userRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="name, email, phone, ids"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            {canAddStaff && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Plus size={16} />
+                <span>Add User</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
+                  </td>
+                </tr>
+              ) : filteredStaff.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No staff members found
+                  </td>
+                </tr>
+              ) : (
+                filteredStaff.map((member, index) => {
+                  const userId = generateUserId(member.id, member.email);
+                  return (
+                    <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-full ${getAvatarColor(index)} flex items-center justify-center text-white font-semibold text-sm`}>
+                            {getInitials(member.first_name, member.last_name)}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {member.first_name} {member.last_name}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {member.email}
+                          </div>
+                          <div className="flex items-center space-x-1 mt-1">
+                            <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                              {userId}
+                            </span>
+                            <button
+                              onClick={() => copyToClipboard(member.id, userId)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              {copiedId === member.id ? (
+                                <Check size={12} className="text-green-500" />
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        {member.phone || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {member.role?.name || 'No Role'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          {canEditStaff && (
+                            <button
+                              onClick={() => openEditModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {canDeleteStaff && (
+                            <button
+                              onClick={() => openDeleteModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                          {canViewStaff && (
+                            <button
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {!loading && filteredStaff.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Page {currentPage}
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => fetchStaff(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+              >
+                Previous
+              </button>
+              <button
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700"
+              >
+                {currentPage}
+              </button>
+              <button
+                onClick={() => fetchStaff(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <AddEditStaffModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddMember}
+      />
+
+      <AddEditStaffModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedMember(null);
+        }}
+        onSave={handleEditMember}
+        member={selectedMember ? {
+          firstName: selectedMember.first_name,
+          lastName: selectedMember.last_name,
+          email: selectedMember.email,
+          phone: selectedMember.phone,
+          extension: selectedMember.extension,
+          profileImage: selectedMember.image
+        } : undefined}
+        isEdit={true}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedMember(null);
+        }}
+        onConfirm={handleDeleteMember}
+        memberName={selectedMember ? `${selectedMember.first_name} ${selectedMember.last_name}` : ''}
+      />
+    </div>
+  );
+};
+
+export default Staff;

@@ -32,9 +32,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'processing': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'shipped': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'shipped': return 'text-primary-600 bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400';
       case 'delivered': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
+      default: return 'text-gray-600 bg-primary-100 dark:bg-primary-700 dark:text-gray-400';
     }
   };
 
@@ -55,16 +55,16 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
-        <button 
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
+        <button
           onClick={onBack}
-          className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+          className="text-white hover:text-white text-sm mb-2"
         >
           ← Back to Dashboard
         </button>
         <h1 className="text-2xl font-bold text-white">Order History</h1>
         <p className="mt-2 text-gray-400">View and track your orders</p>
-        
+
         <div className="mt-4 flex gap-2">
           <div className="relative flex-1 max-w-md">
             <input
@@ -72,11 +72,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
               placeholder="Search orders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="pl-10 pr-4 py-2 w-full bg-primary-700 dark:bg-primary-600 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
+          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 bg-primary-800 dark:bg-primary-700 border border-gray-600 rounded-md hover:bg-primary-700 dark:hover:bg-primary-600">
             <Filter size={16} />
             Filter
           </button>
@@ -92,7 +92,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
         ) : filteredOrders.length > 0 ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredOrders.map((order) => (
-              <div key={order.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+              <div key={order.id} className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -104,11 +104,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                         <span className="capitalize">{order.status}</span>
                       </div>
                     </div>
-                    
+
                     <p className="font-medium text-gray-900 dark:text-white mb-2">
                       ${order.total.toFixed(2)} - {order.items.length} items
                     </p>
-                    
+
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       <div className="font-medium mb-1">Items:</div>
                       {order.items.map((item, index) => (
@@ -117,7 +117,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       <div>Ordered: {new Date(order.createdAt).toLocaleDateString()}</div>
                       {order.status !== 'delivered' && (
@@ -125,7 +125,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center ml-4">
                     <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
@@ -138,7 +138,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               {searchQuery ? 'No orders found matching your search.' : 'No orders found'}
             </p>
-            <button 
+            <button
               onClick={onBack}
               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
             >

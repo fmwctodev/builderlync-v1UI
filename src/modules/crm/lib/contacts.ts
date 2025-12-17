@@ -21,6 +21,26 @@ const mockContacts: Contact[] = [
     },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    first_name: 'Sarah',
+    last_name: 'Johnson',
+    company: 'BuildRight Partners LLC',
+    emails: [{ type: 'work', email: 'sarah@buildrightpartners.com', primary: true }],
+    phones: [{ type: 'Mobile', number: '+1-555-0456', primary: true }],
+    contact_type: 'Partner',
+    status: 'active',
+    source: 'referral',
+    dnd_settings: {
+      all_channels: false,
+      emails: false,
+      text_messages: false,
+      calls_voicemails: false,
+      inbound_calls_sms: false
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
 

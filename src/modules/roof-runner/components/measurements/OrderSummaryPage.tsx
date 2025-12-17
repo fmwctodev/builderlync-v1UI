@@ -219,7 +219,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
             {showSpecialInstructions && (
               <div className="px-6 pb-6">
                 <textarea
-                  className="w-full h-32 border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-32 border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Enter special instructions..."
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
@@ -246,7 +246,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.claimNumber}
                       onChange={(e) => setClaimInfo({...claimInfo, claimNumber: e.target.value})}
                     />
@@ -257,7 +257,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.claimInformation}
                       onChange={(e) => setClaimInfo({...claimInfo, claimInformation: e.target.value})}
                     />
@@ -270,7 +270,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.poNumber}
                       onChange={(e) => setClaimInfo({...claimInfo, poNumber: e.target.value})}
                     />
@@ -281,7 +281,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="date"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.dateOfLoss}
                       onChange={(e) => setClaimInfo({...claimInfo, dateOfLoss: e.target.value})}
                     />
@@ -293,7 +293,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     value={claimInfo.catId}
                     onChange={(e) => setClaimInfo({...claimInfo, catId: e.target.value})}
                   />
@@ -315,7 +315,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
               <div className="px-6 pb-6">
                 <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
                   Your reports will be sent to <span className="font-bold">your@email.com</span>.
-                  <a href="#" className="underline text-blue-600 dark:text-blue-400 ml-1">
+                  <a href="#" className="underline text-primary-600 dark:text-primary-400 ml-1">
                     Edit Contact Information.
                   </a>
                 </p>
@@ -327,7 +327,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     type="email"
                     value={emailRecipients}
                     onChange={(e) => setEmailRecipients(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Enter additional email addresses"
                   />
                 </div>
@@ -357,7 +357,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     ].map((question, index) => (
                       <div key={index}>
                         <p className="text-gray-700 dark:text-gray-300 mb-2 text-sm">{question}</p>
-                        <div className="inline-flex border border-blue-600 rounded overflow-hidden">
+                        <div className="inline-flex border border-primary-600 rounded overflow-hidden">
                           {['Yes', 'No', 'Ask'].map((option) => (
                             <button
                               key={option}
@@ -368,8 +368,8 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                               }}
                               className={`px-3 py-1 text-sm font-medium ${
                                 activeOptions[index] === option
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                                  ? 'bg-primary-600 text-white'
+                                  : 'text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
                               }`}
                             >
                               {option}
@@ -390,7 +390,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                         type="checkbox"
                         checked={includeDXF}
                         onChange={() => setIncludeDXF(!includeDXF)}
-                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">DXF</span>
                     </label>
@@ -399,7 +399,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                         type="checkbox"
                         checked={includeRXF}
                         onChange={() => setIncludeRXF(!includeRXF)}
-                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">RXF</span>
                     </label>
@@ -408,7 +408,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                         type="checkbox"
                         checked={includeXML}
                         onChange={() => setIncludeXML(!includeXML)}
-                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">XML</span>
                     </label>
@@ -423,7 +423,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                         type="checkbox"
                         checked={includePropertyOwner}
                         onChange={() => setIncludePropertyOwner(!includePropertyOwner)}
-                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Property Owner Report</span>
                     </label>
@@ -432,7 +432,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                         type="checkbox"
                         checked={includeCustomCover}
                         onChange={() => setIncludeCustomCover(!includeCustomCover)}
-                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Include custom cover page</span>
                     </label>
@@ -441,7 +441,6 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
               </div>
             )}
           </div>
-
 
         </div>
 

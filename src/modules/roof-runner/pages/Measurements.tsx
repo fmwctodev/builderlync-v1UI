@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ruler, Plus, History, FileText, Camera, Pencil } from 'lucide-react';
+import { measurementsApi, MeasurementData } from '../services/measurementsApi';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
 import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
@@ -18,34 +19,56 @@ interface OrderData {
 }
 
 interface BusinessInfo {
-  companyName: string;
+  company_name: string;
   address: string;
   city: string;
   state: string;
-  zipCode: string;
+  zip_code: string;
 }
 
 export default function Measurements() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
-    companyName: 'Sitehues Media Inc',
-    address: '486 Lake Cir',
-    city: 'Plant City',
-    state: 'FL',
-    zipCode: '33565'
-  });
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadBusinessInfo();
+  }, []);
+
+  const loadBusinessInfo = async () => {
+    setLoading(true);
+    const data = await measurementsApi.getMeasurements();
+    setBusinessInfo(data);
+    setLoading(false);
+  };
 
   const handleOrderComplete = (data: OrderData) => {
     setOrderData(data);
     setActiveTab('order-summary');
   };
 
-  const handleSaveBusinessInfo = (newInfo: BusinessInfo) => {
-    setBusinessInfo(newInfo);
-    setIsEditing(false);
+  const handleSaveBusinessInfo = async (newInfo: BusinessInfo) => {
+    console.log("newInfo", newInfo);
+    const updatedInfo = { ...newInfo, companyName: newInfo.company_name, zipCode: newInfo.zip_code };
+    const result = await measurementsApi.createOrUpdateMeasurement(updatedInfo);
+    if (result) {
+      setBusinessInfo(result?.data);
+      setIsEditing(false);
+    }
+  };
+
+  const handleAddBusinessInfo = () => {
+    setBusinessInfo({
+      company_name: '',
+      address: '',
+      city: '',
+      state: '',
+      zip_code: ''
+    });
+    setIsEditing(true);
   };
 
   const renderDashboard = () => (
@@ -58,16 +81,24 @@ export default function Measurements() {
 
       <div className="-mt-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {isEditing ? (
+          {loading ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2 mb-1"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/3"></div>
+              </div>
+            </div>
+          ) : isEditing ? (
             <div className="md:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Business Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{businessInfo?.id ? 'Edit' : 'Add'} Business Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name</label>
                   <input
                     type="text"
-                    value={businessInfo.companyName}
-                    onChange={(e) => setBusinessInfo({...businessInfo, companyName: e.target.value})}
+                    value={businessInfo?.company_name || ''}
+                    onChange={(e) => setBusinessInfo({...businessInfo!, company_name: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -75,8 +106,8 @@ export default function Measurements() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
                   <input
                     type="text"
-                    value={businessInfo.address}
-                    onChange={(e) => setBusinessInfo({...businessInfo, address: e.target.value})}
+                    value={businessInfo?.address || ''}
+                    onChange={(e) => setBusinessInfo({...businessInfo!, address: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -84,8 +115,8 @@ export default function Measurements() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
                   <input
                     type="text"
-                    value={businessInfo.city}
-                    onChange={(e) => setBusinessInfo({...businessInfo, city: e.target.value})}
+                    value={businessInfo?.city || ''}
+                    onChange={(e) => setBusinessInfo({...businessInfo!, city: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -93,8 +124,8 @@ export default function Measurements() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">State</label>
                   <input
                     type="text"
-                    value={businessInfo.state}
-                    onChange={(e) => setBusinessInfo({...businessInfo, state: e.target.value})}
+                    value={businessInfo?.state || ''}
+                    onChange={(e) => setBusinessInfo({...businessInfo!, state: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -102,15 +133,15 @@ export default function Measurements() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zip Code</label>
                   <input
                     type="text"
-                    value={businessInfo.zipCode}
-                    onChange={(e) => setBusinessInfo({...businessInfo, zipCode: e.target.value})}
+                    value={businessInfo?.zip_code || ''}
+                    onChange={(e) => setBusinessInfo({...businessInfo!, zip_code: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => handleSaveBusinessInfo(businessInfo)}
+                  onClick={() => handleSaveBusinessInfo(businessInfo!)}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
                 >
                   Save
@@ -123,14 +154,14 @@ export default function Measurements() {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : businessInfo ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{businessInfo.companyName}</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{businessInfo.company_name}</h2>
                   <p className="text-gray-600 dark:text-gray-400">{businessInfo.address}</p>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {businessInfo.city}, {businessInfo.state} {businessInfo.zipCode}
+                    {businessInfo.city}, {businessInfo.state} {businessInfo.zip_code}
                   </p>
                 </div>
                 <button
@@ -138,6 +169,20 @@ export default function Measurements() {
                   onClick={() => setIsEditing(true)}
                 >
                   <Pencil className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Business Information</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">No business information found</p>
+                <button
+                  onClick={handleAddBusinessInfo}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Business Info
                 </button>
               </div>
             </div>
@@ -182,7 +227,7 @@ export default function Measurements() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">You have no recent orders at this time</p>
-            <button 
+            <button
               onClick={() => setActiveTab('Order')}
               className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
@@ -250,13 +295,13 @@ export default function Measurements() {
 
       {activeTab === 'Dashboard' && renderDashboard()}
       {activeTab === 'Order History' && (
-        <OrderHistoryPage 
+        <OrderHistoryPage
           onBack={() => setActiveTab('Dashboard')}
           onPlaceNewOrder={() => setActiveTab('Order')}
         />
       )}
       {activeTab === 'Order' && (
-        <PlaceOrderPage 
+        <PlaceOrderPage
           onOrderComplete={handleOrderComplete}
           onBack={() => setActiveTab('Dashboard')}
         />
@@ -265,7 +310,7 @@ export default function Measurements() {
         <EagleViewMeasurement />
       )}
       {activeTab === 'order-summary' && orderData && (
-        <OrderSummaryPage 
+        <OrderSummaryPage
           orderData={orderData}
           onBack={() => setActiveTab('Order')}
           onComplete={() => setActiveTab('Dashboard')}

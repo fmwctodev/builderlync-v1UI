@@ -34,7 +34,7 @@ const RightPanelContent: React.FC<RightPanelContentProps> = ({
 }) => {
   switch (activeTab) {
     case 'activity':
-      return <ActivityTab />;
+      return <ActivityTab contactId={contactId} />;
     case 'tasks':
       return <TasksTab onAddTask={onAddTask} />;
     case 'notes':
@@ -48,7 +48,7 @@ const RightPanelContent: React.FC<RightPanelContentProps> = ({
     case 'related':
       return <RelatedObjectsTab />;
     default:
-      return <ActivityTab />;
+      return <ActivityTab contactId={contactId} />;
   }
 };
 

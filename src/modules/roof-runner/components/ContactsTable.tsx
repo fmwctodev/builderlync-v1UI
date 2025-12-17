@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText } from 'lucide-react';
+import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -23,6 +23,8 @@ interface ContactsTableProps {
   onViewProfile: (contact: Contact) => void;
   onViewJob: (contact: Contact) => void;
   onEdit: (contact: Contact) => void;
+  onDelete: (contact: Contact) => void;
+  onContactNameClick?: (contact: Contact) => void;
 }
 
 const ContactsTable: React.FC<ContactsTableProps> = ({
@@ -36,6 +38,8 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
   onViewProfile,
   onViewJob,
   onEdit,
+  onDelete,
+  onContactNameClick,
 }) => {
   return (
     <div className="flex-1 overflow-auto">
@@ -101,17 +105,26 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                     style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties}
                   />
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
-                  {contact.fullName}
+                <td className="px-6 py-4 text-sm font-medium">
+                  <button
+                    onClick={() => onContactNameClick ? onContactNameClick(contact) : onViewProfile(contact)}
+                    className="text-gray-900 dark:text-white hover:text-red-600 dark:hover:text-red-400 hover:underline cursor-pointer transition-colors text-left"
+                  >
+                    {contact.fullName}
+                  </button>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-2">
                     {contact.type === 'customer' ? (
                       <User className="w-4 h-4" />
+                    ) : contact.type === 'lead' ? (
+                      <UserPlus className="w-4 h-4" />
+                    ) : contact.type === 'partner' ? (
+                      <Handshake className="w-4 h-4" />
                     ) : (
                       <Briefcase className="w-4 h-4" />
                     )}
-                    {contact.type}
+                    <span className="capitalize">{contact.type.replace('-', ' ')}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
@@ -164,6 +177,13 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                           >
                             <Edit className="w-4 h-4" />
                             Edit
+                          </button>
+                          <button
+                            onClick={() => onDelete(contact)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
                           </button>
                         </div>
                       </div>

@@ -1,48 +1,45 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useParams } from 'react-router-dom';
 import { Bell, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
-
-const tabs = [
-  { name: 'Getting Started', href: '/ai-agents' },
-  { name: 'Voice AI', href: '/ai-agents/voice-ai' },
-  { name: 'Conversation AI', href: '/ai-agents/conversation-ai' },
-  { name: 'Knowledge Base', href: '/ai-agents/knowledge-base' },
-  { name: 'Agent Templates', href: '/ai-agents/agent-templates' },
-  // { name: 'Content AI', href: '/ai-agents/content-ai' },
-];
 
 
 export function AITopBar() {
   const location = useLocation();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [theme, setTheme] = useState('light');
+
+  const tabs = [
+    { name: 'Getting Started', href: `${orgPrefix}/ai-agents` },
+    { name: 'Voice AI', href: `${orgPrefix}/ai-agents/voice-ai` },
+    { name: 'Conversation AI', href: `${orgPrefix}/ai-agents/conversation-ai` },
+    { name: 'Knowledge Base', href: `${orgPrefix}/ai-agents/knowledge-base` },
+    { name: 'Agent Templates', href: `${orgPrefix}/ai-agents/agent-templates` },
+  ];
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
-    <div className="bg-white mt-4 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-
-
-      <div className="px-4">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const isActive = location.pathname === tab.href;
-            return (
-              <NavLink
-                key={tab.name}
-                to={tab.href}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  isActive
-                    ? 'border-red-600 text-red-600 dark:text-red-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                {tab.name}
-              </NavLink>
-            );
-          })}
-        </nav>
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-4">
+        {tabs.map((tab) => {
+          const isActive = location.pathname === tab.href;
+          return (
+            <NavLink
+              key={tab.name}
+              to={tab.href}
+              className={`px-6 py-3 font-medium transition-all ${
+                isActive
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+              }`}
+            >
+              {tab.name}
+            </NavLink>
+          );
+        })}
       </div>
     </div>
   );

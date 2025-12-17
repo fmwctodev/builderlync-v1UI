@@ -47,7 +47,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     try {
       setSearchLoading(true);
       const data = await abcSupplyApi.searchItems(query, 50);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Search failed:', error);
       setProducts([]);
@@ -100,13 +100,13 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   };
 
   const handleCategoryFilter = (category: string, checked: boolean) => {
-    setSelectedCategories(prev => 
+    setSelectedCategories(prev =>
       checked ? [...prev, category] : prev.filter(c => c !== category)
     );
   };
 
   const handleManufacturerFilter = (manufacturer: string, checked: boolean) => {
-    setSelectedManufacturers(prev => 
+    setSelectedManufacturers(prev =>
       checked ? [...prev, manufacturer] : prev.filter(m => m !== manufacturer)
     );
   };
@@ -128,17 +128,17 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6">
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <button 
+            <button
               onClick={onBack}
-              className="text-primary-600 hover:text-primary-700 text-sm mb-2"
+              className="text-white hover:text-white text-sm mb-2"
             >
               ← Back to Dashboard
             </button>
             <h1 className="text-2xl font-bold text-white">Product Catalog</h1>
-            <p className="text-gray-400 mt-1">Browse our complete selection of construction materials</p>
+            <p className="text-white mt-1">Browse our complete selection of construction materials</p>
           </div>
 
           <button
@@ -172,7 +172,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => handleSearch(searchQuery)}
               disabled={searchLoading}
@@ -186,21 +186,21 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-64 flex-shrink-0">
-          <div className="bg-gray-900 dark:bg-gray-800 rounded-lg p-4">
+          <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">Filters</h2>
               <Filter className="h-5 w-5 text-gray-400" />
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-white mb-2">Category</h3>
                 <div className="space-y-2">
                   {['Roofing', 'Siding', 'Gutters', 'Insulation'].map((category) => (
                     <label key={category} className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" 
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500"
                         checked={selectedCategories.includes(category)}
                         onChange={(e) => handleCategoryFilter(category, e.target.checked)}
                       />
@@ -209,15 +209,15 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-white mb-2">Manufacturer</h3>
                 <div className="space-y-2">
                   {['GAF', 'Owens Corning', 'CertainTeed', 'IKO'].map((brand) => (
                     <label key={brand} className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500" 
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-600 text-primary-600 focus:ring-primary-500"
                         checked={selectedManufacturers.includes(brand)}
                         onChange={(e) => handleManufacturerFilter(brand, e.target.checked)}
                       />

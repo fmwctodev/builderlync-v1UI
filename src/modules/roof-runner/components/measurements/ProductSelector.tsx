@@ -36,7 +36,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const handleProductSelect = (categoryId: string, productId: string, productName: string) => {
     const isSelected = selectedProducts[productId];
-    let newSelected;
+    let newSelected:any;
     
     if (categoryId === 'walls') {
       // Walls can have multiple selections (checkbox behavior)
@@ -137,7 +137,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                         <input
                           type={category.id === 'walls' ? 'checkbox' : 'radio'}
                           name={category.id === 'walls' ? undefined : `product-${category.id}`}
-                          className="form-checkbox h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mt-0.5"
+                          className="form-checkbox h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded mt-0.5"
                           checked={isSelected}
                           onChange={() => handleProductSelect(category.id, product.id, product.name)}
                         />
@@ -147,9 +147,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                               <span className="text-gray-800 dark:text-gray-200 font-medium">{product.name}</span>
                               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{product.description}</p>
                             </div>
-                            <div className="text-gray-700 dark:text-gray-300 font-medium ml-4">
+                            {/* <div className="text-gray-700 dark:text-gray-300 font-medium ml-4">
                               ${product.price.toFixed(2)}
-                            </div>
+                            </div> */}
                           </div>
 
                           {/* Hover tooltip */}
@@ -174,11 +174,11 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                             )}
                           </div>
 
-                          {isSelected && product.deliveryOptions && product.deliveryOptions.length > 1 && (
+                          {/* {isSelected && product.deliveryOptions && product.deliveryOptions.length > 1 && (
                             <div className="mt-4 flex items-center justify-between">
                               <span className="text-gray-800 dark:text-gray-200 font-medium">Delivery:</span>
                               <select
-                                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                 value={selectedDeliveryModes[product.id] || ''}
                                 onChange={(e) => handleDeliveryChange(product.id, e.target.value)}
                               >
@@ -189,7 +189,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                                 ))}
                               </select>
                             </div>
-                          )}
+                          )} */}
 
                           {selectedDeliveryModes[product.id] === "3 Hours" && (
                             <div className="mt-3 flex gap-3 bg-primary-50 dark:bg-primary-900/20 items-start p-3 rounded-lg">

@@ -112,19 +112,19 @@ const Support: React.FC = () => {
 
       {/* Support Options */}
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Start Chat */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start Chat</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Get instant help from our AI assistant with access to our complete knowledge base
             </p>
-            <button 
+            <button
               onClick={handleStartChat}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
             >
               Start Chat Now
             </button>
@@ -132,20 +132,20 @@ const Support: React.FC = () => {
 
           {/* Email Support */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Email Support</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Submit a support ticket and get a detailed response within 24 hours
             </p>
-            <button className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+            <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
               Send Email
             </button>
           </div>
 
           {/* Phone Support */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Phone className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
@@ -156,7 +156,7 @@ const Support: React.FC = () => {
             <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
               Call Now
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Chat Interface */}
@@ -169,8 +169,8 @@ const Support: React.FC = () => {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    msg.sender === 'user' 
-                      ? 'bg-blue-600 text-white' 
+                    msg.sender === 'user'
+                      ? 'bg-red-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}>
                     <p className="text-sm">{msg.text}</p>
@@ -187,11 +187,11 @@ const Support: React.FC = () => {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
-                <button 
+                <button
                   onClick={handleSendMessage}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -210,7 +210,7 @@ const Support: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search articles..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
             </div>
@@ -220,7 +220,7 @@ const Support: React.FC = () => {
               {knowledgeBaseArticles.map((article, index) => (
                 <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs dark:bg-blue-900 dark:text-blue-200">
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs dark:bg-red-900 dark:text-red-200">
                       {article.category}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">{article.readTime}</span>
@@ -243,7 +243,7 @@ const Support: React.FC = () => {
               {faqs.map((faq, index) => (
                 <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
-                    <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <HelpCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2">{faq.question}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{faq.answer}</p>

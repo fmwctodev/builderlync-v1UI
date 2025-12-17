@@ -58,7 +58,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-blue-600 dark:bg-blue-700 rounded-lg p-6 text-white">
+      <div className="bg-primary-600 dark:bg-blue-700 rounded-lg p-6 text-white">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={onBack}
@@ -108,7 +108,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
             {showSpecialInstructions && (
               <div className="px-6 pb-6">
                 <textarea
-                  className="w-full h-32 border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full h-32 border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Enter special instructions..."
                   value={specialInstructions}
                   onChange={(e) => setSpecialInstructions(e.target.value)}
@@ -135,7 +135,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.claimNumber}
                       onChange={(e) => setClaimInfo({...claimInfo, claimNumber: e.target.value})}
                     />
@@ -146,7 +146,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={claimInfo.poNumber}
                       onChange={(e) => setClaimInfo({...claimInfo, poNumber: e.target.value})}
                     />
@@ -175,7 +175,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     <input
                       type="text"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={paymentInfo.firstName}
                       onChange={(e) => setPaymentInfo({...paymentInfo, firstName: e.target.value})}
                     />
@@ -187,7 +187,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     <input
                       type="text"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={paymentInfo.lastName}
                       onChange={(e) => setPaymentInfo({...paymentInfo, lastName: e.target.value})}
                     />
@@ -201,7 +201,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     type="text"
                     required
                     placeholder="1234 5678 9012 3456"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     value={paymentInfo.cardNumber}
                     onChange={(e) => setPaymentInfo({...paymentInfo, cardNumber: e.target.value})}
                   />
@@ -213,7 +213,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <select
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={paymentInfo.expiryMonth}
                       onChange={(e) => setPaymentInfo({...paymentInfo, expiryMonth: e.target.value})}
                     >
@@ -231,7 +231,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                     </label>
                     <select
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={paymentInfo.expiryYear}
                       onChange={(e) => setPaymentInfo({...paymentInfo, expiryYear: e.target.value})}
                     >
@@ -252,7 +252,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                       required
                       placeholder="123"
                       maxLength={4}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       value={paymentInfo.cvv}
                       onChange={(e) => setPaymentInfo({...paymentInfo, cvv: e.target.value})}
                     />
@@ -304,7 +304,7 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                 <button
                   onClick={handleSubmitOrder}
                   disabled={isPlacingOrder}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isPlacingOrder ? (
                     <>

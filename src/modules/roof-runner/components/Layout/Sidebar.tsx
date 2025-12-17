@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useParams } from 'react-router-dom';
 import {
   BarChart, Calendar, CreditCard, FileText, HardHat, Home,
   MessageSquare, Users, Briefcase, DollarSign, Bot, Megaphone,
@@ -16,39 +16,42 @@ interface SidebarProps {
 
 const navItems = {
   manage: [
-    { name: 'Dashboard', icon: Home, path: '/' },
-    { name: 'Conversations', icon: MessageSquare, path: '/conversations' },
-    { name: 'Calendars', icon: Calendar, path: '/calendars' },
-    { name: 'Contacts', icon: Users, path: '/contacts' },
-    { name: 'Jobs', icon: HardHat, path: '/jobs' },
-    { name: 'Payments', icon: CreditCard, path: '/payments' },
+    { name: 'Dashboard', icon: Home, path: 'dashboard' },
+    { name: 'Conversations', icon: MessageSquare, path: 'conversations' },
+    { name: 'Calendars', icon: Calendar, path: 'calendars' },
+    { name: 'Contacts', icon: Users, path: 'contacts' },
+    { name: 'Jobs', icon: HardHat, path: 'jobs' },
+    { name: 'Payments', icon: CreditCard, path: 'payments' },
   ],
   tools: [
-    { name: 'AI Agents', icon: Bot, path: '/ai-agents' },
-    { name: 'Job Cam', icon: Camera, path: '/job-cam' },
-    { name: 'Instant Estimator', icon: DollarSign, path: '/instant-estimator' },
-    { name: 'Measurements', icon: Ruler, path: '/measurements' },
-    { name: 'Proposals', icon: FileCheck, path: '/proposals' },
-    { name: 'Material Orders', icon: Package, path: '/material-orders' },
-    { name: 'Work Orders', icon: Clipboard, path: '/work-orders' },
+    { name: 'Sierra AI', icon: Bot, path: 'ai-agents' },
+    { name: 'Job Cam', icon: Camera, path: 'job-cam' },
+    { name: 'Instant Estimator', icon: DollarSign, path: 'instant-estimator' },
+    { name: 'Measurements', icon: Ruler, path: 'measurements' },
+    { name: 'Proposals', icon: FileCheck, path: 'proposals' },
+    { name: 'Material Orders', icon: Package, path: 'material-orders' },
+    { name: 'Work Orders', icon: Clipboard, path: 'work-orders' },
   ],
   marketing: [
-    { name: 'Automation', icon: Zap, path: '/automation' },
-    { name: 'Opportunities', icon: BarChart, path: '/opportunities' },
-    { name: 'Marketing', icon: Megaphone, path: '/marketing' },
-    { name: 'File Manager', icon: FolderOpen, path: '/file-manager' },
-    { name: 'Reputation', icon: Star, path: '/reputation' },
-    { name: 'Reporting', icon: BarChart2, path: '/reporting' },
-    // { name: 'Sites', icon: Globe, path: '/sites' },
+    { name: 'Automation', icon: Zap, path: 'automation' },
+    { name: 'Opportunities', icon: BarChart, path: 'opportunities' },
+    { name: 'Marketing', icon: Megaphone, path: 'marketing' },
+    { name: 'File Manager', icon: FolderOpen, path: 'file-manager' },
+    { name: 'Reputation', icon: Star, path: 'reputation' },
+    { name: 'Reporting', icon: BarChart2, path: 'reporting' },
+    { name: 'Catalog', icon: Package, path: 'catalog' },
+    // { name: 'Sites', icon: Globe, path: 'sites' },
   ],
   system: [
-    { name: 'Support', icon: LifeBuoy, path: '/support' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Support', icon: LifeBuoy, path: 'support' },
+    { name: 'Settings', icon: Settings, path: 'settings' },
   ]
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   const location = useLocation();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
 
   const renderNavSection = (items: typeof navItems.manage, label?: string) => (
     <div className="mb-6">
@@ -65,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           return (
             <li key={item.name}>
               <NavLink
-                to={item.path}
+                to={item.path ? `${orgPrefix}/${item.path}` : orgPrefix}
                 className={({ isActive }) => `flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${isActive
                   ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 border-r-2 border-primary-500'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -92,10 +95,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className="flex flex-col h-full">
         <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center">
-            <Logo type="light" className="h-20 w-auto dark:hidden" />
-            <div className="hidden dark:block bg-white rounded-lg p-2">
-              <Logo type="dark" className="h-16 w-auto" />
-            </div>
+            {collapsed ? (
+              <Logo type="icon" size="md" />
+            ) : (
+              <>
+                <Logo type="light" className="h-20 w-auto dark:hidden" />
+                <div className="hidden dark:block bg-white rounded-lg p-2">
+                  <Logo type="dark" className="h-16 w-auto" />
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -18,7 +18,7 @@ const Signup: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const { loading, error, user, registrationEmail } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,9 +30,21 @@ const Signup: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        localStorage.setItem('currentOrganizationSlug', orgSlug);
+        navigate(`/org/${orgSlug}`);
+      } else {
+        navigate('/auth/login');
+      }
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (registrationEmail && !user) {
+      navigate('/auth/verify-otp', { state: { email: registrationEmail } });
+    }
+  }, [registrationEmail, user, navigate]);
 
   useEffect(() => {
     if (error) {
@@ -61,8 +73,8 @@ const Signup: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{backgroundColor: '#dc2626'} as React.CSSProperties}>
-            <span className="text-white text-xl font-bold">BL</span>
+          <div className="flex items-center justify-center mx-auto mb-4">
+            <img src="/logo/icon.png" alt="BuilderLync" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
           <p className="text-gray-600 mt-2">Join BuilderLync today</p>
@@ -138,7 +150,7 @@ const Signup: React.FC = () => {
 
           <div>
             <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
+              Organization Name
             </label>
             <div className="relative">
               <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -152,10 +164,15 @@ const Signup: React.FC = () => {
                 style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
-                placeholder="Your company name"
+                placeholder="Your organization name"
                 required
               />
             </div>
+            {formData.companyName && (
+              <p className="mt-2 text-xs text-gray-500">
+                URL: <span className="font-mono text-red-600">org/{formData.companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}</span>
+              </p>
+            )}
           </div>
 
           <div>

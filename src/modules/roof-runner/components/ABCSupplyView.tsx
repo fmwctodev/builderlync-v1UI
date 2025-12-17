@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Order, Product, Branch } from '../../abc-supply/types';
 
 const ABCSupplyView: React.FC = () => {
   const [currentView, setCurrentView] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
 
   useEffect(() => {
     const loadRecentOrders = async () => {
       try {
         const orders = await abcSupplyApi.getOrders();
-        setRecentOrders(orders.slice(0, 3));
+        setRecentOrders(Array.isArray(orders) ? orders.slice(0, 3) : []);
       } catch (error) {
         console.error('Failed to load recent orders:', error);
         setRecentOrders([]);
@@ -25,14 +28,12 @@ const ABCSupplyView: React.FC = () => {
     loadRecentOrders();
   }, []);
 
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        const response = await abcSupplyApi.getItems(1, 4);
-        console.log("response:",response.items);
-        
+        const response = await abcSupplyApi.getItems(1, 4);        
         setFeaturedProducts(response.items.items);
       } catch (error) {
         console.error('Failed to load featured products:', error);
@@ -42,13 +43,13 @@ const ABCSupplyView: React.FC = () => {
     loadFeaturedProducts();
   }, []);
 
-  const [nearestBranches, setNearestBranches] = useState([]);
+  const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
 
   useEffect(() => {
     const loadNearestBranches = async () => {
       try {
         const branches = await abcSupplyApi.getBranches();
-        setNearestBranches(branches.slice(0, 3));
+        setNearestBranches(Array.isArray(branches) ? branches.slice(0, 3) : []);
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
         setNearestBranches([]);
@@ -67,51 +68,90 @@ const ABCSupplyView: React.FC = () => {
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <section className="bg-gray-900 dark:bg-gray-800 rounded-lg p-6 md:p-8">
-        <h1 className="text-3xl font-bold text-white">
-          {getGreeting()}, Contractor
-        </h1>
-        <p className="mt-2 text-gray-400">
-          Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
-        </p>
-        
+      <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              {getGreeting()}, Contractor
+            </h1>
+            <p className="mt-2 text-gray-400">
+              Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
+            </p>
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-700 transition"
+            >
+              {selectedSupplier}
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => { setSelectedSupplier('ABC Supply'); setDropdownOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    ABC Supply
+                  </button>
+                  <button
+                    disabled
+                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
+                  >
+                    SRS
+                  </button>
+                  <button
+                    disabled
+                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
+                  >
+                    QXO
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div 
+          <div
             onClick={() => setCurrentView('products')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-blue-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <ShoppingBag className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-blue-400 transition">Browse Products</h3>
-              <p className="text-sm text-gray-400">Search our catalog</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Browse Products</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Search our catalog</p>
             </div>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setCurrentView('branches')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-green-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-green-400 transition">Find Branches</h3>
-              <p className="text-sm text-gray-400">Locate nearest stores</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Find Branches</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Locate nearest stores</p>
             </div>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setCurrentView('orders')}
-            className="bg-gray-800 dark:bg-gray-700 rounded-lg p-4 flex items-center hover:bg-gray-700 dark:hover:bg-gray-600 transition cursor-pointer group"
+            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-purple-400" />
+            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <ClipboardList className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-white group-hover:text-purple-400 transition">View Orders</h3>
-              <p className="text-sm text-gray-400">Check status and history</p>
+              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">View Orders</h3>
+              <p className="text-sm text-primary-600 dark:text-gray-400">Check status and history</p>
             </div>
           </div>
         </div>
@@ -126,7 +166,7 @@ const ABCSupplyView: React.FC = () => {
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </button>
           </div>
-          
+
           <div className="p-6">
             {recentOrders.length > 0 ? (
               <div className="space-y-4">
@@ -148,14 +188,14 @@ const ABCSupplyView: React.FC = () => {
                             <Package className="h-4 w-4 text-yellow-500 mr-1" />
                           )}
                           {order.status === 'shipped' && (
-                            <Truck className="h-4 w-4 text-blue-500 mr-1" />
+                            <Truck className="h-4 w-4 text-primary-500 mr-1" />
                           )}
                           {order.status === 'delivered' && (
                             <Truck className="h-4 w-4 text-green-500 mr-1" />
                           )}
                           <span className={`text-sm capitalize ${
                             order.status === 'processing' ? 'text-yellow-600' :
-                            order.status === 'shipped' ? 'text-blue-600' :
+                            order.status === 'shipped' ? 'text-primary-600' :
                             order.status === 'delivered' ? 'text-green-600' :
                             'text-gray-500'
                           }`}>
@@ -193,7 +233,7 @@ const ABCSupplyView: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="grid grid-cols-1 gap-3">
                 {featuredProducts.map((product,key) => (
@@ -228,7 +268,7 @@ const ABCSupplyView: React.FC = () => {
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="space-y-3">
                 {nearestBranches.map((branch) => (
@@ -241,7 +281,7 @@ const ABCSupplyView: React.FC = () => {
                         {branch.name}
                       </h4>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {branch.address.city}, {branch.address.state}
+                        {branch.address?.city}, {branch.address?.state}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {branch.phone}

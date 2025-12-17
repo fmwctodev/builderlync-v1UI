@@ -1,15 +1,61 @@
-import { Folder, Upload } from 'lucide-react';
+import { Folder, Upload, Cloud, BarChart3, Grid3X3 } from 'lucide-react';
+import { useRef } from 'react';
 
 interface FileManagerHeaderProps {
   onCreateFolder: () => void;
+  onConnectCloudDrive: () => void;
+  onFileUpload?: (file: File) => void;
+  showDashboard?: boolean;
+  onToggleDashboard?: () => void;
 }
 
-export default function FileManagerHeader({ onCreateFolder }: FileManagerHeaderProps) {
+export default function FileManagerHeader({ onCreateFolder, onConnectCloudDrive, onFileUpload, showDashboard, onToggleDashboard }: FileManagerHeaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onFileUpload) {
+      onFileUpload(file);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
       <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">File Manager</h1>
         <div className="flex items-center space-x-3">
+          {onToggleDashboard && (
+            <button
+              onClick={onToggleDashboard}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              {showDashboard ? (
+                <>
+                  <Grid3X3 className="h-4 w-4 mr-2 text-primary-600" />
+                  File View
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="h-4 w-4 mr-2 text-primary-600" />
+                  Dashboard
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={onConnectCloudDrive}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <Cloud className="h-4 w-4 mr-2 text-primary-600" />
+            Connect Cloud Drive
+          </button>
           <button
             onClick={onCreateFolder}
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -17,7 +63,17 @@ export default function FileManagerHeader({ onCreateFolder }: FileManagerHeaderP
             <Folder className="h-4 w-4 mr-2 text-[#dc2626]" />
             Create a folder
           </button>
-          <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileChange}
+            className="hidden"
+            multiple
+          />
+          <button 
+            onClick={handleUploadClick}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
+          >
             <Upload className="h-4 w-4 mr-2" />
             Upload files
           </button>

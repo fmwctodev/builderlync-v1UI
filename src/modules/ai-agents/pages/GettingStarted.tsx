@@ -9,7 +9,7 @@ export function GettingStarted() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Getting Started</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Hey Vijender, here are few things you can get started with
+          Hey Sean, here are few things you can get started with
         </p>
       </div>
 
@@ -87,7 +87,7 @@ export function GettingStarted() {
                 </div>
                 
                 <div className="flex items-start">
-                  <Zap className="w-5 h-5 text-purple-500 mr-3 mt-1" />
+                  <Zap className="w-5 h-5 text-primary-500 mr-3 mt-1" />
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">Assign a Phone Number & Go Live</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -124,7 +124,7 @@ export function GettingStarted() {
                 </div>
                 
                 <div className="flex items-start">
-                  <Zap className="w-5 h-5 text-purple-500 mr-3 mt-1" />
+                  <Zap className="w-5 h-5 text-primary-500 mr-3 mt-1" />
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">Train Your Conversation AI Agent</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
