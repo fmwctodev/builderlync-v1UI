@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { Product, Branch, Order, CartItem } from '../types';
-import { getAuthToken } from '../../../shared/utils/auth';
 
 const api = axios.create({
   baseURL: 'https://builderlyncapi.testenvapp.com/api',
@@ -9,7 +8,7 @@ const api = axios.create({
 
 // Add request interceptor to include dynamic auth token
 api.interceptors.request.use((config) => {
-  const token = getAuthToken();
+  const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -37,14 +36,21 @@ export const abcSupplyApi = {
     const response = await api.get('/abc-supply/items', {
       params: { page, limit }
     });
-    return response.data;
+    
+    return {
+      items: response.data.items || response.data.data || [],
+      total: response.data.total || 0,
+      page: page,
+      limit: limit
+    };
   },
 
   searchItems: async (query: string, limit: number = 20): Promise<Product[]> => {
     const response = await api.get('/abc-supply/search', {
       params: { q: query, limit }
     });
-    return response.data.items || response.data;
+    
+    return response.data.items || response.data.data || response.data || [];
   },
 
   // Branches
@@ -57,10 +63,6 @@ export const abcSupplyApi = {
           distance: 100
         }
       });
-      
-      console.log('Full API response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response status:', response.status);
       
       // Handle the actual API response structure
       let branches = [];

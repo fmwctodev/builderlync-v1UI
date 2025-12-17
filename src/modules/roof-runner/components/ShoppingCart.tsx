@@ -79,22 +79,30 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               </div>
             ) : (
               <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                {items.map((item, index) => (
+                  <div key={`${item.itemNumber}-${index}`} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900 dark:text-white text-sm">
-                          {item.name}
+                          {item.familyName}
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          SKU: {item.sku}
+                          Item #: {item.itemNumber}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {item.manufacturer}
+                          {item.supplierName}
+                        </p>
+                        {item.color?.name && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Color: {item.color.name}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          UOM: {item.uoms?.[0]?.code || 'EA'}
                         </p>
                       </div>
                       <button
-                        onClick={() => onRemoveItem(item.id)}
+                        onClick={() => onRemoveItem(item.itemNumber)}
                         className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
@@ -104,7 +112,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                          onClick={() => onUpdateQuantity(item.itemNumber, Math.max(1, item.quantity - 1))}
                           className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
                         >
                           <Minus className="h-4 w-4" />
@@ -113,7 +121,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => onUpdateQuantity(item.itemNumber, item.quantity + 1)}
                           className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
                         >
                           <Plus className="h-4 w-4" />

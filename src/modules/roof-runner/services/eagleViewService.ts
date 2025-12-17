@@ -31,14 +31,6 @@ interface EagleViewOrderRequest {
   };
   promoCode?: string;
   placeOrderUser: string;
-  creditCardData: {
-    cardFirstName: string;
-    cardLastName: string;
-    expirationMonth: number;
-    expirationYear: number;
-    creditCardNumber: string;
-    creditCardType: number;
-  };
 }
 
 interface EagleViewOrderResponse {
@@ -244,14 +236,6 @@ class EagleViewService {
       policyNumber?: string;
       catId?: string;
     };
-    paymentInfo: {
-      firstName: string;
-      lastName: string;
-      cardNumber: string;
-      expiryMonth: string;
-      expiryYear: string;
-      cvv: string;
-    };
     specialInstructions?: string;
     userName: string;
   }): EagleViewOrderRequest {
@@ -287,15 +271,7 @@ class EagleViewService {
         dateOfLoss: formData.claimInfo?.dateOfLoss || new Date().toISOString().split('T')[0],
       },
       promoCode: '',
-      placeOrderUser: formData.userName,
-      creditCardData: {
-        cardFirstName: formData.paymentInfo.firstName,
-        cardLastName: formData.paymentInfo.lastName,
-        expirationMonth: Number(formData.paymentInfo.expiryMonth),
-        expirationYear: Number(formData.paymentInfo.expiryYear),
-        creditCardNumber: formData.paymentInfo.cardNumber,
-        creditCardType: 2
-      }
+      placeOrderUser: formData.userName
     };
   }
 }
