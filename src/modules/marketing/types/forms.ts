@@ -132,7 +132,7 @@ export interface MarketingForm {
   settings?: FormSettings;
   pipeline_id?: string;
   stage_id?: string;
-  public_id?: string;
+  publicId?: string;
   embed_code?: string;
   submission_count?: number;
   conversion_count?: number;
@@ -205,7 +205,7 @@ export interface UpdateFormRequest extends Partial<CreateFormRequest> {
 
 export interface SubmitFormRequest {
   form_id: string;
-  public_id: string;
+  publicId: string;
   submission_data: Record<string, any>;
   metadata?: FormSubmissionMetadata;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
@@ -69,6 +69,7 @@ const Marketing: React.FC = () => {
 
 const AnalyticsTab: React.FC = () => {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
 
   const platforms = [
     { id: 'all', label: 'All Platforms' },
@@ -80,14 +81,15 @@ const AnalyticsTab: React.FC = () => {
   ];
 
   const handlePlatformClick = (platformId: string) => {
-    navigate(`/marketing/analytics/${platformId}`);
+    const basePath = orgSlug ? `/org/${orgSlug}` : '';
+    navigate(`${basePath}/marketing/analytics/${platformId}`);
   };
 
   return (
     <div className="space-y-6">
       {/* Platform Selector */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics 2</h3>
         <div className="flex flex-wrap gap-2">
           {platforms.map((platform) => (
             <button
