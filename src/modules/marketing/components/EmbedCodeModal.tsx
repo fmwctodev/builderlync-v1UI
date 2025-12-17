@@ -4,7 +4,7 @@ import { X, Copy, Check, Code, Link as LinkIcon, FileCode } from 'lucide-react';
 interface EmbedCodeModalProps {
   form: {
     name: string;
-    public_id: string;
+    publicId: string;
     embed_code?: string;
   };
   onClose: () => void;
@@ -17,10 +17,10 @@ export const EmbedCodeModal: React.FC<EmbedCodeModalProps> = ({ form, onClose })
   const [copiedType, setCopiedType] = useState<EmbedType | null>(null);
 
   const baseUrl = window.location.origin;
-  const formUrl = `${baseUrl}/forms/public/${form.public_id || 'undefined'}`;
+  const formUrl = `${baseUrl}/forms/public/${form.publicId || 'undefined'}`;
 
   const scriptEmbed = form.embed_code || `<!-- BuilderLynk Form Embed -->
-<div id="builderlynk-form-${form.public_id}"></div>
+<div id="builderlynk-form-${form.publicId}"></div>
 <script>
   (function() {
     var iframe = document.createElement('iframe');
@@ -35,7 +35,7 @@ export const EmbedCodeModal: React.FC<EmbedCodeModalProps> = ({ form, onClose })
         }
       });
     };
-    document.getElementById('builderlynk-form-${form.public_id}').appendChild(iframe);
+    document.getElementById('builderlynk-form-${form.publicId}').appendChild(iframe);
   })();
 </script>`;
 
