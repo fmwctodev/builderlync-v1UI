@@ -22,6 +22,7 @@ import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
 import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
+import { useAppSelector } from '../../roof-runner/store/hooks';
 
 type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'tools' | 'security';
 
@@ -49,6 +50,8 @@ export function AgentBuilder() {
   const [dailyCallLimit, setDailyCallLimit] = useState(100000);
   const [concurrentCallLimit, setConcurrentCallLimit] = useState(-1);
   const [burstingEnabled, setBurstingEnabled] = useState(true);
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   useEffect(() => {
     loadAgent();
@@ -142,7 +145,7 @@ export function AgentBuilder() {
             The agent you're looking for doesn't exist or has been removed.
           </p>
           <button
-            onClick={() => navigate(`/ai-agents`)}
+            onClick={() => navigate(`/org/${orgSlug}/ai-agents`)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -183,7 +186,7 @@ export function AgentBuilder() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate(`/ai-agents`)}
+                onClick={() => navigate(`/org/${orgSlug}/ai-agents`)}
                 className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -200,11 +203,10 @@ export function AgentBuilder() {
               {/* Status Toggle */}
               <button
                 onClick={handleStatusToggle}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  agent.status === 'active'
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${agent.status === 'active'
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                }`}
+                  }`}
               >
                 {agent.status === 'active' ? (
                   <>
@@ -251,13 +253,12 @@ export function AgentBuilder() {
                   key={tab.id}
                   onClick={() => !isDisabled && setActiveTab(tab.id as BuilderTab)}
                   disabled={isDisabled}
-                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap ${
-                    isActive
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap ${isActive
                       ? 'border-red-600 text-red-600 dark:border-red-500 dark:text-red-500'
                       : isDisabled
-                      ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
+                        ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
@@ -380,19 +381,17 @@ export function AgentBuilder() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.voice?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels.voice?.enabled
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Phone
-                      className={`w-6 h-6 ${
-                        agent.channels.voice?.enabled
+                      className={`w-6 h-6 ${agent.channels.voice?.enabled
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-400'
-                      }`}
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Voice</div>
@@ -404,19 +403,17 @@ export function AgentBuilder() {
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.sms?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels.sms?.enabled
                       ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <MessageSquare
-                      className={`w-6 h-6 ${
-                        agent.channels.sms?.enabled
+                      className={`w-6 h-6 ${agent.channels.sms?.enabled
                           ? 'text-green-600 dark:text-green-400'
                           : 'text-gray-400'
-                      }`}
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">SMS</div>
@@ -428,19 +425,17 @@ export function AgentBuilder() {
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.webchat?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels.webchat?.enabled
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Globe
-                      className={`w-6 h-6 ${
-                        agent.channels.webchat?.enabled
+                      className={`w-6 h-6 ${agent.channels.webchat?.enabled
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-400'
-                      }`}
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Webchat</div>
@@ -455,9 +450,9 @@ export function AgentBuilder() {
           </div>
         )}
 
-        {activeTab === 'voice-sms' && currentOrganization && (
+        {activeTab === 'voice-sms' && user?.id && (
           <div className="max-w-7xl">
-            <PhoneNumbersSection organizationId={currentOrganization.id} />
+            <PhoneNumbersSection organizationId={user.id} />
           </div>
         )}
 

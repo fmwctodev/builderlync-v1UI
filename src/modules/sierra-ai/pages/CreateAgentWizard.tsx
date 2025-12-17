@@ -7,6 +7,7 @@ import * as LucideIcons from 'lucide-react';
 
 import { createAgent } from '../services/agentsApi';
 import { supabase } from '../../../shared/lib/supabase';
+import { useAppSelector } from '../../roof-runner/store/hooks';
 
 type WizardStep = 'template' | 'industry' | 'usecase' | 'details';
 
@@ -32,10 +33,12 @@ export function CreateAgentWizard() {
     mainGoal: '',
     chatOnly: false,
   });
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   const handleBack = () => {
     if (currentStep === 'template') {
-      navigate(`/ai-agents`);
+      navigate(`/org/${orgSlug}/ai-agents`);
     } else if (currentStep === 'industry') {
       setCurrentStep('template');
     } else if (currentStep === 'usecase') {
@@ -54,7 +57,7 @@ export function CreateAgentWizard() {
   };
 
   const handleClose = () => {
-    navigate(`/ai-agents`);
+    navigate(`/org/${orgSlug}/ai-agents`);
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -108,7 +111,7 @@ export function CreateAgentWizard() {
         website: wizardState.website,
       });
 
-      navigate(`/ai-agents/agent/${response.data.id}`);
+      navigate(`/org/${orgSlug}/ai-agents/agent/${response.data.id}`);
     } catch (error) {
       console.error('Error creating agent:', error);
       alert('Failed to create agent. Please try again.');
