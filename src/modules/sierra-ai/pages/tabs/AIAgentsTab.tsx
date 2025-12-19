@@ -219,11 +219,11 @@ export function AIAgentsTab() {
         </div>
         <button
           onClick={() => {
-            console.log('Create Agent clicked, currentOrganization:', currentOrganization);
-            if (!currentOrganization) {
-              alert('Please wait for organization to load or select an organization');
-              return;
-            }
+            // console.log('Create Agent clicked, currentOrganization:', currentOrganization);
+            // if (!currentOrganization) {
+            //   alert('Please wait for organization to load or select an organization');
+            //   return;
+            // }
             navigate(`/org/${orgSlug}/create-agent`);
           }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"

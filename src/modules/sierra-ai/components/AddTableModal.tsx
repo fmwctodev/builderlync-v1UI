@@ -2,13 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { X, Table as TableIcon, Upload, AlertCircle, CheckCircle, Loader, ChevronRight } from 'lucide-react';
 import Papa from 'papaparse';
-import { knowledgeBaseService } from '../services';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 import type { ColumnDefinition } from '../lib/database.types';
 
 interface AddTableModalProps {
   isOpen: boolean;
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
+  organizationId: string;
   onSuccess: () => void;
 }
 
@@ -25,6 +26,7 @@ export function AddTableModal({
   isOpen,
   onClose,
   collections,
+  organizationId,
   onSuccess,
 }: AddTableModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -158,28 +160,37 @@ export function AddTableModal({
 
     try {
       const selectedColumns = columns.filter(c => c.selected);
-      const columnDefs: ColumnDefinition[] = selectedColumns.map(col => ({
-        name: col.name,
-        type: col.type,
-        selected: true
-      }));
 
-      const filteredRows = rawData.map(row => {
+      // Limit the number of rows to prevent payload issues
+      const MAX_ROWS = 1000;
+      const limitedRows = rawData.slice(0, MAX_ROWS);
+
+      if (rawData.length > MAX_ROWS) {
+        setError(`Table has ${rawData.length} rows. Only the first ${MAX_ROWS} rows will be uploaded. Consider splitting your data into smaller files.`);
+        return;
+      }
+
+      const filteredRows = limitedRows.map(row => {
         const filtered: Record<string, any> = {};
         selectedColumns.forEach(col => {
-          filtered[col.name] = row[col.name];
+          let value = row[col.name];
+          // Convert to string and handle null/undefined values
+          if (value == null) {
+            filtered[col.name] = '';
+          } else {
+            filtered[col.name] = String(value);
+          }
         });
         return filtered;
       });
 
-      await knowledgeBaseService.createTable({
+      await knowledgeBaseApi.createTable({
+        organization_id: organizationId,
         name: tableName.trim(),
         description: tableDescription.trim(),
-        source_file_name: selectedFile!.name,
-        column_definitions: columnDefs,
-        collection_id: selectedCollection || undefined,
-        status: 'published'
-      }, filteredRows);
+        columns: selectedColumns.map(col => col.name),
+        rows: filteredRows
+      });
 
       setSuccess(true);
 

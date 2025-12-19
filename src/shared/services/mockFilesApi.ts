@@ -15,7 +15,7 @@ class MockFilesApiService {
   }
 
   private getOrganizationId(): string {
-    return localStorage.getItem('currentOrganizationId') || 'mock-org-id';
+    return localStorage.getItem('currentOrganizationId') || '00000000-0000-0000-0000-000000000000';
   }
 
   async getFiles(folderId?: string | null): Promise<FileRecord[]> {

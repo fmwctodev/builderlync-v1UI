@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { X, Upload, AlertCircle, CheckCircle, File, Loader } from 'lucide-react';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 
 interface UploadFilesModalProps {
   isOpen: boolean;
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
+  organizationId: string;
   onSuccess: (files: File[]) => void;
 }
 
@@ -20,6 +22,7 @@ export function UploadFilesModal({
   isOpen,
   onClose,
   collections,
+  organizationId,
   onSuccess,
 }: UploadFilesModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -67,11 +70,6 @@ export function UploadFilesModal({
       return;
     }
 
-    if (!selectedCollection) {
-      setError('Please select a collection');
-      return;
-    }
-
     setIsUploading(true);
     setError('');
 
@@ -85,25 +83,54 @@ export function UploadFilesModal({
 
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
-        setUploadingFiles(prev =>
-          prev.map((uf, idx) =>
-            idx === i ? { ...uf, progress: 50, status: 'uploading' } : uf
-          )
-        );
+        const file = selectedFiles[i];
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 50, status: 'uploading' } : uf
+            )
+          );
 
-        setUploadingFiles(prev =>
-          prev.map((uf, idx) =>
-            idx === i ? { ...uf, progress: 100, status: 'completed' } : uf
-          )
-        );
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('organization_id', organizationId);
+          if (selectedCollection) {
+            formData.append('collection_id', selectedCollection);
+          }
+          formData.append('title', file.name.replace(/\.[^/.]+$/, '')); // Remove extension from title
+
+          // Upload document using the document API
+          await knowledgeBaseApi.uploadDocument(formData);
+
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 100, status: 'completed' } : uf
+            )
+          );
+        } catch (fileError) {
+          console.error(`Error uploading ${file.name}:`, fileError);
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 0, status: 'error', error: fileError instanceof Error ? fileError.message : 'Upload failed' } : uf
+            )
+          );
+        }
       }
 
-      setTimeout(() => {
-        onSuccess(selectedFiles);
-        handleClose();
-      }, 1500);
+      // Check if all files completed successfully
+      const allSuccessful = uploadingFiles.every(f => f.status === 'completed');
+
+      if (allSuccessful) {
+        setTimeout(() => {
+          onSuccess(selectedFiles);
+          handleClose();
+        }, 1500);
+      } else {
+        setIsUploading(false);
+        setError('Some files failed to upload. Please check the status above.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload files');
       setIsUploading(false);
