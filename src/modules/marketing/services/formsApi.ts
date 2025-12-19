@@ -49,9 +49,10 @@ import type {
 } from '../types/forms';
 
 export const formsApi = {
-  async getForms(organizationId: string | null): Promise<MarketingForm[]> {
+  async getForms(organizationId: string | null, searchQuery?: string): Promise<MarketingForm[]> {
     try {
-      const response = await apiRequest('/form-builder/forms');
+      const params = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : '';
+      const response = await apiRequest(`/form-builder/forms${params}`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching forms:', error);
@@ -376,23 +377,35 @@ export const formsApi = {
     options?: {
       limit?: number;
       offset?: number;
+      page?: number;
+      perPage?: number;
       status?: string;
       startDate?: string;
       endDate?: string;
+      formId?: string;
     }
   ): Promise<{ data: FormSubmissionWithDetails[]; count: number }> {
     try {
       const params = new URLSearchParams();
+      if (options?.formId) params.append('form_id', options.formId);
       if (options?.startDate) params.append('start_date', options.startDate);
       if (options?.endDate) params.append('end_date', options.endDate);
+      if (options?.page) params.append('page', options.page.toString());
+      if (options?.perPage) params.append('per_page', options.perPage.toString());
       
       const queryString = params.toString();
       const endpoint = queryString ? `/form-builder/submissions?${queryString}` : '/form-builder/submissions';
       
       const response = await apiRequest(endpoint);
+      
+      // Handle nested response structure: {success: true, data: {data: [...], pagination: {...}}}
+      const actualData = response.data?.data || response.data || [];
+      const pagination = response.data?.pagination || {};
+      const total = pagination.total || actualData.length || 0;
+      
       return {
-        data: response.data || [],
-        count: response.data?.length || 0
+        data: actualData,
+        count: total
       };
     } catch (error) {
       console.error('Error fetching all submissions:', error);
@@ -536,48 +549,39 @@ export const formsApi = {
 
   async exportSubmissions(
     formId: string,
-    organizationId: string | null
-  ): Promise<string> {
-    requireOrganizationId(organizationId, 'exportSubmissions');
-
+    organizationId: string | null,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any> {
     try {
-      const { data: submissions } = await this.getSubmissions(formId, organizationId, {
-        limit: 10000,
+      const params = new URLSearchParams();
+      params.append('form_id', formId);
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/form-builder/submissions/export?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
       });
 
-      if (!submissions || submissions.length === 0) {
-        throw new Error('No submissions to export');
+      if (!response.ok) {
+        throw new Error('Export failed');
       }
 
-      const headers = new Set<string>();
-      submissions.forEach((sub) => {
-        Object.keys(sub.submission_data).forEach((key) => headers.add(key));
-      });
-
-      const csvHeaders = ['Submission Date', ...Array.from(headers), 'Status', 'Contact Email'];
-      const csvRows = submissions.map((sub) => {
-        const row = [
-          new Date(sub.created_at).toLocaleString(),
-          ...Array.from(headers).map((header) => {
-            const value = sub.submission_data[header];
-            return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value || '';
-          }),
-          sub.status,
-          sub.contact?.email || '',
-        ];
-        return row.join(',');
-      });
-
-      return [csvHeaders.join(','), ...csvRows].join('\n');
+      return await response.json();
     } catch (error) {
       console.error('Error exporting submissions:', error);
       throw error;
     }
   },
 
-  async getFolders(organizationId: string | null): Promise<FormFolder[]> {
+  async getFolders(organizationId: string | null, searchQuery?: string): Promise<FormFolder[]> {
     try {
-      const response = await apiRequest('/form-builder/folders');
+      const params = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : '';
+      const response = await apiRequest(`/form-builder/folders${params}`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching folders:', error);

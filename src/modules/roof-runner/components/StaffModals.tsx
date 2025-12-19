@@ -21,6 +21,7 @@ interface AddEditStaffModalProps {
   onSave: (member: StaffMember) => void;
   member?: StaffMember;
   isEdit?: boolean;
+  isSubmitting?: boolean;
 }
 
 interface DeleteConfirmModalProps {
@@ -35,7 +36,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   onClose,
   onSave,
   member,
-  isEdit = false
+  isEdit = false,
+  isSubmitting = false
 }) => {
   const [formData, setFormData] = useState<StaffMember>({
     firstName: '',
@@ -47,7 +49,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     profileImage: '',
     roleId: ''
   });
-
+  const [isLoading, setIsLoading] = useState(false);
   const [organizationRoles, setOrganizationRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
@@ -102,39 +104,54 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2.5 * 1024 * 1024) {
-        alert('File size must be less than 2.5MB');
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData({ ...formData, profileImage: e.target?.result as string });
-      };
-      reader.readAsDataURL(file);
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      const cleaned = value.replace(/[^0-9+]/g, '');
+      setFormData({ ...formData, [name]: cleaned });
+    } else {
+      setFormData({ ...formData, [name]: value });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isFormValid = () => {
+    return (
+      formData.firstName.trim() !== '' &&
+      formData.lastName.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      formData.phone.trim() !== '' &&
+      /^\+?[0-9]{10,15}$/.test(formData.phone) &&
+      formData.roleId !== ''
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     const submitData = { ...formData };
     if (imageFile) {
       submitData.image = imageFile;
     }
-    onSave(submitData);
+    try {
+      await onSave(submitData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        {/* Loading Overlay */}
+        {(isSubmitting || isLoading) && (
+          <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-3"></div>
+              <p className="text-gray-700 dark:text-gray-300 font-medium">Adding staff member...</p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Edit Member' : 'Add Member'}
@@ -201,37 +218,26 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               value={formData.phone}
               onChange={handleInputChange}
               required
+              pattern="^\+?[0-9]{10,15}$"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="+1234567890"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              title="Phone number must be 10-15 digits, optionally starting with +"
             />
           </div>
 
           {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role (Optional)
+              Role
             </label>
             <select
               name="roleId"
               value={formData.roleId}
               onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="">No role assigned</option>
+              <option value="">Select a role</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
               ) : (
@@ -242,9 +248,6 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 ))
               )}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Assign a role to control permissions
-            </p>
           </div>
 
           {/* Action Buttons */}
@@ -258,9 +261,10 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              disabled={!isFormValid() || isSubmitting || isLoading}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isEdit ? 'Update' : 'Add'} Member
+              {(isSubmitting || isLoading) ? 'Saving...' : isEdit ? 'Update Member' : 'Add Member'}
             </button>
           </div>
         </form>

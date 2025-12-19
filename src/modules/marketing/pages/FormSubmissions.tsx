@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { formsApi } from '../services/formsApi';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
+import Toast from '../../../shared/components/Toast';
 import type { FormSubmissionWithDetails } from '../types/forms';
 
 export const FormSubmissions: React.FC = () => {
@@ -28,6 +29,7 @@ export const FormSubmissions: React.FC = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmissionWithDetails | null>(
     null
   );
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (formId) {
@@ -54,20 +56,19 @@ export const FormSubmissions: React.FC = () => {
   };
 
   const handleExport = async () => {
-    if (!formId) return;
+    if (!formId || totalCount === 0) return;
 
     try {
-      const csv = await formsApi.exportSubmissions(formId, organizationId);
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `form-submissions-${formId}-${new Date().toISOString()}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const now = new Date();
+      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      const startDate = oneMonthAgo.toISOString().split('T')[0];
+      const endDate = now.toISOString().split('T')[0];
+
+      const response = await formsApi.exportSubmissions(formId, organizationId, startDate, endDate);
+      setToast({ type: 'success', message: 'Export is being processed. You will receive an email with the download link within 5 minutes.' });
     } catch (error) {
       console.error('Error exporting submissions:', error);
-      alert('Error exporting submissions');
+      setToast({ type: 'error', message: 'Error exporting submissions' });
     }
   };
 
@@ -123,7 +124,9 @@ export const FormSubmissions: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
@@ -144,7 +147,8 @@ export const FormSubmissions: React.FC = () => {
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          disabled={totalCount === 0}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           <Download size={18} />
           <span>Export to CSV</span>
@@ -291,7 +295,8 @@ export const FormSubmissions: React.FC = () => {
           onClose={() => setSelectedSubmission(null)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

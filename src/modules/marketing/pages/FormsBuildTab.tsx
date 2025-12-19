@@ -34,6 +34,7 @@ export const FormsBuildTab: React.FC = () => {
   const [folders, setFolders] = useState<FormFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'clock'>('list');
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateFormModal, setShowCreateFormModal] = useState(false);
@@ -46,12 +47,20 @@ export const FormsBuildTab: React.FC = () => {
   const [selectedFormForEmbed, setSelectedFormForEmbed] = useState<MarketingForm | null>(null);
   const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false);
   const [selectedFormForMove, setSelectedFormForMove] = useState<MarketingForm | null>(null);
+  const [activeTab, setActiveTab] = useState<'forms' | 'folders'>('forms');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     loadData();
-  }, [organizationId, currentFolder]);
+  }, [organizationId, currentFolder, debouncedSearchQuery, activeTab]);
 
   useEffect(() => {
     const shouldRefresh = searchParams.get('refreshForms');
@@ -98,13 +107,17 @@ export const FormsBuildTab: React.FC = () => {
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      const foldersData = await formsApi.getFolders(organizationId);
-      const formsData = currentFolder 
-        ? await formsApi.getFormsByFolder(currentFolder, organizationId)
-        : await formsApi.getForms(organizationId);
-      setForms(formsData);
-      setFolders(foldersData);
+      // setLoading(true);
+      if (activeTab === 'folders') {
+        const foldersData = await formsApi.getFolders(organizationId, debouncedSearchQuery);
+        setFolders(foldersData);
+        setForms([]);
+      } else {
+        const formsData = currentFolder 
+          ? await formsApi.getFormsByFolder(currentFolder, organizationId)
+          : await formsApi.getForms(organizationId, debouncedSearchQuery);
+        setForms(formsData);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -223,16 +236,8 @@ export const FormsBuildTab: React.FC = () => {
     setOpenDropdownId(openDropdownId === formId ? null : formId);
   };
 
-  const filteredForms = forms.filter((form) => {
-    const matchesSearch =
-      form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      form.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
-  const filteredFolders = currentFolder ? [] : folders.filter((folder) =>
-    folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredForms = forms;
+  const filteredFolders = folders;
 
   if (loading) {
     return (
@@ -269,43 +274,42 @@ export const FormsBuildTab: React.FC = () => {
         </div>
       </div>
 
+      <div className="flex items-center space-x-4 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('forms')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'forms'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Forms
+        </button>
+        <button
+          onClick={() => setActiveTab('folders')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'folders'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Folders
+        </button>
+      </div>
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search for forms"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent min-w-[300px]"
-            />
-          </div>
-        </div>
-        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('clock')}
-            className={`p-2 rounded transition-colors ${
-              viewMode === 'clock'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            <Clock size={18} />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded transition-colors ${
-              viewMode === 'list'
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            <List size={18} />
-          </button>
+        <div className="relative flex-1 max-w-md">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder={`Search for ${activeTab}`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent w-full"
+          />
         </div>
       </div>
 
@@ -361,7 +365,7 @@ export const FormsBuildTab: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredFolders.map((folder) => (
+              {activeTab === 'folders' && filteredFolders.map((folder) => (
                 <tr
                   key={folder.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -393,7 +397,7 @@ export const FormsBuildTab: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {filteredForms.map((form) => (
+              {activeTab === 'forms' && filteredForms.map((form) => (
                 <tr
                   key={form.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
