@@ -12,6 +12,7 @@ import {
   Pause,
   ArrowLeft,
   Save,
+  Code2,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { fetchAgentById, updateAgent, updateAgentStatus, AIAgent, VoiceConfig, LanguageConfig, SystemTool, DEFAULT_SYSTEM_TOOLS, SecurityOverrides, WebhookConfig, DEFAULT_SECURITY_OVERRIDES, DEFAULT_WEBHOOK_CONFIG } from '../services/agentsApi';
@@ -22,9 +23,10 @@ import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
 import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
+import { WidgetSection } from '../components/WidgetSection';
 import { useAppSelector } from '../../roof-runner/store/hooks';
 
-type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'tools' | 'security';
+type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'tools' | 'security' | 'widget';
 
 export function AgentBuilder() {
   const { agentId } = useParams();
@@ -176,6 +178,7 @@ export function AgentBuilder() {
     { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels.webchat?.enabled },
     { id: 'tools', label: 'Tools', icon: Zap },
     { id: 'security', label: 'Security', icon: Shield },
+    { id: 'widget', label: 'Widget', icon: Code2 },
   ];
 
   return (
@@ -488,7 +491,13 @@ export function AgentBuilder() {
           />
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'tools' && activeTab !== 'security' && (
+        {activeTab === 'widget' && (
+          <WidgetSection
+            agentId={agentId}
+          />
+        )}
+
+        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">

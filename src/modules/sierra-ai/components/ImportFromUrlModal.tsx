@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Globe, AlertCircle, CheckCircle, Loader, ChevronDown } from 'lucide-react';
-import { webScraperService } from '../services';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 
 type CrawlType = 'exact' | 'path' | 'domain';
 
@@ -40,33 +40,36 @@ export function ImportFromUrlModal({
     setError('');
     setSuccess(false);
 
-    const validation = webScraperService.validateUrl(url);
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid URL');
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      setError('Please enter a valid URL');
       return;
     }
 
-    if (!selectedCollection) {
-      setError('Please select a collection');
+    const organizationId = localStorage.getItem('currentOrganizationId');
+    if (!organizationId) {
+      setError('Organization not found. Please refresh the page.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await webScraperService.importFromUrl(url, selectedCollection, {
-        autoRefresh,
-        refreshFrequency: autoRefresh ? refreshFrequency : 'never',
+      const result = await knowledgeBaseApi.scrapeWebsite({
+        url,
+        organization_id: organizationId
       });
 
       setSuccess(true);
-      onSuccess(result);
+      onSuccess({ webSource: result, articles: [] }); // Adapt to expected format
 
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import content');
+      setError(err instanceof Error ? err.message : 'Failed to scrape website');
     } finally {
       setLoading(false);
     }
