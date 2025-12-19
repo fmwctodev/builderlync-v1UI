@@ -5,7 +5,7 @@ import { DateRangePicker, DateRange } from '../../../shared/components/DateRange
 import { analyticsExportService, AnalyticsData } from '../../../shared/services/analyticsExportService';
 
 const PlatformAnalyticsDetail: React.FC = () => {
-  const { platform = 'all' } = useParams<{ platform: string }>();
+  const { platform = 'all', orgSlug } = useParams<{ platform: string; orgSlug?: string }>();
   const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
@@ -106,7 +106,10 @@ const PlatformAnalyticsDetail: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/marketing')}
+            onClick={() => {
+              const basePath = orgSlug ? `/org/${orgSlug}` : '';
+              navigate(`${basePath}/marketing`);
+            }}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft className="h-5 w-5" />

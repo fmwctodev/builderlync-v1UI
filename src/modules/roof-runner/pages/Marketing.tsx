@@ -89,7 +89,7 @@ const AnalyticsTab: React.FC = () => {
     <div className="space-y-6">
       {/* Platform Selector */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics 2</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics</h3>
         <div className="flex flex-wrap gap-2">
           {platforms.map((platform) => (
             <button

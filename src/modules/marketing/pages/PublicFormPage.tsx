@@ -125,7 +125,7 @@ export const PublicFormPage: React.FC = () => {
               <div key={field.id}>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {field.label}
-                  {field.validation?.required && <span className="text-red-600 ml-1">*</span>}
+                  <span className="text-red-600 ml-1">*</span>
                 </label>
                 
                 {field.type === 'textarea' ? (
@@ -133,7 +133,7 @@ export const PublicFormPage: React.FC = () => {
                     value={formData[field.id] || ''}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
-                    required={field.validation?.required}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     rows={4}
                   />
@@ -141,7 +141,7 @@ export const PublicFormPage: React.FC = () => {
                   <select
                     value={formData[field.id] || ''}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                    required={field.validation?.required}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
                     <option value="">Select an option</option>
@@ -157,7 +157,7 @@ export const PublicFormPage: React.FC = () => {
                     value={formData[field.id] || ''}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
-                    required={field.validation?.required}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                 )}
