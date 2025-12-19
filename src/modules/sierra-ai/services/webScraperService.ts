@@ -1,7 +1,7 @@
 import { knowledgeBaseApi } from './knowledgeBaseApi';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3200';
 
 export interface WebSource {
   id: string;
@@ -36,7 +36,7 @@ export class WebScraperService {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/api/scrape-website`,
+        `${API_URL}/api/knowledge-base/scrape-website`,
         { url, maxChunkSize: 1000 },
         {
           headers: {

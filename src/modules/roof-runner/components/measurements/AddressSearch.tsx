@@ -144,13 +144,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
       </div>
 
       {isAddressSelected && showAlert && (
-        <div className="bg-primary-50 dark:bg-primary-900/20 border-l-4 border-blue-400 p-4 relative">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary-400 p-4 relative">
           <div className="flex">
             <div className="flex-shrink-0">
-              <MapPin className="h-5 w-5 text-blue-400" />
+              <MapPin className="h-5 w-5 text-primary-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700 dark:text-primary-300">
+              <p className="text-sm text-primary-700 dark:text-primary-300">
                 Check that the address is accurate, then drag the marker over the correct structure.
               </p>
             </div>
@@ -158,7 +158,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
               className="absolute top-2 right-2"
               onClick={() => setShowAlert(false)}
             >
-              <X className="h-4 w-4 text-blue-400" />
+              <X className="h-4 w-4 text-primary-400" />
             </button>
           </div>
         </div>

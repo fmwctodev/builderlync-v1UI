@@ -7,6 +7,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  maxContentLength: 50 * 1024 * 1024, // 50MB
+  maxBodyLength: 50 * 1024 * 1024, // 50MB
 });
 
 api.interceptors.request.use((config) => {
@@ -54,6 +56,7 @@ export const knowledgeBaseApi = {
     offer_to_book?: boolean;
     allow_ranges?: boolean;
     collection_id?: string;
+    agent_id?: string;
   }) {
     const { data } = await api.post('/api/knowledge-base/qapairs', qapair);
     return data;
@@ -75,6 +78,7 @@ export const knowledgeBaseApi = {
     columns: string[];
     rows: Record<string, any>[];
     collection_id?: string;
+    agent_id?: string;
   }) {
     const { data } = await api.post('/api/knowledge-base/tables', table);
     return data;
@@ -82,5 +86,50 @@ export const knowledgeBaseApi = {
 
   async deleteTable(id: string) {
     await api.delete(`/api/knowledge-base/tables/${id}`);
+  },
+
+  async getDocuments(organizationId: string) {
+    const { data } = await api.get(`/api/knowledge-base/documents?organization_id=${organizationId}`);
+    return data;
+  },
+
+  async uploadDocument(formData: FormData) {
+    const { data } = await api.post('/api/knowledge-base/documents', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
+  },
+
+  async deleteDocument(id: string) {
+    await api.delete(`/api/knowledge-base/documents/${id}`);
+  },
+
+  async getScrapedWebsites(organizationId: string) {
+    const { data } = await api.get(`/api/knowledge-base/scraped-websites?organization_id=${organizationId}`);
+    return data;
+  },
+
+  async deleteScrapedWebsite(id: string) {
+    await api.delete(`/api/knowledge-base/scraped-websites/${id}`);
+  },
+
+  async scrapeWebsite(website: {
+    url: string;
+    organization_id: string;
+    collection_id?: string;
+    agent_id?: string;
+  }) {
+    const { data } = await api.post('/api/knowledge-base/scrape-website', website);
+    return data;
+  },
+
+  async syncAllToElevenLabs(payload: {
+    organization_id: string;
+    agent_id: string;
+  }) {
+    const { data } = await api.post('/api/knowledge-base/sync-to-elevenlabs', payload);
+    return data;
   },
 };

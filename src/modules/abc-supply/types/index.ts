@@ -49,20 +49,103 @@ export interface Contact {
 
 // Product Types
 export interface Product {
-  id: string;
-  sku: string;
-  name: string;
-  description: string;
-  category: Category;
-  attributes: ProductAttribute[];
-  images: string[];
-  manufacturer: string;
-  primaryUom: string;
-  secondaryUom?: string;
-  conversionFactor?: number;
-  weight: number;
-  weightUnit: string;
-  dimensions?: Dimensions;
+  itemNumber: string;
+  familyId: string;
+  familyName: string;
+  supplierName: string;
+  isDimensional: boolean;
+  itemDescription: string;
+  marketingDescription: string;
+  status: string;
+  familyItems: any;
+  color: {
+    description: string;
+    code: string;
+    name: string;
+  };
+  finish: {
+    description: string | null;
+    code: string | null;
+    name: string | null;
+  };
+  weights: Array<{
+    value: number | null;
+    uom: string | null;
+    description: string;
+  }>;
+  uoms: Array<{
+    name: string;
+    code: string;
+    description: string;
+  }>;
+  dimensions: {
+    width: {
+      value: number | null;
+      uom: string | null;
+      description: string;
+    };
+    thickness: {
+      value: number | null;
+      uom: string | null;
+      description: string;
+    };
+    height: {
+      value: number | null;
+      uom: string | null;
+      description: string;
+    };
+    variations: any[];
+  };
+  specifications: Array<{
+    name: string;
+    code: string;
+    description: string;
+  }>;
+  prop65Warnings: any[];
+  images: Array<{
+    assetId: string;
+    type: string | null;
+    href: string;
+  }>;
+  hierarchy: {
+    productGroup: {
+      name: string;
+      code: string;
+      label: string;
+      description: string;
+      category: {
+        name: string;
+        code: string;
+        label: string;
+        description: string;
+        productType: {
+          name: string;
+          code: string;
+          label: string;
+          description: string;
+          materialComposition: {
+            name: string;
+            code: string;
+            label: string;
+            description: string;
+            warranty: {
+              name: string;
+              code: string;
+              label: string;
+              description: string;
+              brandLine: {
+                name: string;
+                code: string;
+                label: string;
+                description: string;
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+  lastModifiedDate: string;
 }
 
 export interface Category {

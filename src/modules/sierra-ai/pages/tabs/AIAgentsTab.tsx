@@ -26,6 +26,7 @@ import {
 } from '../../services/agentsApi';
 import { CreateAgentWizard } from '../CreateAgentWizard';
 import { elevenlabsApi } from '../../services/elevenlabsApi';
+import { useAppSelector } from '../../../roof-runner/store/hooks';
 
 export function AIAgentsTab() {
   const navigate = useNavigate();
@@ -38,6 +39,8 @@ export function AIAgentsTab() {
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   useEffect(() => {
     console.log('showCreateModal changed:', showCreateModal);
@@ -45,14 +48,14 @@ export function AIAgentsTab() {
 
   useEffect(() => {
     loadAgents();
-  }, [currentOrganization?.id]);
+  }, [user?.id]);
 
   const loadAgents = async () => {
-    if (!currentOrganization?.id) return;
+    if (!user?.id) return;
 
     try {
       setLoading(true);
-      const response = await elevenlabsApi.getAgents(currentOrganization.id);
+      const response = await elevenlabsApi.getAgents(user.id);
       setAgents(response.data || []);
     } catch (error) {
       console.error('Error loading agents:', error);
@@ -185,12 +188,12 @@ export function AIAgentsTab() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
                   onClick={() => {
-                    console.log('Button clicked, currentOrganization:', currentOrganization);
-                    if (!currentOrganization) {
-                      alert('Please wait for organization to load or select an organization');
-                      return;
-                    }
-                    navigate(`/create-agent`);
+                    // console.log('Button clicked, currentOrganization:', currentOrganization);
+                    // if (!currentOrganization) {
+                    //   alert('Please wait for organization to load or select an organization');
+                    //   return;
+                    // }
+                    navigate(`/org/${orgSlug}/create-agent`);
                   }}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
                 >
@@ -216,12 +219,12 @@ export function AIAgentsTab() {
         </div>
         <button
           onClick={() => {
-            console.log('Create Agent clicked, currentOrganization:', currentOrganization);
-            if (!currentOrganization) {
-              alert('Please wait for organization to load or select an organization');
-              return;
-            }
-            navigate(`/create-agent`);
+            // console.log('Create Agent clicked, currentOrganization:', currentOrganization);
+            // if (!currentOrganization) {
+            //   alert('Please wait for organization to load or select an organization');
+            //   return;
+            // }
+            navigate(`/org/${orgSlug}/create-agent`);
           }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
@@ -284,7 +287,7 @@ export function AIAgentsTab() {
               {filteredAgents.map((agent) => (
                 <tr
                   key={agent.id}
-                  onClick={() => navigate(`/ai-agents/agent/${agent.id}`)}
+                  onClick={() => navigate(`/org/${orgSlug}/ai-agents/agent/${agent.id}`)}
                   className="hover:bg-gray-50 dark:hover:bg-gray-900/30 cursor-pointer"
                 >
                   <td className="px-6 py-4">

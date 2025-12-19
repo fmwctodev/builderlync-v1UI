@@ -33,7 +33,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
   useEffect(() => {
     if (!mapInstanceRef.current || branches.length === 0) return;
 
-    console.log('Branches data:', branches);
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
@@ -153,12 +152,8 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
   const loadBranches = async () => {
     try {
       setLoading(true);
-      console.log('Loading branches...');
       const data = await abcSupplyApi.getBranches();
-      console.log('Received branches data:', data);
-      console.log('Setting branches state with:', data.length, 'items');
       setBranches(data);
-      console.log('Branches state should be updated');
     } catch (error) {
       console.error('Failed to load branches:', error);
       setBranches([]);

@@ -8,6 +8,7 @@ interface AddFAQModalProps {
   collections: Array<{ id: string; name: string }>;
   onSuccess: () => void;
   organizationId: string;
+  agentId?: string;
 }
 
 export function AddFAQModal({
@@ -16,6 +17,7 @@ export function AddFAQModal({
   collections,
   onSuccess,
   organizationId,
+  agentId,
 }: AddFAQModalProps) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -66,6 +68,7 @@ export function AddFAQModal({
         offer_to_book: false,
         allow_ranges: false,
         collection_id: selectedCollection || undefined,
+        agent_id: agentId,
       });
 
       setSuccess(true);
