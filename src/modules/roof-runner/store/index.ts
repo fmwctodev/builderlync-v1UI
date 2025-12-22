@@ -6,6 +6,7 @@ import { authReducer } from '../../../shared/store/slices/authSlice';
 import { contactsReducer } from '../../../shared/store/slices/contactsSlice';
 import { watchAuthSagas } from '../../../shared/store/sagas/authSaga';
 import { default as contactsSaga } from '../../../shared/store/sagas/contactsSaga';
+import { dashboardApi } from '../../../shared/store/services/dashboardApi';
 
 const sagaMiddleware = createSagaMiddleware();
 
@@ -21,14 +22,16 @@ export const store = configureStore({
     roofRunner: roofRunnerReducer,
     auth: authReducer,
     contacts: contactsReducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      thunk: false,
       serializableCheck: {
         ignoredActions: ['persist/PERSIST'],
       },
-    }).concat(sagaMiddleware),
+    })
+    .concat(dashboardApi.middleware)
+    .concat(sagaMiddleware),
 });
 
 sagaMiddleware.run(rootSaga);

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Settings, Plus, Search, Filter, ChevronDown, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FileText, Settings, Plus, Search, Filter, ChevronDown, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { fetchInvoices, fetchEstimates, getInvoiceStats, Invoice, Estimate } from '../../../../shared/store/services/paymentsApi';
+import { getInvoices, Invoice as QBInvoice } from '../../../../shared/store/services/invoicesApi';
 
 type SubView = 'all_invoices' | 'recurring_invoices' | 'templates' | 'estimates';
 
@@ -13,40 +13,113 @@ const InvoicesEstimatesTab: React.FC = () => {
   const [subView, setSubView] = useState<SubView>('all_invoices');
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [estimates, setEstimates] = useState<Estimate[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [invoices, setInvoices] = useState<QBInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string>('date_desc');
+  const [dateRange, setDateRange] = useState<{ start?: string; end?: string }>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     loadData();
-  }, [subView, searchQuery]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      if (subView === 'estimates') {
-        const data = await fetchEstimates({ search: searchQuery });
-        setEstimates(data);
-      } else if (subView === 'templates') {
-        const data = await fetchEstimates({ isTemplate: true, search: searchQuery });
-        setEstimates(data);
-      } else if (subView === 'recurring_invoices') {
-        const data = await fetchEstimates({ isRecurring: true, search: searchQuery });
-        setEstimates(data);
-      } else {
-        const data = await fetchInvoices({ search: searchQuery });
-        setInvoices(data);
-        const statsData = await getInvoiceStats();
-        setStats(statsData);
+      console.log('Loading invoices...');
+      const response = await getInvoices();
+      console.log('Invoice response:', response);
+      if (response.success) {
+        console.log('Setting invoices:', response.data.length, 'items');
+        setInvoices(response.data);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading invoices:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredAndSortedInvoices = useMemo(() => {
+    console.log('Filtering invoices. Total:', invoices.length, 'Search:', searchQuery, 'Status filter:', statusFilter);
+    let filtered = [...invoices];
+
+    if (searchQuery) {
+      filtered = filtered.filter(inv => 
+        inv.doc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        inv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        inv.private_note?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      console.log('After search filter:', filtered.length);
+    }
+
+    if (statusFilter.length > 0) {
+      filtered = filtered.filter(inv => statusFilter.includes(inv.status.toLowerCase()));
+      console.log('After status filter:', filtered.length);
+    }
+
+    if (dateRange.start) {
+      filtered = filtered.filter(inv => new Date(inv.invoice_date) >= new Date(dateRange.start!));
+      console.log('After start date filter:', filtered.length);
+    }
+    if (dateRange.end) {
+      filtered = filtered.filter(inv => new Date(inv.invoice_date) <= new Date(dateRange.end!));
+      console.log('After end date filter:', filtered.length);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date_desc':
+          return new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime();
+        case 'date_asc':
+          return new Date(a.invoice_date).getTime() - new Date(b.invoice_date).getTime();
+        case 'amount_desc':
+          return b.total_amount - a.total_amount;
+        case 'amount_asc':
+          return a.total_amount - b.total_amount;
+        default:
+          return 0;
+      }
+    });
+
+    console.log('Final filtered invoices:', filtered.length);
+    setCurrentPage(1); // Reset to first page when filters change
+    return filtered;
+  }, [invoices, searchQuery, statusFilter, dateRange, sortBy]);
+
+  const stats = useMemo(() => {
+    const draft = invoices.filter(inv => inv.status.toLowerCase() === 'draft');
+    const due = invoices.filter(inv => inv.balance > 0 && inv.status.toLowerCase() === 'open');
+    const paid = invoices.filter(inv => inv.balance === 0);
+    const overdue = invoices.filter(inv => 
+      inv.balance > 0 && 
+      new Date(inv.due_date) < new Date() && 
+      inv.status.toLowerCase() === 'open'
+    );
+
+    return {
+      draft: { 
+        count: draft.length, 
+        total: draft.reduce((sum, inv) => sum + inv.total_amount, 0) 
+      },
+      due: { 
+        count: due.length, 
+        total: due.reduce((sum, inv) => sum + inv.balance, 0) 
+      },
+      received: { 
+        count: paid.length, 
+        total: paid.reduce((sum, inv) => sum + inv.total_amount, 0) 
+      },
+      overdue: { 
+        count: overdue.length, 
+        total: overdue.reduce((sum, inv) => sum + inv.balance, 0) 
+      },
+    };
+  }, [invoices]);
 
   const getSubViewLabel = () => {
     switch (subView) {
@@ -115,6 +188,14 @@ const InvoicesEstimatesTab: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            <button 
+              onClick={loadData}
+              disabled={loading}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
               <Settings className="w-4 h-4" />
               <span>Settings</span>
@@ -140,7 +221,7 @@ const InvoicesEstimatesTab: React.FC = () => {
           </div>
         )}
 
-        {subView === 'all_invoices' && stats && (
+        {subView === 'all_invoices' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
@@ -152,7 +233,7 @@ const InvoicesEstimatesTab: React.FC = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                {stats.due.count} Invoice(s) in Due
+                {stats.due.count} Invoice(s) Due
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${stats.due.total.toFixed(2)}
@@ -160,9 +241,9 @@ const InvoicesEstimatesTab: React.FC = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                {stats.received.count} Invoice(s) received
+                {stats.received.count} Invoice(s) Paid
               </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 ${stats.received.total.toFixed(2)}
               </p>
             </div>
@@ -170,7 +251,7 @@ const InvoicesEstimatesTab: React.FC = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 {stats.overdue.count} Invoice(s) Overdue
               </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                 ${stats.overdue.total.toFixed(2)}
               </p>
             </div>
@@ -178,11 +259,13 @@ const InvoicesEstimatesTab: React.FC = () => {
         )}
 
         <div className="flex items-center space-x-4">
-          <PaymentDateRangeFilter />
+          <PaymentDateRangeFilter 
+            onDateChange={(start, end) => setDateRange({ start, end })}
+          />
           <PaymentSearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search..."
+            placeholder="Search by invoice number, customer name..."
           />
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -190,77 +273,183 @@ const InvoicesEstimatesTab: React.FC = () => {
           >
             <Filter className="w-4 h-4" />
             <span>Filters</span>
+            {(statusFilter.length > 0 || sortBy !== 'date_desc') && (
+              <span className="ml-1 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs rounded-full">
+                {statusFilter.length || 1}
+              </span>
+            )}
           </button>
+          {(searchQuery || statusFilter.length > 0 || dateRange.start || dateRange.end || sortBy !== 'date_desc') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter([]);
+                setDateRange({});
+                setSortBy('date_desc');
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors border border-red-200 dark:border-red-800"
+            >
+              <X className="w-4 h-4" />
+              <span>Clear Filters</span>
+            </button>
+          )}
         </div>
-      </div>
+      
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent p-6">
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm">Debug: Total invoices: {invoices.length}, Filtered: {filteredAndSortedInvoices.length}, Loading: {loading.toString()}</p>
+            <p className="text-sm">Search: '{searchQuery}', Status filter: [{statusFilter.join(', ')}]</p>
+          </div>
+          
+          {!loading && filteredAndSortedInvoices.length > 0 && (
+            <div className="mb-4 flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+              <div className="flex items-center space-x-6">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Invoices</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredAndSortedInvoices.length}</p>
+                </div>
+                <div className="h-12 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    ${filteredAndSortedInvoices.reduce((sum, inv) => sum + inv.total_amount, 0).toFixed(2)}
+                  </p>
+                </div>
+                <div className="h-12 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Outstanding Balance</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    ${filteredAndSortedInvoices.reduce((sum, inv) => sum + inv.balance, 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              {(searchQuery || statusFilter.length > 0 || dateRange.start || dateRange.end) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter([]);
+                    setDateRange({});
+                    setSortBy('date_desc');
+                  }}
+                  className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+          
           {loading ? (
+            <>            
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-          ) : (subView === 'estimates' || subView === 'templates' || subView === 'recurring_invoices' ? estimates : invoices).length === 0 ? (
+            </>
+          ) : filteredAndSortedInvoices.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title={`No ${getSubViewLabel().toLowerCase()} to show yet`}
-              description={`Create your first ${getSubViewLabel().toLowerCase()} to get started`}
+              title={searchQuery || statusFilter.length > 0 ? 'No invoices match your filters' : 'No invoices to show yet'}
+              description={searchQuery || statusFilter.length > 0 ? 'Try adjusting your search or filters' : 'Invoices from QuickBooks will appear here'}
             />
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {subView === 'estimates' || subView === 'templates' ? 'Estimate' : 'Invoice'} Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {subView === 'estimates' || subView === 'templates' ? 'Estimate' : 'Invoice'} Number
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Issue Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {(subView === 'estimates' || subView === 'templates' || subView === 'recurring_invoices' ? estimates : invoices).map((item: any) => (
-                      <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                          {item.name}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {item.invoice_number || item.estimate_number}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {item.customer_id || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {new Date(item.issue_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-green-600 dark:text-green-400">
-                          ${Number(item.amount).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge
-                            status={item.status}
-                            type={subView === 'estimates' || subView === 'templates' ? 'estimate' : 'invoice'}
-                          />
-                        </td>
+            <div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Invoice Number
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Customer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Invoice Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Due Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Total Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Balance
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredAndSortedInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((invoice) => (
+                        <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400">
+                            {invoice.doc_number}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            <div>
+                              <div className="font-medium">{invoice.customer_name}</div>
+                              {invoice.contacts?.email && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{invoice.contacts.email}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            {new Date(invoice.invoice_date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            {new Date(invoice.due_date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            {invoice.currency_code} ${invoice.total_amount.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            <span className={invoice.balance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}>
+                              ${invoice.balance.toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusBadge
+                              status={invoice.status}
+                              type="invoice"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+              
+              {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage) > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedInvoices.length)} of {filteredAndSortedInvoices.length} results
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+                      {currentPage} of {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
+                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -274,39 +463,46 @@ const InvoicesEstimatesTab: React.FC = () => {
                 title: 'Sort',
                 type: 'radio',
                 options: [
-                  { label: 'Issue date (latest)', value: 'date_desc' },
-                  { label: 'Issue date (oldest)', value: 'date_asc' },
+                  { label: 'Invoice date (latest)', value: 'date_desc' },
+                  { label: 'Invoice date (oldest)', value: 'date_asc' },
                   { label: 'Amount (lowest)', value: 'amount_asc' },
                   { label: 'Amount (highest)', value: 'amount_desc' },
                 ],
-                selectedValues: [],
+                selectedValues: [sortBy],
               },
               {
                 title: 'Status',
                 type: 'checkbox',
-                options:
-                  subView === 'estimates' || subView === 'templates'
-                    ? [
-                        { label: 'Draft', value: 'draft' },
-                        { label: 'Sent', value: 'sent' },
-                        { label: 'Accepted', value: 'accepted' },
-                        { label: 'Rejected', value: 'rejected' },
-                        { label: 'Expired', value: 'expired' },
-                      ]
-                    : [
-                        { label: 'Draft', value: 'draft' },
-                        { label: 'Due', value: 'due' },
-                        { label: 'Received', value: 'received' },
-                        { label: 'Overdue', value: 'overdue' },
-                      ],
-                selectedValues: [],
+                options: [
+                  { label: 'Draft', value: 'draft' },
+                  { label: 'Paid', value: 'paid' },
+                  { label: 'Pending', value: 'pending' },
+                  { label: 'Overdue', value: 'overdue' },
+                ],
+                selectedValues: statusFilter,
               },
             ]}
-            onApply={() => setShowFilters(false)}
-            onReset={() => setShowFilters(false)}
+            onApply={(filters) => {
+              const sortSection = filters.find(f => f.title === 'Sort');
+              const statusSection = filters.find(f => f.title === 'Status');
+              
+              if (sortSection?.selectedValues[0]) {
+                setSortBy(sortSection.selectedValues[0]);
+              }
+              if (statusSection) {
+                setStatusFilter(statusSection.selectedValues);
+              }
+              setShowFilters(false);
+            }}
+            onReset={() => {
+              setSortBy('date_desc');
+              setStatusFilter([]);
+              setShowFilters(false);
+            }}
           />
         )}
       </div>
+    </div>
     </div>
   );
 };

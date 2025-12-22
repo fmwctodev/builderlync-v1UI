@@ -1,27 +1,206 @@
-import React, { useState } from 'react';
-import { Info, Copy, RefreshCw, MoreVertical, Plus, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Info, Copy, RefreshCw, MoreVertical, Plus, ChevronDown, Upload, Trash2, Save } from 'lucide-react';
+import { BusinessInfo as BusinessInfoType, getBusinessInfo, updateBusinessInfo, uploadBusinessLogo, generateApiKey } from '../../../../shared/store/services/businessInfoApi';
 
 const BusinessInfo: React.FC = () => {
-  const [allowDuplicateContact, setAllowDuplicateContact] = useState(false);
-  const [selectedRegions, setSelectedRegions] = useState(['usa-canada']);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfoType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const toggleRegion = (region: string) => {
-    setSelectedRegions(prev =>
-      prev.includes(region)
-        ? prev.filter(r => r !== region)
-        : [...prev, region]
-    );
+  useEffect(() => {
+    loadBusinessInfo();
+  }, []);
+  const loadBusinessInfo = async () => {
+    try {
+      setLoading(true);
+      const response = await getBusinessInfo();
+      if (response.success) {
+        setBusinessInfo(response.data);
+        if (response.data.business_logo) {
+          setLogoPreview(response.data.business_logo);
+        }
+      } else {
+        // Show default values even if API fails
+        const defaultBusinessInfo: BusinessInfoType = {
+          friendly_business_name: '',
+          legal_business_name: '',
+          business_email: '',
+          business_phone: '',
+          branded_domain: '',
+          business_website: '',
+          business_niche: 'Roofing Contractor',
+          business_currency: 'USD',
+          business_logo: '',
+          street_address: '',
+          city: '',
+          postal_code: '',
+          state: '',
+          country: 'United States',
+          time_zone: 'GMT-06:00 America/Chicago (CST)',
+          platform_language: 'English (United States)',
+          outbound_language: '',
+          business_type: 'Limited Liability Company Or Sole-Proprietorship',
+          business_industry: 'CONSTRUCTION',
+          business_registration_id_type: 'USA: Employer Identification Number (EIN)',
+          business_registration_number: '',
+          is_not_registered: false,
+          business_regions: ['usa-canada'],
+          representative_first_name: '',
+          representative_last_name: '',
+          representative_email: '',
+          representative_job_position: 'CEO',
+          representative_phone: '',
+          allow_duplicate_contact: false,
+          primary_search_field: 'Email',
+          secondary_search_field: 'Phone',
+          location_id: 'Not generated',
+          api_key: 'Not generated'
+        };
+        setBusinessInfo(defaultBusinessInfo);
+        setError(null);
+      }
+    } catch (err: any) {
+      // Show default values even if request fails
+      const defaultBusinessInfo: BusinessInfoType = {
+        friendly_business_name: '',
+        legal_business_name: '',
+        business_email: '',
+        business_phone: '',
+        branded_domain: '',
+        business_website: '',
+        business_niche: 'Roofing Contractor',
+        business_currency: 'USD',
+        business_logo: '',
+        street_address: '',
+        city: '',
+        postal_code: '',
+        state: '',
+        country: 'United States',
+        time_zone: 'GMT-06:00 America/Chicago (CST)',
+        platform_language: 'English (United States)',
+        outbound_language: '',
+        business_type: 'Limited Liability Company Or Sole-Proprietorship',
+        business_industry: 'CONSTRUCTION',
+        business_registration_id_type: 'USA: Employer Identification Number (EIN)',
+        business_registration_number: '',
+        is_not_registered: false,
+        business_regions: ['usa-canada'],
+        representative_first_name: '',
+        representative_last_name: '',
+        representative_email: '',
+        representative_job_position: 'CEO',
+        representative_phone: '',
+        allow_duplicate_contact: false,
+        primary_search_field: 'Email',
+        secondary_search_field: 'Phone',
+        location_id: 'Not generated',
+        api_key: 'Not generated'
+      };
+      setBusinessInfo(defaultBusinessInfo);
+      setError(null);
+      console.error('Error loading business info:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!businessInfo) return;
+    
+    try {
+      setSaving(true);
+      
+      const response = await updateBusinessInfo(businessInfo);
+      if (response.success) {
+        alert('Business information saved successfully!');
+      } else {
+        setError('Failed to save business information: ' + response.message);
+      }
+    } catch (err: any) {
+      setError('Failed to save business information');
+      console.error('Error saving business info:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2.5 * 1024 * 1024) {
+        setError('Logo file size must be less than 2.5MB');
+        return;
+      }
+      
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGenerateApiKey = async () => {
+    if (businessInfo) {
+      const newApiKey = 'demo-api-key-' + Math.random().toString(36).substring(2, 15);
+      setBusinessInfo({ ...businessInfo, api_key: newApiKey });
+    }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
+  const updateField = (field: keyof BusinessInfoType, value: any) => {
+    if (businessInfo) {
+      setBusinessInfo({ ...businessInfo, [field]: value });
+    }
+  };
+
+  const toggleRegion = (region: string) => {
+    if (businessInfo && businessInfo.business_regions) {
+      const regions = businessInfo.business_regions.includes(region)
+        ? businessInfo.business_regions.filter((r: string) => r !== region)
+        : [...businessInfo.business_regions, region];
+      updateField('business_regions', regions);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!businessInfo) return null;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Information</h2>
-        <p className="text-gray-600 dark:text-gray-400">Manage your company details and locations</p>
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800 text-sm">{error}</p>
+        </div>
+      )}
+      
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Information</h2>
+          <p className="text-gray-600 dark:text-gray-400">Manage your company details and locations</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center space-x-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+        >
+          <Save className="w-4 h-4" />
+          <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -31,9 +210,9 @@ const BusinessInfo: React.FC = () => {
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>Location ID</span>
               <Info className="w-4 h-4" />
-              <span className="font-mono">UjgnUUR2dZcfcP4fcgTK</span>
+              <span className="font-mono">{businessInfo.location_id || 'Not generated'}</span>
               <button
-                onClick={() => copyToClipboard('UjgnUUR2dZcfcP4fcgTK')}
+                onClick={() => copyToClipboard(businessInfo.location_id || '')}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Copy className="w-4 h-4" />
@@ -43,11 +222,15 @@ const BusinessInfo: React.FC = () => {
 
           <div className="flex items-start space-x-6">
             <div className="flex-shrink-0">
-              <div className="w-64 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                  <p className="text-xs font-medium">TARRY TOWN</p>
-                  <p className="text-xs font-medium">ROOFING</p>
-                </div>
+              <div className="w-64 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Business Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <p className="text-xs font-medium">{businessInfo.friendly_business_name || 'BUSINESS'}</p>
+                    <p className="text-xs font-medium">LOGO</p>
+                  </div>
+                )}
               </div>
               <div className="mt-3">
                 <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -56,12 +239,29 @@ const BusinessInfo: React.FC = () => {
                   The proposed size is 350px * 180px. No bigger than 2.5 MB
                 </p>
                 <div className="flex items-center space-x-2">
-                  <button className="px-4 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <label className="px-4 py-1.5 text-sm font-medium text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer">
+                    <Upload className="w-4 h-4 inline mr-1" />
                     Upload
-                  </button>
-                  <button className="px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                    Remove
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {logoPreview && (
+                    <button 
+                      onClick={() => {
+                        setLogoPreview(null);
+                        setLogoFile(null);
+                        updateField('business_logo', '');
+                      }}
+                      className="px-4 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4 inline mr-1" />
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -71,10 +271,11 @@ const BusinessInfo: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Friendly Business Name
             </label>
-            <input
+            <input  
               type="text"
-              defaultValue="Tarrytown Roofing"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={businessInfo.friendly_business_name}
+              onChange={(e) => updateField('friendly_business_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -83,16 +284,12 @@ const BusinessInfo: React.FC = () => {
               <span>Legal Business Name</span>
               <Info className="w-4 h-4" />
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                defaultValue="Tarrytown Roofing LLC"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.legal_business_name}
+              onChange={(e) => updateField('legal_business_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Enter the exact legal business name, as registered with the EIN
             </p>
@@ -105,8 +302,9 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="email"
-                defaultValue="sales@tarrytownroofing.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.business_email}
+                onChange={(e) => updateField('business_email', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
@@ -115,8 +313,9 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="tel"
-                defaultValue="+1 737-734-2911"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.business_phone}
+                onChange={(e) => updateField('business_phone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -130,12 +329,10 @@ const BusinessInfo: React.FC = () => {
               <input
                 type="text"
                 placeholder="Branded Domain"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.branded_domain || ''}
+                onChange={(e) => updateField('branded_domain', e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
-              <button className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                <Plus className="w-4 h-4" />
-                <span>Add Domain</span>
-              </button>
             </div>
           </div>
 
@@ -145,8 +342,9 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="url"
-              defaultValue="https://tarrytownroofing.com/"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={businessInfo.business_website || ''}
+              onChange={(e) => updateField('business_website', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -156,10 +354,14 @@ const BusinessInfo: React.FC = () => {
                 Business Niche
               </label>
               <div className="relative">
-                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                  <option>Roofing Contractor</option>
-                  <option>General Contractor</option>
-                  <option>Solar Installation</option>
+                <select 
+                  value={businessInfo.business_niche}
+                  onChange={(e) => updateField('business_niche', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="Roofing Contractor">Roofing Contractor</option>
+                  <option value="General Contractor">General Contractor</option>
+                  <option value="Solar Installation">Solar Installation</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
@@ -170,10 +372,14 @@ const BusinessInfo: React.FC = () => {
                 <Info className="w-4 h-4" />
               </label>
               <div className="relative">
-                <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                  <option>USD - US Dollar ($)</option>
-                  <option>EUR - Euro (€)</option>
-                  <option>GBP - British Pound (£)</option>
+                <select 
+                  value={businessInfo.business_currency}
+                  onChange={(e) => updateField('business_currency', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="USD">USD - US Dollar ($)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="GBP">GBP - British Pound (£)</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
@@ -184,14 +390,17 @@ const BusinessInfo: React.FC = () => {
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>API Key</span>
               <Info className="w-4 h-4" />
-              <span className="font-mono">eyJh****-****-****-*****-*****TRbNgE</span>
+              <span className="font-mono">{businessInfo.api_key ? `${businessInfo.api_key.substring(0, 8)}****` : 'Not generated'}</span>
               <button
-                onClick={() => copyToClipboard('eyJh****-****-****-*****-*****TRbNgE')}
+                onClick={() => copyToClipboard(businessInfo.api_key || '')}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+              <button 
+                onClick={handleGenerateApiKey}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
@@ -409,7 +618,7 @@ const BusinessInfo: React.FC = () => {
                 <input
                   type="checkbox"
                   id={region.id}
-                  checked={selectedRegions.includes(region.id)}
+                  checked={businessInfo.businessRegions?.includes(region.id) || false}
                   onChange={() => toggleRegion(region.id)}
                   className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                 />
@@ -509,14 +718,14 @@ const BusinessInfo: React.FC = () => {
 
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setAllowDuplicateContact(!allowDuplicateContact)}
+            onClick={() => updateField('allowDuplicateContact', !businessInfo.allowDuplicateContact)}
             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-              allowDuplicateContact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+              businessInfo.allowDuplicateContact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
             }`}
           >
             <span
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                allowDuplicateContact ? 'translate-x-5' : 'translate-x-0'
+                businessInfo.allowDuplicateContact ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>

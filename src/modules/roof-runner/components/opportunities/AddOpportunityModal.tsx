@@ -59,16 +59,30 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
   const loadPipeline = async (jobType: JobType) => {
     try {
-      const data = await embeddedPipelinesService.getEmbeddedPipelineByJobType(jobType);
-      setPipeline(data);
-
-      if (data) {
-        setFormData(prev => ({
-          ...prev,
-          pipeline_id: data.id,
-          stage_id: data.stages[0]?.id || '',
-        }));
-      }
+      // Temporary: Use hardcoded pipeline/stage IDs for testing
+      // TODO: Replace with actual backend API call
+      setFormData(prev => ({
+        ...prev,
+        pipeline_id: '1', // Hardcoded for testing
+        stage_id: '1',    // Hardcoded for testing
+      }));
+      
+      // Mock pipeline data for UI
+      setPipeline({
+        id: '1',
+        user_id: '5',
+        name: 'Commercial Sales Pipeline',
+        is_default: true,
+        job_type: 'Commercial',
+        pipeline_type: 'system',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        stages: [
+          { id: '1', pipeline_id: '1', name: 'New Lead', order_position: 1, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: '2', pipeline_id: '1', name: 'Contacted', order_position: 2, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: '3', pipeline_id: '1', name: 'Qualified', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        ]
+      });
     } catch (error) {
       console.error('Error loading pipeline:', error);
     }

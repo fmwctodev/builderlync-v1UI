@@ -2,64 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, Plus, Copy } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../shared/store';
-import { dashboardWidgetsApi } from '../../../shared/store/services/dashboardWidgetsApi';
+import { useGetWidgetsQuery, useGetUserPreferencesQuery, useSavePreferencesMutation } from '../../../shared/store/services/dashboardApi';
 import DashboardWidgetSelector from '../components/dashboard/DashboardWidgetSelector';
-import { WidgetComponents } from '../components/dashboard/widgets';
+import { WidgetComponents } from '../components/dashboard/DynamicWidgets';
 import type { WidgetWithPreference } from '../types/dashboard';
 
 export default function Dashboard() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
-  const [widgets, setWidgets] = useState<WidgetWithPreference[]>([]);
-  const [loading, setLoading] = useState(true);
   const user = useSelector((state: RootState) => state.auth.user);
+  
+  const { data: widgets = [], isLoading, refetch } = useGetWidgetsQuery(undefined);
+  const { data: preferences = [] } = useGetUserPreferencesQuery(user?.id || '', {
+    skip: !user?.id
+  });
+  const [savePreferences, { isLoading: isSaving }] = useSavePreferencesMutation();
 
-  useEffect(() => {
-    loadWidgets();
-  }, [user]);
-
-  const loadWidgets = async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const widgetsWithPrefs = await dashboardWidgetsApi.getWidgetsWithPreferences(user.id);
-      setWidgets(widgetsWithPrefs);
-    } catch (error) {
-      console.error('Error loading widgets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const widgetsWithPrefs: WidgetWithPreference[] = widgets.map(widget => {
+    const pref = preferences.find(p => p.widget_key === widget.widget_key);
+    return {
+      ...widget,
+      is_visible: pref ? pref.is_visible : widget.default_visible,
+      position: pref ? pref.position : 0
+    };
+  });
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await loadWidgets();
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsRefreshing(false);
+    await refetch();
   };
 
   const handleApplyWidgets = async (selectedWidgetKeys: string[]) => {
     if (!user?.id) return;
 
-    try {
-      const updates = widgets.map((widget, index) => ({
-        widget_key: widget.widget_key,
-        is_visible: selectedWidgetKeys.includes(widget.widget_key),
-        position: index
-      }));
+    console.log('Selected widget keys:', selectedWidgetKeys);
+    console.log('Total widgets with prefs:', widgetsWithPrefs.length);
 
-      await dashboardWidgetsApi.updateUserPreferences(user.id, updates);
-      await loadWidgets();
-    } catch (error) {
-      console.error('Error updating widget preferences:', error);
-    }
+    const updates = widgetsWithPrefs.map((widget, index) => ({
+      widget_key: widget.widget_key,
+      is_visible: selectedWidgetKeys.includes(widget.widget_key),
+      position: index
+    }));
+
+    console.log('Preferences to save:', updates.filter(u => u.is_visible));
+
+    await savePreferences({ userId: user.id, preferences: updates });
+    setShowWidgetSelector(false);
   };
 
-  const visibleWidgets = widgets
+  const visibleWidgets = widgetsWithPrefs
     .filter(w => w.is_visible)
     .sort((a, b) => a.position - b.position);
 
@@ -87,12 +76,12 @@ export default function Dashboard() {
         <div className="flex gap-2 relative">
           <button
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 ${
-              isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isLoading}
           >
-            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
             <span>Refresh</span>
           </button>
 
@@ -117,7 +106,7 @@ export default function Dashboard() {
 
             {showWidgetSelector && (
               <DashboardWidgetSelector
-                selectedWidgetIds={widgets.filter(w => w.is_visible).map(w => w.widget_key)}
+                selectedWidgetIds={widgetsWithPrefs.filter(w => w.is_visible).map(w => w.widget_key)}
                 onApply={handleApplyWidgets}
                 onClose={() => setShowWidgetSelector(false)}
               />
@@ -126,7 +115,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -143,33 +132,61 @@ export default function Dashboard() {
           </p>
         </div>
       ) : (
-        <>
-          {regularWidgets.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {regularWidgets.map(widget => {
-                const WidgetComponent = WidgetComponents[widget.widget_key];
-                return WidgetComponent ? (
-                  <div key={widget.widget_key} className="animate-fadeIn">
-                    <WidgetComponent />
-                  </div>
-                ) : null;
-              })}
-            </div>
-          )}
+        <div className="space-y-6">
+          {/* Group widgets by category */}
+          {['jobs', 'opportunities', 'reporting', 'payments', 'appointments'].map(category => {
+            const categoryWidgets = visibleWidgets.filter(
+              w => w.category === category && w.widget_key !== 'recent_activity' && w.widget_key !== 'upcoming_tasks'
+            );
+            
+            if (categoryWidgets.length === 0) return null;
 
+            const categoryNames: Record<string, string> = {
+              jobs: 'Jobs',
+              opportunities: 'Opportunities',
+              reporting: 'Contacts & General',
+              payments: 'Payments',
+              appointments: 'Appointments'
+            };
+
+            return (
+              <div key={category}>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  {categoryNames[category]}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {categoryWidgets.map(widget => {
+                    const WidgetComponent = WidgetComponents[widget.widget_key];
+                    return WidgetComponent ? (
+                      <div key={widget.widget_key} className="animate-fadeIn">
+                        <WidgetComponent />
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Special widgets (Activity & Tasks) */}
           {hasLargeWidgets && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {largeWidgets.map(widget => {
-                const WidgetComponent = WidgetComponents[widget.widget_key];
-                return WidgetComponent ? (
-                  <div key={widget.widget_key} className="animate-fadeIn">
-                    <WidgetComponent />
-                  </div>
-                ) : null;
-              })}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Activity & Tasks
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {largeWidgets.map(widget => {
+                  const WidgetComponent = WidgetComponents[widget.widget_key];
+                  return WidgetComponent ? (
+                    <div key={widget.widget_key} className="animate-fadeIn">
+                      <WidgetComponent />
+                    </div>
+                  ) : null;
+                })}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

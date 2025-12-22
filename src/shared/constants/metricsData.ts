@@ -270,10 +270,14 @@ export const METRICS_CATEGORIES: MetricCategory[] = [
 ];
 
 export function getMetricsForDashboard(): MetricCategory[] {
-  return METRICS_CATEGORIES.map(category => ({
-    ...category,
-    widgets: category.widgets.filter(w => w.dashboardEnabled)
-  })).filter(category => category.widgets.length > 0);
+  return METRICS_CATEGORIES.map(category => {
+    const dashboardWidgets = category.widgets.filter(w => w.dashboardEnabled);
+    return {
+      ...category,
+      widgets: dashboardWidgets,
+      count: dashboardWidgets.length // Update count to match filtered widgets
+    };
+  }).filter(category => category.widgets.length > 0);
 }
 
 export function getMetricsForReporting(): MetricCategory[] {
