@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useParams } from 'react-router-dom';
 import {
   BarChart, Calendar, CreditCard, FileText, HardHat, Home,
   MessageSquare, Users, Briefcase, DollarSign, Bot, Megaphone,
   Zap, Globe, FolderOpen, Star, BarChart2, Ruler, FileCheck,
   Package, Clipboard, LifeBuoy, Settings, ChevronLeft, ChevronRight,
-  Camera, UserCheck
+  Camera, UserCheck, ChevronDown, ChevronUp, LayoutDashboard
 } from 'lucide-react';
 import Logo from '../../../../shared/components/Logo';
 import { canAccessModule } from '../../../../shared/utils/permissions';

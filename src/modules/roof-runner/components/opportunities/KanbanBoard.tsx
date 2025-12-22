@@ -26,24 +26,24 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
     try {
       setLoading(true);
 
-      if (selectedJobType === 'all') {
-        const pipelines = await embeddedPipelinesService.getEmbeddedPipelines();
-        const allStages = pipelines.flatMap(p => p.stages);
-        setStages(allStages);
-        const opportunities = await opportunitiesApi.getOpportunities();
-        setOpportunitiesList(opportunities);
-      } else {
-        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
+      // Hardcoded stages for now - TODO: fetch from backend API
+      const mockStages: PipelineStage[] = [
+        { id: '1', pipeline_id: '1', name: 'New Lead', order_position: 1, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
+        { id: '2', pipeline_id: '1', name: 'Contacted', order_position: 2, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
+        { id: '3', pipeline_id: '1', name: 'Qualified', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
+      ];
 
-        if (pipeline) {
-          setStages(pipeline.stages);
-          const opportunities = await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
-          setOpportunitiesList(opportunities);
-        } else {
-          setStages([]);
-          setOpportunitiesList([]);
-        }
+      setStages(mockStages);
+
+      // Fetch opportunities from backend API
+      const filters: any = {};
+      if (selectedJobType !== 'all') {
+        // For now, fetch all opportunities since we don't have job_type filter in backend yet
+        // TODO: Add job_type filter to backend API
       }
+      
+      const opportunities = await opportunitiesApi.getOpportunities(filters);
+      setOpportunitiesList(opportunities);
     } catch (error) {
       console.error('Error loading kanban data:', error);
     } finally {
