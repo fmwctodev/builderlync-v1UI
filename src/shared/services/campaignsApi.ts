@@ -1,182 +1,108 @@
-import { supabase } from '../lib/supabase';
+import axios from 'axios';
 import { Campaign, CampaignFormData, CampaignStats } from '../../modules/roof-runner/types/campaigns';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
 
 export const campaignsApi = {
   async createCampaign(data: CampaignFormData, sendNow: boolean): Promise<Campaign> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const payload = {
+      ...data,
+      status: sendNow ? 'sending' : data.scheduled_date ? 'scheduled' : 'draft',
+      sent_at: sendNow ? new Date().toISOString() : null,
+    };
 
-    if (!user) {
-      throw new Error('User not authenticated');
+    const response = await axios.post(`${API_BASE_URL}/campaigns`, payload, {
+      headers: getAuthHeaders()
+    });
+
+    if (sendNow) {
+      await axios.post(`${API_BASE_URL}/campaigns/${response.data.data.id}/send`, {}, {
+        headers: getAuthHeaders()
+      });
     }
 
-    const status = sendNow ? 'sending' : data.scheduled_date ? 'scheduled' : 'draft';
-
-    const { data: campaign, error } = await supabase
-      .from('campaigns')
-      .insert({
-        user_id: user.id,
-        name: data.name,
-        type: data.type,
-        status,
-        subject: data.subject,
-        from_name: data.from_name,
-        from_email: data.from_email,
-        content: data.content,
-        target_audience: data.target_audience,
-        scheduled_date: data.scheduled_date,
-        tags: data.tags,
-        sent_at: sendNow ? new Date().toISOString() : null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return campaign;
+    return response.data.data;
   },
 
   async updateCampaign(id: string, data: Partial<CampaignFormData>): Promise<Campaign> {
-    const { data: campaign, error } = await supabase
-      .from('campaigns')
-      .update({
-        name: data.name,
-        subject: data.subject,
-        from_name: data.from_name,
-        from_email: data.from_email,
-        content: data.content,
-        target_audience: data.target_audience,
-        scheduled_date: data.scheduled_date,
-        tags: data.tags,
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const response = await axios.put(`${API_BASE_URL}/campaigns/${id}`, data, {
+      headers: getAuthHeaders()
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    return campaign;
+    return response.data.data;
   },
 
   async deleteCampaign(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('campaigns')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw error;
-    }
+    await axios.delete(`${API_BASE_URL}/campaigns/${id}`, {
+      headers: getAuthHeaders()
+    });
   },
 
-  async getCampaigns(): Promise<Campaign[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+  async getCampaigns(type?: string, status?: string, search?: string): Promise<Campaign[]> {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
 
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    const response = await axios.get(`${API_BASE_URL}/campaigns?${params.toString()}`, {
+      headers: getAuthHeaders()
+    });
 
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
+    return response.data.data.campaigns || [];
   },
 
   async getCampaign(id: string): Promise<Campaign> {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const response = await axios.get(`${API_BASE_URL}/campaigns/${id}`, {
+      headers: getAuthHeaders()
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    return data;
+    return response.data.data;
   },
 
   async getCampaignStats(campaignId: string): Promise<CampaignStats | null> {
-    const { data, error } = await supabase
-      .from('campaign_stats')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .single();
+    try {
+      const response = await axios.get(`${API_BASE_URL}/campaigns/${campaignId}/stats`, {
+        headers: getAuthHeaders()
+      });
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+      return response.data.data;
+    } catch (error) {
+      return null;
     }
-
-    return data;
   },
 
   async sendCampaign(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('campaigns')
-      .update({
-        status: 'sending',
-        sent_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    if (error) {
-      throw error;
-    }
+    await axios.post(`${API_BASE_URL}/campaigns/${id}/send`, {}, {
+      headers: getAuthHeaders()
+    });
   },
 
   async pauseCampaign(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('campaigns')
-      .update({
-        status: 'paused',
-      })
-      .eq('id', id);
-
-    if (error) {
-      throw error;
-    }
+    await axios.put(`${API_BASE_URL}/campaigns/${id}`, { status: 'paused' }, {
+      headers: getAuthHeaders()
+    });
   },
 
   async duplicateCampaign(id: string): Promise<Campaign> {
-    const original = await this.getCampaign(id);
+    const response = await axios.post(`${API_BASE_URL}/campaigns/${id}/duplicate`, {}, {
+      headers: getAuthHeaders()
+    });
 
-    const { data: { user } } = await supabase.auth.getUser();
+    return response.data.data;
+  },
 
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    const { data, error } = await supabase
-      .from('campaigns')
-      .insert({
-        user_id: user.id,
-        name: `${original.name} (Copy)`,
-        type: original.type,
-        status: 'draft',
-        subject: original.subject,
-        from_name: original.from_name,
-        from_email: original.from_email,
-        content: original.content,
-        target_audience: original.target_audience,
-        tags: original.tags,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
+  async addRecipients(campaignId: string, contactIds: number[]): Promise<void> {
+    await axios.post(`${API_BASE_URL}/campaigns/${campaignId}/recipients`, 
+      { contactIds },
+      { headers: getAuthHeaders() }
+    );
   },
 };
