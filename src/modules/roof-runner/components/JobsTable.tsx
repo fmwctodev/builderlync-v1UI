@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Edit, Trash2 } from 'lucide-react';
 import { Job } from '../../../shared/store/services/jobsApi';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 interface JobsTableProps {
   jobs: Job[];
@@ -84,20 +85,24 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => onEdit(job)}
-                          className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-blue-400"
-                          title="Edit job"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(job.id!)}
-                          className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                          title="Delete job"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {(hasPermission('jobs', 'update') || hasPermission('projects', 'update')) && (
+                          <button
+                            onClick={() => onEdit(job)}
+                            className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-blue-400"
+                            title="Edit job"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+                        {(hasPermission('jobs', 'delete') || hasPermission('projects', 'delete')) && (
+                          <button
+                            onClick={() => onDelete(job.id!)}
+                            className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                            title="Delete job"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import { templateApi } from '../services/templateApi';
@@ -9,6 +9,8 @@ import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAut
 export default function Proposals() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [filterStatus, setFilterStatus] = useState('All proposals');
@@ -128,7 +130,7 @@ export default function Proposals() {
     try {
       const duplicated = await proposalsApi.duplicateProposal(Number(id));
       await fetchProposals();
-      navigate(`/proposals/editor/${duplicated.id}`);
+      navigate(`${orgPrefix}/proposals/editor/${duplicated.id}`);
     } catch (error) {
       console.error('Error duplicating proposal:', error);
       alert('Failed to duplicate proposal. Please try again.');
@@ -262,7 +264,7 @@ export default function Proposals() {
                 setShowDeleteModal(true);
               }}
               onDuplicate={handleDuplicateProposal}
-              onProposalClick={(id) => navigate(`/proposals/editor/${id}`)}
+              onProposalClick={(id) => navigate(`${orgPrefix}/proposals/editor/${id}`)}
               onMoveToWon={handleMoveToWon}
               onMoveToLost={handleMoveToLost}
             />
@@ -442,7 +444,7 @@ export default function Proposals() {
                             },
                           });
                           setShowTemplateModal(false);
-                          navigate(`/proposals/editor/${proposal.id}`);
+                          navigate(`${orgPrefix}/proposals/editor/${proposal.id}`);
                         } catch (error) {
                           console.error('Error creating proposal:', error);
                           alert('Failed to create proposal. Please try again.');

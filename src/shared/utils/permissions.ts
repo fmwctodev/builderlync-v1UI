@@ -3,55 +3,43 @@ import { RolePermissions } from '../store/services/rolesApi';
 export const getUserPermissions = (): RolePermissions | null => {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    console.log('🔍 getUserPermissions - user:', user);
-    console.log('🔍 getUserPermissions - role:', user.role);
-    console.log('🔍 getUserPermissions - permissions:', user.role?.permissions);
-    return user.role?.permissions || null;
+    if (!user.role) return null;
+    return user.role.permissions || null;
   } catch (error) {
-    console.error('❌ getUserPermissions error:', error);
+    console.error('Error getting user permissions:', error);
     return null;
   }
 };
 
-export const hasPermission = (module: keyof RolePermissions, action: string): boolean => {
-  const permissions = getUserPermissions();
-  console.log(`🔐 hasPermission(${module}, ${action})`);
-  console.log('  permissions:', permissions);
-  
-  if (!permissions) {
-    console.log('  ✅ No permissions found, returning true (full access)');
-    return true;
+export const isParentUser = (): boolean => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return !user.role;
+  } catch (error) {
+    return false;
   }
+};
+
+export const hasPermission = (module: keyof RolePermissions, action: string): boolean => {
+  if (isParentUser()) return true;
+  
+  const permissions = getUserPermissions();
+  if (!permissions) return false;
   
   const modulePermissions = permissions[module] as any;
-  console.log(`  ${module} permissions:`, modulePermissions);
+  if (!modulePermissions) return false;
   
-  if (!modulePermissions) {
-    console.log('  ✅ Module not found, returning true');
-    return true;
-  }
-  
-  const result = modulePermissions[action] === true;
-  console.log(`  ${result ? '✅' : '❌'} ${module}.${action} = ${result}`);
-  return result;
+  return modulePermissions[action] === true;
 };
 
 export const canAccessModule = (module: keyof RolePermissions): boolean => {
-  const permissions = getUserPermissions();
-  console.log(`🔐 canAccessModule(${module})`);
+  if (isParentUser()) return true;
   
-  if (!permissions) {
-    console.log('  ✅ No permissions found, returning true');
-    return true;
-  }
+  const permissions = getUserPermissions();
+  if (!permissions) return false;
   
   const modulePermissions = permissions[module] as any;
-  if (!modulePermissions) {
-    console.log('  ✅ Module not found, returning true');
-    return true;
-  }
+  if (!modulePermissions) return false;
   
-  const result = Object.values(modulePermissions).some(value => value === true);
-  console.log(`  ${result ? '✅' : '❌'} canAccessModule(${module}) = ${result}`);
-  return result;
+  return Object.values(modulePermissions).some(value => value === true);
 };

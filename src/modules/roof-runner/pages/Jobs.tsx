@@ -11,6 +11,7 @@ import FiltersSidebar from '../components/FiltersSidebar';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
@@ -355,7 +356,7 @@ const Jobs: React.FC = () => {
             />
           )}
 
-          {activeView === 'settings' && <JobsSettings />}
+          {activeView === 'settings' && (hasPermission('jobs', 'manage') || hasPermission('projects', 'manage')) && <JobsSettings />}
         </div>
 
         <FiltersSidebar

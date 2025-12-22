@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronDown, Home, Package, UserPlus } from 'lucide-react';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 interface MenuOption {
   id: string;
@@ -47,8 +48,13 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
     };
   }, [isOpen]);
 
+  const hasAnyCreatePermission = 
+    hasPermission('jobs', 'create') || 
+    hasPermission('projects', 'create') || 
+    hasPermission('contacts', 'create');
+
   const menuOptions: MenuOption[] = [
-    {
+    ...(hasPermission('jobs', 'create') || hasPermission('projects', 'create') ? [{
       id: 'job',
       icon: <Home className="w-5 h-5 text-primary-600" />,
       title: 'Job',
@@ -57,8 +63,8 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
         onNewJob();
         setIsOpen(false);
       }
-    },
-    {
+    }] : []),
+    ...(hasAnyCreatePermission ? [{
       id: 'report',
       icon: <Package className="w-5 h-5 text-primary-600" />,
       title: 'Report',
@@ -67,8 +73,8 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
         onNewReport();
         setIsOpen(false);
       }
-    },
-    {
+    }] : []),
+    ...(hasPermission('contacts', 'create') ? [{
       id: 'customer',
       icon: <UserPlus className="w-5 h-5 text-primary-600" />,
       title: 'Customer',
@@ -77,52 +83,56 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
         onNewCustomer();
         setIsOpen(false);
       }
-    }
+    }] : [])
   ];
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        <div className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full">
-          <Plus className="w-3.5 h-3.5" />
-        </div>
-        <span className="font-medium">New</span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
+      {menuOptions.length > 0 && (
+        <>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
+            aria-expanded={isOpen}
+            aria-haspopup="true"
+          >
+            <div className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full">
+              <Plus className="w-3.5 h-3.5" />
+            </div>
+            <span className="font-medium">New</span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
 
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="py-2">
-            {menuOptions.map((option, index) => (
-              <button
-                key={option.id}
-                onClick={option.onClick}
-                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 text-left"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex-shrink-0">
-                    {option.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">
-                      {option.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                      {option.description}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+          {isOpen && (
+            <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="py-2">
+                {menuOptions.map((option, index) => (
+                  <button
+                    key={option.id}
+                    onClick={option.onClick}
+                    className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 text-left"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex items-center justify-center w-10 h-10 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex-shrink-0">
+                        {option.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">
+                          {option.title}
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
