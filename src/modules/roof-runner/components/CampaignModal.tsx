@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, MessageSquare, Calendar, Users, Save, Send } from 'lucide-react';
 import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES } from '../types/campaigns';
+import { templateApi, Template } from '../services/templateApi';
 
 interface CampaignModalProps {
   show: boolean;
@@ -13,6 +14,8 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [campaignType, setCampaignType] = useState<CampaignType>('email');
+  const [proposalTemplates, setProposalTemplates] = useState<Template[]>([]);
+  const [sendImmediately, setSendImmediately] = useState(true);
 
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
@@ -27,6 +30,21 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
     },
     tags: [],
   });
+
+  useEffect(() => {
+    if (show) {
+      loadProposalTemplates();
+    }
+  }, [show]);
+
+  const loadProposalTemplates = async () => {
+    try {
+      const templates = await templateApi.getTemplates();
+      setProposalTemplates(templates);
+    } catch (error) {
+      console.error('Error loading proposal templates:', error);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -74,10 +92,12 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
     return Math.ceil(length / 153);
   };
 
-  const handleSubmit = async (sendNow: boolean) => {
+  const handleSubmit = async (isDraft: boolean) => {
     setIsLoading(true);
     try {
-      await onSave(formData, sendNow);
+      // Determine if we should send now based on the switch and draft status
+      const shouldSendNow = !isDraft && sendImmediately;
+      await onSave(formData, shouldSendNow);
       onClose();
     } catch (error) {
       console.error('Error saving campaign:', error);
@@ -157,12 +177,26 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                onChange={(e) => e.target.value && handleTemplateSelect(e.target.value as keyof typeof CAMPAIGN_TEMPLATES)}
+                onChange={(e) => {
+                  const templateId = e.target.value;
+                  if (templateId) {
+                    const template = proposalTemplates.find(t => t.id === templateId);
+                    if (template) {
+                      setFormData({
+                        ...formData,
+                        name: template.name,
+                        template_id: templateId,
+                      });
+                    }
+                  }
+                }}
               >
                 <option value="">Start from scratch</option>
-                <option value="database_reactivation">Database Reactivation</option>
-                <option value="follow_up">Follow-up Sequence</option>
-                <option value="proposal_followup">Proposal Follow-up</option>
+                {proposalTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -312,17 +346,42 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               Schedule
             </h3>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Send Date & Time (Optional - leave blank to send immediately)
+            {/* Send Immediately Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <label className="text-sm font-medium text-gray-900 dark:text-white">Send Immediately</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Campaign will be sent right away when you click Send</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sendImmediately}
+                  onChange={(e) => {
+                    setSendImmediately(e.target.checked);
+                    if (e.target.checked) {
+                      setFormData({ ...formData, scheduled_date: undefined });
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
               </label>
-              <input
-                type="datetime-local"
-                value={formData.scheduled_date || ''}
-                onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-              />
             </div>
+
+            {!sendImmediately && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Schedule Date & Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.scheduled_date || ''}
+                  onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                  required={!sendImmediately}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -338,7 +397,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
 
           <div className="flex gap-3">
             <button
-              onClick={() => handleSubmit(false)}
+              onClick={() => handleSubmit(true)}
               disabled={!isFormValid() || isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -347,12 +406,12 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             </button>
 
             <button
-              onClick={() => handleSubmit(true)}
-              disabled={!isFormValid() || isLoading}
+              onClick={() => handleSubmit(false)}
+              disabled={!isFormValid() || isLoading || (!sendImmediately && !formData.scheduled_date)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="h-4 w-4" />
-              <span>{isLoading ? 'Sending...' : formData.scheduled_date ? 'Schedule' : 'Send Now'}</span>
+              <span>{isLoading ? (sendImmediately ? 'Sending...' : 'Scheduling...') : (sendImmediately ? 'Send Now' : 'Schedule')}</span>
             </button>
           </div>
         </div>

@@ -12,6 +12,7 @@ const Staff: React.FC = () => {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalStaff, setTotalStaff] = useState(0);
@@ -42,33 +43,31 @@ const Staff: React.FC = () => {
   };
 
   const handleAddStaff = async (staffData: any) => {
-    setIsSubmitting(true);
+    // Parse phone number to extract country code
+    const phoneStr = staffData.phone || '';
+    const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+    const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+    const phone = phoneStr.replace(countryCode, '');
+
+    const createData: CreateStaffRequest = {
+      firstName: staffData.firstName,
+      lastName: staffData.lastName,
+      email: staffData.email,
+      phone: phone,
+      countryCode: countryCode,
+      password: staffData.password,
+      role_id: staffData.roleId || undefined
+    };
+
     try {
-      // Parse phone number to extract country code
-      const phoneStr = staffData.phone || '';
-      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
-      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
-      const phone = phoneStr.replace(countryCode, '');
-
-      const createData: CreateStaffRequest = {
-        firstName: staffData.firstName,
-        lastName: staffData.lastName,
-        email: staffData.email,
-        phone: phone,
-        countryCode: countryCode,
-        password: staffData.password,
-        role_id: staffData.roleId || undefined
-      };
-
-      const result = await createStaff(createData);
+      await createStaff(createData);
       setToast({ message: 'Staff member added successfully!', type: 'success' });
       setShowAddModal(false);
       fetchStaff();
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to add staff member';
       setToast({ message: errorMessage, type: 'error' });
-    } finally {
-      setIsSubmitting(false);
+      throw error;
     }
   };
 
@@ -144,14 +143,21 @@ const Staff: React.FC = () => {
   };
 
   const filteredStaff = staff.filter(member =>
-    `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.phone.includes(searchTerm)
+    `${member.first_name} ${member.last_name}`.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    member.phone.includes(debouncedSearchTerm)
   );
 
   useEffect(() => {
     fetchStaff();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (toast) {
@@ -330,6 +336,7 @@ const Staff: React.FC = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddStaff}
+        isSubmitting={true}
       />
 
       <AddEditStaffModal
@@ -349,6 +356,7 @@ const Staff: React.FC = () => {
           profileImage: editingStaff.image
         } : undefined}
         isEdit={true}
+        isSubmitting={isSubmitting}
       />
 
       <DeleteConfirmModal

@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
-  Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings
+  Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings,
+  Eye, Trash2
 } from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
@@ -89,7 +90,7 @@ const AnalyticsTab: React.FC = () => {
     <div className="space-y-6">
       {/* Platform Selector */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics 2</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics</h3>
         <div className="flex flex-wrap gap-2">
           {platforms.map((platform) => (
             <button
@@ -165,6 +166,9 @@ const CampaignsTab: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [campaignStats, setCampaignStats] = useState<any>(null);
 
   useEffect(() => {
     loadCampaigns();
@@ -227,6 +231,99 @@ const CampaignsTab: React.FC = () => {
         onSave={handleSaveCampaign}
       />
 
+      {/* Campaign Details Modal */}
+      {showDetailsModal && selectedCampaign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Campaign Details</h2>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Campaign Stats */}
+              {selectedCampaign.status !== 'draft' && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Recipients</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Sent</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">Opened</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Clicked</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Campaign Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Campaign Name</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedCampaign.name}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
+                  <p className="text-sm text-gray-900 dark:text-white capitalize">{selectedCampaign.type}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+                  <span className={`inline-block px-2 py-1 rounded text-xs capitalize ${getStatusBadge(selectedCampaign.status)}`}>
+                    {selectedCampaign.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Created At</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{new Date(selectedCampaign.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {selectedCampaign.subject && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Subject</label>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedCampaign.subject}</p>
+                </div>
+              )}
+
+              {(selectedCampaign.from_name || selectedCampaign.from_email) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedCampaign.from_name && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">From Name</label>
+                      <p className="text-sm text-gray-900 dark:text-white">{selectedCampaign.from_name}</p>
+                    </div>
+                  )}
+                  {selectedCampaign.from_email && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">From Email</label>
+                      <p className="text-sm text-gray-900 dark:text-white">{selectedCampaign.from_email}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Content</label>
+                <div className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                  {selectedCampaign.content}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast.show && (
         <Toast
           message={toast.message}
@@ -277,12 +374,25 @@ const CampaignsTab: React.FC = () => {
                       {new Date(campaign.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDeleteCampaign(campaign.id)}
-                        className="text-red-600 hover:text-red-700 text-sm dark:text-red-400"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowDetailsModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                          title="View Details"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCampaign(campaign.id)}
+                          className="text-red-600 hover:text-red-700 dark:text-red-400"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

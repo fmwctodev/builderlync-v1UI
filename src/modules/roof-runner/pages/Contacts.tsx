@@ -7,6 +7,7 @@ import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
 import Pagination from "../components/Pagination";
 import CsvUploadModal from "../components/CsvUploadModal";
+import { hasPermission } from "../../../shared/utils/permissions";
 
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
@@ -413,21 +414,25 @@ const Contacts: React.FC = () => {
               <Download className="w-4 h-4" />
               Export CSV
             </button>
-            <button
-              onClick={() => setShowCsvModal(true)}
-              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Upload className="w-4 h-4" />
-              Import CSV
-            </button>
-            <button
-              onClick={() => setShowContactModal(true)}
-              className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors hover:opacity-90"
-              style={{backgroundColor: '#dc2626'}}
-            >
-              <Plus className="w-4 h-4" />
-              New contact
-            </button>
+            {hasPermission('contacts', 'create') && (
+              <button
+                onClick={() => setShowCsvModal(true)}
+                className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Upload className="w-4 h-4" />
+                Import CSV
+              </button>
+            )}
+            {hasPermission('contacts', 'create') && (
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors hover:opacity-90"
+                style={{backgroundColor: '#dc2626'}}
+              >
+                <Plus className="w-4 h-4" />
+                New contact
+              </button>
+            )}
           </div>
         </div>
 

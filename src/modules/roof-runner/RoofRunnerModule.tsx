@@ -34,6 +34,8 @@ import FileManager from './pages/FileManager';
 import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
+import { GoogleAnalyticsPage } from './pages/GoogleAnalyticsPage';
+import { GoogleAnalyticsCallback } from './pages/GoogleAnalyticsCallback';
 import Catalog from './pages/Catalog';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
@@ -43,6 +45,7 @@ import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyOtp from './pages/auth/VerifyOtp';
+import SetPassword from './pages/auth/SetPassword';
 import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
 import { AuthRoute } from '../../shared/components/AuthRoute';
 import { OrgProvider } from '../../shared/context/OrgContext';
@@ -67,6 +70,8 @@ export function RoofRunnerModule() {
       <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
       <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
       <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+      <Route path="auth/set-password" element={<SetPassword />} />
+      <Route path="auth/google-analytics/callback" element={<GoogleAnalyticsCallback />} />
       <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
       <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
       <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
@@ -101,6 +106,7 @@ export function RoofRunnerModule() {
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<Marketing />} />
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
+        <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
         <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
         <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
         <Route path="file-manager" element={<FileManager />} />
@@ -113,6 +119,7 @@ export function RoofRunnerModule() {
         <Route path="auth/google/callback" element={<OAuthCallback />} />
         <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
       </Route>
+      <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><GoogleAnalyticsPage /></ProtectedRoute>} />
       </Routes>
       </OrgProvider>
     </Provider>

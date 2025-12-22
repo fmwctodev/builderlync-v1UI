@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Filter, Grid, List, Settings, Building2 } from 'lucide-react';
 import NewButtonDropdown from './NewButtonDropdown';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 interface JobsHeaderProps {
   activeView: string;
@@ -85,17 +86,19 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
           <List className="w-4 h-4" />
           <span>List View</span>
         </button>
-        <button
-          onClick={() => setActiveView('settings')}
-          className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-            activeView === 'settings'
-              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>Settings</span>
-        </button>
+        {(hasPermission('jobs', 'manage') || hasPermission('projects', 'manage')) && (
+          <button
+            onClick={() => setActiveView('settings')}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+              activeView === 'settings'
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Settings</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
