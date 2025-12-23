@@ -175,7 +175,7 @@ export function AgentBuilder() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Bot },
     { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
-    { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels.webchat?.enabled },
+    { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels?.webchat?.enabled },
     { id: 'tools', label: 'Tools', icon: Zap },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'widget', label: 'Widget', icon: Code2 },
@@ -284,7 +284,7 @@ export function AgentBuilder() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.callsHandled || 0}
+                    {agent.stats?.callsHandled || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Total Calls Handled
@@ -292,7 +292,7 @@ export function AgentBuilder() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.messagesHandled || 0}
+                    {agent.stats?.messagesHandled || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Messages Processed
@@ -300,7 +300,7 @@ export function AgentBuilder() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.appointmentsBooked || 0}
+                    {agent.stats?.appointmentsBooked || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Appointments Booked
@@ -384,14 +384,14 @@ export function AgentBuilder() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
-                  className={`p-4 border-2 rounded-lg ${agent.channels.voice?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.voice?.enabled
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <Phone
-                      className={`w-6 h-6 ${agent.channels.voice?.enabled
+                      className={`w-6 h-6 ${agent.channels?.voice?.enabled
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-400'
                         }`}
@@ -399,21 +399,21 @@ export function AgentBuilder() {
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Voice</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.voice?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.voice?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${agent.channels.sms?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.sms?.enabled
                       ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <MessageSquare
-                      className={`w-6 h-6 ${agent.channels.sms?.enabled
+                      className={`w-6 h-6 ${agent.channels?.sms?.enabled
                           ? 'text-green-600 dark:text-green-400'
                           : 'text-gray-400'
                         }`}
@@ -421,21 +421,21 @@ export function AgentBuilder() {
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">SMS</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.sms?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.sms?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${agent.channels.webchat?.enabled
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.webchat?.enabled
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <Globe
-                      className={`w-6 h-6 ${agent.channels.webchat?.enabled
+                      className={`w-6 h-6 ${agent.channels?.webchat?.enabled
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-gray-400'
                         }`}
@@ -443,7 +443,7 @@ export function AgentBuilder() {
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Webchat</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.webchat?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.webchat?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>

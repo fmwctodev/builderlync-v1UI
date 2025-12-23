@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 
 interface CsvUploadModalProps {
   show: boolean;
@@ -20,6 +20,22 @@ const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
 }) => {
   if (!show) return null;
 
+  const handleDownloadSample = () => {
+    const csvContent = `fullName,type,labelOrRole,email,phone,company,address,latitude,longitude
+John Doe,customer,Homeowner,john.doe@example.com,(555) 123-4567,ABC Company,"123 Main St, City, State 12345",40.7128,-74.0060
+Jane Smith,lead,Property Manager,jane.smith@example.com,(555) 987-6543,XYZ Corp,"456 Oak Ave, Town, State 67890",34.0522,-118.2437`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contacts_sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md mx-4 shadow-xl">
@@ -34,9 +50,18 @@ const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
 
         <div className="p-6">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select CSV File
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select CSV File
+              </label>
+              <button
+                onClick={handleDownloadSample}
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+              >
+                <Download className="w-3 h-3" />
+                Download Sample
+              </button>
+            </div>
             <input
               type="file"
               accept=".csv"
@@ -54,7 +79,9 @@ const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
           )}
 
           <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-            <p>CSV should contain columns: fullName, type, labelOrRole, email, phone, company, address</p>
+            <p className="font-medium mb-1">Required columns:</p>
+            <p>fullName, type, labelOrRole, email, phone, company, address, latitude, longitude</p>
+            <p className="mt-2 text-gray-400">Type options: lead, customer, partner, vendor, sub-contractor, adjuster, staff</p>
           </div>
         </div>
 

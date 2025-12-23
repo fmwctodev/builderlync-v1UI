@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Search, Filter, Plus, Upload, Download } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, uploadContactsCsv, exportContactsCsv } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
@@ -11,6 +11,7 @@ import { hasPermission } from "../../../shared/utils/permissions";
 
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [showContactModal, setShowContactModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
@@ -58,6 +59,7 @@ const Contacts: React.FC = () => {
   const [totalContacts, setTotalContacts] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<any>(null);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -265,8 +267,6 @@ const Contacts: React.FC = () => {
     }
   }, [activeDropdown, showTypeFilter]);
 
-
-
   const handleSelectContact = (contactId: string) => {
     setSelectedContacts(prev =>
       prev.includes(contactId)
@@ -286,7 +286,7 @@ const Contacts: React.FC = () => {
   };
 
   const handleViewProfile = (contact: any) => {
-    navigate(`/contacts/${contact.id}`);
+    navigate(`/org/${orgSlug}/contacts/${contact.id}`);
     setActiveDropdown(null);
   };
 
@@ -400,6 +400,20 @@ const Contacts: React.FC = () => {
     }
   };
 
+  const handleExportCsv = async () => {
+    setExportLoading(true);
+    try {
+      const response = await exportContactsCsv(searchTerm, typeFilter);
+      const message = response?.data?.message || 'Export request submitted successfully!';
+      setToast({ message, type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to export contacts';
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -408,11 +422,12 @@ const Contacts: React.FC = () => {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Contacts</h1>
           <div className="flex gap-3">
             <button
-              // onClick={() => setShowCsvModal(true)}
-              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={handleExportCsv}
+              disabled={exportLoading}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
-              Export CSV
+              {exportLoading ? 'Exporting...' : 'Export CSV'}
             </button>
             {hasPermission('contacts', 'create') && (
               <button

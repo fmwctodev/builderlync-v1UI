@@ -14,6 +14,7 @@ const VerifyOtp: React.FC = () => {
   const dispatch = useAppDispatch();
   const { loading, error, user } = useAppSelector((state) => state.auth);
   const email = location.state?.email;
+  const from = location.state?.from || 'signup';
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
@@ -88,15 +89,19 @@ const VerifyOtp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 relative">
+        <button
+          onClick={() => {
+            const destination = from === 'login' ? '/auth/login' : '/auth/signup';
+            const state = from === 'login' ? undefined : { fromVerifyOtp: true };
+            navigate(destination, { replace: true, state });
+          }}
+          className="absolute top-4 left-4 p-2 text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        
         <div className="text-center mb-8">
-          <button
-            onClick={() => navigate('/auth/signup')}
-            className="absolute top-4 left-4 p-2 text-gray-600 hover:text-gray-800"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          
           <div className="flex items-center justify-center mx-auto mb-4">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
               <Mail className="w-8 h-8 text-red-600" />

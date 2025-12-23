@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import {
   Bot,
   Phone,
@@ -39,6 +40,8 @@ export function AIAgentsTab() {
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const { user } = useAppSelector((state) => state.auth);
   const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
@@ -258,7 +261,7 @@ export function AIAgentsTab() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-visible">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
@@ -283,7 +286,7 @@ export function AIAgentsTab() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 ">
               {filteredAgents.map((agent) => (
                 <tr
                   key={agent.id}
@@ -323,22 +326,22 @@ export function AIAgentsTab() {
                   <td className="px-6 py-4">{getStatusBadge(agent.status)}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1">
-                      {agent.channels.voice?.enabled && (
+                      {agent.channels?.voice?.enabled && (
                         <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
                           <Phone className="w-3 h-3 text-red-700 dark:text-red-400" />
                         </div>
                       )}
-                      {agent.channels.sms?.enabled && (
+                      {agent.channels?.sms?.enabled && (
                         <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded">
                           <MessageSquare className="w-3 h-3 text-green-700 dark:text-green-400" />
                         </div>
                       )}
-                      {agent.channels.webchat?.enabled && (
+                      {agent.channels?.webchat?.enabled && (
                         <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
                           <Bot className="w-3 h-3 text-red-700 dark:text-red-400" />
                         </div>
                       )}
-                      {agent.channels.email?.enabled && (
+                      {agent.channels?.email?.enabled && (
                         <div className="p-1 bg-orange-50 dark:bg-orange-900/20 rounded">
                           <Mail className="w-3 h-3 text-orange-700 dark:text-orange-400" />
                         </div>
@@ -347,11 +350,11 @@ export function AIAgentsTab() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {(agent.stats.callsHandled || 0) + (agent.stats.messagesHandled || 0)} interactions
+                      {((agent.stats?.callsHandled || 0) + (agent.stats?.messagesHandled || 0))} interactions
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setOpenMenuId(openMenuId === agent.id ? null : agent.id)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -359,7 +362,7 @@ export function AIAgentsTab() {
                         <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </button>
                       {openMenuId === agent.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[100]">
                           <button
                             onClick={() => {
                               startEditingName(agent);
