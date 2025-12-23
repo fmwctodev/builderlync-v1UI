@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Product, Branch, Order, CartItem } from '../types';
+import { Product, Branch, Order, CartItem, ShipTo, OrderHistoryResponse } from '../types';
 
 const api = axios.create({
   baseURL: 'https://builderlyncapi.testenvapp.com/api',
@@ -64,9 +64,12 @@ export const abcSupplyApi = {
         }
       });
       
+      console.log('Raw branches API response:', response.data);
+      
       // Handle the actual API response structure
       let branches = [];
       if (response.data.success && response.data.data) {
+        console.log('Processing branches data:', response.data.data);
         branches = response.data.data.map(item => ({
           id: item.branch.number,
           name: item.branch.name,
@@ -85,12 +88,26 @@ export const abcSupplyApi = {
           hours: item.hoursOfOperation,
           services: []
         }));
+      } else {
+        console.log('No branches data found or API unsuccessful');
       }
       
+      console.log('Processed branches:', branches);
       return branches;
     } catch (error) {
       console.error('Error fetching branches:', error);
       console.error('Error details:', error.response?.data);
+      return [];
+    }
+  },
+
+  // ShipTos
+  getShipTos: async (): Promise<ShipTo[]> => {
+    try {
+      const response = await api.get('/abc-supply/shiptos');
+      return response.data.shipTos || [];
+    } catch (error) {
+      console.error('Error fetching shipTos:', error);
       return [];
     }
   },
@@ -109,6 +126,23 @@ export const abcSupplyApi = {
   },
 
   // Orders
+  getOrdersHistory: async (params: {
+    startDate: string;
+    endDate: string;
+    itemsPerPage?: number;
+    pageNumber?: number;
+  }): Promise<OrderHistoryResponse> => {
+    const response = await api.get('/abc-supply/ordersHistory', {
+      params: {
+        startDate: params.startDate,
+        endDate: params.endDate,
+        itemsPerPage: params.itemsPerPage || 20,
+        pageNumber: params.pageNumber || 1
+      }
+    });
+    return response.data;
+  },
+
   getOrders: async (): Promise<Order[]> => {
     const response = await api.get('/abc-supply/orders');
     return response.data.orders || response.data;
@@ -140,6 +174,9 @@ export const abcSupplyApi = {
     deliveryDate?: string;
     instructions?: string;
   }): Promise<Order> => {
+
+    console.log("Order data being sent:", orderData);
+    
     const orderPayload = {
       requestId: `REQ-${Date.now()}`,
       purchaseOrder: `PO-${Date.now()}`,
@@ -205,6 +242,8 @@ export const abcSupplyApi = {
     };
 
     const response = await api.post('/abc-supply/orders', orderPayload);
+    console.log("response,", response.data);
+    
     return response.data;
   },
 
