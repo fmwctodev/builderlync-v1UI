@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, MessageSquare, Calendar, Users, Save, Send } from 'lucide-react';
-import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES } from '../types/campaigns';
+import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES, Campaign } from '../types/campaigns';
 import { templateApi, Template } from '../services/templateApi';
 
 interface CampaignModalProps {
@@ -8,9 +8,10 @@ interface CampaignModalProps {
   onClose: () => void;
   onSave: (data: CampaignFormData, sendNow: boolean) => Promise<void>;
   initialData?: Partial<CampaignFormData>;
+  editingCampaign?: Campaign | null;
 }
 
-const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, initialData }) => {
+const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, initialData, editingCampaign }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [campaignType, setCampaignType] = useState<CampaignType>('email');
@@ -34,8 +35,40 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   useEffect(() => {
     if (show) {
       loadProposalTemplates();
+      if (editingCampaign) {
+        setFormData({
+          name: editingCampaign.name,
+          type: editingCampaign.type,
+          subject: editingCampaign.subject || '',
+          from_name: editingCampaign.from_name || '',
+          from_email: editingCampaign.from_email || '',
+          content: editingCampaign.content,
+          target_audience: editingCampaign.target_audience || {
+            filter_type: 'all',
+            estimated_count: 0,
+          },
+          tags: editingCampaign.tags || [],
+          scheduled_date: editingCampaign.scheduled_date,
+        });
+        setCampaignType(editingCampaign.type);
+      } else {
+        setFormData({
+          name: '',
+          type: 'email',
+          subject: '',
+          from_name: '',
+          from_email: '',
+          content: '',
+          target_audience: {
+            filter_type: 'all',
+            estimated_count: 0,
+          },
+          tags: [],
+        });
+        setCampaignType('email');
+      }
     }
-  }, [show]);
+  }, [show, editingCampaign]);
 
   const loadProposalTemplates = async () => {
     try {
@@ -120,7 +153,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            {initialData ? 'Edit Campaign' : 'Create New Campaign'}
+            {editingCampaign ? 'Edit Campaign' : 'Create New Campaign'}
           </h2>
           <button
             onClick={onClose}
@@ -138,12 +171,13 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             {/* Type Selector */}
             <div className="flex gap-4">
               <button
-                onClick={() => handleTypeChange('email')}
+                onClick={() => !editingCampaign && handleTypeChange('email')}
+                disabled={!!editingCampaign}
                 className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                   campaignType === 'email'
                     ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                }`}
+                } ${editingCampaign ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex flex-col items-center gap-2">
                   <Mail className={`h-8 w-8 ${campaignType === 'email' ? 'text-red-600' : 'text-gray-400'}`} />
@@ -154,12 +188,13 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </button>
 
               <button
-                onClick={() => handleTypeChange('sms')}
+                onClick={() => !editingCampaign && handleTypeChange('sms')}
+                disabled={!!editingCampaign}
                 className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                   campaignType === 'sms'
                     ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-                }`}
+                } ${editingCampaign ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex flex-col items-center gap-2">
                   <MessageSquare className={`h-8 w-8 ${campaignType === 'sms' ? 'text-red-600' : 'text-gray-400'}`} />

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Settings, Edit, Copy, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
 import type { InstantEstimator, InstantEstimatorsResponse } from '../types';
 import Toast from '../../../shared/components/Toast';
 
 const InstantEstimator: React.FC = () => {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [activeTab, setActiveTab] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -179,7 +180,7 @@ const InstantEstimator: React.FC = () => {
                       <tr key={estimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <button
-                            onClick={() => navigate(`/instant-estimator/${estimator.id}/manage`)}
+                            onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
                             className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
                           >
                             {estimator.name}
@@ -188,7 +189,7 @@ const InstantEstimator: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
                             <button 
-                              onClick={() => navigate(`/instant-estimator/${estimator.id}/manage`)}
+                              onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
                               className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                             >
                               <Settings className="w-3 h-3" />

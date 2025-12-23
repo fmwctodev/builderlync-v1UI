@@ -9,6 +9,7 @@ import type { WidgetWithPreference } from '../types/dashboard';
 
 export default function Dashboard() {
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const user = useSelector((state: RootState) => state.auth.user);
   
   const { data: widgets = [], isLoading, refetch } = useGetWidgetsQuery(undefined);
@@ -27,7 +28,9 @@ export default function Dashboard() {
   });
 
   const handleRefresh = async () => {
+    setIsRefreshing(true);
     await refetch();
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   const handleApplyWidgets = async (selectedWidgetKeys: string[]) => {
@@ -76,19 +79,19 @@ export default function Dashboard() {
         <div className="flex gap-2 relative">
           <button
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             onClick={handleRefresh}
-            disabled={isLoading}
+            disabled={isRefreshing}
           >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            <span>Refresh</span>
+            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
 
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
+          {/* <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
             <Copy size={16} />
             <span>Clone</span>
-          </button>
+          </button> */}
 
           <div className="relative">
             <button

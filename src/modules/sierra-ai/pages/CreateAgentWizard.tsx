@@ -23,7 +23,6 @@ interface WizardState {
 
 export function CreateAgentWizard() {
   const navigate = useNavigate();
-  const organizationId = localStorage.getItem('currentOrganizationId') || '';
   const [currentStep, setCurrentStep] = useState<WizardStep>('template');
   const [isCreating, setIsCreating] = useState(false);
   const [wizardState, setWizardState] = useState<WizardState>({
@@ -82,10 +81,6 @@ export function CreateAgentWizard() {
   };
 
   const handleCreateAgent = async () => {
-    if (!organizationId) {
-      alert('Organization ID not found');
-      return;
-    }
     if (!wizardState.agentName || !wizardState.mainGoal) return;
 
     setIsCreating(true);
@@ -96,7 +91,6 @@ export function CreateAgentWizard() {
       const agentType = wizardState.template === 'business_assistant' ? 'voice' : 'voice';
 
       const response = await elevenlabsApi.createAgent({
-        organization_id: organizationId,
         name: wizardState.agentName,
         description: wizardState.mainGoal,
         agent_type: agentType,

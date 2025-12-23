@@ -137,6 +137,9 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearRegistrationEmail: (state) => {
+      state.registrationEmail = null;
+    },
   },
 });
 
@@ -164,6 +167,7 @@ export const {
   resendRegistrationOtpFailure,
   logout,
   clearError,
+  clearRegistrationEmail,
 } = authSlice.actions;
 
 export const authReducer = authSlice.reducer;

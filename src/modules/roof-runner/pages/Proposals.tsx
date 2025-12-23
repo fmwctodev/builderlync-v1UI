@@ -476,14 +476,16 @@ export default function Proposals() {
               </div>
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700" onClick={() => {
+                  setShowTemplateModal(false);
+                  setShowNewProposalModal(true);
+                }}>
               <button className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
                 Create without template
               </button>
               <button 
                 onClick={() => {
                   setShowTemplateModal(false);
-                  setShowProposalEditor(true);
                 }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
               >

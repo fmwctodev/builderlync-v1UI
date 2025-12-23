@@ -1,7 +1,7 @@
 import { knowledgeBaseApi } from './knowledgeBaseApi';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3200';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200';
 
 export interface WebSource {
   id: string;

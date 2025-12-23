@@ -40,7 +40,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (error) {
       if (error === 'Please verify your email first') {
-        navigate('/auth/verify-otp', { state: { email } });
+        navigate('/auth/verify-otp', { state: { email, from: 'login' } });
       } else {
         setToast({message: error, type: 'error'});
       }
