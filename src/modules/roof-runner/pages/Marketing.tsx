@@ -4,7 +4,7 @@ import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
   Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings,
-  Eye, Trash2
+  Eye, Trash2, Edit2
 } from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
@@ -22,8 +22,8 @@ const Marketing: React.FC = () => {
   const tabs = [
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'campaigns', label: 'Campaigns', icon: Target },
-    { id: 'ads-manager', label: 'Ads Manager', icon: TrendingUp },
-    { id: 'social-planner', label: 'Social Planner', icon: Share2 },
+    // { id: 'ads-manager', label: 'Ads Manager', icon: TrendingUp },
+    // { id: 'social-planner', label: 'Social Planner', icon: Share2 },
     { id: 'form', label: 'Form', icon: FileText }
   ];
 
@@ -169,6 +169,7 @@ const CampaignsTab: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [campaignStats, setCampaignStats] = useState<any>(null);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     loadCampaigns();
@@ -186,9 +187,15 @@ const CampaignsTab: React.FC = () => {
   const handleSaveCampaign = async (data: CampaignFormData, sendNow: boolean) => {
     try {
       setIsLoading(true);
-      await campaignsApi.createCampaign(data, sendNow);
-      setToast({ show: true, message: sendNow ? 'Campaign sent successfully!' : 'Campaign saved as draft', type: 'success' });
+      if (editingCampaign) {
+        await campaignsApi.updateCampaign(editingCampaign.id, data);
+        setToast({ show: true, message: 'Campaign updated successfully!', type: 'success' });
+      } else {
+        await campaignsApi.createCampaign(data, sendNow);
+        setToast({ show: true, message: sendNow ? 'Campaign sent successfully!' : 'Campaign saved as draft', type: 'success' });
+      }
       setShowModal(false);
+      setEditingCampaign(null);
       loadCampaigns();
     } catch (error) {
       console.error('Error saving campaign:', error);
@@ -196,6 +203,11 @@ const CampaignsTab: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setShowModal(true);
   };
 
   const handleDeleteCampaign = async (id: string) => {
@@ -227,8 +239,12 @@ const CampaignsTab: React.FC = () => {
     <div className="space-y-6">
       <CampaignModal
         show={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setEditingCampaign(null);
+        }}
         onSave={handleSaveCampaign}
+        editingCampaign={editingCampaign}
       />
 
       {/* Campaign Details Modal */}
@@ -384,6 +400,13 @@ const CampaignsTab: React.FC = () => {
                           title="View Details"
                         >
                           <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleEditCampaign(campaign)}
+                          className="text-green-600 hover:text-green-700 dark:text-green-400"
+                          title="Edit"
+                        >
+                          <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteCampaign(campaign.id)}
