@@ -102,7 +102,7 @@ export function RoofRunnerModule() {
         <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
         <Route path="material-orders" element={<MaterialOrders />} />
         <Route path="work-orders" element={<WorkOrders />} />
-        <Route path="automation" element={<Automations />} />
+        {/* <Route path="automation" element={<Automations />} /> */}
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="marketing" element={<Marketing />} />
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
@@ -110,9 +110,9 @@ export function RoofRunnerModule() {
         <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
         <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
         <Route path="file-manager" element={<FileManager />} />
-        <Route path="reputation" element={<Reputation />} />
+        {/* <Route path="reputation" element={<Reputation />} /> */}
         <Route path="catalog" element={<Catalog />} />
-        <Route path="reporting" element={<BlankPage title="Reporting" />} />
+        {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
         <Route path="support" element={<Support />} />
         <Route path="settings/*" element={<Settings />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />

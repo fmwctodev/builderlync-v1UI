@@ -140,7 +140,8 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
     }
     
     // For other filters, show all conversations for now
-    if (activeFilter === 'recents' || activeFilter === 'starred' || activeFilter === 'all') {
+    // if (activeFilter === 'recents' || activeFilter === 'starred' || activeFilter === 'all') {
+    if (activeFilter === 'recents' || activeFilter === 'all') {
       // Continue to search filter
     }
 
@@ -189,7 +190,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
           {[
             { key: 'unread' as FilterTab, label: 'Unread' },
             { key: 'recents' as FilterTab, label: 'Recents' },
-            { key: 'starred' as FilterTab, label: 'Starred' },
+            // { key: 'starred' as FilterTab, label: 'Starred' },
             { key: 'all' as FilterTab, label: 'All' },
           ].map(({ key, label }) => (
             <button

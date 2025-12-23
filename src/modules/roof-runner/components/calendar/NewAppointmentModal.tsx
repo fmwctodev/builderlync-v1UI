@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { createAppointment, getCalendars, Calendar } from '../../../../shared/store/services/calendarsApi';
+import GooglePlacesAutocomplete from '../../../../shared/components/GooglePlacesAutocomplete';
 
 interface NewAppointmentModalProps {
   isOpen: boolean;
@@ -34,6 +35,13 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({ isOpen, onClo
     } catch (error) {
       console.error('Error fetching calendars:', error);
     }
+  };
+
+  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
+    setFormData(prev => ({
+      ...prev,
+      location: address
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,12 +161,11 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({ isOpen, onClo
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Location</label>
-            <input
-              type="text"
+            <GooglePlacesAutocomplete
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              onChange={handleAddressChange}
               placeholder="Enter location"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 

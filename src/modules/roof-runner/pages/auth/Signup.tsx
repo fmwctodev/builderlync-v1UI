@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { Link, useNavigate , useLocation } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, User, Building, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { registerRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import { registerRequest, clearError, clearRegistrationEmail } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
+import { authApi } from '../../../../shared/services/authApi';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -16,10 +17,14 @@ const Signup: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { loading, error, user, registrationEmail } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const fromVerifyOtp = location.state?.fromVerifyOtp;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -27,6 +32,42 @@ const Signup: React.FC = () => {
       [e.target.name]: e.target.value
     }));
   };
+
+  // Debounced slug check
+  useEffect(() => {
+    if (!formData.companyName) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const slug = formData.companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+    
+    if (!slug) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    setCheckingSlug(true);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await authApi.checkCompanySlug(slug);
+        setSlugAvailable(result.available);
+      } catch (error) {
+        console.error('Error checking slug:', error);
+        setSlugAvailable(null);
+      } finally {
+        setCheckingSlug(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.companyName]);
+
+  useEffect(() => {
+    // Clear registration email state when returning to signup
+    dispatch(clearError());
+    dispatch(clearRegistrationEmail());
+  }, [dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -41,10 +82,10 @@ const Signup: React.FC = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (registrationEmail && !user) {
+    if (registrationEmail && !user && !fromVerifyOtp) {
       navigate('/auth/verify-otp', { state: { email: registrationEmail } });
     }
-  }, [registrationEmail, user, navigate]);
+  }, [registrationEmail, user, navigate, fromVerifyOtp]);
 
   useEffect(() => {
     if (error) {
@@ -160,18 +201,37 @@ const Signup: React.FC = () => {
                 type="text"
                 value={formData.companyName}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
                 style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
                 placeholder="Your organization name"
                 required
               />
+              {formData.companyName && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  {checkingSlug ? (
+                    <Loader className="animate-spin text-gray-400" size={20} />
+                  ) : slugAvailable === true ? (
+                    <CheckCircle className="text-green-500" size={20} />
+                  ) : slugAvailable === false ? (
+                    <XCircle className="text-red-500" size={20} />
+                  ) : null}
+                </div>
+              )}
             </div>
             {formData.companyName && (
-              <p className="mt-2 text-xs text-gray-500">
-                URL: <span className="font-mono text-red-600">org/{formData.companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}</span>
-              </p>
+              <div className="mt-2">
+                <p className="text-xs text-gray-500">
+                  URL: <span className="font-mono text-red-600">org/{formData.companyName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}</span>
+                </p>
+                {slugAvailable === false && (
+                  <p className="text-xs text-red-600 mt-1">This organization name is already taken</p>
+                )}
+                {slugAvailable === true && (
+                  <p className="text-xs text-green-600 mt-1">This organization name is available</p>
+                )}
+              </div>
             )}
           </div>
 
@@ -244,7 +304,7 @@ const Signup: React.FC = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || slugAvailable === false || checkingSlug}
             className="w-full text-white py-3 px-4 rounded-lg hover:opacity-90 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             style={{backgroundColor: '#dc2626', '--tw-ring-color': '#dc2626'} as React.CSSProperties}
           >

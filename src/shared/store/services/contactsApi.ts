@@ -134,6 +134,16 @@ class ContactsApiService {
     return response.json();
   }
 
+  async exportContactsCsv(search?: string, type?: string) {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (type) params.append('type', type);
+
+    return this.makeRequest(`/contacts/export?${params}`, {
+      method: 'POST',
+    });
+  }
+
   async createNote(noteData: { data: string; contactId: number }) {
     return this.makeRequest('/notes', {
       method: 'POST',
@@ -181,6 +191,7 @@ export const getContactById = contactsApiService.getContactById.bind(contactsApi
 export const updateContact = contactsApiService.updateContact.bind(contactsApiService);
 export const deleteContact = contactsApiService.deleteContact.bind(contactsApiService);
 export const uploadContactsCsv = contactsApiService.uploadContactsCsv.bind(contactsApiService);
+export const exportContactsCsv = contactsApiService.exportContactsCsv.bind(contactsApiService);
 export const createNote = contactsApiService.createNote.bind(contactsApiService);
 export const getNotes = contactsApiService.getNotes.bind(contactsApiService);
 export const deleteNote = contactsApiService.deleteNote.bind(contactsApiService);

@@ -5,7 +5,6 @@ import { elevenlabsApi } from '../services/elevenlabsApi';
 interface CreateAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  organizationId: string;
   onSuccess: (agent: any) => void;
 }
 
@@ -18,10 +17,8 @@ interface Voice {
 export function CreateAgentModal({
   isOpen,
   onClose,
-  organizationId,
   onSuccess,
 }: CreateAgentModalProps) {
-  console.log('CreateAgentModal props:', { isOpen, organizationId });
   const [loading, setLoading] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -63,10 +60,7 @@ export function CreateAgentModal({
     setLoading(true);
 
     try {
-      const response = await elevenlabsApi.createAgent({
-        organization_id: organizationId,
-        ...formData,
-      });
+      const response = await elevenlabsApi.createAgent(formData);
       onSuccess(response.data);
       onClose();
       setFormData({
@@ -88,8 +82,6 @@ export function CreateAgentModal({
     }
   };
 
-  console.log('CreateAgentModal render, isOpen:', isOpen);
-  
   if (!isOpen) return null;
 
   return (

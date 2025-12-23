@@ -26,7 +26,7 @@ const navItems = {
   ],
   tools: [
     { name: 'Sierra AI', icon: Bot, path: 'ai-agents', permission: 'automation' },
-    { name: 'Job Cam', icon: Camera, path: 'job-cam', permission: 'field_operations' },
+    // { name: 'Job Cam', icon: Camera, path: 'job-cam', permission: 'field_operations' },
     { name: 'Instant Estimator', icon: DollarSign, path: 'instant-estimator', permission: 'estimates' },
     { name: 'Measurements', icon: Ruler, path: 'measurements', permission: 'integrations' },
     { name: 'Proposals', icon: FileCheck, path: 'proposals', permission: 'estimates' },
@@ -34,12 +34,12 @@ const navItems = {
     { name: 'Work Orders', icon: Clipboard, path: 'work-orders', permission: 'field_operations' },
   ],
   marketing: [
-    { name: 'Automation', icon: Zap, path: 'automation', permission: 'automation' },
+    // { name: 'Automation', icon: Zap, path: 'automation', permission: 'automation' },
     { name: 'Opportunities', icon: BarChart, path: 'opportunities', permission: 'jobs' },
     { name: 'Marketing', icon: Megaphone, path: 'marketing', permission: 'marketing' },
     { name: 'File Manager', icon: FolderOpen, path: 'file-manager', permission: null },
-    { name: 'Reputation', icon: Star, path: 'reputation', permission: 'marketing' },
-    { name: 'Reporting', icon: BarChart2, path: 'reporting', permission: 'reporting' },
+    // { name: 'Reputation', icon: Star, path: 'reputation', permission: 'marketing' },
+    // { name: 'Reporting', icon: BarChart2, path: 'reporting', permission: 'reporting' },
     { name: 'Catalog', icon: Package, path: 'catalog', permission: null },
   ],
   system: [
