@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import { abcSupplyApi } from '../services/api';
-import { Branch } from '../types';
+import { Branch, ShipTo, ShipToBranch } from '../types';
 
 interface CheckoutFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: CheckoutFormData) => void;
   loading: boolean;
+  selectedShipTos: string[];
+  shipTos: ShipTo[];
 }
 
 export interface CheckoutFormData {
@@ -29,8 +31,8 @@ export interface CheckoutFormData {
   instructions?: string;
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading }) => {
-  const [branches, setBranches] = useState<Branch[]>([]);
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, selectedShipTos, shipTos }) => {
+  const [availableBranches, setAvailableBranches] = useState<ShipToBranch[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     branchNumber: '',
     deliveryAddress: {
@@ -51,18 +53,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   });
 
   useEffect(() => {
-    if (isOpen) {
-      const fetchBranches = async () => {
-        try {
-          const data = await abcSupplyApi.getBranches();
-          setBranches(data);
-        } catch (error) {
-          console.error('Failed to load branches:', error);
-        }
-      };
-      fetchBranches();
-    }
-  }, [isOpen]);
+    // Get branches from selected shipTos
+    const branches: ShipToBranch[] = [];
+    selectedShipTos.forEach(shipToNumber => {
+      const shipTo = shipTos.find(s => s.number === shipToNumber);
+      if (shipTo && shipTo.branches) {
+        branches.push(...shipTo.branches);
+      }
+    });
+    // Remove duplicates based on branch number
+    const uniqueBranches = branches.filter((branch, index, self) => 
+      index === self.findIndex(b => b.number === branch.number)
+    );
+    setAvailableBranches(uniqueBranches);
+  }, [selectedShipTos, shipTos]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,12 +104,12 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
               value={formData.branchNumber}
               onChange={(e) => updateField('branchNumber', '', e.target.value)}
               required
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
             >
               <option value="">Select a branch...</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name} - {branch.address.city}, {branch.address.state}
+              {availableBranches.map((branch) => (
+                <option key={branch.number} value={branch.number}>
+                  {branch.name} ({branch.number})
                 </option>
               ))}
             </select>
@@ -120,7 +124,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryAddress.name}
                 onChange={(e) => updateField('deliveryAddress', 'name', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="text"
@@ -128,14 +132,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryAddress.line1}
                 onChange={(e) => updateField('deliveryAddress', 'line1', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="text"
                 placeholder="Address Line 2 (Optional)"
                 value={formData.deliveryAddress.line2}
                 onChange={(e) => updateField('deliveryAddress', 'line2', e.target.value)}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="text"
@@ -143,7 +147,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryAddress.city}
                 onChange={(e) => updateField('deliveryAddress', 'city', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="text"
@@ -151,7 +155,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryAddress.state}
                 onChange={(e) => updateField('deliveryAddress', 'state', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="text"
@@ -159,7 +163,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryAddress.postal}
                 onChange={(e) => updateField('deliveryAddress', 'postal', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
             </div>
           </div>
@@ -173,7 +177,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.contact.name}
                 onChange={(e) => updateField('contact', 'name', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="email"
@@ -181,7 +185,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.contact.email}
                 onChange={(e) => updateField('contact', 'email', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
               />
               <input
                 type="tel"
@@ -189,7 +193,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.contact.phone}
                 onChange={(e) => updateField('contact', 'phone', e.target.value)}
                 required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 md:col-span-2"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500 md:col-span-2"
               />
             </div>
           </div>
@@ -204,7 +208,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 value={formData.deliveryDate}
                 onChange={(e) => updateField('deliveryDate', '', e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
               />
             </div>
           </div>
@@ -218,7 +222,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
               value={formData.instructions}
               onChange={(e) => updateField('instructions', '', e.target.value)}
               rows={3}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
             />
           </div>
 
@@ -233,7 +237,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium"
+              className="flex-1 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium"
             >
               {loading ? 'Processing...' : 'Place Order'}
             </button>

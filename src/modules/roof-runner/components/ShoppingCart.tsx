@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Plus, Minus, Trash2, X } from 'lucide-react';
 import { Product } from '../../abc-supply/types';
+import { abcSupplyApi } from '../../abc-supply/services/api';
+import CheckoutForm, { CheckoutFormData } from '../../abc-supply/components/CheckoutForm';
 
 interface CartItem extends Product {
   quantity: number;
@@ -24,6 +26,104 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
   onCheckout
 }) => {
   const [selectedBranch, setSelectedBranch] = useState('');
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [shipTos, setShipTos] = useState([]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const fetchShipTos = async () => {
+        try {
+          const response = await fetch('https://builderlyncapi.testenvapp.com/api/abc-supply/accounts/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              filters: [{
+                key: "storefront",
+                condition: "equals",
+                values: ["abc"]
+              }],
+              pagination: {
+                itemsPerPage: 20,
+                pageNumber: 1
+              }
+            })
+          });
+          const data = await response.json();
+          if (data.success && data.data?.shipTos) {
+            const sellableShipTos = data.data.shipTos.filter(item => item.isSellable === true);
+            setShipTos(sellableShipTos);
+            
+            // Extract all branches from shipTos
+            const allBranches = [];
+            sellableShipTos.forEach(shipTo => {
+              if (shipTo.branches) {
+                shipTo.branches.forEach(branch => {
+                  allBranches.push({
+                    id: branch.number,
+                    name: branch.name,
+                    shipToNumber: shipTo.number
+                  });
+                });
+              }
+            });
+            setBranches(allBranches);
+          }
+        } catch (error) {
+          console.error('Failed to load shipTos:', error);
+        }
+      };
+      fetchShipTos();
+    }
+  }, [isOpen]);
+
+  const handleProceedToCheckout = () => {
+    console.log('Proceed to Checkout clicked from ShoppingCart');
+    setShowCheckoutForm(true);
+  };
+
+  const handleCheckoutSubmit = async (checkoutData: CheckoutFormData) => {
+    console.log('Checkout form submitted:', checkoutData);
+    
+    if (items.length === 0) return;
+
+    try {
+      setLoading(true);
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.itemNumber,
+          sku: item.itemNumber,
+          name: item.familyName || `Product ${item.itemNumber}`,
+          quantity: item.quantity,
+          unitPrice: item.price || 0,
+          uom: item.uoms?.[0]?.code || 'EA'
+        })),
+        branchNumber: checkoutData.branchNumber,
+        deliveryAddress: checkoutData.deliveryAddress,
+        contact: checkoutData.contact,
+        deliveryDate: checkoutData.deliveryDate,
+        instructions: checkoutData.instructions
+      };
+
+      console.log('Calling API with order data:', orderData);
+      const result = await abcSupplyApi.createOrder(orderData);
+      console.log('API call successful:', result);
+      
+      setShowCheckoutForm(false);
+      setOrderSuccess(true);
+      onCheckout(); // This will clear the cart in parent component
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      alert('Order failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
   const tax = subtotal * 0.08;
@@ -53,20 +153,22 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             </button>
           </div>
 
-          {/* Branch Selection */}
+          {/* ShipTo Selection */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Branch for Pickup/Delivery
+              Select Ship To Address
             </label>
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">Select a branch...</option>
-              <option value="austin-north">ABC Supply - Austin North</option>
-              <option value="austin-south">ABC Supply - Austin South</option>
-              <option value="round-rock">ABC Supply - Round Rock</option>
+              <option value="">Select a ship to address...</option>
+              {shipTos.map((shipTo) => (
+                <option key={shipTo.number} value={shipTo.number}>
+                  {shipTo.name} ({shipTo.number})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -167,8 +269,8 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               </div>
 
               <button
-                onClick={onCheckout}
-                disabled={!selectedBranch}
+                onClick={handleProceedToCheckout}
+                disabled={!selectedBranch || items.length === 0}
                 className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Proceed to Checkout
@@ -181,6 +283,36 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           )}
         </div>
       </div>
+
+      {/* Success Message */}
+      {orderSuccess && (
+        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center max-w-sm mx-4">
+            <ShoppingCart className="w-16 h-16 text-green-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Order Placed Successfully!</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Your order has been submitted and is being processed.</p>
+            <button 
+              onClick={() => {
+                setOrderSuccess(false);
+                onClose();
+              }}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Form */}
+      <CheckoutForm
+        isOpen={showCheckoutForm}
+        onClose={() => setShowCheckoutForm(false)}
+        onSubmit={handleCheckoutSubmit}
+        loading={loading}
+        selectedShipTos={selectedBranch ? [selectedBranch] : []}
+        shipTos={shipTos}
+      />
     </div>
   );
 };

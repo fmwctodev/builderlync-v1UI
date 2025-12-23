@@ -216,11 +216,71 @@ export interface Coordinates {
   longitude: number;
 }
 
+// ShipTo Types
+export interface ShipTo {
+  name: string;
+  number: string;
+  status: string;
+  isSellable: boolean;
+  address: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postal: string;
+    country: string;
+  };
+  contacts: {
+    links: any[];
+  };
+  paymentTerms: any;
+  tax: any;
+  billTo: any;
+  soldTo: any;
+  branches: ShipToBranch[];
+}
+
+export interface ShipToBranch {
+  homeBranch: boolean;
+  number: string;
+  name: string;
+  storefront: string;
+  status: string;
+  type: string;
+  links: {
+    self: string;
+  };
+}
+
 // Order Types
 export interface CartItem {
   productId: string;
   quantity: number;
   uom: string;
+  shipToNumber?: string;
+}
+
+export interface OrderHistoryItem {
+  orderNumber: string;
+  branch: number;
+  branchCityState: string;
+  invoiceDate: string | null;
+  orderType: string;
+  orderStatus: string;
+  productQty: number;
+}
+
+export interface OrderHistoryResponse {
+  success: boolean;
+  data: {
+    pagination: {
+      itemsPerPage: number;
+      pageNumber: number;
+      totalPages: number;
+      totalItems: number;
+    };
+    items: OrderHistoryItem[];
+  };
 }
 
 export interface Order {
