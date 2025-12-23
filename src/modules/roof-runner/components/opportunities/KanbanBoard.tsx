@@ -4,7 +4,7 @@ import ViewEditOpportunityModal from './ViewEditOpportunityModal';
 import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
-import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface KanbanBoardProps {
   selectedJobType: JobType | 'all';
@@ -15,6 +15,7 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
   const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
 
@@ -25,63 +26,101 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Hardcoded stages for now - TODO: fetch from backend API
-      const mockStages: PipelineStage[] = [
-        { id: '1', pipeline_id: '1', name: 'New Lead', order_position: 1, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
-        { id: '2', pipeline_id: '1', name: 'Contacted', order_position: 2, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
-        { id: '3', pipeline_id: '1', name: 'Qualified', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, created_at: '', updated_at: '' },
-      ];
-
-      setStages(mockStages);
-
-      // Fetch opportunities from backend API
+      // Fetch opportunities
       const filters: any = {};
       if (selectedJobType !== 'all') {
-        // For now, fetch all opportunities since we don't have job_type filter in backend yet
-        // TODO: Add job_type filter to backend API
+        filters.job_type = selectedJobType;
       }
       
       const opportunities = await opportunitiesApi.getOpportunities(filters);
+      console.log('KanbanBoard - Loaded opportunities:', opportunities);
+      
+      // Get all unique stages from all opportunities
+      const stagesMap = new Map<string, PipelineStage>();
+      
+      if (selectedJobType === 'all') {
+        // When showing all, collect stages from all opportunities
+        opportunities.forEach(opp => {
+          if (opp.stage && !stagesMap.has(opp.stage_id)) {
+            stagesMap.set(opp.stage_id, opp.stage);
+          }
+        });
+        const loadedStages = Array.from(stagesMap.values()).sort((a, b) => 
+          (a.order_position || 0) - (b.order_position || 0)
+        );
+        setStages(loadedStages);
+      } else {
+        // For specific job type, fetch all stages from that pipeline
+        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
+        if (pipeline && pipeline.stages) {
+          setStages(pipeline.stages);
+        }
+      }
+      
       setOpportunitiesList(opportunities);
     } catch (error) {
       console.error('Error loading kanban data:', error);
+      setError('Failed to load opportunities. Please try again.');
+      setOpportunitiesList([]);
+      setStages([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, opportunity: OpportunityWithDetails) => {
-    setDraggedItem(opportunity);
+  const handleDragStart = (e: React.DragEvent, opportunity: any) => {
+    // Find the full opportunity object from the list
+    const fullOpportunity = opportunitiesList.find(opp => opp.id === opportunity.id);
+    if (fullOpportunity) {
+      setDraggedItem(fullOpportunity);
+    }
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = async (e: React.DragEvent, targetStageId: string) => {
     e.preventDefault();
     if (draggedItem && draggedItem.stage_id !== targetStageId) {
+      const previousStageId = draggedItem.stage_id;
+      
+      // Optimistic update
+      setOpportunitiesList(prev =>
+        prev.map(opp =>
+          opp.id === draggedItem.id
+            ? { ...opp, stage_id: targetStageId }
+            : opp
+        )
+      );
+
       try {
         await opportunitiesApi.moveOpportunityToStage(draggedItem.id, targetStageId);
-
+      } catch (error) {
+        console.error('Error moving opportunity:', error);
+        // Revert on error
         setOpportunitiesList(prev =>
           prev.map(opp =>
             opp.id === draggedItem.id
-              ? { ...opp, stage_id: targetStageId }
+              ? { ...opp, stage_id: previousStageId }
               : opp
           )
         );
-      } catch (error) {
-        console.error('Error moving opportunity:', error);
-        alert('Failed to move opportunity. Please try again.');
+        setError('Failed to move opportunity. Please try again.');
+        setTimeout(() => setError(null), 3000);
       }
-      setDraggedItem(null);
     }
+    setDraggedItem(null);
   };
 
   const getStageOpportunities = (stageId: string) => {
-    return opportunitiesList.filter(opp => opp.stage_id === stageId);
+    const filtered = opportunitiesList.filter(opp => opp.stage_id === stageId);
+    console.log(`Stage ${stageId} opportunities:`, filtered);
+    return filtered;
   };
 
   const getStageValue = (stageId: string) => {
@@ -106,10 +145,49 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
     loadData();
   };
 
+  const handleRetry = () => {
+    loadData();
+  };
+
   if (loading) {
     return (
+      <div className="h-full p-6">
+        <div className="flex gap-4 min-w-max">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="w-80 flex-shrink-0">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-1/2"></div>
+                </div>
+                <div className="p-3 space-y-3">
+                  {[1, 2].map((j) => (
+                    <div key={j} className="h-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600 dark:text-gray-400">Loading opportunities...</div>
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Something went wrong</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -127,6 +205,7 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
                 key={stage.id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, stage.id)}
+                className="transition-all duration-200"
               >
                 <KanbanColumn
                   stage={{
@@ -134,16 +213,16 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
                     title: stage.name,
                     opportunitiesCount: stageOpportunities.length,
                     value: stageValue,
-                    color: `border-[${stage.color}]`,
+                    color: stage.color,
                   }}
                   opportunities={stageOpportunities.map(opp => ({
                     id: opp.id,
                     stage: opp.stage_id,
-                    name: opp.opportunity_name,
+                    name: opp.opportunity_name || 'Unnamed Opportunity',
                     source: opp.source,
                     business: opp.business_name,
-                    value: opp.value,
-                    initials: opp.opportunity_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+                    value: opp.value || 0,
+                    initials: (opp.opportunity_name || 'UO').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
                   }))}
                   onDragStart={handleDragStart}
                   onCardClick={handleCardClick}
