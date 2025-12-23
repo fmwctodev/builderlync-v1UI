@@ -157,15 +157,33 @@ export default function ViewEditOpportunityModal({
     try {
       await opportunitiesApi.updateOpportunity(opportunityId, formData);
 
-      if (opportunity?.contacts?.[0]) {
-        const primaryContact = opportunity.contacts[0];
-        if (formData.contact_name || formData.contact_email || formData.contact_phone) {
-        }
-      }
-
+      // Update originalData to match formData so there are no unsaved changes
+      setOriginalData({ ...formData });
+      
       onUpdate();
       alert('Opportunity updated successfully!');
-      handleClose();
+      // Close without confirmation since changes are saved
+      setOpportunity(null);
+      setFormData({
+        opportunity_name: '',
+        pipeline_id: '',
+        stage_id: '',
+        status: 'open',
+        value: 0,
+        owner_id: undefined,
+        business_name: '',
+        source: '',
+        tags: [],
+        appointment_time: '',
+        contact_name: '',
+        contact_email: '',
+        contact_phone: '',
+        follower_ids: [],
+      });
+      setOriginalData(null);
+      setErrors({});
+      setActiveSection('opportunity-details');
+      onClose();
     } catch (error) {
       console.error('Error updating opportunity:', error);
       alert('Failed to update opportunity. Please try again.');

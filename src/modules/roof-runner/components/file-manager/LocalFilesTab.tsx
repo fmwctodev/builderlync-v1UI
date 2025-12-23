@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, Folder as FolderIcon, Search, Filter } from 'lucide-react';
+import { Upload, Folder as FolderIcon, Search, Filter, CloudOff } from 'lucide-react';
 import { backendFilesApi, FileRecord, FolderRecord } from '../../../../shared/services/backendFilesApi';
 import FolderNavigation from './FolderNavigation';
 import FileGrid from './FileGrid';
@@ -18,6 +18,7 @@ export default function LocalFilesTab() {
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploadZone, setShowUploadZone] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
   useEffect(() => {
     loadFolderContents();
@@ -126,22 +127,24 @@ export default function LocalFilesTab() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsCreateFolderModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-          >
-            <FolderIcon className="h-4 w-4 mr-2 text-[#dc2626]" />
-            Create Folder
-          </button>
-          <button
-            onClick={() => setShowUploadZone(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Files
-          </button>
-        </div>
+        {isCloudConnected && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsCreateFolderModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <FolderIcon className="h-4 w-4 mr-2 text-[#dc2626]" />
+              Create Folder
+            </button>
+            <button
+              onClick={() => setShowUploadZone(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#dc2626] hover:bg-red-700"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Files
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -250,55 +253,75 @@ export default function LocalFilesTab() {
         </div>
       ) : !isLoading && folders.length === 0 && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FolderIcon className="h-8 w-8 text-gray-400 dark:text-gray-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No files yet</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Upload your first file or create a folder to get started
-          </p>
-          <button
-            onClick={() => setShowUploadZone(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Files
-          </button>
+          {isCloudConnected ? (
+            <>
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FolderIcon className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No files yet</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Upload your first file or create a folder to get started
+              </p>
+              <button
+                onClick={() => setShowUploadZone(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Files
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CloudOff className="h-8 w-8 text-red-500 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Cloud Not Connected</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Please connect to cloud storage to access your files
+              </p>
+            </>
+          )}
         </div>
       )}
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white">Storage</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Unlimited Storage Available</p>
-          </div>
-          <div className="text-right">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-              Unlimited
-            </span>
+      {isCloudConnected && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">Storage</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Unlimited Storage Available</p>
+            </div>
+            <div className="text-right">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Unlimited
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <CreateFolderModal
-        isOpen={isCreateFolderModalOpen}
-        onClose={() => setIsCreateFolderModalOpen(false)}
-        onCreate={handleCreateFolder}
-      />
+      {isCloudConnected && (
+        <>
+          <CreateFolderModal
+            isOpen={isCreateFolderModalOpen}
+            onClose={() => setIsCreateFolderModalOpen(false)}
+            onCreate={handleCreateFolder}
+          />
 
-      <FilterSortDrawer
-        isOpen={isFilterDrawerOpen}
-        onClose={() => setIsFilterDrawerOpen(false)}
-        onApply={handleApplyFilters}
-      />
+          <FilterSortDrawer
+            isOpen={isFilterDrawerOpen}
+            onClose={() => setIsFilterDrawerOpen(false)}
+            onApply={handleApplyFilters}
+          />
 
-      {showUploadZone && (
-        <FileUploadZone
-          folderId={currentFolderId}
-          onUploadComplete={handleUploadComplete}
-          onClose={() => setShowUploadZone(false)}
-        />
+          {showUploadZone && (
+            <FileUploadZone
+              folderId={currentFolderId}
+              onUploadComplete={handleUploadComplete}
+              onClose={() => setShowUploadZone(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

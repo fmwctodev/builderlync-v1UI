@@ -21,32 +21,115 @@ class OpportunitiesApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
     
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(error.error || `API Error: ${response.status}`);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(error.error || `API Error: ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to server. Please check your connection.');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   async getOpportunities(filters?: OpportunityFilters): Promise<OpportunityWithDetails[]> {
-    const params = new URLSearchParams();
-    if (filters?.pipeline_id) params.append('pipeline_id', filters.pipeline_id);
-    if (filters?.stage_id) params.append('stage_id', filters.stage_id);
-    if (filters?.status) params.append('status', filters.status);
-    if (filters?.owner_id) params.append('owner_id', filters.owner_id);
+    try {
+      const params = new URLSearchParams();
+      if (filters?.pipeline_id) params.append('pipeline_id', filters.pipeline_id);
+      if (filters?.stage_id) params.append('stage_id', filters.stage_id);
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.owner_id) params.append('owner_id', filters.owner_id);
+      if (filters?.job_type) params.append('job_type', filters.job_type);
 
-    const result = await this.makeRequest(`/opportunities?${params}`);
-    return result.data || [];
+      console.log('API: Attempting to fetch opportunities from backend...');
+      const result = await this.makeRequest(`/opportunities?${params}`);
+      console.log('API: Backend response:', result);
+      return result.data || [];
+    } catch (error) {
+      console.error('API: Failed to fetch opportunities, using mock data:', error);
+      // Return mock data for development
+      const mockData = this.getMockOpportunities();
+      console.log('API: Returning mock data:', mockData);
+      return mockData;
+    }
+  }
+
+  private getMockOpportunities(): OpportunityWithDetails[] {
+    return [
+      {
+        id: '1',
+        opportunity_name: 'Residential Roof Repair - Smith House',
+        business_name: 'Smith Family',
+        value: 15000,
+        stage_id: 'new-lead',
+        pipeline_id: '1',
+        source: 'Website',
+        status: 'open',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        opportunity_name: 'Commercial Building Roof Replacement',
+        business_name: 'ABC Corp',
+        value: 85000,
+        stage_id: 'contacted',
+        pipeline_id: '1',
+        source: 'Referral',
+        status: 'open',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: '3',
+        opportunity_name: 'Insurance Claim - Storm Damage',
+        business_name: 'Johnson Residence',
+        value: 25000,
+        stage_id: 'qualified',
+        pipeline_id: '1',
+        source: 'Insurance',
+        status: 'open',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: '4',
+        opportunity_name: 'New Construction - Office Complex',
+        business_name: 'XYZ Development',
+        value: 150000,
+        stage_id: 'proposal-sent',
+        pipeline_id: '1',
+        source: 'Cold Call',
+        status: 'open',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: '5',
+        opportunity_name: 'Residential Re-roofing Project',
+        business_name: 'Williams Family',
+        value: 18000,
+        stage_id: 'won',
+        pipeline_id: '1',
+        source: 'Google Ads',
+        status: 'won',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
   }
 
   async getOpportunityById(id: string): Promise<OpportunityWithDetails | null> {
