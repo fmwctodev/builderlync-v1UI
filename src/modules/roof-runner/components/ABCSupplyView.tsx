@@ -11,50 +11,76 @@ const ABCSupplyView: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState({
+    orders: true,
+    products: true,
+    branches: true
+  });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
 
   useEffect(() => {
     const loadRecentOrders = async () => {
       try {
-        const orders = await abcSupplyApi.getOrders();
-        setRecentOrders(Array.isArray(orders) ? orders.slice(0, 3) : []);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const endDate = tomorrow.toISOString().split('T')[0];
+        
+        const response = await abcSupplyApi.getOrdersHistory({
+          startDate: '2024-03-15',
+          endDate: endDate,
+          itemsPerPage: 20,
+          pageNumber: 1
+        });
+        
+        if (response.success) {
+          const orders = response.data.items || [];
+          setRecentOrders(orders.slice(0, 10));
+        } else {
+          setRecentOrders([]);
+        }
       } catch (error) {
         console.error('Failed to load recent orders:', error);
+        console.error('Error details:', error.response?.data);
         setRecentOrders([]);
+      } finally {
+        setLoading(prev => ({ ...prev, orders: false }));
       }
     };
     loadRecentOrders();
   }, []);
 
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
         const response = await abcSupplyApi.getItems(1, 4);
-        console.log('Featured products response:', response);
-        setFeaturedProducts(response.items || []);
+        // Handle the nested structure: response.items.items
+        const products = response.items?.items || response.items || [];
+        setFeaturedProducts(products);
       } catch (error) {
         console.error('Failed to load featured products:', error);
+        console.error('Error details:', error.response?.data);
         setFeaturedProducts([]);
+      } finally {
+        setLoading(prev => ({ ...prev, products: false }));
       }
     };
     loadFeaturedProducts();
   }, []);
 
-  const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
-
   useEffect(() => {
     const loadNearestBranches = async () => {
       try {
         const branches = await abcSupplyApi.getBranches();
-        console.log('Nearest branches response:', branches);
         setNearestBranches(branches.slice(0, 3));
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
         setNearestBranches([]);
+      } finally {
+        setLoading(prev => ({ ...prev, branches: false }));
       }
     };
     loadNearestBranches();
@@ -170,11 +196,15 @@ const ABCSupplyView: React.FC = () => {
           </div>
 
           <div className="p-6">
-            {recentOrders.length > 0 ? (
+            {loading.orders ? (
+              <div className="text-center py-6">
+                <p className="text-gray-500 dark:text-gray-400">Loading recent orders...</p>
+              </div>
+            ) : recentOrders.length > 0 ? (
               <div className="space-y-4">
-                {recentOrders.map((order) => (
+                {recentOrders.map((order, index) => (
                   <div
-                    key={order.id}
+                    key={order.orderNumber || index}
                     className="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
                   >
                     <div className="flex justify-between items-start">
@@ -183,31 +213,31 @@ const ABCSupplyView: React.FC = () => {
                           Order #{order.orderNumber}
                         </span>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          ${order.total.toFixed(2)} - {order.items.length} items
+                          {order.branchCityState} - {order.productQty} items
                         </p>
                         <div className="mt-1 flex items-center">
-                          {order.status === 'processing' && (
+                          {order.orderStatus === 'processing' && (
                             <Package className="h-4 w-4 text-yellow-500 mr-1" />
                           )}
-                          {order.status === 'shipped' && (
+                          {order.orderStatus === 'shipped' && (
                             <Truck className="h-4 w-4 text-primary-500 mr-1" />
                           )}
-                          {order.status === 'delivered' && (
+                          {order.orderStatus === 'delivered' && (
                             <Truck className="h-4 w-4 text-green-500 mr-1" />
                           )}
                           <span className={`text-sm capitalize ${
-                            order.status === 'processing' ? 'text-yellow-600' :
-                            order.status === 'shipped' ? 'text-primary-600' :
-                            order.status === 'delivered' ? 'text-green-600' :
+                            order.orderStatus === 'processing' ? 'text-yellow-600' :
+                            order.orderStatus === 'shipped' ? 'text-primary-600' :
+                            order.orderStatus === 'delivered' ? 'text-green-600' :
                             'text-gray-500'
                           }`}>
-                            {order.status}
+                            {order.orderStatus || order.orderType}
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {order.invoiceDate ? new Date(order.invoiceDate).toLocaleDateString() : 'Pending'}
                         </span>
                       </div>
                     </div>
@@ -237,11 +267,15 @@ const ABCSupplyView: React.FC = () => {
             </div>
 
             <div className="p-4">
-              {featuredProducts.length > 0 ? (
+              {loading.products ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400">Loading featured products...</p>
+                </div>
+              ) : featuredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
-                  {featuredProducts.map((product,key) => (
+                  {featuredProducts.map((product, key) => (
                     <div
-                      key={key}
+                      key={product.itemNumber || key}
                       className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
                     >
                       <div className="flex items-center">
@@ -250,7 +284,7 @@ const ABCSupplyView: React.FC = () => {
                         </div>
                         <div className="ml-3 overflow-hidden">
                           <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                            {product.familyName || product.name || 'Product'}
+                            {product.familyName || product.itemDescription || 'Product'}
                           </h4>
                           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                             {product.supplierName} - {product.itemNumber}
@@ -262,7 +296,7 @@ const ABCSupplyView: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 dark:text-gray-400">Loading featured products...</p>
+                  <p className="text-gray-500 dark:text-gray-400">No featured products available.</p>
                 </div>
               )}
             </div>
@@ -278,7 +312,11 @@ const ABCSupplyView: React.FC = () => {
             </div>
 
             <div className="p-4">
-              {nearestBranches.length > 0 ? (
+              {loading.branches ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400">Loading nearest branches...</p>
+                </div>
+              ) : nearestBranches.length > 0 ? (
                 <div className="space-y-3">
                   {nearestBranches.map((branch) => (
                     <div
@@ -301,7 +339,7 @@ const ABCSupplyView: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 dark:text-gray-400">Loading nearest branches...</p>
+                  <p className="text-gray-500 dark:text-gray-400">No branches available.</p>
                 </div>
               )}
             </div>

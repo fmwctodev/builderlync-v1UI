@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import { abcSupplyApi } from '../services/api';
-import { Branch, ShipTo, ShipToBranch } from '../types';
+import { Branch, ShipTo, ShipToBranch } from '../../roof-runner/types';
 
 interface CheckoutFormProps {
   isOpen: boolean;
