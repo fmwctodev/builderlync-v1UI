@@ -20,8 +20,13 @@ api.interceptors.request.use((config) => {
 });
 
 export const knowledgeBaseApi = {
+  async getKnowledgeBaseByAgent(agentId: string, organizationId: string) {
+    const { data } = await api.get(`/knowledge-base/agent/${agentId}?organization_id=${organizationId}`);
+    return data;
+  },
+
   async getArticles(organizationId: string) {
-    const { data } = await api.get(`/api/knowledge-base/articles?organization_id=${organizationId}`);
+    const { data } = await api.get(`/knowledge-base/articles?organization_id=${organizationId}`);
     return data;
   },
 
@@ -33,16 +38,16 @@ export const knowledgeBaseApi = {
     status?: string;
     collection_id?: string;
   }) {
-    const { data } = await api.post('/api/knowledge-base/articles', article);
+    const { data } = await api.post('/knowledge-base/articles', article);
     return data;
   },
 
   async deleteArticle(id: string) {
-    await api.delete(`/api/knowledge-base/articles/${id}`);
+    await api.delete(`/knowledge-base/articles/${id}`);
   },
 
   async getQAPairs(organizationId: string) {
-    const { data } = await api.get(`/api/knowledge-base/qapairs?organization_id=${organizationId}`);
+    const { data } = await api.get(`/knowledge-base/qapairs?organization_id=${organizationId}`);
     return data;
   },
 
@@ -58,16 +63,16 @@ export const knowledgeBaseApi = {
     collection_id?: string;
     agent_id?: string;
   }) {
-    const { data } = await api.post('/api/knowledge-base/qapairs', qapair);
+    const { data } = await api.post('/knowledge-base/qapairs', qapair);
     return data;
   },
 
   async deleteQAPair(id: string) {
-    await api.delete(`/api/knowledge-base/qapairs/${id}`);
+    await api.delete(`/knowledge-base/qapairs/${id}`);
   },
 
   async getTables(organizationId: string) {
-    const { data } = await api.get(`/api/knowledge-base/tables?organization_id=${organizationId}`);
+    const { data } = await api.get(`/knowledge-base/tables?organization_id=${organizationId}`);
     return data;
   },
 
@@ -80,21 +85,21 @@ export const knowledgeBaseApi = {
     collection_id?: string;
     agent_id?: string;
   }) {
-    const { data } = await api.post('/api/knowledge-base/tables', table);
+    const { data } = await api.post('/knowledge-base/tables', table);
     return data;
   },
 
   async deleteTable(id: string) {
-    await api.delete(`/api/knowledge-base/tables/${id}`);
+    await api.delete(`/knowledge-base/tables/${id}`);
   },
 
   async getDocuments(organizationId: string) {
-    const { data } = await api.get(`/api/knowledge-base/documents?organization_id=${organizationId}`);
+    const { data } = await api.get(`/knowledge-base/documents?organization_id=${organizationId}`);
     return data;
   },
 
   async uploadDocument(formData: FormData) {
-    const { data } = await api.post('/api/knowledge-base/documents', formData, {
+    const { data } = await api.post('/knowledge-base/documents', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -103,16 +108,16 @@ export const knowledgeBaseApi = {
   },
 
   async deleteDocument(id: string) {
-    await api.delete(`/api/knowledge-base/documents/${id}`);
+    await api.delete(`/knowledge-base/documents/${id}`);
   },
 
   async getScrapedWebsites(organizationId: string) {
-    const { data } = await api.get(`/api/knowledge-base/scraped-websites?organization_id=${organizationId}`);
+    const { data } = await api.get(`/knowledge-base/scraped-websites?organization_id=${organizationId}`);
     return data;
   },
 
   async deleteScrapedWebsite(id: string) {
-    await api.delete(`/api/knowledge-base/scraped-websites/${id}`);
+    await api.delete(`/knowledge-base/scraped-websites/${id}`);
   },
 
   async scrapeWebsite(website: {
@@ -121,7 +126,7 @@ export const knowledgeBaseApi = {
     collection_id?: string;
     agent_id?: string;
   }) {
-    const { data } = await api.post('/api/knowledge-base/scrape-website', website);
+    const { data } = await api.post('/knowledge-base/scrape-website', website);
     return data;
   },
 
@@ -129,7 +134,7 @@ export const knowledgeBaseApi = {
     organization_id: string;
     agent_id: string;
   }) {
-    const { data } = await api.post('/api/knowledge-base/sync-to-elevenlabs', payload);
+    const { data } = await api.post('/knowledge-base/sync-to-elevenlabs', payload);
     return data;
   },
 };

@@ -24,9 +24,11 @@ import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
 import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
 import { WidgetSection } from '../components/WidgetSection';
+import { KnowledgeBaseSection } from '../components/KnowledgeBaseSection';
+import { VoicesSectionEnhanced } from '../components/VoicesSectionEnhanced';
 import { useAppSelector } from '../../roof-runner/store/hooks';
 
-type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'tools' | 'security' | 'widget';
+type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'knowledge-base' | 'voices' | 'tools' | 'security' | 'widget';
 
 export function AgentBuilder() {
   const { agentId } = useParams();
@@ -176,6 +178,8 @@ export function AgentBuilder() {
     { id: 'overview', label: 'Overview', icon: Bot },
     { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
     { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels?.webchat?.enabled },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: MessageSquare },
+    { id: 'voices', label: 'Voices', icon: Phone },
     { id: 'tools', label: 'Tools', icon: Zap },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'widget', label: 'Widget', icon: Code2 },
@@ -491,13 +495,24 @@ export function AgentBuilder() {
           />
         )}
 
+        {activeTab === 'knowledge-base' && (
+          <KnowledgeBaseSection
+            agentId={agentId}
+            organizationId={currentOrganization?.id}
+          />
+        )}
+
+        {activeTab === 'voices' && (
+          <VoicesSectionEnhanced agentId={agentId} />
+        )}
+
         {activeTab === 'widget' && (
           <WidgetSection
             agentId={agentId}
           />
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && (
+        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'knowledge-base' && activeTab !== 'voices' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
