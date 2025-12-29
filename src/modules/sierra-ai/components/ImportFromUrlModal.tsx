@@ -9,6 +9,7 @@ interface ImportFromUrlModalProps {
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
   onSuccess: (result: { webSource: any; articles: any[] }) => void;
+  agentId?: string;
 }
 
 export function ImportFromUrlModal({
@@ -16,6 +17,7 @@ export function ImportFromUrlModal({
   onClose,
   collections,
   onSuccess,
+  agentId,
 }: ImportFromUrlModalProps) {
   const [url, setUrl] = useState('');
   const [crawlType, setCrawlType] = useState<CrawlType>('exact');
@@ -59,7 +61,8 @@ export function ImportFromUrlModal({
     try {
       const result = await knowledgeBaseApi.scrapeWebsite({
         url,
-        organization_id: organizationId
+        organization_id: organizationId,
+        agent_id: agentId
       });
 
       setSuccess(true);

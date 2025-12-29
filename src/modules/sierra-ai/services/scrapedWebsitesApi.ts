@@ -27,7 +27,7 @@ class ScrapedWebsitesApi {
   }
 
   async getScrapedWebsites(): Promise<ScrapedWebsite[]> {
-    const response = await fetch('/api/knowledge-base/scraped-websites', {
+    const response = await fetch('/knowledge-base/scraped-websites', {
       headers: this.getHeaders()
     });
 
@@ -41,7 +41,7 @@ class ScrapedWebsitesApi {
   }
 
   async scrapeWebsite(data: ScrapeWebsiteRequest): Promise<ScrapedWebsite> {
-    const response = await fetch('/api/knowledge-base/scrape-website', {
+    const response = await fetch('/knowledge-base/scrape-website', {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data)
@@ -57,7 +57,7 @@ class ScrapedWebsitesApi {
   }
 
   async deleteScrapedWebsite(id: string): Promise<void> {
-    const response = await fetch(`/api/knowledge-base/scraped-websites/${id}`, {
+    const response = await fetch(`/knowledge-base/scraped-websites/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders()
     });

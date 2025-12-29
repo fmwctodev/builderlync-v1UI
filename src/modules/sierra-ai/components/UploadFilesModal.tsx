@@ -9,6 +9,7 @@ interface UploadFilesModalProps {
   collections: Array<{ id: string; name: string }>;
   organizationId: string;
   onSuccess: (files: File[]) => void;
+  agentId?: string;
 }
 
 interface UploadingFile {
@@ -24,6 +25,7 @@ export function UploadFilesModal({
   collections,
   organizationId,
   onSuccess,
+  agentId,
 }: UploadFilesModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -99,7 +101,10 @@ export function UploadFilesModal({
           if (selectedCollection) {
             formData.append('collection_id', selectedCollection);
           }
-          formData.append('title', file.name.replace(/\.[^/.]+$/, '')); // Remove extension from title
+          formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+          if (agentId) {
+            formData.append('agent_id', agentId);
+          } // Remove extension from title
 
           // Upload document using the document API
           await knowledgeBaseApi.uploadDocument(formData);
