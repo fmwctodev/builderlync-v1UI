@@ -138,18 +138,21 @@ const AddEmailServiceModal: React.FC<{
     fromEmail: existingSettings?.from_email || ''
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
       await smtpApi.saveSettings(formData);
       onSave();
       onClose();
-    } catch (error) {
-      console.error('Failed to save SMTP settings:', error);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to save SMTP settings';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -178,6 +181,12 @@ const AddEmailServiceModal: React.FC<{
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

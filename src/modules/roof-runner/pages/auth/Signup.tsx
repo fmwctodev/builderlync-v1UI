@@ -111,19 +111,7 @@ const Signup: React.FC = () => {
     }
 
     const { confirmPassword, ...registerData } = formData;
-    
-    try {
-      await dispatch(registerRequest(registerData));
-      // Navigate directly after successful registration
-      setTimeout(() => {
-        if (!error) {
-          console.log('Navigating to OTP with email:', registerData.email);
-          navigate('/auth/verify-otp', { state: { email: registerData.email } });
-        }
-      }, 500);
-    } catch (err) {
-      console.error('Registration error:', err);
-    }
+    dispatch(registerRequest(registerData));
   };
 
   return (
