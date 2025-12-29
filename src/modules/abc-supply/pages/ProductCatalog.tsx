@@ -12,6 +12,9 @@ const ProductCatalog: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [filteredResults, setFilteredResults] = useState<Product[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const fetchItems = async (page: number) => {
     try {
@@ -42,6 +45,29 @@ const ProductCatalog: React.FC = () => {
       setSearchResults([]);
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleCategoryFilter = async (category: string, checked: boolean) => {
+    const newCategories = checked 
+      ? [...selectedCategories, category]
+      : selectedCategories.filter(c => c !== category);
+    
+    setSelectedCategories(newCategories);
+    
+    if (newCategories.length > 0) {
+      try {
+        setIsFiltering(true);
+        const results = await abcSupplyApi.filterItems(newCategories, limit, 1);
+        setFilteredResults(results);
+      } catch (err) {
+        console.error('Filter failed:', err);
+        setFilteredResults([]);
+      } finally {
+        setIsFiltering(false);
+      }
+    } else {
+      setFilteredResults([]);
     }
   };
 
@@ -105,7 +131,31 @@ const ProductCatalog: React.FC = () => {
         />
       </div>
 
-      {(searchQuery ? searchResults : data?.items || []).length === 0 ? (
+      <div className="flex gap-6">
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-gray-800 rounded-lg p-4">
+            <h3 className="text-white font-medium mb-4">Filters</h3>
+            <div>
+              <h4 className="text-gray-300 text-sm font-medium mb-2">Category</h4>
+              <div className="space-y-2">
+                {['Roofing', 'Siding', 'Gutters', 'Insulation'].map((category) => (
+                  <label key={category} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                      checked={selectedCategories.includes(category)}
+                      onChange={(e) => handleCategoryFilter(category, e.target.checked)}
+                    />
+                    <span className="ml-2 text-sm text-gray-300">{category}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1">
+          {(searchQuery ? searchResults : selectedCategories.length > 0 ? filteredResults : data?.items || []).length === 0 ? (
         <div className="bg-gray-800 rounded-lg p-8 text-center">
           <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">No Products Found</h3>
@@ -114,7 +164,7 @@ const ProductCatalog: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {(searchQuery ? searchResults : data?.items || []).map((product: Product) => (
+            {(searchQuery ? searchResults : selectedCategories.length > 0 ? filteredResults : data?.items || []).map((product: Product) => (
               <div key={product.id} className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors">
                 <div className="aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
                   {product.images?.[0] ? (
@@ -140,7 +190,7 @@ const ProductCatalog: React.FC = () => {
             ))}
           </div>
 
-          {!searchQuery && totalPages > 1 && (
+          {!searchQuery && selectedCategories.length === 0 && totalPages > 1 && (
             <div className="flex justify-center items-center space-x-4 mt-8">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -167,6 +217,8 @@ const ProductCatalog: React.FC = () => {
           )}
         </>
       )}
+        </div>
+      </div>
     </div>
   );
 };
