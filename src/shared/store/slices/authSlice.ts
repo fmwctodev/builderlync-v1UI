@@ -36,12 +36,17 @@ const authSlice = createSlice({
       state.error = null;
     },
     registerSuccess: (state, action: PayloadAction<{ message: string; email?: string }>) => {
+      console.log('registerSuccess reducer called with:', action.payload);
       state.loading = false;
       state.registrationEmail = action.payload.email || null;
+      state.error = null;
+      console.log('registrationEmail set to:', state.registrationEmail);
     },
     registerFailure: (state, action: PayloadAction<string>) => {
+      console.log('registerFailure reducer called with:', action.payload);
       state.loading = false;
       state.error = action.payload;
+      state.registrationEmail = null;
     },
     loginRequest: (state) => {
       state.loading = true;

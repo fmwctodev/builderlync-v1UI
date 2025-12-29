@@ -18,7 +18,9 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
     console.log('Setting registration email:', action.payload.email);
     yield put(registerSuccess({ message: response.message, email: action.payload.email }));
   } catch (error: any) {
-    yield put(registerFailure(error.message || 'Registration failed'));
+    console.error('Registration error in saga:', error);
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
+    yield put(registerFailure(errorMessage));
   }
 }
 

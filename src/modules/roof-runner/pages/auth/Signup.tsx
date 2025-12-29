@@ -64,9 +64,13 @@ const Signup: React.FC = () => {
   }, [formData.companyName]);
 
   useEffect(() => {
-    // Clear registration email state when returning to signup
+    // Clear registration email state and location state when mounting signup
     dispatch(clearError());
     dispatch(clearRegistrationEmail());
+    // Clear location state
+    if (location.state?.fromVerifyOtp) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
   }, [dispatch]);
 
   useEffect(() => {
@@ -84,12 +88,12 @@ const Signup: React.FC = () => {
   useEffect(() => {
     console.log('Registration email changed:', registrationEmail);
     console.log('User:', user);
-    console.log('From verify OTP:', fromVerifyOtp);
-    if (registrationEmail && !user && !fromVerifyOtp) {
+    console.log('Error:', error);
+    if (registrationEmail && !user && !error) {
       console.log('Navigating to verify-otp with email:', registrationEmail);
-      navigate('/auth/verify-otp', { state: { email: registrationEmail } });
+      navigate('/auth/verify-otp', { state: { email: registrationEmail }, replace: true });
     }
-  }, [registrationEmail, user, navigate, fromVerifyOtp]);
+  }, [registrationEmail, user, navigate, error]);
 
   useEffect(() => {
     if (error) {
