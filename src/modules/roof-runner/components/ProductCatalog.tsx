@@ -93,8 +93,6 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   };
 
   const handleCheckout = () => {
-    console.log('Proceeding to checkout with:', cart);
-    // Clear cart after successful checkout
     setCart([]);
     localStorage.removeItem('abc-supply-cart');
   };
@@ -252,7 +250,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                       </div>
                     </td>
                   </tr>
-                ) : products.length === 0 ? (
+                ) : filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                       No products found

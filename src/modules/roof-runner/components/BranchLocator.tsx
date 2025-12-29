@@ -142,13 +142,6 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
     loadBranches();
   }, []);
 
-  useEffect(() => {
-    console.log('Branches state changed:', branches.length, 'branches');
-    if (branches.length > 0) {
-      console.log('First branch sample:', branches[0]);
-    }
-  }, [branches]);
-
   const loadBranches = async () => {
     try {
       setLoading(true);

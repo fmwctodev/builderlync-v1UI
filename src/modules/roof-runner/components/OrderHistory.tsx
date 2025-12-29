@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, ChevronRight, Search, Filter } from 'lucide-react';
+import { Package, Truck, ChevronRight, Search, Filter, CheckCircle, Clock } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
-import { Order } from '../../abc-supply/types';
+import { OrderHistoryItem } from '../../abc-supply/types';
 
 interface OrderHistoryProps {
   onBack: () => void;
@@ -9,7 +9,7 @@ interface OrderHistoryProps {
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +19,20 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const data = await abcSupplyApi.getOrders();
-      setOrders(data);
+      const response = await abcSupplyApi.getOrdersHistory({
+        startDate: '2024-03-15',
+        endDate: '2026-06-15',
+        itemsPerPage: 20,
+        pageNumber: 1
+      });
+
+      console.log("orders:", response);
+      
+      if (response.success) {
+        setOrders(response.data.items || []);
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
       console.error('Failed to load orders:', error);
       setOrders([]);
@@ -47,10 +59,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     }
   };
 
-  const filteredOrders = orders.filter(order =>
+  const filteredOrders = (orders || []).filter(order =>
     searchQuery === '' ||
     order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    order.branchCityState.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.orderType.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -92,36 +105,39 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
         ) : filteredOrders.length > 0 ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredOrders.map((order) => (
-              <div key={order.id} className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer">
+              <div key={order.orderNumber} className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         Order #{order.orderNumber}
                       </span>
-                      <div className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
-                        {getStatusIcon(order.status)}
-                        <span className="capitalize">{order.status}</span>
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.orderStatus)}`}>
+                        {getStatusIcon(order.orderStatus)}
+                        <span>{order.orderStatus}</span>
                       </div>
                     </div>
 
                     <p className="font-medium text-gray-900 dark:text-white mb-2">
-                      ${order.total.toFixed(2)} - {order.items.length} items
+                      Branch {order.branch} - {order.productQty} items
                     </p>
 
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      <div className="font-medium mb-1">Items:</div>
-                      {order.items.map((item, index) => (
-                        <div key={index} className="ml-2">
-                          • {item.name} (Qty: {item.quantity})
-                        </div>
-                      ))}
+                      <div className="font-medium mb-1">Details:</div>
+                      <div className="ml-2">
+                        • Location: {order.branchCityState}
+                      </div>
+                      <div className="ml-2">
+                        • Type: {order.orderType}
+                      </div>
+                      <div className="ml-2">
+                        • Quantity: {order.productQty}
+                      </div>
                     </div>
 
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      <div>Ordered: {new Date(order.createdAt).toLocaleDateString()}</div>
-                      {order.status !== 'delivered' && (
-                        <div>Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}</div>
+                      {order.invoiceDate && (
+                        <div>Invoice Date: {new Date(order.invoiceDate).toLocaleDateString()}</div>
                       )}
                     </div>
                   </div>

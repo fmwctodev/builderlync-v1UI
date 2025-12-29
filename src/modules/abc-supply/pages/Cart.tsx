@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Plus, Minus, Trash2, Loader2, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { abcSupplyApi } from '../services/api';
+import { ShipTo } from '../types';
 import CheckoutForm, { CheckoutFormData } from '../components/CheckoutForm';
 
 const Cart: React.FC = () => {
@@ -9,9 +10,37 @@ const Cart: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [shipTos, setShipTos] = useState<ShipTo[]>([]);
+  const [selectedShipTos, setSelectedShipTos] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchShipTos = async () => {
+      try {
+        const data = await abcSupplyApi.getShipTos();
+        setShipTos(data);
+      } catch (error) {
+        console.error('Failed to load shipTos:', error);
+      }
+    };
+    fetchShipTos();
+  }, []);
+
+  const handleShipToChange = (shipToNumber: string, checked: boolean) => {
+    setSelectedShipTos(prev => 
+      checked 
+        ? [...prev, shipToNumber]
+        : prev.filter(num => num !== shipToNumber)
+    );
+  };
 
   const handleCheckout = async (checkoutData: CheckoutFormData) => {
-    if (items.length === 0) return;
+    console.log('handleCheckout called with:', checkoutData);
+    console.log('Cart items:', items);
+    
+    if (items.length === 0) {
+      console.log('No items in cart, returning');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -31,12 +60,18 @@ const Cart: React.FC = () => {
         instructions: checkoutData.instructions
       };
 
-      await abcSupplyApi.createOrder(orderData);
-      setOrderSuccess(true);
+      console.log('Calling API with order data:', orderData);
+      const result = await abcSupplyApi.createOrder(orderData);
+      console.log('API call successful:', result);
+      
+      // Only clear cart and show success if API call was successful
       setShowCheckoutForm(false);
       clearCart();
+      setOrderSuccess(true);
     } catch (error) {
       console.error('Checkout failed:', error);
+      // Don't clear cart on error - keep the form open so user can retry
+      alert('Order failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +96,7 @@ const Cart: React.FC = () => {
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !showCheckoutForm) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-white">Shopping Cart</h1>
@@ -85,6 +120,30 @@ const Cart: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
+          {/* ShipTo Selection */}
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-white mb-4 flex items-center">
+              <MapPin className="w-5 h-5 mr-2" />
+              Select Ship To Addresses
+            </h3>
+            <div className="space-y-3">
+              {shipTos.map((shipTo) => (
+                <label key={shipTo.number} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedShipTos.includes(shipTo.number)}
+                    onChange={(e) => handleShipToChange(shipTo.number, e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-white">
+                    {shipTo.name} ({shipTo.number})
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Cart Items */}
           {items.map((item) => (
             <div key={`${item.productId}-${item.uom}`} className="bg-gray-800 rounded-lg p-6">
               <div className="flex justify-between items-start">
@@ -147,8 +206,15 @@ const Cart: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setShowCheckoutForm(true)}
-            disabled={items.length === 0}
+            onClick={() => {
+              console.log('Proceed to Checkout clicked');
+              if (selectedShipTos.length === 0) {
+                alert('Please select at least one ship-to address');
+                return;
+              }
+              setShowCheckoutForm(true);
+            }}
+            disabled={items.length === 0 || selectedShipTos.length === 0}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium"
           >
             Proceed to Checkout
@@ -168,6 +234,8 @@ const Cart: React.FC = () => {
         onClose={() => setShowCheckoutForm(false)}
         onSubmit={handleCheckout}
         loading={loading}
+        selectedShipTos={selectedShipTos}
+        shipTos={shipTos}
       />
     </div>
   );

@@ -54,6 +54,29 @@ interface ABCSupplyOrder {
   branchId?: string;
 }
 
+interface ABCSupplyOrderHistoryItem {
+  orderNumber: string;
+  branch: number;
+  branchCityState: string;
+  invoiceDate: string | null;
+  orderType: string;
+  orderStatus: string;
+  productQty: number;
+}
+
+interface ABCSupplyOrderHistoryResponse {
+  success: boolean;
+  data: {
+    pagination: {
+      itemsPerPage: number;
+      pageNumber: number;
+      totalPages: number;
+      totalItems: number;
+    };
+    items: ABCSupplyOrderHistoryItem[];
+  };
+}
+
 interface ABCSupplyOrderItem {
   productId: string;
   sku: string;
@@ -233,6 +256,41 @@ class ABCSupplyService {
     }
   }
 
+  async getOrdersHistory(params: {
+    startDate: string;
+    endDate: string;
+    itemsPerPage?: number;
+    pageNumber?: number;
+  }): Promise<ABCSupplyOrderHistoryResponse> {
+    try {
+      const queryParams = new URLSearchParams({
+        startDate: params.startDate,
+        endDate: params.endDate,
+        itemsPerPage: (params.itemsPerPage || 20).toString(),
+        pageNumber: (params.pageNumber || 1).toString()
+      });
+      
+      const response = await this.makeAuthenticatedRequest(
+        `https://builderlyncapi.testenvapp.com/api/abc-supply/ordersHistory?${queryParams}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Get orders history failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Get orders history failed:', error);
+      return {
+        success: false,
+        data: {
+          pagination: { itemsPerPage: 20, pageNumber: 1, totalPages: 0, totalItems: 0 },
+          items: []
+        }
+      };
+    }
+  }
+
   async getOrders(): Promise<ABCSupplyOrder[]> {
     try {
       const response = await this.makeAuthenticatedRequest(`${this.config.baseUrl}/order/v1/orders`);
@@ -274,5 +332,7 @@ export type {
   ABCSupplyBranch, 
   ABCSupplyOrder, 
   ABCSupplyOrderItem,
+  ABCSupplyOrderHistoryItem,
+  ABCSupplyOrderHistoryResponse,
   PriceRequest 
 };

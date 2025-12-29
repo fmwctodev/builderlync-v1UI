@@ -33,8 +33,9 @@ const ABCSupplyView: React.FC = () => {
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        const response = await abcSupplyApi.getItems(1, 4);        
-        setFeaturedProducts(response.items.items);
+        const response = await abcSupplyApi.getItems(1, 4);
+        console.log('Featured products response:', response);
+        setFeaturedProducts(response.items || []);
       } catch (error) {
         console.error('Failed to load featured products:', error);
         setFeaturedProducts([]);
@@ -49,7 +50,8 @@ const ABCSupplyView: React.FC = () => {
     const loadNearestBranches = async () => {
       try {
         const branches = await abcSupplyApi.getBranches();
-        setNearestBranches(Array.isArray(branches) ? branches.slice(0, 3) : []);
+        console.log('Nearest branches response:', branches);
+        setNearestBranches(branches.slice(0, 3));
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
         setNearestBranches([]);
@@ -235,28 +237,34 @@ const ABCSupplyView: React.FC = () => {
             </div>
 
             <div className="p-4">
-              <div className="grid grid-cols-1 gap-3">
-                {featuredProducts.map((product,key) => (
-                  <div
-                    key={key}
-                    className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                        <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <div className="ml-3 overflow-hidden">
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                          {product.familyName}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {product.supplierName} - {product.itemNumber}
-                        </p>
+              {featuredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {featuredProducts.map((product,key) => (
+                    <div
+                      key={key}
+                      className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+                    >
+                      <div className="flex items-center">
+                        <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <div className="ml-3 overflow-hidden">
+                          <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                            {product.familyName || product.name || 'Product'}
+                          </h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {product.supplierName} - {product.itemNumber}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400">Loading featured products...</p>
+                </div>
+              )}
             </div>
           </section>
 
@@ -270,26 +278,32 @@ const ABCSupplyView: React.FC = () => {
             </div>
 
             <div className="p-4">
-              <div className="space-y-3">
-                {nearestBranches.map((branch) => (
-                  <div
-                    key={branch.id}
-                    className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
-                  >
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">
-                        {branch.name}
-                      </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {branch.address?.city}, {branch.address?.state}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {branch.phone}
-                      </p>
+              {nearestBranches.length > 0 ? (
+                <div className="space-y-3">
+                  {nearestBranches.map((branch) => (
+                    <div
+                      key={branch.id}
+                      className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
+                    >
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {branch.name}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {branch.address?.city}, {branch.address?.state}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {branch.phone}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 dark:text-gray-400">Loading nearest branches...</p>
+                </div>
+              )}
             </div>
           </section>
         </div>
