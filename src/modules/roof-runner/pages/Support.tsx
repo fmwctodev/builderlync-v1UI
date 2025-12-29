@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { MessageCircle, Mail, Phone, Search, Book, HelpCircle, ExternalLink, Send } from 'lucide-react';
+import { SupportTicketModal } from '../components/SupportTicketModal';
+import { supportApi } from '../services/supportApi';
 
 const Support: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [chatStarted, setChatStarted] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai', timestamp: string}>>([]);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  const handleSubmitTicket = async (data: { subject: string; message: string; priority: string }) => {
+    try {
+      await supportApi.submitTicket(data);
+      setToast({ message: 'Support ticket submitted successfully! We\'ll get back to you within 24 hours.', type: 'success' });
+    } catch (error) {
+      setToast({ message: 'Failed to submit ticket. Please try again.', type: 'error' });
+      throw error;
+    }
+  };
 
   const handleStartChat = () => {
     setChatStarted(true);
@@ -139,7 +153,10 @@ const Support: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Submit a support ticket and get a detailed response within 24 hours
             </p>
-            <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+            <button
+              onClick={() => setShowTicketModal(true)}
+              className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
               Send Email
             </button>
           </div>
@@ -255,6 +272,20 @@ const Support: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
+      <SupportTicketModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        onSubmit={handleSubmitTicket}
+      />
     </div>
   );
 };

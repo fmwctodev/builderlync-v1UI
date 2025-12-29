@@ -14,6 +14,8 @@ import {
 function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, void, any> {
   try {
     const response = yield call(authApi.register, action.payload);
+    console.log('Registration response:', response);
+    console.log('Setting registration email:', action.payload.email);
     yield put(registerSuccess({ message: response.message, email: action.payload.email }));
   } catch (error: any) {
     yield put(registerFailure(error.message || 'Registration failed'));
