@@ -14,13 +14,10 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    extension: '',
-    platform_language: 'en-US',
-    calendar_name: '',
   });
 
   useEffect(() => {
@@ -34,13 +31,10 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
       if (data) {
         setProfile(data);
         setFormData({
-          first_name: data.first_name,
-          last_name: data.last_name,
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email || '',
-          phone: data.phone,
-          extension: data.extension,
-          platform_language: data.platform_language,
-          calendar_name: data.calendar_name,
+          phone: data.phone || '',
         });
       }
     } catch (err) {
@@ -144,10 +138,10 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
           <div className="flex items-start space-x-6 mb-6">
             <div className="relative">
               <div className="w-40 h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden group">
-                {profile?.avatar_url ? (
+                {profile?.profile ? (
                   <>
                     <img
-                      src={profile.avatar_url}
+                      src={profile.profile}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -163,7 +157,7 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                   </>
                 ) : (
                   <div className="text-4xl font-semibold text-gray-400 dark:text-gray-500">
-                    {formData.first_name?.[0] || '?'}
+                    {formData.firstName?.[0] || '?'}
                   </div>
                 )}
                 {uploading && (
@@ -203,8 +197,8 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
               </label>
               <input
                 type="text"
-                name="first_name"
-                value={formData.first_name}
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -217,8 +211,8 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
               </label>
               <input
                 type="text"
-                name="last_name"
-                value={formData.last_name}
+                name="lastName"
+                value={formData.lastName}
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -233,72 +227,23 @@ const PersonalDataSection: React.FC<PersonalDataSectionProps> = ({ onUpdate }) =
                 type="email"
                 name="email"
                 value={formData.email}
-                onChange={handleInputChange}
-                required
-                placeholder="sean@autom8ionlab.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-600 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+1 689-310-2712"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Extension
-                </label>
-                <input
-                  type="text"
-                  name="extension"
-                  value={formData.extension}
-                  onChange={handleInputChange}
-                  placeholder="Extension"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Calendar
+                Phone
               </label>
               <input
-                type="text"
-                name="calendar_name"
-                value={formData.calendar_name}
+                type="tel"
+                name="phone"
+                value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="Book With..."
+                placeholder="+1 689-310-2712"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Platform Language
-              </label>
-              <select
-                name="platform_language"
-                value={formData.platform_language}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="en-US">English (United States)</option>
-                <option value="es-ES">Spanish (Spain)</option>
-                <option value="fr-FR">French (France)</option>
-                <option value="de-DE">German (Germany)</option>
-              </select>
             </div>
           </div>
 

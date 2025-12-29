@@ -82,7 +82,11 @@ const Signup: React.FC = () => {
   }, [user, navigate]);
 
   useEffect(() => {
+    console.log('Registration email changed:', registrationEmail);
+    console.log('User:', user);
+    console.log('From verify OTP:', fromVerifyOtp);
     if (registrationEmail && !user && !fromVerifyOtp) {
+      console.log('Navigating to verify-otp with email:', registrationEmail);
       navigate('/auth/verify-otp', { state: { email: registrationEmail } });
     }
   }, [registrationEmail, user, navigate, fromVerifyOtp]);
@@ -107,7 +111,19 @@ const Signup: React.FC = () => {
     }
 
     const { confirmPassword, ...registerData } = formData;
-    dispatch(registerRequest(registerData));
+    
+    try {
+      await dispatch(registerRequest(registerData));
+      // Navigate directly after successful registration
+      setTimeout(() => {
+        if (!error) {
+          console.log('Navigating to OTP with email:', registerData.email);
+          navigate('/auth/verify-otp', { state: { email: registerData.email } });
+        }
+      }, 500);
+    } catch (err) {
+      console.error('Registration error:', err);
+    }
   };
 
   return (
