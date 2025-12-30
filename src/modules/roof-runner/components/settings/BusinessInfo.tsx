@@ -127,7 +127,7 @@ const BusinessInfo: React.FC = () => {
     }
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2.5 * 1024 * 1024) {
@@ -141,13 +141,34 @@ const BusinessInfo: React.FC = () => {
         setLogoPreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
+      
+      // Upload logo immediately
+      try {
+        const response = await uploadBusinessLogo(file);
+        if (response.success && businessInfo) {
+          const updatedInfo = { ...businessInfo, business_logo: response.data.logoUrl };
+          setBusinessInfo(updatedInfo);
+          
+          // If no existing record (id is missing), create one with logo
+          if (!businessInfo.id) {
+            await updateBusinessInfo({ business_logo: response.data.logoUrl });
+          }
+        }
+      } catch (err) {
+        setError('Failed to upload logo');
+        console.error('Error uploading logo:', err);
+      }
     }
   };
 
   const handleGenerateApiKey = async () => {
-    if (businessInfo) {
-      const newApiKey = 'demo-api-key-' + Math.random().toString(36).substring(2, 15);
-      setBusinessInfo({ ...businessInfo, api_key: newApiKey });
+    try {
+      const response = await generateApiKey();
+      if (response.success && businessInfo) {
+        setBusinessInfo({ ...businessInfo, api_key: response.data.apiKey });
+      }
+    } catch (error) {
+      console.error('Error generating API key:', error);
     }
   };
 
@@ -418,16 +439,12 @@ const BusinessInfo: React.FC = () => {
               <span>Street Address</span>
               <Info className="w-4 h-4" />
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                defaultValue="1717 W 6th Street STE 100"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.street_address}
+              onChange={(e) => updateField('street_address', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -437,7 +454,8 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="Austin"
+                value={businessInfo.city}
+                onChange={(e) => updateField('city', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -447,7 +465,8 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="78703"
+                value={businessInfo.postal_code}
+                onChange={(e) => updateField('postal_code', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -458,7 +477,11 @@ const BusinessInfo: React.FC = () => {
               State / Prov / Region
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.state}
+                onChange={(e) => updateField('state', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>Texas</option>
                 <option>California</option>
                 <option>Florida</option>
@@ -472,7 +495,11 @@ const BusinessInfo: React.FC = () => {
               Country
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.country}
+                onChange={(e) => updateField('country', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>United States</option>
                 <option>Canada</option>
                 <option>Mexico</option>
@@ -486,7 +513,11 @@ const BusinessInfo: React.FC = () => {
               Time Zone <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.time_zone}
+                onChange={(e) => updateField('time_zone', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>GMT-06:00 America/Chicago (CST)</option>
                 <option>GMT-05:00 America/New_York (EST)</option>
                 <option>GMT-08:00 America/Los_Angeles (PST)</option>
@@ -501,7 +532,11 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.platform_language}
+                onChange={(e) => updateField('platform_language', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>English (United States)</option>
                 <option>Spanish (Spain)</option>
                 <option>French (France)</option>
@@ -516,7 +551,11 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.outbound_language || ''}
+                onChange={(e) => updateField('outbound_language', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>Select language</option>
                 <option>English</option>
                 <option>Spanish</option>
@@ -526,8 +565,12 @@ const BusinessInfo: React.FC = () => {
           </div>
 
           <div className="flex justify-end">
-            <button className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
-              Update
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Update'}
             </button>
           </div>
         </div>
@@ -542,7 +585,11 @@ const BusinessInfo: React.FC = () => {
               Business Type
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.business_type}
+                onChange={(e) => updateField('business_type', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>Limited Liability Company Or Sole-Proprietorship</option>
                 <option>Corporation</option>
                 <option>Partnership</option>
@@ -556,7 +603,11 @@ const BusinessInfo: React.FC = () => {
               Business Industry
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.business_industry}
+                onChange={(e) => updateField('business_industry', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>CONSTRUCTION</option>
                 <option>Technology</option>
                 <option>Healthcare</option>
@@ -570,7 +621,11 @@ const BusinessInfo: React.FC = () => {
               Business Registration ID Type
             </label>
             <div className="relative">
-              <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select 
+                value={businessInfo.business_registration_id_type}
+                onChange={(e) => updateField('business_registration_id_type', e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
                 <option>USA: Employer Identification Number (EIN)</option>
                 <option>Canada: Business Number (BN)</option>
                 <option>UK: Company Registration Number (CRN)</option>
@@ -585,7 +640,8 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="text"
-              defaultValue="99-4425498"
+              value={businessInfo.business_registration_number || ''}
+              onChange={(e) => updateField('business_registration_number', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
@@ -595,6 +651,8 @@ const BusinessInfo: React.FC = () => {
           <input
             type="checkbox"
             id="notRegistered"
+            checked={businessInfo.is_not_registered}
+            onChange={(e) => updateField('is_not_registered', e.target.checked)}
             className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
           />
           <label htmlFor="notRegistered" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -618,7 +676,7 @@ const BusinessInfo: React.FC = () => {
                 <input
                   type="checkbox"
                   id={region.id}
-                  checked={businessInfo.businessRegions?.includes(region.id) || false}
+                  checked={businessInfo.business_regions?.includes(region.id) || false}
                   onChange={() => toggleRegion(region.id)}
                   className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                 />
@@ -631,8 +689,12 @@ const BusinessInfo: React.FC = () => {
         </div>
 
         <div className="flex justify-end">
-          <button className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
-            Update Information
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Update Information'}
           </button>
         </div>
       </div>
@@ -645,16 +707,12 @@ const BusinessInfo: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First Name
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                defaultValue="James"
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.representative_first_name}
+              onChange={(e) => updateField('representative_first_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div>
@@ -663,7 +721,8 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="text"
-              defaultValue="Kuntz"
+              value={businessInfo.representative_last_name}
+              onChange={(e) => updateField('representative_last_name', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
@@ -675,7 +734,8 @@ const BusinessInfo: React.FC = () => {
           </label>
           <input
             type="email"
-            defaultValue="wolfgang@tarrytownroofing.com"
+            value={businessInfo.representative_email}
+            onChange={(e) => updateField('representative_email', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
@@ -685,7 +745,11 @@ const BusinessInfo: React.FC = () => {
             Job Position
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            <select 
+              value={businessInfo.representative_job_position}
+              onChange={(e) => updateField('representative_job_position', e.target.value)}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
               <option>CEO</option>
               <option>CTO</option>
               <option>CFO</option>
@@ -701,14 +765,19 @@ const BusinessInfo: React.FC = () => {
           </label>
           <input
             type="tel"
-            defaultValue="+1 713-824-3620"
+            value={businessInfo.representative_phone}
+            onChange={(e) => updateField('representative_phone', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
         <div className="flex justify-end">
-          <button className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
-            Update Information
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Update Information'}
           </button>
         </div>
       </div>
@@ -718,14 +787,14 @@ const BusinessInfo: React.FC = () => {
 
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => updateField('allowDuplicateContact', !businessInfo.allowDuplicateContact)}
+            onClick={() => updateField('allow_duplicate_contact', !businessInfo.allow_duplicate_contact)}
             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-              businessInfo.allowDuplicateContact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+              businessInfo.allow_duplicate_contact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
             }`}
           >
             <span
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                businessInfo.allowDuplicateContact ? 'translate-x-5' : 'translate-x-0'
+                businessInfo.allow_duplicate_contact ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
@@ -737,7 +806,11 @@ const BusinessInfo: React.FC = () => {
             Find existing contacts based on
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
+            <select 
+              value={businessInfo.primary_search_field}
+              onChange={(e) => updateField('primary_search_field', e.target.value)}
+              className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
+            >
               <option>Email</option>
               <option>Phone</option>
               <option>Name</option>
@@ -751,13 +824,27 @@ const BusinessInfo: React.FC = () => {
             Second preference for search (Optional)
           </label>
           <div className="relative">
-            <select className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base">
+            <select 
+              value={businessInfo.secondary_search_field || ''}
+              onChange={(e) => updateField('secondary_search_field', e.target.value)}
+              className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
+            >
               <option>Phone</option>
               <option>Email</option>
               <option>Name</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Update Preferences'}
+          </button>
         </div>
       </div>
     </div>

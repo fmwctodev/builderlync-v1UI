@@ -21,6 +21,7 @@ import {
   Subscript,
   Loader2
 } from 'lucide-react';
+import { getSignature, updateSignature } from '../../../../shared/store/services/profileApi';
 
 interface SignatureSectionProps {
   onUpdate?: () => void;
@@ -30,30 +31,41 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
   const [enableSignature, setEnableSignature] = useState(true);
   const [includeInReplies, setIncludeInReplies] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const editor = useEditor({
     extensions: [StarterKit],
-    content: `
-      <div style="display: flex; gap: 16px;">
-        <img src="https://via.placeholder.com/150" alt="Profile" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;" />
-        <div>
-          <h2 style="margin: 0; font-size: 18px; font-weight: bold;">SEAN RICHARD</h2>
-          <p style="margin: 4px 0; color: #666;">Founder & Engineer</p>
-          <p style="margin: 4px 0;">📞 <a href="tel:+16893102712">1689-310-2712</a></p>
-          <p style="margin: 4px 0;">✉️ <a href="mailto:sean@autom8ionlab.com">sean@autom8ionlab.com</a></p>
-          <p style="margin: 4px 0;">🌐 US | CA | UK</p>
-          <p style="margin: 4px 0;">🌍 <a href="https://autom8ionlab.com">autom8ionlab.com</a></p>
-        </div>
-      </div>
-    `,
+    content: '',
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
       },
     },
   });
+
+  useEffect(() => {
+    loadSignature();
+  }, []);
+
+  const loadSignature = async () => {
+    try {
+      setLoading(true);
+      const response = await getSignature();
+      if (response.success && response.data) {
+        setEnableSignature(response.data.enable_signature);
+        setIncludeInReplies(response.data.include_in_replies);
+        if (editor && response.data.html_content) {
+          editor.commands.setContent(response.data.html_content);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading signature:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,28 +74,28 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
     try {
       setSaving(true);
-      // Save signature to database
-      const signatureData = {
-        html_content: editor?.getHTML(),
-        enable_signature: enableSignature,
-        include_in_replies: includeInReplies,
-      };
+      const response = await updateSignature({
+        htmlContent: editor?.getHTML() || '',
+        enableSignature: enableSignature,
+        includeInReplies: includeInReplies,
+      });
 
-      // TODO: Implement API call to save signature
-      console.log('Saving signature:', signatureData);
-
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-      onUpdate?.();
-    } catch (err) {
-      setError('Failed to save signature');
+      if (response.success) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+        onUpdate?.();
+      } else {
+        setError(response.message || 'Failed to save signature');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to save signature');
       console.error(err);
     } finally {
       setSaving(false);
     }
   };
 
-  if (!editor) {
+  if (loading || !editor) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-6 h-6 animate-spin text-red-600" />

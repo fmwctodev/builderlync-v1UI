@@ -20,7 +20,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
   const allTabs = [
     { id: 'business-info', label: 'Business Info', icon: Building, path: `${orgPrefix}/settings/business-info` },
     { id: 'profile', label: 'Profile', icon: Users, path: `${orgPrefix}/settings/profile` },
-    { id: 'billing', label: 'Billing', icon: CreditCard, path: `${orgPrefix}/settings/billing`, permission: () => canAccess('financial') },
+    // { id: 'billing', label: 'Billing', icon: CreditCard, path: `${orgPrefix}/settings/billing`, permission: () => canAccess('financial') },
     { id: 'staff', label: 'Staff Management', icon: Users, path: `${orgPrefix}/settings/staff`, permission: () => can('staff', 'view') },
     { id: 'communications', label: 'Communications', icon: Mail, path: `${orgPrefix}/settings/communications`, permission: () => canAccess('communications') },
     { id: 'integrations', label: 'Integrations', icon: Zap, path: `${orgPrefix}/settings/integrations`, permission: () => canAccess('integrations') },

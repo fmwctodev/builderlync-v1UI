@@ -13,6 +13,12 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface Verify2FARequest {
+  tempToken: string;
+  code?: string;
+  backupCode?: string;
+}
+
 export interface ForgotPasswordRequest {
   email: string;
 }
@@ -59,8 +65,11 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   data: {
-    user: User;
-    token: string;
+    user?: User;
+    token?: string;
+    requires_2fa?: boolean;
+    temp_token?: string;
+    user_id?: string;
   };
 }
 
@@ -97,6 +106,17 @@ export interface ResendRegistrationOtpResponse {
   success: boolean;
   message: string;
   data: null;
+}
+
+export interface Verify2FAResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+  error_code?: string;
+  attempts_remaining?: number;
 }
 
 export const authApi = {
@@ -223,6 +243,27 @@ export const authApi = {
 
     if (!response.ok) {
       throw new Error(result.error || 'Failed to resend OTP');
+    }
+
+    return result;
+  },
+  verify2FA: async (data: Verify2FARequest): Promise<Verify2FAResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/login/verify-2fa`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      const error: any = new Error(result.message || 'Verification failed');
+      error.errorCode = result.error_code;
+      error.attemptsRemaining = result.attempts_remaining;
+      throw error;
     }
 
     return result;

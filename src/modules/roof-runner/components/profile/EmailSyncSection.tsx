@@ -1,25 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Check, Edit, Trash2, Copy, Loader2 } from 'lucide-react';
-
-interface EmailConnection {
-  id: string;
-  email: string;
-  provider: 'gmail' | 'outlook';
-  status: 'connected' | 'disconnected';
-}
+import { getEmailConnections, disconnectEmail, EmailConnection } from '../../../../shared/store/services/profileApi';
 
 const EmailSyncSection: React.FC = () => {
-  const [connections, setConnections] = useState<EmailConnection[]>([
-    {
-      id: '1',
-      email: 'sean@sitehues.com',
-      provider: 'gmail',
-      status: 'connected',
-    },
-  ]);
-
-  const [bccEmail] = useState('q2iaW0RqmhWprtDxMwrx@email.usercontent.site');
+  const [connections, setConnections] = useState<EmailConnection[]>([]);
+  const [bccEmail, setBccEmail] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadEmailConnections();
+  }, []);
+
+  const loadEmailConnections = async () => {
+    try {
+      setLoading(true);
+      const response = await getEmailConnections();
+      if (response.success) {
+        setConnections(response.data.connections);
+        setBccEmail(response.data.bcc_email);
+      }
+    } catch (err) {
+      console.error('Error loading email connections:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCopyBccEmail = () => {
     navigator.clipboard.writeText(bccEmail);
@@ -27,14 +33,28 @@ const EmailSyncSection: React.FC = () => {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  const handleDeleteConnection = (id: string) => {
+  const handleDeleteConnection = async (id: string) => {
     if (confirm('Are you sure you want to disconnect this email?')) {
-      setConnections(connections.filter(c => c.id !== id));
+      try {
+        const response = await disconnectEmail(id);
+        if (response.success) {
+          setConnections(connections.filter(c => c.id !== id));
+        }
+      } catch (err) {
+        console.error('Error disconnecting email:', err);
+        alert('Failed to disconnect email');
+      }
     }
   };
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-red-600" />
+        </div>
+      ) : (
+        <>
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Email (2-way sync)
@@ -142,6 +162,8 @@ const EmailSyncSection: React.FC = () => {
           <span>Update Availability</span>
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 };
