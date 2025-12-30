@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { loginRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import { loginRequest, clearError, reset2FAState } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
 import { useAutoLogout } from '../../../../shared/utils/autoLogout';
+import Verify2FAModal from '../../components/Verify2FAModal';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,14 +14,17 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const { loading, error, user, requires2FA } = useAppSelector((state) => state.auth);
   const successMessage = location.state?.message;
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [show2FAModal, setShow2FAModal] = useState(false);
   
   useAutoLogout();
 
   useEffect(() => {
-    if (user) {
+    if (requires2FA) {
+      setShow2FAModal(true);
+    } else if (user) {
       const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
       if (orgSlug) {
         localStorage.setItem('currentOrganizationSlug', orgSlug);
@@ -29,7 +33,7 @@ const Login: React.FC = () => {
         navigate('/auth/login');
       }
     }
-  }, [user, navigate]);
+  }, [user, requires2FA, navigate]);
 
   useEffect(() => {
     if (successMessage) {
@@ -55,6 +59,7 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    dispatch(reset2FAState()); // Clear any previous 2FA state
     dispatch(loginRequest({ email, password }));
   };
 
@@ -159,6 +164,15 @@ const Login: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* 2FA Modal */}
+      <Verify2FAModal 
+        isOpen={show2FAModal} 
+        onClose={() => {
+          setShow2FAModal(false);
+          dispatch(reset2FAState());
+        }} 
+      />
     </div>
   );
 };

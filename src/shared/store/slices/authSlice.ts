@@ -10,6 +10,9 @@ interface AuthState {
   resetToken: string | null;
   email: string | null;
   registrationEmail: string | null;
+  requires2FA: boolean;
+  tempToken: string | null;
+  attemptsRemaining: number;
 }
 
 const getInitialState = (): AuthState => {
@@ -22,6 +25,9 @@ const getInitialState = (): AuthState => {
     resetToken: null,
     email: null,
     registrationEmail: null,
+    requires2FA: false,
+    tempToken: null,
+    attemptsRemaining: 5,
   };
 };
 
@@ -51,18 +57,58 @@ const authSlice = createSlice({
     loginRequest: (state) => {
       state.loading = true;
       state.error = null;
+      state.requires2FA = false;
+      state.tempToken = null;
     },
     loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
       state.loading = false;
       state.user = action.payload.user;
       state.token = action.payload.token;
+      state.requires2FA = false;
+      state.tempToken = null;
       setEncryptedStorage('auth', action.payload);
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
+    loginRequires2FA: (state, action: PayloadAction<{ tempToken: string }>) => {
+      state.loading = false;
+      state.requires2FA = true;
+      state.tempToken = action.payload.tempToken;
+      state.error = null;
+    },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
+      state.requires2FA = false;
+      state.tempToken = null;
+    },
+    verify2FARequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    verify2FASuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+      state.loading = false;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.requires2FA = false;
+      state.tempToken = null;
+      state.attemptsRemaining = 5;
+      setEncryptedStorage('auth', action.payload);
+      localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
+    },
+    verify2FAFailure: (state, action: PayloadAction<{ message: string; attemptsRemaining?: number }>) => {
+      state.loading = false;
+      state.error = action.payload.message;
+      if (action.payload.attemptsRemaining !== undefined) {
+        state.attemptsRemaining = action.payload.attemptsRemaining;
+      }
+      // Reset 2FA state if session expired or rate limited
+      if (action.payload.message.includes('expired') || action.payload.message.includes('Too many')) {
+        state.requires2FA = false;
+        state.tempToken = null;
+        state.attemptsRemaining = 5;
+      }
     },
     forgotPasswordRequest: (state) => {
       state.loading = true;
@@ -135,11 +181,20 @@ const authSlice = createSlice({
       state.resetToken = null;
       state.email = null;
       state.registrationEmail = null;
+      state.requires2FA = false;
+      state.tempToken = null;
+      state.attemptsRemaining = 5;
       localStorage.removeItem('auth');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     },
     clearError: (state) => {
+      state.error = null;
+    },
+    reset2FAState: (state) => {
+      state.requires2FA = false;
+      state.tempToken = null;
+      state.attemptsRemaining = 5;
       state.error = null;
     },
     clearRegistrationEmail: (state) => {
@@ -154,7 +209,11 @@ export const {
   registerFailure,
   loginRequest,
   loginSuccess,
+  loginRequires2FA,
   loginFailure,
+  verify2FARequest,
+  verify2FASuccess,
+  verify2FAFailure,
   forgotPasswordRequest,
   forgotPasswordSuccess,
   forgotPasswordFailure,
@@ -172,6 +231,7 @@ export const {
   resendRegistrationOtpFailure,
   logout,
   clearError,
+  reset2FAState,
   clearRegistrationEmail,
 } = authSlice.actions;
 

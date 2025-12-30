@@ -1,9 +1,10 @@
 import { call, put, takeEvery } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { authApi, RegisterRequest, LoginRequest, ForgotPasswordRequest, VerifyOtpRequest, ResetPasswordRequest, VerifyRegistrationOtpRequest, ResendRegistrationOtpRequest } from '../services/authApi';
+import { authApi, RegisterRequest, LoginRequest, ForgotPasswordRequest, VerifyOtpRequest, ResetPasswordRequest, VerifyRegistrationOtpRequest, ResendRegistrationOtpRequest, Verify2FARequest } from '../services/authApi';
 import {
   registerRequest, registerSuccess, registerFailure,
-  loginRequest, loginSuccess, loginFailure,
+  loginRequest, loginSuccess, loginRequires2FA, loginFailure,
+  verify2FARequest, verify2FASuccess, verify2FAFailure,
   forgotPasswordRequest, forgotPasswordSuccess, forgotPasswordFailure,
   verifyOtpRequest, verifyOtpSuccess, verifyOtpFailure,
   resetPasswordRequest, resetPasswordSuccess, resetPasswordFailure,
@@ -27,10 +28,25 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
 function* loginSaga(action: PayloadAction<LoginRequest>): Generator<any, void, any> {
   try {
     const response = yield call(authApi.login, action.payload);
-    yield put(loginSuccess(response.data));
+    if (response.data.requires_2fa) {
+      yield put(loginRequires2FA({ tempToken: response.data.temp_token! }));
+    } else {
+      yield put(loginSuccess({ user: response.data.user!, token: response.data.token! }));
+    }
   } catch (error: any) {
     console.log('Login error:', JSON.stringify(error));
     yield put(loginFailure(error.message || 'Login failed'));
+  }
+}
+
+function* verify2FASaga(action: PayloadAction<Verify2FARequest>): Generator<any, void, any> {
+  try {
+    const response = yield call(authApi.verify2FA, action.payload);
+    yield put(verify2FASuccess(response.data));
+  } catch (error: any) {
+    const message = error.message || 'Verification failed';
+    const attemptsRemaining = error.attemptsRemaining;
+    yield put(verify2FAFailure({ message, attemptsRemaining }));
   }
 }
 
@@ -83,6 +99,7 @@ function* resendRegistrationOtpSaga(action: PayloadAction<string>): Generator<an
 export function* watchAuthSagas() {
   yield takeEvery(registerRequest.type, registerSaga);
   yield takeEvery(loginRequest.type, loginSaga);
+  yield takeEvery(verify2FARequest.type, verify2FASaga);
   yield takeEvery(forgotPasswordRequest.type, forgotPasswordSaga);
   yield takeEvery(verifyOtpRequest.type, verifyOtpSaga);
   yield takeEvery(resetPasswordRequest.type, resetPasswordSaga);

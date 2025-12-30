@@ -1,15 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Mail, Phone, Search, Book, HelpCircle, ExternalLink, Send } from 'lucide-react';
 import { SupportTicketModal } from '../components/SupportTicketModal';
 import { supportApi } from '../services/supportApi';
 
 const Support: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [chatStarted, setChatStarted] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{id: number, text: string, sender: 'user' | 'ai', timestamp: string}>>([]);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  useEffect(() => {
+    (window as any).chattermateId = 'f638c1bb-753c-476d-bee1-1ded1ee2e39d';
+    
+    const script = document.createElement('script');
+    script.src = 'https://app.chattermate.chat/webclient/chattermate.min.js';
+    script.async = true;
+    script.id = 'chattermate-script';
+    script.onerror = () => {
+      console.log('ChatterMate widget failed to load - using proxy fallback');
+    };
+    document.body.appendChild(script);
+    
+    return () => {
+      const existingScript = document.getElementById('chattermate-script');
+      if (existingScript) {
+        document.body.removeChild(existingScript);
+      }
+    };
+  }, []);
 
   const handleSubmitTicket = async (data: { subject: string; message: string; priority: string }) => {
     try {
@@ -19,43 +36,6 @@ const Support: React.FC = () => {
       setToast({ message: 'Failed to submit ticket. Please try again.', type: 'error' });
       throw error;
     }
-  };
-
-  const handleStartChat = () => {
-    setChatStarted(true);
-    setMessages([
-      {
-        id: 1,
-        text: "Hi! I'm your BuilderLync AI assistant. I have access to our complete knowledge base and can help you with any questions about using the platform. How can I assist you today?",
-        sender: 'ai',
-        timestamp: new Date().toLocaleTimeString()
-      }
-    ]);
-  };
-
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-    
-    const newMessage = {
-      id: messages.length + 1,
-      text: message,
-      sender: 'user' as const,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setMessage('');
-    
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: messages.length + 2,
-        text: "I understand your question. Let me help you with that. Based on our knowledge base, here's what I recommend...",
-        sender: 'ai' as const,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
   };
 
   const knowledgeBaseArticles = [
@@ -132,16 +112,17 @@ const Support: React.FC = () => {
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start Chat</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">ChatterMate AI Assistant</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Get instant help from our AI assistant with access to our complete knowledge base
+              Get instant help from ChatterMate AI assistant with access to our complete knowledge base
             </p>
-            <button
-              onClick={handleStartChat}
-              className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Start Chat Now
-            </button>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
+              To enable ChatterMate widget:
+            </p>
+            <ol className="text-xs text-gray-500 dark:text-gray-500 text-left space-y-1">
+              <li>1. Add localhost:5174 to allowed domains in ChatterMate dashboard</li>
+              <li>2. Widget will appear in bottom right corner</li>
+            </ol>
           </div>
 
           {/* Email Support */}
@@ -175,47 +156,6 @@ const Support: React.FC = () => {
             </button>
           </div> */}
         </div>
-
-        {/* Chat Interface */}
-        {chatStarted && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Support Chat</h3>
-            </div>
-            <div className="h-96 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    msg.sender === 'user'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}>
-                    <p className="text-sm">{msg.text}</p>
-                    <p className="text-xs opacity-75 mt-1">{msg.timestamp}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Knowledge Base */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">

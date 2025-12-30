@@ -21,7 +21,7 @@ const SettingsRouter: React.FC = () => {
         <Route path="business-info" element={<BusinessInfo />} />
         <Route path="profile" element={<Profile />} />
         <Route path="integrations" element={<Integrations />} />
-        <Route path="billing" element={<Billing />} />
+        {/* <Route path="billing" element={<Billing />} />c */}
         <Route path="staff" element={<StaffManagement initialTab="staff" />} />
         <Route path="staff/roles" element={<StaffManagement initialTab="roles" />} />
         <Route path="communications" element={<Communications />} />
