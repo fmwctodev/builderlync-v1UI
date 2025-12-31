@@ -145,7 +145,6 @@ class EagleViewService {
   async submitOrder(orderData: EagleViewOrderRequest): Promise<EagleViewOrderResponse> {
     try {
       const token = localStorage.getItem('token');
-      console.log('Submitting order with data:', JSON.stringify(orderData, null, 2));
       const response = await fetch('https://builderlyncapi.testenvapp.com/api/eagleview/orders', {
         method: 'POST',
         headers: {

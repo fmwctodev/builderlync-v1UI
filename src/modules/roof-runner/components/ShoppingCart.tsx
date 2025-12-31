@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, X, ChevronDown } from 'lucide-react';
 import { Product } from '../../abc-supply/types';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import CheckoutForm, { CheckoutFormData } from '../../abc-supply/components/CheckoutForm';
@@ -15,6 +15,7 @@ interface ShoppingCartProps {
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onCheckout: () => void;
+  onVariantChange?: (oldItemNumber: string, newVariant: any) => void;
 }
 
 const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
@@ -23,7 +24,8 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  onCheckout
+  onCheckout,
+  onVariantChange
 }) => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
@@ -31,6 +33,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [branches, setBranches] = useState([]);
   const [shipTos, setShipTos] = useState([]);
+  const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
 
   React.useEffect(() => {
     if (isOpen) {
@@ -82,6 +85,61 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     }
   }, [isOpen]);
 
+  React.useEffect(() => {
+    if (selectedBranch && items.length > 0) {
+      const selectedShipTo = shipTos.find(shipTo => shipTo.number === selectedBranch);
+      if (selectedShipTo?.branches?.[0]) {
+        fetchPrices(selectedBranch, selectedShipTo.branches[0].number);
+      }
+    }
+  }, [selectedBranch, items, shipTos]);
+
+  const fetchPrices = async (shipToNumber: string, branchNumber: string) => {
+    if (!items.length || !shipToNumber || !branchNumber) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const requestBody = {
+        requestId: `Quote: ${Date.now()}`,
+        shipToNumber,
+        branchNumber,
+        purpose: 'ordering',
+        lines: items.map((item, index) => ({
+          id: (index + 1).toString(),
+          itemNumber: item.itemNumber,
+          quantity: item.quantity,
+          uom: item.uoms?.[0]?.code || 'EA'
+        }))
+      };
+      
+      const response = await fetch('https://builderlyncapi.testenvapp.com/api/abc-supply/prices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      if (data.success && data.data?.lines) {
+        const prices: Record<string, number> = {};
+        data.data.lines.forEach((line: any) => {
+          prices[line.itemNumber] = line.unitPrice || 0;
+        });
+        setItemPrices(prices);
+      }
+    } catch (error) {
+      console.error('Failed to fetch prices:', error);
+    }
+  };
+
+  const handleVariantChange = (currentItem: CartItem, selectedVariant: any) => {
+    if (onVariantChange) {
+      onVariantChange(currentItem.itemNumber, selectedVariant);
+    }
+  };
+
   const handleProceedToCheckout = () => {
     console.log('Proceed to Checkout clicked from ShoppingCart');
     setShowCheckoutForm(true);
@@ -125,7 +183,14 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
+  const getItemPrice = (itemNumber: string) => {
+    return itemPrices[itemNumber] || 0;
+  };
+
+  const subtotal = items.reduce((sum, item) => {
+    const price = getItemPrice(item.itemNumber);
+    return sum + (price * item.quantity);
+  }, 0);
   const tax = subtotal * 0.08;
   const total = subtotal + tax;
 
@@ -160,7 +225,16 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             </label>
             <select
               value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
+              onChange={(e) => {
+                const newBranch = e.target.value;
+                setSelectedBranch(newBranch);
+                if (newBranch && items.length > 0) {
+                  const selectedShipTo = shipTos.find(shipTo => shipTo.number === newBranch);
+                  if (selectedShipTo?.branches?.[0]) {
+                    fetchPrices(newBranch, selectedShipTo.branches[0].number);
+                  }
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select a ship to address...</option>
@@ -211,6 +285,34 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                       </button>
                     </div>
 
+                    {/* Variants Dropdown */}
+                    {item.familyItems && item.familyItems.length > 1 && (
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Select Variant:
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={item.itemNumber}
+                            onChange={(e) => {
+                              const selectedVariant = item.familyItems.find(v => v.itemNumber === e.target.value);
+                              if (selectedVariant) {
+                                handleVariantChange(item, selectedVariant);
+                              }
+                            }}
+                            className="w-full px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 appearance-none pr-8"
+                          >
+                            {item.familyItems.map((variant) => (
+                              <option key={variant.itemNumber} value={variant.itemNumber}>
+                                {variant.color ? `${variant.color} - ${variant.itemNumber}` : variant.itemNumber}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1 h-3 w-3 text-gray-400 pointer-events-none" />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
@@ -230,18 +332,21 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                         </button>
                       </div>
                       <div className="text-right">
-                        {item.price ? (
-                          <>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              ${(item.price * item.quantity).toFixed(2)}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              ${item.price.toFixed(2)} each
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-gray-500">Price on request</p>
-                        )}
+                        {(() => {
+                          const price = getItemPrice(item.itemNumber);
+                          return price > 0 ? (
+                            <>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                ${(price * item.quantity).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                ${price.toFixed(2)} each
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-500">Call Store</p>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

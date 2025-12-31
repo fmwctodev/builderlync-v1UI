@@ -5,7 +5,7 @@ import { ThemeProvider } from './shared/context/ThemeContext';
 import IncomingCallNotification from './shared/components/IncomingCallNotification';
 
 // Module imports
-import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
+// import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
 import { CRMModule } from './modules/crm/CRMModule';
 import { CRMModuleSimple } from './modules/crm/CRMModuleSimple';
 import { MarketingModule } from './modules/marketing/MarketingModule';
@@ -28,7 +28,7 @@ function App() {
             <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
             <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
             <Route path="/*" element={<RoofRunnerModule />} />
-            <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
+            {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
             <Route path="/crm/*" element={<CRMModule />} />
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
 

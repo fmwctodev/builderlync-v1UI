@@ -93,6 +93,30 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     });
   };
 
+  const handleVariantChange = (oldItemNumber: string, newVariant: any) => {
+    setCart(prevCart => {
+      const newCart = prevCart.map(item => {
+        if (item.itemNumber === oldItemNumber) {
+          // Find the full product data for the new variant
+          const newProduct = products.find(p => p.itemNumber === newVariant.itemNumber);
+          if (newProduct) {
+            return { ...newProduct, quantity: item.quantity };
+          }
+          // Fallback: update just the basic info
+          return {
+            ...item,
+            itemNumber: newVariant.itemNumber,
+            itemDescription: newVariant.itemDescription,
+            color: { name: newVariant.color }
+          };
+        }
+        return item;
+      });
+      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
   const handleCheckout = () => {
     setCart([]);
     localStorage.removeItem('abc-supply-cart');
@@ -315,6 +339,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onCheckout={handleCheckout}
+        onVariantChange={handleVariantChange}
       />
     </div>
   );
