@@ -2,11 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download } from "lucide-react";
 import { proposalsApi, Proposal } from "../services/proposalsApi";
+import { getBusinessInfo, BusinessInfo } from "../../../shared/store/services/businessInfoApi";
+import { useOrgPath } from "../../../shared/hooks/useOrgPath";
 
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getOrgPath } = useOrgPath();
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -15,6 +19,7 @@ export default function ProposalPreview() {
   useEffect(() => {
     if (id) {
       loadProposal();
+      loadBusinessInfo();
     }
   }, [id]);
 
@@ -28,6 +33,38 @@ export default function ProposalPreview() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadBusinessInfo = async () => {
+    try {
+      const response = await getBusinessInfo();
+      setBusinessInfo(response.data);
+    } catch (error) {
+      console.error("Error loading business info:", error);
+    }
+  };
+
+  const getCompanyName = () => {
+    return businessInfo?.friendly_business_name || proposal?.sections?.settings?.companyName || "Company Name";
+  };
+
+  const getCompanyPhone = () => {
+    return businessInfo?.business_phone || proposal?.sections?.settings?.companyPhone || "(000) 000-0000";
+  };
+
+  const getCompanyEmail = () => {
+    return businessInfo?.representative_email || proposal?.sections?.settings?.companyEmail || "company@email.com";
+  };
+
+  const getCompanyLogo = () => {
+    return businessInfo?.business_logo || proposal?.sections?.settings?.companyLogo || null;
+  };
+
+  const getRepresentativeName = () => {
+    if (businessInfo?.representative_first_name && businessInfo?.representative_last_name) {
+      return `${businessInfo.representative_first_name} ${businessInfo.representative_last_name}`;
+    }
+    return "Company representative name";
   };
 
   const handleDownload = async () => {
@@ -113,7 +150,7 @@ export default function ProposalPreview() {
             <Download size={20} />
           </button>
           <button
-            onClick={() => navigate("/proposals")}
+            onClick={() => navigate(getOrgPath("/proposals"))}
             className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium"
           >
             Finish
@@ -198,23 +235,23 @@ export default function ProposalPreview() {
                 <div className="border-t border-gray-200 dark:border-gray-700 p-6" style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
                   <div className="flex items-center justify-between">
                     <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {getRepresentativeName()}
+                      </div>
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {proposal.sections.settings.companyName ||
-                          "Company Name"}
+                        {getCompanyName()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings.companyPhone ||
-                          "(000) 000-0000"}
+                        {getCompanyPhone()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings.companyEmail ||
-                          "company@email.com"}
+                        {getCompanyEmail()}
                       </div>
                     </div>
-                    {proposal.sections.settings.companyLogo && (
+                    {getCompanyLogo() && (
                       <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
                         <img
-                          src={proposal.sections.settings.companyLogo}
+                          src={getCompanyLogo()!}
                           alt="Logo"
                           className="w-full h-full object-cover"
                         />
@@ -253,7 +290,7 @@ export default function ProposalPreview() {
                             src={photo}
                             alt={`Photo ${idx + 1}`}
                             className="w-full h-auto rounded-lg"
-                            crossOrigin="anonymous"
+                            
                           />
                         )
                       )}
@@ -422,28 +459,25 @@ export default function ProposalPreview() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Company representative name
+                        {getRepresentativeName()}
                       </div>
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {proposal.sections.settings?.companyName ||
-                          "Company Name"}
+                        {getCompanyName()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings?.companyPhone ||
-                          "(000) 000-0000"}
+                        {getCompanyPhone()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings?.companyEmail ||
-                          "company@email.com"}
+                        {getCompanyEmail()}
                       </div>
                     </div>
-                    {proposal.sections.settings?.companyLogo && (
+                    {getCompanyLogo() && (
                       <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
                         <img
-                          src={proposal.sections.settings.companyLogo}
+                          src={getCompanyLogo()!}
                           alt="Logo"
                           className="w-full h-full object-cover"
-                          crossOrigin="anonymous"
+                          
                         />
                       </div>
                     )}
@@ -712,28 +746,25 @@ export default function ProposalPreview() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Company representative name
+                        {getRepresentativeName()}
                       </div>
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {proposal.sections.settings?.companyName ||
-                          "Company Name"}
+                        {getCompanyName()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings?.companyPhone ||
-                          "(000) 000-0000"}
+                        {getCompanyPhone()}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {proposal.sections.settings?.companyEmail ||
-                          "company@email.com"}
+                        {getCompanyEmail()}
                       </div>
                     </div>
-                    {proposal.sections.settings?.companyLogo && (
+                    {getCompanyLogo() && (
                       <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
                         <img
-                          src={proposal.sections.settings.companyLogo}
+                          src={getCompanyLogo()!}
                           alt="Logo"
                           className="w-full h-full object-cover"
-                          crossOrigin="anonymous"
+                          
                         />
                       </div>
                     )}

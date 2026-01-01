@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
@@ -19,7 +19,8 @@ import {
   Code,
   Superscript,
   Subscript,
-  Loader2
+  Loader2,
+  ImageIcon
 } from 'lucide-react';
 import { getSignature, updateSignature } from '../../../../shared/store/services/profileApi';
 
@@ -34,6 +35,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -64,6 +66,18 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
       console.error('Error loading signature:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editor) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const url = event.target?.result as string;
+        editor.chain().focus().insertContent(`<img src="${url}" alt="signature" style="max-width: 200px; height: auto;" />`).run();
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -137,30 +151,56 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
         <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-2">
             <div className="flex flex-wrap gap-2">
-              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white">
-                <option>Inter</option>
-                <option>Arial</option>
-                <option>Times New Roman</option>
-                <option>Courier</option>
+              <select 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  editor.chain().focus().setFontFamily(value).run();
+                }}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="Inter">Inter</option>
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier">Courier</option>
               </select>
 
-              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white">
-                <option>14px</option>
-                <option>12px</option>
-                <option>16px</option>
-                <option>18px</option>
+              <select 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  editor.chain().focus().setMark('textStyle', { fontSize: value }).run();
+                }}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="14px">14px</option>
+                <option value="12px">12px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
               </select>
 
-              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white">
-                <option>1.5</option>
-                <option>1.0</option>
-                <option>2.0</option>
+              <select 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  editor.chain().focus().setMark('textStyle', { lineHeight: value }).run();
+                }}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="1.5">1.5</option>
+                <option value="1.0">1.0</option>
+                <option value="2.0">2.0</option>
               </select>
 
-              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white">
-                <option>Paragraph</option>
-                <option>Heading 1</option>
-                <option>Heading 2</option>
+              <select 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
+                  else if (value === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+                  else editor.chain().focus().setParagraph().run();
+                }}
+                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="p">Paragraph</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
               </select>
 
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
@@ -257,9 +297,21 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
                 <Smile className="w-4 h-4" />
               </button>
 
-              <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
-                <Plus className="w-4 h-4" />
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                title="Insert image"
+              >
+                <ImageIcon className="w-4 h-4" />
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
 
               <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
                 <Quote className="w-4 h-4" />

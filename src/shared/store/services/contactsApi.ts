@@ -16,18 +16,19 @@ export interface CreateContactRequest {
 
 export interface Contact {
   id: string;
-  full_name: string;
+  fullName: string;
   type: string;
-  label_or_role: string;
+  labelOrRole: string;
   email: string;
   phone: string;
   company: string;
   address: string;
   latitude: number;
   longitude: number;
-  created_at: string;
-  updated_at: string;
-  user_id: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: number;
+  createdByName?: string;
 }
 
 export interface ContactResponse {
@@ -88,13 +89,11 @@ class ContactsApiService {
   }
 
   async searchContactsByTypeAndName(search: string, types: string[]): Promise<Contact[]> {
-    const params = new URLSearchParams({
-      search,
-      types: types.join(','),
-    });
+    const params = new URLSearchParams({ search, page: '1', limit: '25' });
+    types.forEach(type => params.append('type', type));
 
-    const result = await this.makeRequest(`/contacts/search?${params}`);
-    return result.success ? result.data : [];
+    const result = await this.makeRequest(`/contacts?${params}`);
+    return result.success ? result.data.contacts : [];
   }
 
   async getContactById(id: string): Promise<ContactResponse> {

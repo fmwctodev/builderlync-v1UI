@@ -71,7 +71,7 @@ const ViewContactModal: React.FC<ViewContactModalProps> = ({
                 </div>
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {contact.full_name}
+                    {contact.fullName}
                   </h4>
                   <span className="inline-flex px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 capitalize">
                     {contact.type}
@@ -110,12 +110,12 @@ const ViewContactModal: React.FC<ViewContactModalProps> = ({
                   </div>
                 )}
 
-                {contact.label_or_role && (
+                {contact.labelOrRole && (
                   <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <User className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Role</p>
-                      <p className="text-sm text-gray-900 dark:text-white truncate">{contact.label_or_role}</p>
+                      <p className="text-sm text-gray-900 dark:text-white truncate">{contact.labelOrRole}</p>
                     </div>
                   </div>
                 )}
@@ -136,13 +136,13 @@ const ViewContactModal: React.FC<ViewContactModalProps> = ({
                   <div>
                     <p className="text-gray-500 dark:text-gray-400">Created</p>
                     <p className="text-gray-900 dark:text-white">
-                      {new Date(contact.created_at).toLocaleDateString()}
+                      {new Date(contact.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 dark:text-gray-400">Last Updated</p>
                     <p className="text-gray-900 dark:text-white">
-                      {new Date(contact.updated_at).toLocaleDateString()}
+                      {new Date(contact.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

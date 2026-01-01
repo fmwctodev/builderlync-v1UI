@@ -8,6 +8,7 @@ import ContactsTable from "../components/ContactsTable";
 import Pagination from "../components/Pagination";
 import CsvUploadModal from "../components/CsvUploadModal";
 import { hasPermission } from "../../../shared/utils/permissions";
+import { getErrorMessage } from "../../../shared/utils/errorHandler";
 
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
@@ -99,12 +100,12 @@ const Contacts: React.FC = () => {
     setSecondaryPhone({...secondaryPhone, phone: formatted});
   };
 
-  const handleAddressChange = (address: string, lat: number, lng: number) => {
+  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
     setFormData(prev => ({
       ...prev,
       address,
-      latitude: lat,
-      longitude: lng
+      latitude: lat || 0,
+      longitude: lng || 0
     }));
   };
 
@@ -122,8 +123,10 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
-      latitude: formData.latitude,
-      longitude: formData.longitude
+      ...(formData.latitude !== 0 && formData.longitude !== 0 && {
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      })
     };
 
     try {
@@ -156,8 +159,7 @@ const Contacts: React.FC = () => {
       setToast({message: 'Contact created successfully!', type: 'success'});
       fetchContacts();
     } catch (error: any) {
-      console.log("error:", JSON.stringify(error.response.data));
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create contact';
+      const errorMessage = getErrorMessage(error, 'Failed to create contact');
       setToast({message: errorMessage, type: 'error'});
     } finally {
       setIsLoading(false);
@@ -180,8 +182,10 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
-      latitude: formData.latitude,
-      longitude: formData.longitude
+      ...(formData.latitude !== 0 && formData.longitude !== 0 && {
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      })
     };
 
     try {
@@ -215,8 +219,7 @@ const Contacts: React.FC = () => {
       setToast({message: 'Contact updated successfully!', type: 'success'});
       fetchContacts();
     } catch (error: any) {
-      console.log("error:", JSON.stringify(error.response.data));
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create contact';
+      const errorMessage = getErrorMessage(error, 'Failed to update contact');
       setToast({message: errorMessage, type: 'error'});
     } finally {
       setIsLoading(false);
@@ -231,8 +234,8 @@ const Contacts: React.FC = () => {
       setTotalPages(response.data.pagination.totalPages);
       setTotalContacts(response.data.pagination.total);
     } catch (error: any) {
-      console.error('Error fetching contacts:', error);
-      setToast({message: 'Failed to load contacts', type: 'error'});
+      const errorMessage = getErrorMessage(error, 'Failed to load contacts');
+      setToast({message: errorMessage, type: 'error'});
     } finally {
       setLoadingContacts(false);
     }
@@ -353,7 +356,7 @@ const Contacts: React.FC = () => {
       firstName: firstName,
       lastName: lastName,
       type: contact.type || 'customer',
-      labelRole: contact.label_or_role || '',
+      labelRole: contact.labelOrRole || '',
       email: contact.email || '',
       phone: contact.phone || '',
       phoneType: contact.phoneType || 'mobile',

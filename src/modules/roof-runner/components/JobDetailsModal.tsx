@@ -49,6 +49,50 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [showViewContactModal, setShowViewContactModal] = useState(false);
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [contactError, setContactError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {};
+
+    if (!formData.contactId) {
+      errors.contactId = 'Customer/Lead is required';
+      setContactError(true);
+    }
+
+    if (!formData.jobType) {
+      errors.jobType = 'Job Type is required';
+    }
+
+    if (!formData.workflowStages) {
+      errors.workflowStages = 'Job Stage is required';
+    }
+
+    if (!formData.closeDate) {
+      errors.closeDate = 'Date is required';
+    }
+
+    if (formData.insuranceEnabled) {
+      if (!formData.insuranceCompany?.trim()) {
+        errors.insuranceCompany = 'Insurance Company is required';
+      }
+      if (!formData.claimNumber?.trim()) {
+        errors.claimNumber = 'Claim Number is required';
+      }
+      if (!formData.dateOfLoss) {
+        errors.dateOfLoss = 'Date of Loss is required';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSubmit(e);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -146,10 +190,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     </div>
                   </div>
 
-                  <form onSubmit={onSubmit} className="space-y-6 pb-20">
+                  <form onSubmit={handleFormSubmit} className="space-y-6 pb-20">
                 {/* Job Type Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Job Type <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex space-x-4">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -185,6 +231,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
                     </label>
                   </div>
+                  {validationErrors.jobType && (
+                    <p className="mt-1 text-xs text-red-500">{validationErrors.jobType}</p>
+                  )}
                 </div>
 
                 {/* Customer/Lead Selection */}
@@ -256,7 +305,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Stage</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Job Stage <span className="text-red-500">*</span>
+                    </label>
                     <div className="space-y-2">
                       <select
                         value={formData.workflowStages}
@@ -267,11 +318,16 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           <option key={stage} value={stage}>{stage}</option>
                         ))}
                       </select>
+                      {validationErrors.workflowStages && (
+                        <p className="mt-1 text-xs text-red-500">{validationErrors.workflowStages}</p>
+                      )}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Date <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="date"
                       value={formData.closeDate}
@@ -279,6 +335,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Select"
                     />
+                    {validationErrors.closeDate && (
+                      <p className="mt-1 text-xs text-red-500">{validationErrors.closeDate}</p>
+                    )}
                   </div>
                 </div>
 
@@ -331,13 +390,20 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance Company</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Insurance Company <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="text"
                             value={formData.insuranceCompany}
                             onChange={(e) => setFormData({...formData, insuranceCompany: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                              validationErrors.insuranceCompany ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                           />
+                          {validationErrors.insuranceCompany && (
+                            <p className="mt-1 text-xs text-red-500">{validationErrors.insuranceCompany}</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
@@ -352,22 +418,36 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Number</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Claim Number <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="text"
                             value={formData.claimNumber}
                             onChange={(e) => setFormData({...formData, claimNumber: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                              validationErrors.claimNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                           />
+                          {validationErrors.claimNumber && (
+                            <p className="mt-1 text-xs text-red-500">{validationErrors.claimNumber}</p>
+                          )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Loss</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Date of Loss <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="date"
                             value={formData.dateOfLoss}
                             onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                              validationErrors.dateOfLoss ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                            }`}
                           />
+                          {validationErrors.dateOfLoss && (
+                            <p className="mt-1 text-xs text-red-500">{validationErrors.dateOfLoss}</p>
+                          )}
                         </div>
                       </div>
 
@@ -499,7 +579,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     </button>
                     <button
                       type="submit"
-                      onClick={onSubmit}
+                      onClick={handleFormSubmit}
                       disabled={loading}
                       className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
                     >
