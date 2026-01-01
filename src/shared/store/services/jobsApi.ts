@@ -59,6 +59,8 @@ export interface JobsResponse {
 export interface CreateJobRequest {
   name: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
   assignees: string[];
   jobOwner: string;
   workflowStages: string;
@@ -113,6 +115,16 @@ class JobsApiService {
     return this.makeRequest(`/jobs?${params}`);
   }
 
+  async getNearbyJobs(latitude: number, longitude: number, radius: number = 25): Promise<JobsResponse> {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      radius: radius.toString(),
+    });
+
+    return this.makeRequest(`/jobs?${params}`);
+  }
+
   async createJob(jobData: CreateJobRequest) {
     return this.makeRequest('/jobs', {
       method: 'POST',
@@ -141,6 +153,7 @@ class JobsApiService {
 const jobsApiService = new JobsApiService();
 
 export const getJobs = jobsApiService.getJobs.bind(jobsApiService);
+export const getNearbyJobs = jobsApiService.getNearbyJobs.bind(jobsApiService);
 export const createJob = jobsApiService.createJob.bind(jobsApiService);
 export const updateJob = jobsApiService.updateJob.bind(jobsApiService);
 export const deleteJob = jobsApiService.deleteJob.bind(jobsApiService);
