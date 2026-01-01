@@ -11,6 +11,7 @@ interface AddTableModalProps {
   collections: Array<{ id: string; name: string }>;
   organizationId: string;
   onSuccess: () => void;
+  agentId?: string;
 }
 
 type Step = 1 | 2 | 3;
@@ -28,6 +29,7 @@ export function AddTableModal({
   collections,
   organizationId,
   onSuccess,
+  agentId,
 }: AddTableModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -189,7 +191,8 @@ export function AddTableModal({
         name: tableName.trim(),
         description: tableDescription.trim(),
         columns: selectedColumns.map(col => col.name),
-        rows: filteredRows
+        rows: filteredRows,
+        agent_id: agentId
       });
 
       setSuccess(true);

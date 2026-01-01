@@ -46,7 +46,8 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
     try {
       setSearchLoading(true);
-      const data = await abcSupplyApi.searchItems(query, 50);
+      // Use filterItems API with search query in filters array
+      const data = await abcSupplyApi.filterItems([query], 50, 1);
       setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Search failed:', error);
@@ -97,10 +98,33 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     localStorage.removeItem('abc-supply-cart');
   };
 
-  const handleCategoryFilter = (category: string, checked: boolean) => {
-    setSelectedCategories(prev =>
-      checked ? [...prev, category] : prev.filter(c => c !== category)
-    );
+  const handleCategoryFilter = async (category: string, checked: boolean) => {
+    const newCategories = checked 
+      ? [...selectedCategories, category]
+      : selectedCategories.filter(c => c !== category);
+    
+    setSelectedCategories(newCategories);
+    
+    // Combine search query and category filters
+    const allFilters = [...newCategories];
+    if (searchQuery.trim()) {
+      allFilters.push(searchQuery.trim());
+    }
+    
+    if (allFilters.length > 0) {
+      try {
+        setLoading(true);
+        const results = await abcSupplyApi.filterItems(allFilters, 50, 1);
+        setProducts(results);
+      } catch (err) {
+        console.error('Filter failed:', err);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      loadProducts();
+    }
   };
 
   const handleManufacturerFilter = (manufacturer: string, checked: boolean) => {
@@ -110,18 +134,10 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   };
 
   const filteredProducts = Array.isArray(products) ? products.filter(product => {
-    const matchesSearch = searchQuery === '' || 
-      product.familyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.itemDescription?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategories.length === 0 || 
-      selectedCategories.includes(product.hierarchy?.productGroup?.category?.label || '');
-    
     const matchesManufacturer = selectedManufacturers.length === 0 || 
       selectedManufacturers.includes(product.supplierName || '');
     
-    return matchesSearch && matchesCategory && matchesManufacturer;
+    return matchesManufacturer;
   }) : [];
 
   return (

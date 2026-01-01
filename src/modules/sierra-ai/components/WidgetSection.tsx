@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Code, Copy, Eye, Settings, Palette, Monitor, Smartphone, Tablet, RefreshCw } from 'lucide-react';
 import { widgetApi, WidgetConfig } from '../services/widgetApi';
+import { useWidget } from '../../../shared/context/WidgetContext';
 
 interface WidgetSectionProps {
   agentId?: string;
 }
 
 export function WidgetSection({ agentId }: WidgetSectionProps) {
+  const { widgetEnabled, setWidgetEnabled, setElevenlabsAgentId } = useWidget();
   const [config, setConfig] = useState<WidgetConfig>({
     theme: 'light',
     primary_color: '#ef4444',
@@ -23,10 +25,30 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   const [syncing, setSyncing] = useState(false);
   const [activePreview, setActivePreview] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [showCode, setShowCode] = useState(false);
+  const [showWidgetPreview, setShowWidgetPreview] = useState(false);
+  const [elevenlabsAgentId, setElevenlabsAgentIdLocal] = useState<string>('');
 
   useEffect(() => {
     loadWidgetConfig();
+    loadAgentData();
   }, [agentId]);
+
+  const loadAgentData = async () => {
+    if (!agentId) return;
+    
+    try {
+      const { elevenlabsApi } = await import('../services/elevenlabsApi');
+      const response = await elevenlabsApi.getAgent(agentId);
+      if (response.data?.elevenlabs_agent_id) {
+        setElevenlabsAgentIdLocal(response.data.elevenlabs_agent_id);
+        setElevenlabsAgentId(response.data.elevenlabs_agent_id);
+      }
+    } catch (error) {
+      console.error('Error loading agent data:', error);
+    }
+  };
+
+
 
   const loadWidgetConfig = async () => {
     if (!agentId) return;
@@ -76,22 +98,9 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   };
 
   const generateEmbedCode = () => {
-    return `<!-- BuilderLync AI Chat Widget -->
-<script>
-  window.BuilderLyncConfig = {
-    agentId: "${agentId || 'your-agent-id'}",
-    theme: "${config.theme}",
-    primaryColor: "${config.primaryColor}",
-    position: "${config.position}",
-    size: "${config.size}",
-    showAvatar: ${config.showAvatar},
-    showTypingIndicator: ${config.showTypingIndicator},
-    welcomeMessage: "${config.welcomeMessage}",
-    placeholder: "${config.placeholder}",
-    buttonText: "${config.buttonText}"
-  };
-</script>
-<script src="${window.location.origin}/static/chat-widget.js" async></script>`;
+    const agentIdToUse = elevenlabsAgentId || agentId || 'your-agent-id';
+    return `<elevenlabs-convai agent-id="${agentIdToUse}"></elevenlabs-convai>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed@beta" async type="text/javascript"></script>`;
   };
 
   const copyToClipboard = () => {
@@ -109,45 +118,43 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               Chat Widget
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Embed your AI agent on your website with a customizable chat widget
+              Embed your AI agent on your website
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* <button
-              onClick={handleSyncFromElevenLabs}
-              disabled={syncing || !agentId}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync from ElevenLabs'}
-            </button> */}
-            <button
-              onClick={() => setShowCode(!showCode)}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <Code className="w-4 h-4" />
-              {showCode ? 'Hide Code' : 'Show Code'}
-            </button>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={widgetEnabled}
+                onChange={(e) => {
+                  setWidgetEnabled(e.target.checked);
+                  setShowWidgetPreview(e.target.checked);
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                {widgetEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </label>
           </div>
         </div>
 
-        {showCode && (
-          <div className="bg-gray-900 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-300">Embed Code</span>
-              <button
-                onClick={copyToClipboard}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-300 hover:text-white transition-colors"
-              >
-                <Copy className="w-3 h-3" />
-                Copy
-              </button>
-            </div>
-            <pre className="text-sm text-gray-300 overflow-x-auto">
-              <code>{generateEmbedCode()}</code>
-            </pre>
+        <div className="bg-gray-900 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-300">Embed Code</span>
+            <button
+              onClick={copyToClipboard}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+            >
+              <Copy className="w-3 h-3" />
+              Copy
+            </button>
           </div>
-        )}
+          <pre className="text-sm text-gray-300 overflow-x-auto">
+            <code>{generateEmbedCode()}</code>
+          </pre>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -377,64 +384,32 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               </div>
 
               {/* Chat Widget Preview */}
-              <div
-                className={`absolute ${
-                  config.position.includes('bottom') ? 'bottom-4' : 'top-4'
-                } ${
-                  config.position.includes('right') ? 'right-4' : 'left-4'
-                }`}
-              >
-                {/* Chat Button */}
+              {showWidgetPreview && (
                 <div
-                  className="rounded-full shadow-lg cursor-pointer flex items-center justify-center text-white font-medium"
-                  style={{
-                    backgroundColor: config.primary_color,
-                    width: config.size === 'small' ? '48px' : config.size === 'medium' ? '56px' : '64px',
-                    height: config.size === 'small' ? '48px' : config.size === 'medium' ? '56px' : '64px',
-                    fontSize: config.size === 'small' ? '12px' : config.size === 'medium' ? '14px' : '16px'
-                  }}
+                  className={`absolute ${
+                    config.position.includes('bottom') ? 'bottom-4' : 'top-4'
+                  } ${
+                    config.position.includes('right') ? 'right-4' : 'left-4'
+                  }`}
                 >
-                  💬
+                  {/* Chat Button */}
+                  <div
+                    className="rounded-full shadow-lg cursor-pointer flex items-center justify-center text-white font-medium"
+                    style={{
+                      backgroundColor: config.primary_color,
+                      width: config.size === 'small' ? '48px' : config.size === 'medium' ? '56px' : '64px',
+                      height: config.size === 'small' ? '48px' : config.size === 'medium' ? '56px' : '64px',
+                      fontSize: config.size === 'small' ? '12px' : config.size === 'medium' ? '14px' : '16px'
+                    }}
+                  >
+                    💬
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Installation Instructions */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Installation Instructions
-            </h3>
-            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  1
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Copy the embed code</p>
-                  <p>Click "Show Code" above and copy the generated script tags.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  2
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Paste before closing &lt;/body&gt; tag</p>
-                  <p>Add the code to your website's HTML, just before the closing body tag.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Test your widget</p>
-                  <p>Visit your website to see the chat widget in action.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

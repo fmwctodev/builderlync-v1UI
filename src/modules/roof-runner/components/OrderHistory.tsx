@@ -19,9 +19,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const endDate = tomorrow.toISOString().split('T')[0];
+      
       const response = await abcSupplyApi.getOrdersHistory({
         startDate: '2024-03-15',
-        endDate: '2026-06-15',
+        endDate: endDate,
         itemsPerPage: 20,
         pageNumber: 1
       });

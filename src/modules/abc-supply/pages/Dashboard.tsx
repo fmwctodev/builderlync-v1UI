@@ -2,9 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { abcSupplyApi } from '../services/api';
+import { Product, Branch, Order } from '../types';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        // Load featured products
+        const productsResponse = await abcSupplyApi.getItems(1, 4);
+        setFeaturedProducts(productsResponse.items || []);
+        
+        // Load nearest branches
+        const branches = await abcSupplyApi.getBranches();
+        setNearestBranches(branches.slice(0, 3));
+        
+        // Load recent orders
+        const orders = await abcSupplyApi.getOrders();
+        setRecentOrders(Array.isArray(orders) ? orders.slice(0, 3) : []);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      }
+    };
+    
+    loadDashboardData();
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -77,14 +104,38 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="p-6">
-            <div className="text-center py-6">
-              <p className="text-gray-400">No recent orders found.</p>
-              <Link to="/abc-supply/products">
-                <button className="mt-3 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition">
-                  Start Shopping
-                </button>
-              </Link>
-            </div>
+            {recentOrders.length > 0 ? (
+              <div className="space-y-4">
+                {recentOrders.map((order) => (
+                  <div key={order.id} className="block p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-sm text-gray-400">Order #{order.orderNumber}</span>
+                        <p className="font-medium text-white">${order.total.toFixed(2)} - {order.items.length} items</p>
+                        <div className="mt-1 flex items-center">
+                          {order.status === 'processing' && <Package className="h-4 w-4 text-yellow-500 mr-1" />}
+                          {order.status === 'shipped' && <Truck className="h-4 w-4 text-blue-500 mr-1" />}
+                          {order.status === 'delivered' && <Truck className="h-4 w-4 text-green-500 mr-1" />}
+                          <span className="text-sm capitalize text-gray-300">{order.status}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-gray-400">No recent orders found.</p>
+                <Link to="/abc-supply/products">
+                  <button className="mt-3 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition">
+                    Start Shopping
+                  </button>
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 
@@ -100,38 +151,31 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="p-4">
-              <div className="grid grid-cols-1 gap-3">
-                <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 bg-gray-800 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="h-6 w-6 text-gray-400" />
+              {featuredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {featuredProducts.map((product, index) => (
+                    <div key={index} className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                      <div className="flex items-center">
+                        <div className="h-12 w-12 bg-gray-800 rounded-lg flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <div className="ml-3 overflow-hidden">
+                          <h4 className="font-medium text-white truncate">
+                            {product.familyName || 'Product'}
+                          </h4>
+                          <p className="text-sm text-gray-400 truncate">
+                            {product.supplierName} - {product.itemNumber}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-3 overflow-hidden">
-                      <h4 className="font-medium text-white truncate">
-                        Roofing Shingles
-                      </h4>
-                      <p className="text-sm text-gray-400 truncate">
-                        GAF - RS001
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 bg-gray-800 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="h-6 w-6 text-gray-400" />
-                    </div>
-                    <div className="ml-3 overflow-hidden">
-                      <h4 className="font-medium text-white truncate">
-                        Lumber 2x4x8
-                      </h4>
-                      <p className="text-sm text-gray-400 truncate">
-                        Premium - LB248
-                      </p>
-                    </div>
-                  </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-400">Loading featured products...</p>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
@@ -145,34 +189,23 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="p-4">
-              <div className="space-y-3">
-                <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
-                  <div>
-                    <h4 className="font-medium text-white">
-                      ABC Supply - Downtown
-                    </h4>
-                    <p className="text-sm text-gray-400">
-                      New York, NY
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      (555) 123-4567
-                    </p>
-                  </div>
+              {nearestBranches.length > 0 ? (
+                <div className="space-y-3">
+                  {nearestBranches.map((branch) => (
+                    <div key={branch.id} className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                      <div>
+                        <h4 className="font-medium text-white">{branch.name}</h4>
+                        <p className="text-sm text-gray-400">{branch.address?.city}, {branch.address?.state}</p>
+                        <p className="text-sm text-gray-400 mt-1">{branch.phone}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="block p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
-                  <div>
-                    <h4 className="font-medium text-white">
-                      ABC Supply - Midtown
-                    </h4>
-                    <p className="text-sm text-gray-400">
-                      New York, NY
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      (555) 987-6543
-                    </p>
-                  </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-400">Loading nearest branches...</p>
                 </div>
-              </div>
+              )}
             </div>
           </section>
         </div>

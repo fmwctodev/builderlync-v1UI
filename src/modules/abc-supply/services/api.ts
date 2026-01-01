@@ -53,6 +53,27 @@ export const abcSupplyApi = {
     return response.data.items || response.data.data || response.data || [];
   },
 
+  filterItems: async (filters: string[], itemsPerPage: number = 20, pageNumber: number = 1): Promise<Product[]> => {
+    const response = await api.post('/abc-supply/products/search', {
+      filters: [{
+        key: "itemDescription",
+        condition: "contains",
+        values: filters,
+        joinCondition: null
+      }],
+      pagination: {
+        itemsPerPage,
+        pageNumber
+      }
+    });
+    
+    // Handle different response format for filter API
+    if (response.data.success && response.data.data) {
+      return response.data.data.items || [];
+    }
+    return response.data.items || response.data.data || response.data || [];
+  },
+
   // Branches
   getBranches: async (): Promise<Branch[]> => {
     try {
@@ -63,13 +84,10 @@ export const abcSupplyApi = {
           distance: 100
         }
       });
-      
-      console.log('Raw branches API response:', response.data);
-      
+            
       // Handle the actual API response structure
       let branches = [];
       if (response.data.success && response.data.data) {
-        console.log('Processing branches data:', response.data.data);
         branches = response.data.data.map(item => ({
           id: item.branch.number,
           name: item.branch.name,
@@ -92,7 +110,6 @@ export const abcSupplyApi = {
         console.log('No branches data found or API unsuccessful');
       }
       
-      console.log('Processed branches:', branches);
       return branches;
     } catch (error) {
       console.error('Error fetching branches:', error);

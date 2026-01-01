@@ -135,6 +135,16 @@ export const elevenlabsApi = {
     return response.data;
   },
 
+  async getAgentVoice(agentId: string) {
+    const response = await api.get(`/${agentId}/voice`);
+    return response.data;
+  },
+
+  async getAgentKnowledgeBase(agentId: string) {
+    const response = await api.get(`/${agentId}/knowledge-base`);
+    return response.data;
+  },
+
   // Conversations
   async getConversations(agentId?: string) {
     const response = await api.get('/conversations', {
