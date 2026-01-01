@@ -1,4 +1,3 @@
-import { supabase } from '../../../shared/lib/supabase';
 import type {
   Pipeline,
   PipelineStage,
@@ -7,167 +6,124 @@ import type {
   JobType,
 } from '../types/opportunities';
 
-export const pipelinesApi = {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+
+class PipelinesApi {
+  private getHeaders() {
+    const token = localStorage.getItem('token');
+    const organizationSlug = localStorage.getItem('currentOrganizationSlug');
+
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      'X-Organization-Slug': organizationSlug || '',
+    };
+  }
+
   async getPipelines(jobType?: JobType): Promise<PipelineWithStages[]> {
     try {
-      let query = supabase
-        .from('pipelines')
-        .select(`
-          *,
-          stages:pipeline_stages(*)
-        `);
-
+      const url = new URL(`${API_BASE_URL}/pipelines`);
       if (jobType) {
-        query = query.eq('job_type', jobType);
+        url.searchParams.set('job_type', jobType);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
 
-      return (data || []).map(pipeline => ({
-        ...pipeline,
-        stages: (pipeline.stages || []).sort((a, b) => a.order_position - b.order_position),
-      }));
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch pipelines');
+      }
+
+      return result.data || [];
     } catch (error) {
       console.error('Error fetching pipelines:', error);
       throw error;
     }
-  },
+  }
 
   async getPipelinesByJobType(jobType: JobType): Promise<PipelineWithStages[]> {
     return this.getPipelines(jobType);
-  },
+  }
 
   async getPipelineById(id: string): Promise<PipelineWithStages | null> {
     try {
-      const { data, error } = await supabase
-        .from('pipelines')
-        .select(`
-          *,
-          stages:pipeline_stages(*)
-        `)
-        .eq('id', id)
-        .maybeSingle();
+      const response = await fetch(`${API_BASE_URL}/pipelines/${id}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
 
-      if (error) throw error;
-
-      if (data) {
-        return {
-          ...data,
-          stages: (data.stages || []).sort((a, b) => a.order_position - b.order_position),
-        };
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
       }
 
-      return null;
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch pipeline');
+      }
+
+      return result.data || null;
     } catch (error) {
       console.error('Error fetching pipeline:', error);
       throw error;
     }
-  },
+  }
 
   async getPipelineStages(pipeline_id: string): Promise<PipelineStage[]> {
     try {
-      const { data, error } = await supabase
-        .from('pipeline_stages')
-        .select('*')
-        .eq('pipeline_id', pipeline_id)
-        .order('order_position', { ascending: true });
+      const response = await fetch(`${API_BASE_URL}/pipelines/${pipeline_id}/stages`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
 
-      if (error) throw error;
-      return data || [];
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch pipeline stages');
+      }
+
+      return result.data || [];
     } catch (error) {
       console.error('Error fetching pipeline stages:', error);
       throw error;
     }
-  },
+  }
 
   async createPipeline(formData: PipelineFormData): Promise<PipelineWithStages> {
     try {
-      if (!supabase) {
-        throw new Error('Database connection not available. Please check your configuration.');
-      }
-
       console.log('Creating pipeline with data:', formData);
 
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const response = await fetch(`${API_BASE_URL}/pipelines`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(formData),
+      });
 
-      if (authError) {
-        console.error('Authentication error:', authError);
-        throw new Error(`Authentication failed: ${authError.message}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      if (!user) {
-        throw new Error('User not authenticated. Please log in and try again.');
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create pipeline');
       }
 
-      console.log('Authenticated user:', user.id);
-
-      if (formData.is_default) {
-        const { error: updateError } = await supabase
-          .from('pipelines')
-          .update({ is_default: false })
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          console.error('Error updating default pipeline:', updateError);
-        }
-      }
-
-      const pipelineData: Partial<Pipeline> = {
-        user_id: user.id,
-        name: formData.name,
-        description: formData.description || null,
-        is_default: formData.is_default,
-        job_type: formData.job_type,
-      };
-
-      console.log('Inserting pipeline:', pipelineData);
-
-      const { data: pipeline, error: pipelineError } = await supabase
-        .from('pipelines')
-        .insert(pipelineData)
-        .select()
-        .single();
-
-      if (pipelineError) {
-        console.error('Pipeline insert error:', pipelineError);
-        throw new Error(`Failed to create pipeline: ${pipelineError.message}. ${pipelineError.hint || ''}`);
-      }
-
-      if (!pipeline) {
-        throw new Error('Pipeline created but no data returned');
-      }
-
-      console.log('Pipeline created successfully:', pipeline.id);
-
-      const stagesData = formData.stages.map((stage, index) => ({
-        pipeline_id: pipeline.id,
-        name: stage.name,
-        color: stage.color,
-        order_position: stage.order_position !== undefined ? stage.order_position : index,
-        include_in_funnel: stage.include_in_funnel !== undefined ? stage.include_in_funnel : true,
-        include_in_distribution: stage.include_in_distribution !== undefined ? stage.include_in_distribution : true,
-      }));
-
-      console.log('Inserting stages:', stagesData.length);
-
-      const { data: stages, error: stagesError } = await supabase
-        .from('pipeline_stages')
-        .insert(stagesData)
-        .select();
-
-      if (stagesError) {
-        console.error('Stages insert error:', stagesError);
-        throw new Error(`Failed to create pipeline stages: ${stagesError.message}. ${stagesError.hint || ''}`);
-      }
-
-      console.log('Stages created successfully:', stages?.length);
-
-      return {
-        ...pipeline,
-        stages: (stages || []).sort((a, b) => a.order_position - b.order_position),
-      };
+      console.log('Pipeline created successfully:', result.data);
+      return result.data;
     } catch (error) {
       console.error('Error creating pipeline:', error);
       if (error instanceof Error) {
@@ -175,57 +131,54 @@ export const pipelinesApi = {
       }
       throw new Error('An unexpected error occurred while creating the pipeline');
     }
-  },
+  }
 
   async updatePipeline(id: string, formData: Partial<PipelineFormData>): Promise<Pipeline> {
     try {
-      const updateData: Partial<Pipeline> = {
-        ...(formData.name && { name: formData.name }),
-        ...(formData.description !== undefined && { description: formData.description }),
-        ...(formData.is_default !== undefined && { is_default: formData.is_default }),
-        ...(formData.job_type && { job_type: formData.job_type }),
-        updated_at: new Date().toISOString(),
-      };
+      const response = await fetch(`${API_BASE_URL}/pipelines/${id}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(formData),
+      });
 
-      if (formData.is_default) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('pipelines')
-            .update({ is_default: false })
-            .eq('user_id', user.id)
-            .neq('id', id);
-        }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const { data, error } = await supabase
-        .from('pipelines')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update pipeline');
+      }
 
-      if (error) throw error;
-      return data;
+      return result.data;
     } catch (error) {
       console.error('Error updating pipeline:', error);
       throw error;
     }
-  },
+  }
 
   async deletePipeline(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('pipelines')
-        .delete()
-        .eq('id', id);
+      const response = await fetch(`${API_BASE_URL}/pipelines/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete pipeline');
+      }
     } catch (error) {
       console.error('Error deleting pipeline:', error);
       throw error;
     }
-  },
+  }
 
   async createDefaultPipeline(jobType: JobType = 'Commercial'): Promise<PipelineWithStages> {
     const pipelineNames: Record<JobType, string> = {
@@ -253,7 +206,7 @@ export const pipelinesApi = {
     };
 
     return this.createPipeline(defaultPipeline);
-  },
+  }
 
   async getOrCreateDefaultPipeline(): Promise<PipelineWithStages> {
     try {
@@ -269,5 +222,7 @@ export const pipelinesApi = {
       console.error('Error getting/creating default pipeline:', error);
       throw error;
     }
-  },
-};
+  }
+}
+
+export const pipelinesApi = new PipelinesApi();

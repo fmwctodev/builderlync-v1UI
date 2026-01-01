@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { Product, Branch, Order, CartItem, ShipTo, OrderHistoryResponse } from '../types';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
 const api = axios.create({
-  baseURL: 'https://builderlyncapi.testenvapp.com/api',
+  baseURL: API_BASE_URL,
   timeout: 10000,
 });
 
@@ -148,13 +149,17 @@ export const abcSupplyApi = {
     endDate: string;
     itemsPerPage?: number;
     pageNumber?: number;
+    search?: string;
+    status?: string;
   }): Promise<OrderHistoryResponse> => {
     const response = await api.get('/abc-supply/ordersHistory', {
       params: {
         startDate: params.startDate,
         endDate: params.endDate,
         itemsPerPage: params.itemsPerPage || 20,
-        pageNumber: params.pageNumber || 1
+        pageNumber: params.pageNumber || 1,
+        search: params.search,
+        status: params.status
       }
     });
     return response.data;

@@ -3,14 +3,15 @@ import KanbanColumn from './KanbanColumn';
 import ViewEditOpportunityModal from './ViewEditOpportunityModal';
 import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
+import { getEmbeddedPipelineId } from '../../constants/embeddedPipelines';
 import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface KanbanBoardProps {
-  selectedJobType: JobType | 'all';
+  selectedPipelineId?: string | null;
 }
 
-export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
+export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
   const [draggedItem, setDraggedItem] = useState<OpportunityWithDetails | null>(null);
   const [opportunitiesList, setOpportunitiesList] = useState<OpportunityWithDetails[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -21,7 +22,7 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
 
   useEffect(() => {
     loadData();
-  }, [selectedJobType]);
+  }, [selectedPipelineId]);
 
   const loadData = async () => {
     try {
@@ -30,35 +31,28 @@ export default function KanbanBoard({ selectedJobType }: KanbanBoardProps) {
 
       // Fetch opportunities
       const filters: any = {};
-      if (selectedJobType !== 'all') {
-        filters.job_type = selectedJobType;
+      if (selectedPipelineId) {
+        filters.pipeline_id = selectedPipelineId;
       }
-      
+
       const opportunities = await opportunitiesApi.getOpportunities(filters);
       console.log('KanbanBoard - Loaded opportunities:', opportunities);
-      
-      // Get all unique stages from all opportunities
-      const stagesMap = new Map<string, PipelineStage>();
-      
-      if (selectedJobType === 'all') {
-        // When showing all, collect stages from all opportunities
-        opportunities.forEach(opp => {
-          if (opp.stage && !stagesMap.has(opp.stage_id)) {
-            stagesMap.set(opp.stage_id, opp.stage);
-          }
-        });
-        const loadedStages = Array.from(stagesMap.values()).sort((a, b) => 
-          (a.order_position || 0) - (b.order_position || 0)
-        );
-        setStages(loadedStages);
+
+      if (selectedPipelineId) {
+        // When a specific pipeline is selected, fetch its stages
+        const pipeline = await embeddedPipelinesService.getEmbeddedPipelines();
+        const selectedPipeline = pipeline.find(p => p.id === selectedPipelineId);
+        if (selectedPipeline && selectedPipeline.stages) {
+          setStages(selectedPipeline.stages);
+        }
       } else {
-        // For specific job type, fetch all stages from that pipeline
-        const pipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType(selectedJobType);
-        if (pipeline && pipeline.stages) {
-          setStages(pipeline.stages);
+        // When no pipeline is selected, show default embedded pipeline stages
+        const defaultPipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType('Commercial');
+        if (defaultPipeline && defaultPipeline.stages) {
+          setStages(defaultPipeline.stages);
         }
       }
-      
+
       setOpportunitiesList(opportunities);
     } catch (error) {
       console.error('Error loading kanban data:', error);

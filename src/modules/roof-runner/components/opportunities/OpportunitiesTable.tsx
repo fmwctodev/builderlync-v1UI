@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
-import type { OpportunityWithDetails, JobType } from '../../types/opportunities';
-import { EMBEDDED_PIPELINE_COLORS } from '../../constants/embeddedPipelines';
+import type { OpportunityWithDetails } from '../../types/opportunities';
 
 interface OpportunitiesTableProps {
-  selectedJobType: JobType | 'all';
   onRowClick?: (opportunityId: string) => void;
 }
 
@@ -47,20 +45,18 @@ const DUMMY_TABLE_OPPORTUNITIES = [
   }
 ];
 
-export default function OpportunitiesTable({ selectedJobType, onRowClick }: OpportunitiesTableProps) {
+export default function OpportunitiesTable({ onRowClick }: OpportunitiesTableProps) {
   const [opportunities, setOpportunities] = useState<OpportunityWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOpportunities();
-  }, [selectedJobType]);
+  }, []);
 
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const data = selectedJobType === 'all'
-        ? await opportunitiesApi.getOpportunities()
-        : await opportunitiesApi.getOpportunitiesByJobType(selectedJobType);
+      const data = await opportunitiesApi.getOpportunities();
       setOpportunities(data);
     } catch (error) {
       console.error('Error loading opportunities:', error);
@@ -83,8 +79,8 @@ export default function OpportunitiesTable({ selectedJobType, onRowClick }: Oppo
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
         <div className="flex flex-col items-center justify-center h-32">
-          <div className="text-gray-600 dark:text-gray-400 mb-2">No {selectedJobType.toLowerCase()} opportunities yet</div>
-          <div className="text-sm text-gray-500 dark:text-gray-500">Click "Add Opportunity" to create your first {selectedJobType.toLowerCase()} opportunity</div>
+          <div className="text-gray-600 dark:text-gray-400 mb-2">No opportunities yet</div>
+          <div className="text-sm text-gray-500 dark:text-gray-500">Click "Add Opportunity" to create your first opportunity</div>
         </div>
       </div>
     );

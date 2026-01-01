@@ -64,7 +64,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
       newErrors.pipelineName = 'Pipeline name is required';
     }
 
-    if (!jobType) {
+    if (!jobType || jobType.trim() === '') {
       newErrors.jobType = 'Job type is required';
     }
 

@@ -23,7 +23,7 @@ import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
 import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
-import { WidgetSection } from '../components/WidgetSection';
+import { WidgetSection } from '../components/WidgetSectionNew';
 import { KnowledgeBaseSection } from '../components/KnowledgeBaseSection';
 import { VoicesSectionEnhanced } from '../components/VoicesSectionEnhanced';
 import { useAppSelector } from '../../roof-runner/store/hooks';

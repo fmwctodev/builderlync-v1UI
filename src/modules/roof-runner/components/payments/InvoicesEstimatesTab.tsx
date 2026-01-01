@@ -207,7 +207,7 @@ const InvoicesEstimatesTab: React.FC = () => {
           </div>
         </div>
 
-        {subView === 'all_invoices' && (
+        {/* {subView === 'all_invoices' && (
           <div className="mb-4 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-blue-800 rounded-lg flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -219,7 +219,7 @@ const InvoicesEstimatesTab: React.FC = () => {
               </button>
             </div>
           </div>
-        )}
+        )} */}
 
         {subView === 'all_invoices' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -298,11 +298,11 @@ const InvoicesEstimatesTab: React.FC = () => {
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent p-6">
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          {/* <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm">Debug: Total invoices: {invoices.length}, Filtered: {filteredAndSortedInvoices.length}, Loading: {loading.toString()}</p>
             <p className="text-sm">Search: '{searchQuery}', Status filter: [{statusFilter.join(', ')}]</p>
           </div>
-          
+           */}
           {!loading && filteredAndSortedInvoices.length > 0 && (
             <div className="mb-4 flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
               <div className="flex items-center space-x-6">
