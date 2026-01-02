@@ -53,7 +53,6 @@ const Calendars: React.FC = () => {
     invitees: [] as string[],
     description: ''
   });
-
   const fetchStaff = async () => {
     try {
       const response = await getStaff(1, 100);
@@ -68,6 +67,7 @@ const Calendars: React.FC = () => {
   const fetchJobs = async () => {
     try {
       const response = await getJobs(1, 100);
+      console.log("fetch jobs", response.data.data);
       setJobs(response.data.data || []);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
@@ -78,7 +78,8 @@ const Calendars: React.FC = () => {
   const fetchContacts = async () => {
     try {
       const response = await getContacts('', '', 1, 1000);
-      setContacts(response.data.data || []);
+      console.log("response", response);
+      setContacts(response.data.contacts || []);
     } catch (error: any) {
       console.error('Error fetching contacts:', error);
       setToast({ message: 'Failed to load contacts', type: 'error' });
@@ -209,18 +210,18 @@ const Calendars: React.FC = () => {
     const formDataToSet = {
       type: event.type || 'meeting',
       title: event.title,
+      contactId: undefined,
+      contactName: '',
       startDate: (event as any).start_date || event.startDate,
       startTime: (event as any).start_time || event.startTime,
       endDate: (event as any).end_date || event.endDate,
       endTime: (event as any).end_time || event.endTime,
       allDay: event.allDay || false,
       location: event.location || '',
-      job: selectedJob?.name || '',
+      job: selectedJob?.id || '',
       teamMember: defaultStaff ? `${defaultStaff.first_name} ${defaultStaff.last_name}` : '',
       invitees: event.invitees ? (Array.isArray(event.invitees) ? event.invitees : [event.invitees]) : [],
-      description: event.description || '',
-      clientName: '',
-      clientEmail: ''
+      description: event.description || ''
     };
     console.log('Form data being set:', formDataToSet);
     setFormData(formDataToSet);
@@ -779,7 +780,7 @@ const Calendars: React.FC = () => {
                   <option value="">Select a contact (optional)</option>
                   {contacts.map(contact => (
                     <option key={contact.id} value={contact.id}>
-                      {contact.first_name} {contact.last_name} {contact.email ? `(${contact.email})` : ''}
+                      {contact.fullName} {contact.email ? `(${contact.email})` : ''}
                     </option>
                   ))}
                 </select>
@@ -878,7 +879,7 @@ const Calendars: React.FC = () => {
                 >
                   <option value="">Select a job (optional)</option>
                   {jobs.map(job => (
-                    <option key={job.id} value={job.name}>{job.name}</option>
+                    <option key={job.id} value={job.id}>#{job.id}{job.name} ({job.createdByName})</option>
                   ))}
                 </select>
               </div>

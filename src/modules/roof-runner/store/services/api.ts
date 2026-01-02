@@ -19,8 +19,8 @@ apiClient.interceptors.request.use((config) => {
 });
 
 export const apiService = {
-  getJobs: async () => {
-    const response = await apiClient.get('/jobs');
+  getJobs: async (page: number = 1, limit: number = 10) => {
+    const response = await apiClient.get(`/jobs?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -117,6 +117,11 @@ export const apiService = {
 
   updateInstantEstimatorAdditionalSettings: async (id: number, additionalSettings: any) => {
     const response = await apiClient.put(`/instant-estimators/${id}/additional-settings`, additionalSettings);
+    return response.data;
+  },
+
+  updateInstantEstimator: async (id: number, data: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}`, data);
     return response.data;
   },
 

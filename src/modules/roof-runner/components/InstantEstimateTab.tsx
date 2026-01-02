@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Minus, FileText, Trash2, Eye, Calendar } from 'lucide-react';
+import { Plus, Minus, FileText, Trash2, Eye, Calendar, ExternalLink } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getReportsByJobId, InstantEstimateReport } from '../../../shared/store/services/instantEstimateReportsApi';
+import { apiService } from '../store/services/api';
 
 interface InstantEstimateTabProps {
   jobId?: number;
@@ -8,10 +10,13 @@ interface InstantEstimateTabProps {
 }
 
 const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddress }) => {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const [reports, setReports] = useState<InstantEstimateReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [estimators, setEstimators] = useState<any[]>([]);
 
   useEffect(() => {
     const initMap = () => {
@@ -57,7 +62,20 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
       }
     };
 
+    const fetchEstimators = async () => {
+      if (!jobId) return;
+      try {
+        const response = await apiService.getInstantEstimators(1, 100);
+        const allEstimators = response?.data?.data || response?.data || [];
+        const jobEstimators = allEstimators.filter((est: any) => est.job_id === jobId);
+        setEstimators(jobEstimators);
+      } catch (error) {
+        console.error('Error fetching estimators:', error);
+      }
+    };
+
     fetchReports();
+    fetchEstimators();
   }, [jobId]);
 
   const handleZoomIn = () => {
@@ -119,7 +137,7 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
             </span>
           </div>
           <button
-            onClick={handleCreateReport}
+            onClick={() => navigate(`/org/${orgSlug}/instant-estimator`)}
             className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -233,6 +251,48 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
 
         {/* Reports Table Section */}
         <div className="px-6 py-6 border-t border-gray-200 dark:border-gray-700">
+          {/* Linked Estimators Section */}
+          {estimators.length > 0 && (
+            <div className="mb-8">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Linked Instant Estimators
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Instant estimators configured for this job
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {estimators.map((estimator) => (
+                  <div
+                    key={estimator.id}
+                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                        {estimator.name}
+                      </h4>
+                      <button
+                        onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                        title="Manage Estimator"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                      <div>Created: {formatDate(estimator.created_at)}</div>
+                      <div className="flex items-center">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Active
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Generated Reports
