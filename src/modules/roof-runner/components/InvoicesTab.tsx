@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, FileText, Calendar, DollarSign, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getInvoices, Invoice } from '../../../shared/store/services/invoicesApi';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getInvoices, getInvoicesByJobId, Invoice } from '../../../shared/store/services/invoicesApi';
 
-const InvoicesTab: React.FC = () => {
+interface InvoicesTabProps {
+  jobId?: number;
+}
+
+const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +24,9 @@ const InvoicesTab: React.FC = () => {
       try {
         setLoading(true);
         console.log('Fetching invoices...');
-        const response = await getInvoices();
+        const response = jobId 
+          ? await getInvoicesByJobId(jobId)
+          : await getInvoices();
         console.log('Invoice API response:', response);
         if (response.success) {
           console.log('Setting invoices:', response.data.length, 'items');
@@ -35,7 +44,7 @@ const InvoicesTab: React.FC = () => {
     };
 
     fetchInvoices();
-  }, []);
+  }, [jobId]);
 
   useEffect(() => {
     console.log('Filtering invoices. Search:', searchTerm, 'Status:', statusFilter, 'Total invoices:', invoices.length);
@@ -98,7 +107,10 @@ const InvoicesTab: React.FC = () => {
       <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Invoices</h2>
-          <button className="flex items-center space-x-2 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600">
+          <button 
+            onClick={() => navigate(`/org/${orgSlug}/payments`)}
+            className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm"
+          >
             <Plus className="w-4 h-4" />
             <span>Invoice</span>
           </button>

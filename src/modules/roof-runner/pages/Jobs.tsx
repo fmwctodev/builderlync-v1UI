@@ -141,9 +141,18 @@ const Jobs: React.FC = () => {
         } else {
           setToast({ message: 'Job updated successfully!', type: 'success' });
         }
+
+        // Refresh the viewing job data
+        const updatedJobsResponse = await getJobs(1, 100);
+        const updatedJob = updatedJobsResponse.data.data.find(j => j.id === editingJob.id);
+        if (updatedJob) {
+          setViewingJob(updatedJob);
+          setEditingJob(updatedJob);
+        }
       } else {
         const response = await createJob(formData);
-        const newJobId = response.data.id;
+        const newJob = response.data;
+        const newJobId = newJob.id;
 
         if (newJobId) {
           try {
@@ -160,15 +169,16 @@ const Jobs: React.FC = () => {
             console.error('Error auto-creating tasks:', taskError);
             setToast({ message: 'Job created successfully!', type: 'success' });
           }
+
+          // Set the newly created job as viewingJob so tabs can access it
+          setViewingJob(newJob);
+          setEditingJob(newJob);
         } else {
           setToast({ message: 'Job created successfully!', type: 'success' });
         }
       }
 
-      setShowJobDetails(false);
-      setEditingJob(null);
-      resetForm();
-      setJobAddress('');
+      // Refresh jobs list
       fetchJobs();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to save job';
@@ -416,11 +426,7 @@ const Jobs: React.FC = () => {
           setJobAddress('');
           setJobCoordinates(null);
         }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit(e);
-          setShowJobDetails(false);
-        }}
+        onSubmit={handleSubmit}
         onDelete={viewingJob ? () => handleDelete(viewingJob.id!) : undefined}
         formData={formData}
         setFormData={setFormData}

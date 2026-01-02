@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, MoreHorizontal, ChevronDown, User, Calendar as CalendarIcon, X } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   getJobTasks,
   createJobTask,
@@ -19,6 +20,8 @@ interface TasksTabProps {
 }
 
 const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange }) => {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [tasks, setTasks] = useState<JobTask[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);

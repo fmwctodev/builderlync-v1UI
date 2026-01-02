@@ -503,20 +503,28 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </div>
               )}
 
-              {activeTab === 'Tasks' && viewingJob && (
+              {activeTab === 'Tasks' && viewingJob && viewingJob.id ? (
                 <TasksTab
-                  jobId={viewingJob.id!}
+                  jobId={viewingJob.id}
                   currentStage={formData.workflowStages}
                 />
-              )}
+              ) : activeTab === 'Tasks' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Tasks</p>
+                </div>
+              ) : null}
 
-              {activeTab === 'Calendar' && (
+              {activeTab === 'Calendar' && viewingJob && viewingJob.id ? (
                 <CalendarTab
-                  jobId={viewingJob?.id}
-                  jobData={viewingJob || undefined}
+                  jobId={viewingJob.id}
+                  jobData={viewingJob}
                   staff={staff}
                 />
-              )}
+              ) : activeTab === 'Calendar' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Calendar</p>
+                </div>
+              ) : null}
 
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
@@ -530,20 +538,42 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 />
               )}
 
-              {activeTab === 'Material orders' && <MaterialOrdersTab />}
+              {activeTab === 'Material orders' && viewingJob && viewingJob.id ? (
+                <MaterialOrdersTab jobId={viewingJob.id} />
+              ) : activeTab === 'Material orders' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Material Orders</p>
+                </div>
+              ) : null}
 
-              {activeTab === 'Invoices' && <InvoicesTab />}
+              {activeTab === 'Invoices' && viewingJob && viewingJob.id ? (
+                <InvoicesTab jobId={viewingJob.id} />
+              ) : activeTab === 'Invoices' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Invoices</p>
+                </div>
+              ) : null}
 
               {activeTab === 'Job Cost' && <JobCostingTab />}
 
-              {activeTab === 'Attachments' && <AttachmentsTab />}
+              {activeTab === 'Attachments' && viewingJob && viewingJob.id ? (
+                <AttachmentsTab jobId={viewingJob.id} />
+              ) : activeTab === 'Attachments' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Attachments</p>
+                </div>
+              ) : null}
 
-              {activeTab === 'Instant Estimate' && (
+              {activeTab === 'Instant Estimate' && viewingJob && viewingJob.id ? (
                 <InstantEstimateTab
-                  jobId={viewingJob?.id}
-                  jobAddress={viewingJob?.location}
+                  jobId={viewingJob.id}
+                  jobAddress={viewingJob.location}
                 />
-              )}
+              ) : activeTab === 'Instant Estimate' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Instant Estimate</p>
+                </div>
+              ) : null}
 
               {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'Proposals' && activeTab !== 'Material orders' && activeTab !== 'Invoices' && activeTab !== 'Job Cost' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && (
                 <div className="p-6">
