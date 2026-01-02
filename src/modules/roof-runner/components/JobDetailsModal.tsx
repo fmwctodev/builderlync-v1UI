@@ -28,6 +28,7 @@ interface JobDetailsModalProps {
   loading: boolean;
   viewingJob?: Job | null;
   editingJob?: Job | null;
+  readOnly?: boolean;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
@@ -40,7 +41,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   staff,
   loading,
   viewingJob,
-  editingJob
+  editingJob,
+  readOnly = false
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
@@ -585,8 +587,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               )}
             </div>
 
-            {/* Fixed Footer - Only show for Job details tab */}
-            {activeTab === 'Job details' && (
+            {/* Fixed Footer - Only show for Job details tab and not in read-only mode */}
+            {activeTab === 'Job details' && !readOnly && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-800">
                 <div className="flex justify-between items-center">
                   {viewingJob && onDelete ? (
