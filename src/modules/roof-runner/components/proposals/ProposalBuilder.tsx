@@ -27,6 +27,9 @@ import { proposalsApi } from "../../services/proposalsApi";
 import { getContacts, type Contact } from "../../../../shared/store/services/contactsApi";
 import { proposalSharingApi } from "../../services/proposalSharingApi";
 import { abcSupplyService, ABCSupplyOrderHistoryItem } from "../../services/abcSupplyService";
+import { getJobById, Job, CreateJobRequest, updateJob } from "../../../../shared/store/services/jobsApi";
+import { getStaff, StaffMember } from "../../../../shared/store/services/staffApi";
+import JobDetailsModal from "../JobDetailsModal";
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -242,6 +245,34 @@ export default function ProposalBuilder({
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
   const [showMeasurementDownloadModal, setShowMeasurementDownloadModal] = useState(false);
   const [proposalData, setProposalData] = useState<any>(null);
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [jobData, setJobData] = useState<Job | null>(null);
+  const [jobFormData, setJobFormData] = useState<CreateJobRequest>({
+    name: '',
+    location: '',
+    customerId: null,
+    assignees: [],
+    jobOwner: 0,
+    workflowStages: 'Inspection/Estimate Booked',
+    closeDate: '',
+    jobValue: 0,
+    source: '',
+    details: '',
+    insuranceEnabled: false,
+    insuranceCompany: '',
+    policyAccountNumber: '',
+    claimNumber: '',
+    dateOfLoss: '',
+    typeOfDamage: '',
+    claimAmount: 0,
+    deductible: 0,
+    claimDetails: '',
+    createdBy: 0,
+    jobType: 'residential',
+    contactId: null
+  });
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loadingJob, setLoadingJob] = useState(false);
 
   const [sections, setSections] = useState<Section[]>([
     { id: "cover", name: "Cover", active: true, order: 0 },
@@ -255,6 +286,58 @@ export default function ProposalBuilder({
     },
   ]);
 
+  const handleViewJobDetails = async () => {
+    if (!proposalData?.job_id) return;
+    
+    setLoadingJob(true);
+    try {
+      const response = await getJobById(proposalData.job_id);
+      if (response.success && response.data) {
+        setJobData(response.data);
+        setJobFormData({
+          name: response.data.name || '',
+          location: response.data.location || '',
+          customerId: response.data.customerId,
+          assignees: response.data.assignees || [],
+          jobOwner: response.data.jobOwner || 0,
+          workflowStages: response.data.workflowStages || 'Inspection/Estimate Booked',
+          closeDate: response.data.closeDate || '',
+          jobValue: response.data.jobValue || 0,
+          source: response.data.source || '',
+          details: response.data.details || '',
+          insuranceEnabled: response.data.insuranceEnabled || false,
+          insuranceCompany: response.data.insuranceCompany || '',
+          policyAccountNumber: response.data.policyAccountNumber || '',
+          claimNumber: response.data.claimNumber || '',
+          dateOfLoss: response.data.dateOfLoss || '',
+          typeOfDamage: response.data.typeOfDamage || '',
+          claimAmount: response.data.claimAmount || 0,
+          deductible: response.data.deductible || 0,
+          claimDetails: response.data.claimDetails || '',
+          createdBy: response.data.createdBy || 0,
+          jobType: response.data.jobType || 'residential',
+          contactId: response.data.contactId
+        });
+        setShowJobDetailsModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+    } finally {
+      setLoadingJob(false);
+    }
+  };
+
+  const handleJobSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobData?.id) return;
+    
+    try {
+      await updateJob(jobData.id, jobFormData);
+      setShowJobDetailsModal(false);
+    } catch (error) {
+      console.error('Error updating job:', error);
+    }
+  };
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -394,6 +477,20 @@ export default function ProposalBuilder({
 
     loadProposal();
     loadOrderHistory();
+    
+    // Load staff data
+    const loadStaff = async () => {
+      try {
+        const response = await getStaff();
+        if (response.success && response.data) {
+          setStaff(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading staff:', error);
+      }
+    };
+    
+    loadStaff();
   }, [proposalId]);
 
   // Auto-save disabled - use manual save button only
@@ -1348,6 +1445,21 @@ export default function ProposalBuilder({
                     <ExternalLink size={16} />
                     <span className="text-sm font-medium">
                       View Measurement
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {proposalData?.job_id && (
+                <div className="mb-4">
+                  <button
+                    onClick={handleViewJobDetails}
+                    disabled={loadingJob}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+                  >
+                    <ExternalLink size={16} />
+                    <span className="text-sm font-medium">
+                      {loadingJob ? 'Loading...' : 'View Job Details'}
                     </span>
                   </button>
                 </div>
@@ -4305,6 +4417,20 @@ export default function ProposalBuilder({
           )}
         </div>
       )}
+      
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        isOpen={showJobDetailsModal}
+        onClose={() => setShowJobDetailsModal(false)}
+        onSubmit={() => {}}
+        formData={jobFormData}
+        setFormData={setJobFormData}
+        staff={staff}
+        loading={loadingJob}
+        viewingJob={jobData}
+        editingJob={null}
+        readOnly={true}
+      />
     </>
   );
 }

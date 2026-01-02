@@ -57,14 +57,14 @@ const AddressModal: React.FC<AddressModalProps> = ({
                 Continue
               </button>
               
-              <div className="text-gray-400 dark:text-gray-500 text-sm">or</div>
+              {/* <div className="text-gray-400 dark:text-gray-500 text-sm">or</div>
               
               <button
                 onClick={onCreateFromCompanyCam}
                 className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
               >
                 Create from CompanyCam
-              </button>
+              </button> */}
             </div>
           </div>
           

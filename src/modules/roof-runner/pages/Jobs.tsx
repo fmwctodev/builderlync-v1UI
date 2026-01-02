@@ -323,11 +323,11 @@ const Jobs: React.FC = () => {
   }, [toast]);
 
   const handleNewReport = () => {
-    navigate(`${orgPrefix}/roof-runner/measurements`);
+    navigate(`${orgPrefix}/measurements`);
   };
 
   const handleNewCustomer = () => {
-    navigate(`${orgPrefix}/roof-runner/contacts`);
+    navigate(`${orgPrefix}/contacts`);
   };
 
 
