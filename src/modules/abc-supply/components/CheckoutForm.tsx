@@ -78,19 +78,32 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   }, [isOpen]);
 
   useEffect(() => {
+    console.log('CheckoutForm - selectedShipTos:', selectedShipTos);
+    console.log('CheckoutForm - shipTos:', shipTos);
+    
     // Get branches from selected shipTos
     const branches: ShipToBranch[] = [];
     selectedShipTos.forEach(shipToNumber => {
       const shipTo = shipTos.find(s => s.number === shipToNumber);
+      console.log(`Found shipTo for ${shipToNumber}:`, shipTo);
       if (shipTo && shipTo.branches) {
+        console.log(`Adding branches for ${shipToNumber}:`, shipTo.branches);
         branches.push(...shipTo.branches);
       }
     });
+    
     // Remove duplicates based on branch number
     const uniqueBranches = branches.filter((branch, index, self) => 
       index === self.findIndex(b => b.number === branch.number)
     );
+    
+    console.log('Final uniqueBranches:', uniqueBranches);
     setAvailableBranches(uniqueBranches);
+    
+    // Auto-select first branch if only one available
+    if (uniqueBranches.length === 1 && !formData.branchNumber) {
+      setFormData(prev => ({ ...prev, branchNumber: uniqueBranches[0].number }));
+    }
   }, [selectedShipTos, shipTos]);
 
   const handleSubmit = (e: React.FormEvent) => {
