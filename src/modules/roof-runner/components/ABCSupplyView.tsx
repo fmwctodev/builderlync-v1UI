@@ -44,7 +44,7 @@ const ABCSupplyView: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load recent orders:', error);
-        console.error('Error details:', error.response?.data);
+        console.error('Error details:', (error as any).response?.data);
         setRecentOrders([]);
       } finally {
         setLoading(prev => ({ ...prev, orders: false }));
@@ -58,11 +58,11 @@ const ABCSupplyView: React.FC = () => {
       try {
         const response = await abcSupplyApi.getItems(1, 4);
         // Handle the nested structure: response.items.items
-        const products = response.items?.items || response.items || [];
+        const products = Array.isArray((response as any).items) ? (response as any).items : (response as any).items?.items || [];
         setFeaturedProducts(products);
       } catch (error) {
         console.error('Failed to load featured products:', error);
-        console.error('Error details:', error.response?.data);
+        console.error('Error details:', (error as any).response?.data);
         setFeaturedProducts([]);
       } finally {
         setLoading(prev => ({ ...prev, products: false }));

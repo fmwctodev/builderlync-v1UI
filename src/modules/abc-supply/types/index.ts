@@ -268,6 +268,9 @@ export interface OrderHistoryItem {
   orderType: string;
   orderStatus: string;
   productQty: number;
+  ship_to?: string; // JSON string containing shipping address
+  lines?: string; // JSON string containing order line items
+  abc_response?: string; // JSON string containing ABC Supply response
 }
 
 export interface OrderHistoryResponse {

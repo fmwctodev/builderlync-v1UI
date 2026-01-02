@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
 import type { PipelineWithStages } from '../../types/opportunities';
-import { JOB_TYPE_COLORS } from '../../types/opportunities';
 
 interface ViewPipelineModalProps {
   isOpen: boolean;
@@ -85,18 +84,6 @@ export default function ViewPipelineModal({ isOpen, pipelineId, onClose, onEdit 
                   <p className="text-gray-900 dark:text-white">{pipeline.description}</p>
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Job Type
-                </label>
-                <span
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
-                  style={{ backgroundColor: JOB_TYPE_COLORS[pipeline.job_type] }}
-                >
-                  {pipeline.job_type}
-                </span>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">

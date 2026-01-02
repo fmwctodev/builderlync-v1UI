@@ -7,7 +7,7 @@ import type {
   JobType,
 } from '../../../modules/roof-runner/types/opportunities';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
 
 interface OpportunityFilters {
   pipeline_id?: string;
@@ -32,8 +32,8 @@ class OpportunitiesApiService {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: response.statusText }));
-        throw new Error(error.error || `API Error: ${response.status}`);
+        const error = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(error.message || error.error || `API Error: ${response.status}`);
       }
 
       return response.json();
@@ -80,6 +80,7 @@ class OpportunitiesApiService {
         status: 'open',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        user_id: ""
       },
       {
         id: '2',
@@ -92,6 +93,7 @@ class OpportunitiesApiService {
         status: 'open',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        user_id: ""
       },
       {
         id: '3',
@@ -104,6 +106,7 @@ class OpportunitiesApiService {
         status: 'open',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        user_id: ""
       },
       {
         id: '4',
@@ -116,6 +119,7 @@ class OpportunitiesApiService {
         status: 'open',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        user_id: ""
       },
       {
         id: '5',
@@ -128,6 +132,7 @@ class OpportunitiesApiService {
         status: 'won',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        user_id: ""
       },
     ];
   }
@@ -142,6 +147,7 @@ class OpportunitiesApiService {
       method: 'POST',
       body: JSON.stringify(formData),
     });
+    console.log("result", result);
     return result.data;
   }
 

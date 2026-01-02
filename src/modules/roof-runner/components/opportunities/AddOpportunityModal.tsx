@@ -12,9 +12,10 @@ interface AddOpportunityModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultJobType?: JobType;
+  selectedPipelineId?: string | null;
 }
 
-export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial' }: AddOpportunityModalProps) {
+export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial', selectedPipelineId }: AddOpportunityModalProps) {
   const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
   const [selectedJobType, setSelectedJobType] = useState<JobType>(defaultJobType);
   const [pipeline, setPipeline] = useState<PipelineWithStages | null>(null);
@@ -46,45 +47,50 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedJobType(defaultJobType);
-      loadPipeline(defaultJobType);
+      loadPipelineFromSelection();
     }
-  }, [isOpen, defaultJobType]);
+  }, [isOpen, selectedPipelineId]);
 
-  useEffect(() => {
-    if (isOpen && selectedJobType) {
-      loadPipeline(selectedJobType);
-    }
-  }, [selectedJobType]);
-
-  const loadPipeline = async (jobType: JobType) => {
+  const loadPipelineFromSelection = async () => {
     try {
-      // Temporary: Use hardcoded pipeline/stage IDs for testing
-      // TODO: Replace with actual backend API call
-      setFormData(prev => ({
-        ...prev,
-        pipeline_id: '1', // Hardcoded for testing
-        stage_id: '1',    // Hardcoded for testing
-      }));
-      
-      // Mock pipeline data for UI
-      setPipeline({
-        id: '1',
-        user_id: '5',
-        name: 'Commercial Sales Pipeline',
-        is_default: true,
-        job_type: 'Commercial',
-        pipeline_type: 'system',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        stages: [
-          { id: '1', pipeline_id: '1', name: 'New Lead', order_position: 1, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-          { id: '2', pipeline_id: '1', name: 'Contacted', order_position: 2, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-          { id: '3', pipeline_id: '1', name: 'Qualified', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-        ]
-      });
+      if (selectedPipelineId && selectedPipelineId !== 'default') {
+        // Load the selected pipeline
+        const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
+        const pipelineData = await pipelinesApi.getPipelineById(selectedPipelineId);
+        
+        if (pipelineData) {
+          setPipeline(pipelineData);
+          setFormData(prev => ({
+            ...prev,
+            pipeline_id: pipelineData.id,
+            stage_id: pipelineData.stages?.[0]?.id || '', // Set to first stage
+          }));
+        }
+      } else {
+        // Default selected - set to first default stage
+        const defaultStages = [
+          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
+          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
+          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
+          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
+          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
+          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
+        ];
+        setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
+        setFormData(prev => ({
+          ...prev,
+          pipeline_id: '',
+          stage_id: 'default-1', // First default stage
+        }));
+      }
     } catch (error) {
       console.error('Error loading pipeline:', error);
+      setPipeline(null);
+      setFormData(prev => ({
+        ...prev,
+        pipeline_id: '',
+        stage_id: '',
+      }));
     }
   };
 
@@ -97,9 +103,9 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
       newErrors.opportunity_name = 'Opportunity name is required';
     }
 
-    if (!formData.pipeline_id) {
-      newErrors.pipeline_id = 'Pipeline is required';
-    }
+    // if (!formData.pipeline_id) {
+    //   newErrors.pipeline_id = 'Pipeline is required';
+    // }
 
     if (!formData.stage_id) {
       newErrors.stage_id = 'Stage is required';
@@ -114,10 +120,12 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    // console.log("Submitting form data:", formData);
+    // if (!validateForm()) return;
 
     setLoading(true);
     try {
+      // console.log("Creating opportunity with data:", formData);
       await opportunitiesApi.createOpportunity(formData);
       onSuccess();
       handleClose();

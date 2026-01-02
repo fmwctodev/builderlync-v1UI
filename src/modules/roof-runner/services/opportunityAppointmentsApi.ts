@@ -1,4 +1,4 @@
-import { supabase } from '../../../shared/lib/supabase';
+import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityAppointment {
   id: string;
@@ -42,93 +42,24 @@ export interface UpdateOpportunityAppointmentRequest {
 
 export const opportunityAppointmentsApi = {
   async getAppointments(opportunityId: string): Promise<OpportunityAppointment[]> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_appointments')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .order('appointment_date', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching opportunity appointments:', error);
-      throw error;
-    }
+    return apiClient.get(`/opportunities/${opportunityId}/appointments`);
   },
 
   async createAppointment(appointmentData: CreateOpportunityAppointmentRequest): Promise<OpportunityAppointment> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('opportunity_appointments')
-        .insert({
-          ...appointmentData,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating opportunity appointment:', error);
-      throw error;
-    }
+    return apiClient.post('/opportunities/appointments', appointmentData);
   },
 
   async updateAppointment(appointmentId: string, updates: UpdateOpportunityAppointmentRequest): Promise<OpportunityAppointment> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_appointments')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', appointmentId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating opportunity appointment:', error);
-      throw error;
-    }
+    return apiClient.put(`/opportunities/appointments/${appointmentId}`, updates);
   },
 
   async deleteAppointment(appointmentId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('opportunity_appointments')
-        .delete()
-        .eq('id', appointmentId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting opportunity appointment:', error);
-      throw error;
-    }
+    return apiClient.delete(`/opportunities/appointments/${appointmentId}`);
   },
 
   async getUpcomingAppointments(opportunityId: string): Promise<OpportunityAppointment[]> {
-    try {
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('opportunity_appointments')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .eq('status', 'scheduled')
-        .gte('appointment_date', now)
-        .order('appointment_date', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching upcoming appointments:', error);
-      throw error;
-    }
+    const appointments = await this.getAppointments(opportunityId);
+    const now = new Date().toISOString();
+    return appointments.filter(a => a.status === 'scheduled' && a.appointment_date >= now);
   },
 };

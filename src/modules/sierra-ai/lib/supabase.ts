@@ -1,21 +1,14 @@
 /**
  * Sierra AI Module Supabase Client
  *
- * Re-exports the shared Supabase client to prevent multiple instances
- * and avoid "Multiple GoTrueClient instances" warnings.
+ * Supabase removed from frontend - all database operations go through backend API
  */
-import { supabase, getCurrentUser as getUser, getCurrentUserId } from '../../../shared/lib/supabase';
-
-export { supabase };
+export const supabase = null;
 
 export async function getCurrentUser() {
-  const user = await getUser();
-  if (!user) throw new Error('User not authenticated');
-  return user;
+  throw new Error('Use backend API for user authentication');
 }
 
 export async function getUserId(): Promise<string> {
-  const userId = await getCurrentUserId();
-  if (!userId) throw new Error('User not authenticated');
-  return userId;
+  throw new Error('Use backend API for user authentication');
 }

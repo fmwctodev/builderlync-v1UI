@@ -1,25 +1,31 @@
-import { supabase } from '../../../shared/lib/supabase';
+import { pipelinesApi } from './pipelinesApi';
 import {
   EMBEDDED_PIPELINE_IDS,
   EMBEDDED_PIPELINE_TYPES,
   DEFAULT_PIPELINE_STAGES,
   getEmbeddedPipelineId,
 } from '../constants/embeddedPipelines';
-import type { JobType } from '../types/opportunities';
+import type { JobType, PipelineFormData, PipelineWithStages } from '../types/opportunities';
 
 export const embeddedPipelinesService = {
   async ensureEmbeddedPipelinesExist(): Promise<boolean> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      // Check if embedded pipelines exist by trying to fetch them
+      const existingPipelines = await this.getEmbeddedPipelines();
 
-      if (authError || !user) {
-        console.log('No authenticated user, skipping embedded pipelines check');
-        return false;
+      if (existingPipelines.length === EMBEDDED_PIPELINE_TYPES.length) {
+        console.log('All embedded pipelines already exist');
+        return true;
       }
 
+      // Create missing embedded pipelines
       for (const jobType of EMBEDDED_PIPELINE_TYPES) {
         const pipelineId = getEmbeddedPipelineId(jobType);
-        await this.ensurePipelineExists(pipelineId, jobType, user.id);
+        const existingPipeline = existingPipelines.find(p => p.id === pipelineId);
+
+        if (!existingPipeline) {
+          await this.ensurePipelineExists(pipelineId, jobType);
+        }
       }
 
       return true;
@@ -29,51 +35,32 @@ export const embeddedPipelinesService = {
     }
   },
 
-  async ensurePipelineExists(pipelineId: string, jobType: JobType, userId: string): Promise<void> {
+  async ensurePipelineExists(pipelineId: keyof typeof EMBEDDED_PIPELINE_IDS | string, jobType: JobType): Promise<void> {
     try {
-      const { data: existingPipeline, error: checkError } = await supabase
-        .from('pipelines')
-        .select('id')
-        .eq('id', pipelineId)
-        .maybeSingle();
-
-      if (checkError) throw checkError;
+      // Check if pipeline already exists
+      const existingPipeline = await pipelinesApi.getPipelineById(pipelineId);
 
       if (existingPipeline) {
         return;
       }
 
-      const { error: insertError } = await supabase
-        .from('pipelines')
-        .insert({
-          id: pipelineId,
-          user_id: userId,
-          name: jobType,
-          description: `System pipeline for ${jobType.toLowerCase()} opportunities`,
-          is_default: jobType === 'Commercial',
-          job_type: jobType,
-          pipeline_type: 'system',
-        });
+      // Create the embedded pipeline with stages
+      const pipelineData: any = {
+        name: jobType,
+        description: `System pipeline for ${jobType.toLowerCase()} opportunities`,
+        is_default: jobType === 'Commercial',
+        job_type: jobType,
+        pipeline_type: 'system',
+        stages: DEFAULT_PIPELINE_STAGES.map(stage => ({
+          name: stage.name,
+          color: stage.color,
+          order_position: stage.order_position,
+          include_in_funnel: stage.include_in_funnel,
+          include_in_distribution: stage.include_in_distribution,
+        })),
+      };
 
-      if (insertError) throw insertError;
-
-      for (const stage of DEFAULT_PIPELINE_STAGES) {
-        const { error: stageError } = await supabase
-          .from('pipeline_stages')
-          .insert({
-            pipeline_id: pipelineId,
-            name: stage.name,
-            order_position: stage.order_position,
-            color: stage.color,
-            include_in_funnel: stage.include_in_funnel,
-            include_in_distribution: stage.include_in_distribution,
-          });
-
-        if (stageError) {
-          console.error(`Error creating stage ${stage.name}:`, stageError);
-        }
-      }
-
+      await pipelinesApi.createPipeline(pipelineData);
       console.log(`Created embedded ${jobType} pipeline with ${DEFAULT_PIPELINE_STAGES.length} stages`);
     } catch (error) {
       console.error(`Error ensuring ${jobType} pipeline exists:`, error);
@@ -81,53 +68,30 @@ export const embeddedPipelinesService = {
     }
   },
 
-  async getEmbeddedPipelines() {
+  async getEmbeddedPipelines(): Promise<PipelineWithStages[]> {
     try {
-      const pipelineIds = Object.values(EMBEDDED_PIPELINE_IDS);
+      // Get all pipelines and filter for embedded ones
+      const allPipelines = await pipelinesApi.getPipelines();
+      const embeddedPipelineIds = Object.values(EMBEDDED_PIPELINE_IDS);
 
-      const { data, error } = await supabase
-        .from('pipelines')
-        .select(`
-          *,
-          stages:pipeline_stages(*)
-        `)
-        .in('id', pipelineIds)
-        .eq('pipeline_type', 'system')
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      return (data || []).map(pipeline => ({
-        ...pipeline,
-        stages: (pipeline.stages || []).sort((a, b) => a.order_position - b.order_position),
-      }));
+      return allPipelines.filter(pipeline =>
+        embeddedPipelineIds.includes(pipeline.id as any) &&
+        pipeline.pipeline_type === 'system'
+      );
     } catch (error) {
       console.error('Error fetching embedded pipelines:', error);
       throw error;
     }
   },
 
-  async getEmbeddedPipelineByJobType(jobType: JobType) {
+  async getEmbeddedPipelineByJobType(jobType: JobType): Promise<PipelineWithStages | null> {
     try {
       const pipelineId = getEmbeddedPipelineId(jobType);
+      const pipeline = await pipelinesApi.getPipelineById(pipelineId);
 
-      const { data, error } = await supabase
-        .from('pipelines')
-        .select(`
-          *,
-          stages:pipeline_stages(*)
-        `)
-        .eq('id', pipelineId)
-        .eq('pipeline_type', 'system')
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        return {
-          ...data,
-          stages: (data.stages || []).sort((a, b) => a.order_position - b.order_position),
-        };
+      // Check if it's a system pipeline
+      if (pipeline && pipeline.pipeline_type === 'system') {
+        return pipeline;
       }
 
       return null;

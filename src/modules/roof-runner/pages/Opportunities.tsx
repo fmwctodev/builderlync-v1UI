@@ -8,24 +8,22 @@ import ViewEditOpportunityModal from '../components/opportunities/ViewEditOpport
 import PipelinesList from '../components/opportunities/PipelinesList';
 import CreatePipelineModal from '../components/opportunities/CreatePipelineModal';
 import EditPipelineModal from '../components/opportunities/EditPipelineModal';
-import { embeddedPipelinesService } from '../services/embeddedPipelinesService';
-import type { JobType } from '../types/opportunities';
 
 export default function Opportunities() {
-  const [activeTab, setActiveTab] = useState('all');
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
   const [internalView, setInternalView] = useState<'board' | 'list' | 'settings'>('board');
-  const [selectedJobType, setSelectedJobType] = useState<JobType | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<string>('opportunities');
+
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>('default');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
   const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
   const [showEditPipelineModal, setShowEditPipelineModal] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    embeddedPipelinesService.ensureEmbeddedPipelinesExist();
+    // Removed embedded pipelines service call
   }, []);
 
   const handleOpportunityAdded = () => {
@@ -52,14 +50,21 @@ export default function Opportunities() {
 
   const handlePipelineCreated = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handlePipelineUpdated = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handlePipelineDeleted = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header and reset selection
+    setSelectedPipelineId('default');
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handleEditPipeline = (pipelineId: string) => {
@@ -75,27 +80,27 @@ export default function Opportunities() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <OpportunitiesHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        selectedJobType={selectedJobType}
-        setSelectedJobType={setSelectedJobType}
+        selectedPipelineId={selectedPipelineId}
+        setSelectedPipelineId={setSelectedPipelineId}
         onAddOpportunity={() => setShowAddModal(true)}
         activeView={activeView}
         onViewChange={setActiveView}
         onAddPipeline={() => setShowCreatePipelineModal(true)}
         internalView={internalView}
         onInternalViewChange={setInternalView}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
       <main className="flex-grow p-4">
         {activeView === 'opportunities' ? (
           <>
             {internalView === 'board' && (
-              <KanbanBoard key={refreshKey} selectedJobType={selectedJobType} />
+              <KanbanBoard key={refreshKey} selectedPipelineId={selectedPipelineId} />
             )}
             {internalView === 'list' && (
               <>
                 <FiltersAndSort />
-                <OpportunitiesTable key={refreshKey} selectedJobType={selectedJobType} onRowClick={handleRowClick} />
+                <OpportunitiesTable key={refreshKey} onRowClick={handleRowClick} />
               </>
             )}
             {internalView === 'settings' && (
@@ -118,7 +123,8 @@ export default function Opportunities() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={handleOpportunityAdded}
-        defaultJobType={selectedJobType === 'all' ? 'Commercial' : selectedJobType}
+        defaultJobType="Commercial"
+        selectedPipelineId={selectedPipelineId}
       />
 
       <ViewEditOpportunityModal
