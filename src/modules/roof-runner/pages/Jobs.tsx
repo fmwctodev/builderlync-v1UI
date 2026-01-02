@@ -40,6 +40,7 @@ const Jobs: React.FC = () => {
   const [formData, setFormData] = useState<CreateJobRequest>({
     name: '',
     location: '',
+    customerId: null,
     assignees: [],
     jobOwner: '',
     workflowStages: 'New lead',
@@ -120,8 +121,14 @@ const Jobs: React.FC = () => {
       const previousStage = editingJob?.workflowStages;
       const newStage = formData.workflowStages;
 
+      // Set customerId from contactId
+      const jobData = {
+        ...formData,
+        customerId: formData.contactId
+      };
+
       if (editingJob) {
-        await updateJob(editingJob.id!, formData);
+        await updateJob(editingJob.id!, jobData);
 
         if (previousStage !== newStage && editingJob.id) {
           try {
@@ -206,6 +213,7 @@ const Jobs: React.FC = () => {
     setFormData({
       name: job.name,
       location: job.location,
+      customerId: job.customerId || null,
       assignees: job.assignees,
       jobOwner: job.jobOwner,
       workflowStages: job.workflowStages,
@@ -239,6 +247,7 @@ const Jobs: React.FC = () => {
     setFormData({
       name: job.name,
       location: job.location,
+      customerId: job.customerId || null,
       assignees: job.assignees,
       jobOwner: job.jobOwner,
       workflowStages: job.workflowStages,
@@ -270,6 +279,7 @@ const Jobs: React.FC = () => {
     setFormData({
       name: '',
       location: '',
+      customerId: null,
       assignees: [],
       jobOwner: '',
       workflowStages: 'New lead',

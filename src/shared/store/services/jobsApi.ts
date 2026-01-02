@@ -6,14 +6,34 @@ export interface Job {
   id: number;
   name: string;
   location: string;
-  assignees: string[];
-  jobOwner: string;
+  customerId?: number | null;
+  assignees: number[];
+  assigneeUsers?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>;
+  jobOwner: number;
+  jobOwnerUser?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  customer?: {
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    company: string;
+  };
   workflowStages: string;
   closeDate: string;
   jobValue: number;
   source: string;
   details: string;
-  createdBy: string;
+  createdBy: number;
   insuranceEnabled: boolean;
   insuranceCompany: string;
   policyAccountNumber: string;
@@ -37,10 +57,11 @@ export interface Job {
   updatedAt: string;
   createdByName: string;
   editedByName: string | null;
-  editedBy: string | null;
+  editedBy: number | null;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
   contactName?: string | null;
+  distance?: number | null;
 }
 
 export interface JobsResponse {
@@ -61,8 +82,9 @@ export interface CreateJobRequest {
   location: string;
   latitude?: number;
   longitude?: number;
-  assignees: string[];
-  jobOwner: string;
+  customerId?: number | null;
+  assignees: number[];
+  jobOwner: number;
   workflowStages: string;
   closeDate?: string;
   jobValue: number;
@@ -77,13 +99,10 @@ export interface CreateJobRequest {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: string;
-  createdByName: string;
-  editedBy: string;
-  editedByName: string;
+  createdBy: number;
+  editedBy?: number;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
-  contactName?: string | null;
 }
 
 class JobsApiService {

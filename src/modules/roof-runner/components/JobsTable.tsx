@@ -53,7 +53,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">-</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{job.location}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{job.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {job.customer ? job.customer.full_name : job.name}
+                    </td>
                     <td className="px-4 py-3 text-sm font-medium text-green-600 dark:text-green-400">
                       ${job.jobValue?.toLocaleString() || '0'}
                     </td>
@@ -68,11 +70,32 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{job.source || 'N/A'}</td>
                     <td className="px-4 py-3">
-                      <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {job.jobOwner ? job.jobOwner.charAt(0).toUpperCase() : 'U'}
+                      <div className="flex -space-x-1">
+                        {job.assigneeUsers && job.assigneeUsers.length > 0 ? (
+                          job.assigneeUsers.slice(0, 3).map((user, index) => (
+                            <div
+                              key={user.id}
+                              className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-medium text-white border-2 border-white dark:border-gray-800"
+                              title={`${user.first_name} ${user.last_name}`}
+                            >
+                              {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
+                            -
+                          </div>
+                        )}
+                        {job.assigneeUsers && job.assigneeUsers.length > 3 && (
+                          <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center text-xs font-medium text-white border-2 border-white dark:border-gray-800">
+                            +{job.assigneeUsers.length - 3}
+                          </div>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{job.jobOwner || 'Unassigned'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {job.jobOwnerUser ? `${job.jobOwnerUser.first_name} ${job.jobOwnerUser.last_name}` : 'Unassigned'}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).tasksCount || 0}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).reportsCount || 0}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).proposalsCount || 0}</td>
