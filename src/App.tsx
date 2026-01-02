@@ -6,7 +6,7 @@ import { WidgetProvider } from './shared/context/WidgetContext';
 import IncomingCallNotification from './shared/components/IncomingCallNotification';
 
 // Module imports
-import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
+// import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
 import { CRMModule } from './modules/crm/CRMModule';
 import { CRMModuleSimple } from './modules/crm/CRMModuleSimple';
 import { MarketingModule } from './modules/marketing/MarketingModule';
@@ -23,16 +23,16 @@ function App() {
   return (
     <ThemeProvider>
       <WidgetProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
-          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <IncomingCallNotification />
-            <Routes>
-              <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
-              <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
-              <Route path="/*" element={<RoofRunnerModule />} />
-              <Route path="/abc-supply/*" element={<ABCSupplyModule />} />
-              <Route path="/crm/*" element={<CRMModule />} />
-              <Route path="/project-management/*" element={<ProjectManagementModule />} />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <IncomingCallNotification />
+          <Routes>
+            <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
+            <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
+            <Route path="/*" element={<RoofRunnerModule />} />
+            {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
+            <Route path="/crm/*" element={<CRMModule />} />
+            <Route path="/project-management/*" element={<ProjectManagementModule />} />
 
               <Route path="/reporting/*" element={<ReportingModule />} />
             </Routes>
