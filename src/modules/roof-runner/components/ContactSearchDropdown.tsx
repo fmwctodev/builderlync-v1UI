@@ -69,7 +69,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   const handleSelectContact = (contact: Contact) => {
     onSelectContact({
       id: contact.id,
-      name: contact.full_name
+      name: contact.fullName
     });
     setSearchTerm('');
     setIsOpen(false);
@@ -220,7 +220,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {contact.full_name}
+                              {contact.fullName}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {contact.email || contact.phone}

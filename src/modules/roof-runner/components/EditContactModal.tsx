@@ -44,12 +44,12 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
       const response = await getContactById(contactId);
       const contact = response.data;
       setFormData({
-        fullName: contact.full_name || '',
+        fullName: contact.fullName || '',
         email: contact.email || '',
         phone: contact.phone || '',
         company: contact.company || '',
         type: contact.type as 'customer' | 'lead',
-        labelOrRole: contact.label_or_role || '',
+        labelOrRole: contact.labelOrRole || '',
         address: contact.address || '',
         latitude: Number(contact.latitude) || 0,
         longitude: Number(contact.longitude) || 0
@@ -93,7 +93,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
       const response = await updateContact(contactId, formData);
       onContactUpdated({
         id: response.data.id,
-        name: response.data.full_name
+        name: response.data.fullName
       });
       setErrors({});
       onClose();

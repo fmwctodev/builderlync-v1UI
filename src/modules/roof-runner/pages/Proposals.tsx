@@ -6,6 +6,14 @@ import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
+import { getNearbyJobs } from '../../../shared/store/services/jobsApi';
+
+interface Job {
+  id?: number;
+  name: string;
+  location: string;
+}
+
 export default function Proposals() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,9 +28,18 @@ export default function Proposals() {
   const [showNewProposalDropdown, setShowNewProposalDropdown] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [currentStep, setCurrentStep] = useState<'measurement' | 'location' | 'template'>('measurement');
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [proposalAddress, setProposalAddress] = useState('');
+  const [proposalLat, setProposalLat] = useState<number | null>(null);
+  const [proposalLng, setProposalLng] = useState<number | null>(null);
+  const [nearbyJobs, setNearbyJobs] = useState<Job[]>([]);
+  const [loadingNearbyJobs, setLoadingNearbyJobs] = useState(false);
+  const [attachToJob, setAttachToJob] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+  const [selectedMeasurement, setSelectedMeasurement] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -30,6 +47,8 @@ export default function Proposals() {
   const [creatingProposal, setCreatingProposal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  const [loadingMeasurements, setLoadingMeasurements] = useState(false);
 
   const fetchProposals = async (status?: string) => {
     try {
@@ -65,6 +84,26 @@ export default function Proposals() {
       fetchTemplates();
     }
   }, [showTemplateModal]);
+
+  const fetchMeasurements = async () => {
+    try {
+      setLoadingMeasurements(true);
+      // Replace with actual API call
+      const data = await fetch('/api/measurements').then(res => res.json());
+      setMeasurements(data);
+    } catch (error) {
+      console.error('Error fetching measurements:', error);
+      setMeasurements([]);
+    } finally {
+      setLoadingMeasurements(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showNewProposalModal && currentStep === 'measurement') {
+      fetchMeasurements();
+    }
+  }, [showNewProposalModal, currentStep]);
 
   useEffect(() => {
     if (location.state?.activeTab) {
@@ -193,49 +232,17 @@ export default function Proposals() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals & Invoices</h1>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
+        <div>
           <button
-            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            onClick={() => {
+              setCurrentStep('measurement');
+              setShowNewProposalModal(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
           >
             <Plus size={16} />
             <span>New Proposal</span>
-            <ChevronDown size={16} />
           </button>
-
-          {showNewProposalDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-              <div className="py-1">
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowNewProposalModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Scratch
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowMeasurementsModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Report
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowTemplateModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Template
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -281,84 +288,121 @@ export default function Proposals() {
         {activeTab === 'Settings' && <SettingsPanel />}
       </div>
 
-      {showMeasurementsModal && (
+      {showNewProposalModal && currentStep === 'measurement' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Measurements</h3>
-              <button onClick={() => setShowMeasurementsModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">New Proposal</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Select measurement report (optional)</p>
+              </div>
+              <button onClick={() => {
+                setShowNewProposalModal(false);
+                setSelectedMeasurement(null);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X size={20} />
               </button>
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col p-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Select the measurement you would like to use for this proposal
-              </p>
-
               <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="Search all measurement reports"
+                    placeholder="Search measurement reports"
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  { address: '1907 Morrow Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 08, 2025' },
-                  { address: '7925 Tusman Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 07, 2025' },
-                  { address: '3339 Hancock Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 06, 2025' },
-                  { address: '7807 Lonesome Dove Cove, Austin, Texas, United States', version: '1/1', date: 'Oct. 04, 2025' },
-                  { address: '11315 Drumellan Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-                  { address: '7901 Havenwood Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-                  { address: '4701 Camacho Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 02, 2025' },
-                  { address: '2125 Independence Drive, Austin, Texas, United States', version: '1/1', date: 'Sept. 29, 2025' },
-                  { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '8/8', date: 'Sept. 29, 2025', latest: true },
-                  { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '7/8', date: 'Sept. 29, 2025' },
-                ].map((measurement, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {measurement.version} BuilderLync Report{measurement.latest ? ' - Latest' : ''}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
-                    </div>
-                    <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">Download</button>
+                {loadingMeasurements ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading measurements...</div>
                   </div>
-                ))}
+                ) : measurements.length === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No measurement reports found</div>
+                  </div>
+                ) : (
+                  measurements.map((measurement, index) => (
+                    <div 
+                      key={measurement.id || index} 
+                      onClick={() => setSelectedMeasurement(measurement)}
+                      className={`flex items-center justify-between p-3 border rounded-md cursor-pointer ${
+                        selectedMeasurement?.id === measurement.id
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {measurement.version} BuilderLync Report
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-
             </div>
 
             <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button
-                onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
+                onClick={() => {
+                  setSelectedMeasurement(null);
+                  setCurrentStep('location');
+                }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
               >
-                Create without measurement
+                Create Without Measurement
               </button>
               <button
-                onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                onClick={() => {
+                  if (selectedMeasurement) {
+                    setProposalAddress(selectedMeasurement.address);
+                    setProposalLat(selectedMeasurement.lat);
+                    setProposalLng(selectedMeasurement.lng);
+                    setShowTemplateModal(true);
+                  }
+                }}
+                disabled={!selectedMeasurement}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Proposal
+                Next
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {showNewProposalModal && (
+      {showNewProposalModal && currentStep === 'location' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">New proposal</h3>
-              <button onClick={() => setShowNewProposalModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">New Proposal</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter job location</p>
+              </div>
+              <button onClick={() => {
+                setShowNewProposalModal(false);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X size={20} />
               </button>
             </div>
@@ -366,23 +410,115 @@ export default function Proposals() {
             <div className="p-6">
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Job address
+                  Job address <span className="text-red-500">*</span>
                 </label>
                 <GooglePlacesAutocomplete
                   value={proposalAddress}
-                  onChange={(address) => setProposalAddress(address)}
-                  placeholder="Enter address and select"
+                  onChange={async (address, isFromAutocomplete, lat, lng) => {
+                    setProposalAddress(address);
+                    if (isFromAutocomplete && lat && lng) {
+                      setProposalLat(lat);
+                      setProposalLng(lng);
+                      
+                      // Fetch nearby jobs
+                      try {
+                        setLoadingNearbyJobs(true);
+                        const response = await getNearbyJobs(lat, lng, 25);
+                        const jobs = response.data.data || [];
+                        setNearbyJobs(jobs);
+                        if (jobs.length > 0) {
+                          setAttachToJob(true);
+                        }
+                      } catch (error) {
+                        console.error('Error fetching nearby jobs:', error);
+                        setNearbyJobs([]);
+                      } finally {
+                        setLoadingNearbyJobs(false);
+                      }
+                    }
+                  }}
+                  placeholder="Enter address and select from dropdown"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
+                {proposalAddress && !proposalLat && (
+                  <p className="mt-1 text-xs text-orange-600">Please select an address from the dropdown to get coordinates</p>
+                )}
               </div>
+
+              {loadingNearbyJobs && (
+                <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">Loading nearby jobs...</div>
+              )}
+
+              {nearbyJobs.length > 0 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={attachToJob}
+                      onChange={(e) => {
+                        setAttachToJob(e.target.checked);
+                        if (!e.target.checked) setSelectedJobId(null);
+                      }}
+                      className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Attach to matching job ({nearbyJobs.length} found nearby)
+                    </span>
+                  </label>
+
+                  {attachToJob && (
+                    <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                      {nearbyJobs.map((job) => (
+                        <label
+                          key={job.id}
+                          className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                            selectedJobId === job.id
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                              : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="selectedJob"
+                            checked={selectedJobId === job.id}
+                            onChange={() => setSelectedJobId(job.id!)}
+                            className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 dark:text-white text-sm">{job.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{job.location}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button
-                onClick={() => { setShowNewProposalModal(false); setShowTemplateModal(true); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                onClick={() => setCurrentStep('measurement')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
               >
-                Continue
+                Back
+              </button>
+              <button
+                onClick={() => {
+                  if (!proposalAddress || !proposalLat || !proposalLng) {
+                    alert('Please enter and select a valid address from the dropdown');
+                    return;
+                  }
+                  if (attachToJob && !selectedJobId) {
+                    alert('Please select a job to attach to');
+                    return;
+                  }
+                  setShowTemplateModal(true);
+                }}
+                disabled={!proposalAddress || !proposalLat || !proposalLng || (attachToJob && !selectedJobId)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
               </button>
             </div>
           </div>
@@ -397,7 +533,18 @@ export default function Proposals() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">Choose a template</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick from one of your existing proposal templates to get started</p>
               </div>
-              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button onClick={() => {
+                setShowTemplateModal(false);
+                setSelectedTemplate(null);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setSelectedMeasurement(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X size={20} />
               </button>
             </div>
@@ -432,25 +579,13 @@ export default function Proposals() {
                   templates.map((template) => (
                     <div 
                       key={template.id} 
-                      className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={async () => {
-                        try {
-                          setCreatingProposal(true);
-                          const proposal = await proposalsApi.createProposal({
-                            template_id: template.id,
-                            title: template.name,
-                            address: {
-                              address: proposalAddress,
-                            },
-                          });
-                          setShowTemplateModal(false);
-                          navigate(`${orgPrefix}/proposals/editor/${proposal.id}`);
-                        } catch (error) {
-                          console.error('Error creating proposal:', error);
-                          alert('Failed to create proposal. Please try again.');
-                        } finally {
-                          setCreatingProposal(false);
-                        }
+                      className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
+                        selectedTemplate?.id === template.id
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => {
+                        setSelectedTemplate(template);
                       }}
                     >
                       {template.content?.settings?.coverImage ? (
@@ -476,20 +611,58 @@ export default function Proposals() {
               </div>
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700" onClick={() => {
-                  setShowTemplateModal(false);
-                  setShowNewProposalModal(true);
-                }}>
-              <button className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
-                Create without template
-              </button>
-              <button 
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
                 onClick={() => {
                   setShowTemplateModal(false);
+                  setSelectedTemplate(null);
+                  setCurrentStep(selectedMeasurement ? 'measurement' : 'location');
                 }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
               >
-                Use this template
+                Back
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedTemplate && selectedMeasurement) {
+                    alert('Please select a template when using a measurement report');
+                    return;
+                  }
+                  try {
+                    setCreatingProposal(true);
+                    const proposal = await proposalsApi.createProposal({
+                      ...(selectedTemplate && { template_id: selectedTemplate.id }),
+                      title: selectedTemplate?.name || 'New Proposal',
+                      address: {
+                        address: proposalAddress,
+                        latitude: proposalLat,
+                        longitude: proposalLng
+                      },
+                    });
+                    setShowTemplateModal(false);
+                    setShowNewProposalModal(false);
+                    setProposalAddress('');
+                    setProposalLat(null);
+                    setProposalLng(null);
+                    setSelectedTemplate(null);
+                    setNearbyJobs([]);
+                    setAttachToJob(false);
+                    setSelectedJobId(null);
+                    setSelectedMeasurement(null);
+                    setCurrentStep('measurement');
+                    navigate(`${orgPrefix}/proposals/editor/${proposal.id}`);
+                  } catch (error) {
+                    console.error('Error creating proposal:', error);
+                    alert('Failed to create proposal. Please try again.');
+                  } finally {
+                    setCreatingProposal(false);
+                  }
+                }}
+                disabled={selectedMeasurement && !selectedTemplate}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={selectedMeasurement && !selectedTemplate ? 'Template is required when measurement is selected' : ''}
+              >
+                {selectedTemplate ? 'Create Proposal' : 'Create Without Template'}
               </button>
             </div>
           </div>

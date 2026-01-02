@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Settings, Eye, Minus, Plus, X } from 'lucide-react';
 import { proposalsApi, Proposal } from '../services/proposalsApi';
 import { proposalSharingApi } from '../services/proposalSharingApi';
+import { getBusinessInfo, BusinessInfo } from '../../../shared/store/services/businessInfoApi';
 
 interface ProposalEditorProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
   const [activeSection, setActiveSection] = useState('Cover');
   const [zoomLevel, setZoomLevel] = useState(100);
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [sending, setSending] = useState(false);
@@ -29,6 +31,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
   useEffect(() => {
     if (proposalId) {
       loadProposal();
+      loadBusinessInfo();
     }
   }, [proposalId]);
 
@@ -42,6 +45,30 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadBusinessInfo = async () => {
+    try {
+      const response = await getBusinessInfo();
+      setBusinessInfo(response.data);
+    } catch (error) {
+      console.error('Error loading business info:', error);
+    }
+  };
+
+  const getRepresentativeName = () => {
+    if (businessInfo?.representative_first_name && businessInfo?.representative_last_name) {
+      return `${businessInfo.representative_first_name} ${businessInfo.representative_last_name}`;
+    }
+    return "Company representative name";
+  };
+
+  const getCompanyName = () => {
+    return businessInfo?.friendly_business_name || proposal?.sections?.settings?.companyName || "Company Name";
+  };
+
+  const getCompanyLogo = () => {
+    return businessInfo?.business_logo || proposal?.sections?.settings?.companyLogo || null;
   };
 
   if (!isOpen) return null;
@@ -163,6 +190,27 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                   />
                   <div className="p-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{coverSection.title || 'Proposal Cover'}</h2>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {getRepresentativeName()}
+                        </div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {getCompanyName()}
+                        </div>
+                      </div>
+                      {getCompanyLogo() && (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                          <img
+                            src={getCompanyLogo()!}
+                            alt="Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

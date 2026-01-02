@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
@@ -15,6 +15,8 @@ import { hasPermission } from '../../../shared/utils/permissions';
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -201,20 +203,22 @@ const Jobs: React.FC = () => {
       jobValue: job.jobValue,
       source: job.source,
       details: job.details,
-      insuranceEnabled: job.insuranceEnabled,
-      insuranceCompany: job.insuranceCompany,
-      policyAccountNumber: job.policyAccountNumber,
-      claimNumber: job.claimNumber,
-      dateOfLoss: job.dateOfLoss,
-      typeOfDamage: job.typeOfDamage,
-      claimAmount: job.claimAmount,
-      deductible: job.deductible,
-      claimDetails: job.claimDetails,
+      insuranceEnabled: job.insuranceEnabled || false,
+      insuranceCompany: job.insuranceCompany || '',
+      policyAccountNumber: job.policyAccountNumber || '',
+      claimNumber: job.claimNumber || '',
+      dateOfLoss: job.dateOfLoss || '',
+      typeOfDamage: job.typeOfDamage || '',
+      claimAmount: job.claimAmount || 0,
+      deductible: job.deductible || 0,
+      claimDetails: job.claimDetails || '',
       createdBy: job.createdBy,
       createdByName: job.createdByName,
       editedBy: 1,
       editedByName: 'Current User',
-      jobType: job.jobType || 'residential'
+      jobType: job.jobType || 'residential',
+      contactId: job.contactId || null,
+      contactName: job.contactName || null
     });
     setShowJobDetails(true);
   };
@@ -232,20 +236,22 @@ const Jobs: React.FC = () => {
       jobValue: job.jobValue,
       source: job.source,
       details: job.details,
-      insuranceEnabled: job.insuranceEnabled,
-      insuranceCompany: job.insuranceCompany,
-      policyAccountNumber: job.policyAccountNumber,
-      claimNumber: job.claimNumber,
-      dateOfLoss: job.dateOfLoss,
-      typeOfDamage: job.typeOfDamage,
-      claimAmount: job.claimAmount,
-      deductible: job.deductible,
-      claimDetails: job.claimDetails,
+      insuranceEnabled: job.insuranceEnabled || false,
+      insuranceCompany: job.insuranceCompany || '',
+      policyAccountNumber: job.policyAccountNumber || '',
+      claimNumber: job.claimNumber || '',
+      dateOfLoss: job.dateOfLoss || '',
+      typeOfDamage: job.typeOfDamage || '',
+      claimAmount: job.claimAmount || 0,
+      deductible: job.deductible || 0,
+      claimDetails: job.claimDetails || '',
       createdBy: job.createdBy,
       createdByName: job.createdByName,
       editedBy: 1,
       editedByName: 'Current User',
-      jobType: job.jobType || 'residential'
+      jobType: job.jobType || 'residential',
+      contactId: job.contactId || null,
+      contactName: job.contactName || null
     });
     setShowJobDetails(true);
   };
@@ -297,11 +303,11 @@ const Jobs: React.FC = () => {
   }, [toast]);
 
   const handleNewReport = () => {
-    navigate('/roof-runner/measurements');
+    navigate(`${orgPrefix}/roof-runner/measurements`);
   };
 
   const handleNewCustomer = () => {
-    navigate('/roof-runner/contacts');
+    navigate(`${orgPrefix}/roof-runner/contacts`);
   };
 
 
@@ -383,7 +389,13 @@ const Jobs: React.FC = () => {
         }}
         onContinue={() => {
           if (jobAddress.trim()) {
-            setFormData({...formData, location: jobAddress, name: jobAddress});
+            setFormData({
+              ...formData, 
+              location: jobAddress, 
+              name: jobAddress,
+              latitude: jobCoordinates?.lat,
+              longitude: jobCoordinates?.lng
+            });
             setShowAddressModal(false);
             setShowJobDetails(true);
           }

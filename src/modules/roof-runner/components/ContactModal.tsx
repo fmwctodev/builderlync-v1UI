@@ -17,7 +17,7 @@ interface ContactModalProps {
   onFormDataChange: (data: any) => void;
   onPhoneChange: (value: string) => void;
   onSecondaryPhoneChange: (value: string) => void;
-  onAddressChange: (address: string, lat: number, lng: number) => void;
+  onAddressChange: (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => void;
   onSecondaryEmailChange: (value: string) => void;
   onSecondaryPhoneDataChange: (data: { phone: string; extension: string }) => void;
   addSecondaryEmail: () => void;
