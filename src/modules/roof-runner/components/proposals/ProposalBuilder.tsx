@@ -25,6 +25,7 @@ import {
 import { proposalsApi } from "../../services/proposalsApi";
 import { getContacts, type Contact } from "../../../../shared/store/services/contactsApi";
 import { proposalSharingApi } from "../../services/proposalSharingApi";
+import { abcSupplyService, ABCSupplyOrderHistoryItem } from "../../services/abcSupplyService";
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -235,6 +236,9 @@ export default function ProposalBuilder({
   const [buttonLabel, setButtonLabel] = useState("View & Review Proposal");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [proposalStatus, setProposalStatus] = useState<string>('draft');
+  const [orderHistory, setOrderHistory] = useState<ABCSupplyOrderHistoryItem[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
 
   const [sections, setSections] = useState<Section[]>([
     { id: "cover", name: "Cover", active: true, order: 0 },
@@ -355,7 +359,32 @@ export default function ProposalBuilder({
       }
     };
 
+    const loadOrderHistory = async () => {
+      setLoadingOrders(true);
+      try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const endDate = tomorrow.toISOString().split('T')[0];
+
+        const response = await abcSupplyService.getOrdersHistory({
+          startDate: '2024-03-15',
+          endDate: endDate,
+          itemsPerPage: 20,
+          pageNumber: 1
+        });
+        
+        if (response.success) {
+          setOrderHistory(response.data.items || []);
+        }
+      } catch (error) {
+        console.error('Error loading order history:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
     loadProposal();
+    loadOrderHistory();
   }, [proposalId]);
 
   // Auto-save disabled - use manual save button only
@@ -2845,6 +2874,13 @@ export default function ProposalBuilder({
                             >
                               <Plus size={14} />
                               Add section heading
+                            </button>
+                            <button
+                              onClick={() => setShowMeasurementsModal(true)}
+                              className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                            >
+                              <Plus size={14} />
+                              Select measurement report (optional)
                             </button>
                           </div>
                         </div>

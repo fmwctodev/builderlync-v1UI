@@ -47,6 +47,8 @@ export default function Proposals() {
   const [creatingProposal, setCreatingProposal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  const [loadingMeasurements, setLoadingMeasurements] = useState(false);
 
   const fetchProposals = async (status?: string) => {
     try {
@@ -82,6 +84,26 @@ export default function Proposals() {
       fetchTemplates();
     }
   }, [showTemplateModal]);
+
+  const fetchMeasurements = async () => {
+    try {
+      setLoadingMeasurements(true);
+      // Replace with actual API call
+      const data = await fetch('/api/measurements').then(res => res.json());
+      setMeasurements(data);
+    } catch (error) {
+      console.error('Error fetching measurements:', error);
+      setMeasurements([]);
+    } finally {
+      setLoadingMeasurements(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showNewProposalModal && currentStep === 'measurement') {
+      fetchMeasurements();
+    }
+  }, [showNewProposalModal, currentStep]);
 
   useEffect(() => {
     if (location.state?.activeTab) {
@@ -302,27 +324,35 @@ export default function Proposals() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  { address: '1907 Morrow Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 08, 2025', lat: 30.2672, lng: -97.7431 },
-                ].map((measurement, index) => (
-                  <div 
-                    key={index} 
-                    onClick={() => setSelectedMeasurement(measurement)}
-                    className={`flex items-center justify-between p-3 border rounded-md cursor-pointer ${
-                      selectedMeasurement?.address === measurement.address
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {measurement.version} BuilderLync Report
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
-                    </div>
+                {loadingMeasurements ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading measurements...</div>
                   </div>
-                ))}
+                ) : measurements.length === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No measurement reports found</div>
+                  </div>
+                ) : (
+                  measurements.map((measurement, index) => (
+                    <div 
+                      key={measurement.id || index} 
+                      onClick={() => setSelectedMeasurement(measurement)}
+                      className={`flex items-center justify-between p-3 border rounded-md cursor-pointer ${
+                        selectedMeasurement?.id === measurement.id
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {measurement.version} BuilderLync Report
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
