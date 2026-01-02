@@ -14,6 +14,7 @@ interface CheckoutFormProps {
 
 export interface CheckoutFormData {
   branchNumber: string;
+  jobId?: number | null;
   deliveryAddress: {
     name: string;
     line1: string;
@@ -33,8 +34,10 @@ export interface CheckoutFormData {
 
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, selectedShipTos, shipTos }) => {
   const [availableBranches, setAvailableBranches] = useState<ShipToBranch[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     branchNumber: '',
+    jobId: null,
     deliveryAddress: {
       name: '',
       line1: '',
@@ -51,6 +54,28 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
     deliveryDate: '',
     instructions: ''
   });
+
+  useEffect(() => {
+    // Fetch jobs
+    const fetchJobs = async () => {
+      try {
+        const response = await fetch('https://builderlyncapi.testenvapp.com/api/jobs?limit=100', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setJobs(data.data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      }
+    };
+    if (isOpen) {
+      fetchJobs();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     // Get branches from selected shipTos
@@ -95,6 +120,24 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Associate with Job (Optional)
+            </label>
+            <select
+              value={formData.jobId || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, jobId: e.target.value ? Number(e.target.value) : null }))}
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+            >
+              <option value="">No job selected</option>
+              {jobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.location || `Job #${job.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />

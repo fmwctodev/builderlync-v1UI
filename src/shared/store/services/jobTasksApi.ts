@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { apiClient } from '../../utils/api';
 
 export interface JobStageTask {
   id: string;
@@ -27,6 +27,7 @@ export interface JobTask {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  text?: string; // Alias for task_name from backend
   staff?: {
     id: string;
     first_name: string;
@@ -60,86 +61,36 @@ export interface UpdateJobTaskRequest {
 }
 
 export const getStageTaskTemplates = async (stageName: string) => {
-  const { data, error } = await supabase
-    .from('job_stage_tasks')
-    .select('*')
-    .eq('stage_name', stageName)
-    .order('task_order', { ascending: true });
-
-  if (error) throw error;
-  return data as JobStageTask[];
+  const response = await apiClient.get<{ data: JobStageTask[] }>(`/job-stage-tasks?stage_name=${stageName}`);
+  return response.data;
 };
 
 export const getAutoCreatedTasksForStage = async (stageName: string) => {
-  const { data, error } = await supabase
-    .from('job_stage_tasks')
-    .select('*')
-    .eq('stage_name', stageName)
-    .eq('is_auto_created', true)
-    .order('task_order', { ascending: true });
-
-  if (error) throw error;
-  return data as JobStageTask[];
+  const response = await apiClient.get<{ data: JobStageTask[] }>(`/job-stage-tasks?stage_name=${stageName}&is_auto_created=true`);
+  return response.data;
 };
 
 export const getOptionalTasksForStage = async (stageName: string) => {
-  const { data, error } = await supabase
-    .from('job_stage_tasks')
-    .select('*')
-    .eq('stage_name', stageName)
-    .eq('is_auto_created', false)
-    .order('task_category', { ascending: true })
-    .order('task_order', { ascending: true });
-
-  if (error) throw error;
-  return data as JobStageTask[];
+  const response = await apiClient.get<{ data: JobStageTask[] }>(`/job-stage-tasks?stage_name=${stageName}&is_auto_created=false`);
+  return response.data;
 };
 
 export const getJobTasks = async (jobId: number) => {
-  const { data, error } = await supabase
-    .from('job_tasks')
-    .select(`
-      *,
-      staff:assigned_to (
-        id,
-        first_name,
-        last_name,
-        email,
-        image
-      )
-    `)
-    .eq('job_id', jobId)
-    .order('task_order', { ascending: true })
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-  return data as JobTask[];
+  const response = await apiClient.get<{ success: boolean; data: any[] }>(`/jobs/${jobId}/tasks`);
+  // Transform backend response to match frontend interface
+  return response.data.map(task => ({
+    ...task,
+    id: task.id?.toString(),
+    task_name: task.text || task.task_name,
+    task_description: task.description || task.task_description,
+    assigned_to: task.assignee || task.assigned_to,
+    status: task.completed ? 'completed' : (task.status || 'pending')
+  }));
 };
 
 export const createJobTask = async (taskData: CreateJobTaskRequest) => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data, error } = await supabase
-    .from('job_tasks')
-    .insert({
-      ...taskData,
-      created_by: user?.id,
-      task_order: taskData.task_order ?? 0
-    })
-    .select(`
-      *,
-      staff:assigned_to (
-        id,
-        first_name,
-        last_name,
-        email,
-        image
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return data as JobTask;
+  const response = await apiClient.post<{ success: boolean; data: JobTask }>(`/jobs/${taskData.job_id}/tasks`, taskData);
+  return response.data;
 };
 
 export const updateJobTask = async (taskId: string, updates: UpdateJobTaskRequest) => {
@@ -151,33 +102,12 @@ export const updateJobTask = async (taskId: string, updates: UpdateJobTaskReques
     updates.completed_at = null;
   }
 
-  const { data, error } = await supabase
-    .from('job_tasks')
-    .update(updates)
-    .eq('id', taskId)
-    .select(`
-      *,
-      staff:assigned_to (
-        id,
-        first_name,
-        last_name,
-        email,
-        image
-      )
-    `)
-    .single();
-
-  if (error) throw error;
-  return data as JobTask;
+  const response = await apiClient.put<{ success: boolean; data: JobTask }>(`/jobs/tasks/${taskId}`, updates);
+  return response.data;
 };
 
 export const deleteJobTask = async (taskId: string) => {
-  const { error } = await supabase
-    .from('job_tasks')
-    .delete()
-    .eq('id', taskId);
-
-  if (error) throw error;
+  await apiClient.delete(`/jobs/tasks/${taskId}`);
   return true;
 };
 
@@ -196,64 +126,11 @@ export const assignTaskToStaff = async (taskId: string, staffId: string | null) 
 };
 
 export const autoCreateTasksForStage = async (jobId: number, stageName: string) => {
-  const templates = await getAutoCreatedTasksForStage(stageName);
-
-  const existingTasks = await supabase
-    .from('job_tasks')
-    .select('stage_task_id')
-    .eq('job_id', jobId);
-
-  const existingTemplateIds = new Set(
-    existingTasks.data?.map(t => t.stage_task_id).filter(Boolean) || []
-  );
-
-  const tasksToCreate = templates.filter(
-    template => !existingTemplateIds.has(template.id)
-  );
-
-  if (tasksToCreate.length === 0) {
-    return [];
-  }
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const newTasks = tasksToCreate.map((template, index) => ({
-    job_id: jobId,
-    stage_task_id: template.id,
-    task_name: template.task_name,
-    task_description: template.task_description,
-    status: 'pending' as const,
-    task_order: template.task_order,
-    created_by: user?.id
-  }));
-
-  const { data, error } = await supabase
-    .from('job_tasks')
-    .insert(newTasks)
-    .select(`
-      *,
-      staff:assigned_to (
-        id,
-        first_name,
-        last_name,
-        email,
-        image
-      )
-    `);
-
-  if (error) throw error;
-  return data as JobTask[];
+  const response = await apiClient.post<{ data: JobTask[] }>(`/jobs/${jobId}/tasks/auto-create`, { stageName });
+  return response.data;
 };
 
 export const reorderTasks = async (jobId: number, taskIds: string[]) => {
-  const updates = taskIds.map((taskId, index) =>
-    supabase
-      .from('job_tasks')
-      .update({ task_order: index })
-      .eq('id', taskId)
-      .eq('job_id', jobId)
-  );
-
-  await Promise.all(updates);
+  await apiClient.put(`/jobs/${jobId}/tasks/reorder`, { taskIds });
   return true;
 };

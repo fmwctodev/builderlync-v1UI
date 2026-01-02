@@ -119,7 +119,7 @@ export const getAllEvents = async (page: number = 1, limit: number = 100): Promi
   const token = localStorage.getItem('token');
 
   const response = await axios.get<EventsResponse>(
-    `${API_BASE_URL}/jobs/1/events?page=${page}&limit=${limit}`,
+    `${API_BASE_URL}/events?page=${page}&limit=${limit}`,
     {
       headers: {
         'accept': 'application/json',

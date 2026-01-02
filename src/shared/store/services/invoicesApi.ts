@@ -60,3 +60,19 @@ export const getInvoices = async (): Promise<InvoicesResponse> => {
 
   return response.data;
 };
+
+export const getInvoicesByJobId = async (jobId: number): Promise<InvoicesResponse> => {
+  const token = localStorage.getItem('token');
+
+  const response = await axios.get<InvoicesResponse>(
+    `${API_BASE_URL}/jobs/${jobId}/invoices`,
+    {
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+
+  return response.data;
+};

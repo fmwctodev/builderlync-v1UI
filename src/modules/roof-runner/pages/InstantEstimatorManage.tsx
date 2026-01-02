@@ -27,9 +27,12 @@ const InstantEstimatorManage: React.FC = () => {
   const [showProjectShowcase, setShowProjectShowcase] = useState(false);
   const [showSocialMedia, setShowSocialMedia] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>('');
 
   useEffect(() => {
     fetchEstimatorData();
+    fetchJobs();
   }, [id]);
 
   const fetchEstimatorData = async () => {
@@ -42,6 +45,7 @@ const InstantEstimatorManage: React.FC = () => {
         setPublicUrl(response.data.public_url || '');
         setSelectedQuestions(response.data.questions || []);
         setSelectedMaterials(response.data.materials || []);
+        setSelectedJobId(response.data.job_id?.toString() || '');
         
         // Load pricing settings if they exist
         const pricingSettings = response.data.pricing_settings || {};
@@ -83,6 +87,16 @@ const InstantEstimatorManage: React.FC = () => {
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      const response = await apiService.getJobs(1, 1000);
+      const jobsData = response?.data?.data || response?.data || [];
+      setJobs(jobsData);
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+    }
+  };
+
   const handleRename = async () => {
     if (!renameName.trim() || !id) return;
     try {
@@ -115,6 +129,13 @@ const InstantEstimatorManage: React.FC = () => {
         show_project_showcase: showProjectShowcase,
         show_social_media: showSocialMedia
       });
+      
+      // Save job association
+      if (selectedJobId) {
+        await apiService.updateInstantEstimator(parseInt(id), {
+          job_id: parseInt(selectedJobId)
+        });
+      }
       
       setToast({ message: 'Settings saved successfully!', type: 'success' });
     } catch (error) {
@@ -428,17 +449,26 @@ const InstantEstimatorManage: React.FC = () => {
 
           {/* Default job owner */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Default job owner</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Link to Job</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              The default assignee will be assigned to every new lead that is created from this estimator
+              Link this instant estimator to a specific job. The estimator will be visible on the job's instant estimate tab.
             </p>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Default job owner
+                Select Job
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                <option>James Wolfgang Kuntz</option>
+              <select 
+                value={selectedJobId}
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.name} - {job.location}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

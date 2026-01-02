@@ -37,8 +37,11 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     try {
       const response = await getAllEvents();
       const allEvents = response.data || [];
+      console.log("allEvents", allEvents);
+      console.log("jobId", jobId);
       if (jobId) {
         const jobEvents = allEvents.filter((event: any) => event.job_id === jobId);
+        console.log("jobEvents", jobEvents);
         setEvents(jobEvents);
       } else {
         setEvents(allEvents);

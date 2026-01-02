@@ -35,9 +35,14 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
     const fetchJobs = async () => {
       try {
         const response = await getJobs();
-        setJobs(response.data.data || []);
+        console.log('Full response:', response);
+        const jobsData = response?.data?.data || response?.data || [];
+        console.log('Extracted jobs:', jobsData);
+        console.log('Jobs count:', jobsData.length);
+        setJobs(Array.isArray(jobsData) ? jobsData : []);
       } catch (error) {
         console.error('Failed to fetch jobs:', error);
+        setJobs([]);
       }
     };
     fetchJobs();
@@ -158,12 +163,13 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
                 const newJobId = e.target.value ? parseInt(e.target.value) : undefined;
                 setFormData({ ...formData, jobId: newJobId });
               }}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600"
             >
-              <option value="">Select Job</option>
+              <option value="">Select Job ({jobs.length} available)</option>
+              {jobs.length === 0 && <option disabled>No jobs found</option>}
               {jobs.map((job) => (
                 <option key={job.id} value={job.id}>
-                  {job.name} - {job.location}
+                  {job.name || job.location || `Job #${job.id}`}
                 </option>
               ))}
             </select>

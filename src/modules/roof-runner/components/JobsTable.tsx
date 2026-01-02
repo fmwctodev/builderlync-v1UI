@@ -96,9 +96,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {job.jobOwnerUser ? `${job.jobOwnerUser.first_name} ${job.jobOwnerUser.last_name}` : 'Unassigned'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">0</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">0</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">0</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).tasksCount || 0}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).reportsCount || 0}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).proposalsCount || 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center space-x-2">
                         <button
