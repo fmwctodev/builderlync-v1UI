@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import ViewEditOpportunityModal from './ViewEditOpportunityModal';
-import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import { getEmbeddedPipelineId } from '../../constants/embeddedPipelines';
 import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
@@ -29,27 +28,61 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
       setLoading(true);
       setError(null);
 
-      // Fetch opportunities
-      const filters: any = {};
-      if (selectedPipelineId) {
-        filters.pipeline_id = selectedPipelineId;
-      }
+      console.log('=== KANBAN BOARD LOAD DATA ==');
+      console.log('Selected Pipeline ID:', selectedPipelineId);
 
-      const opportunities = await opportunitiesApi.getOpportunities(filters);
+      // Fetch ALL opportunities (don't filter by pipeline_id)
+      const opportunities = await opportunitiesApi.getOpportunities({});
       console.log('KanbanBoard - Loaded opportunities:', opportunities);
+      console.log('Total opportunities loaded:', opportunities.length);
 
-      if (selectedPipelineId) {
-        // When a specific pipeline is selected, fetch its stages
-        const pipeline = await embeddedPipelinesService.getEmbeddedPipelines();
-        const selectedPipeline = pipeline.find(p => p.id === selectedPipelineId);
-        if (selectedPipeline && selectedPipeline.stages) {
-          setStages(selectedPipeline.stages);
-        }
-      } else {
-        // When no pipeline is selected, show default embedded pipeline stages
-        const defaultPipeline = await embeddedPipelinesService.getEmbeddedPipelineByJobType('Commercial');
-        if (defaultPipeline && defaultPipeline.stages) {
-          setStages(defaultPipeline.stages);
+      if (selectedPipelineId === 'default') {
+        // Show default stages
+        const now = new Date().toISOString();
+        const defaultStages = [
+          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+        ];
+        setStages(defaultStages);
+      } else if (selectedPipelineId) {
+        // Fetch selected pipeline's actual stages from API
+        try {
+          const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
+          const pipeline = await pipelinesApi.getPipelineById(selectedPipelineId);
+          if (pipeline && pipeline.stages) {
+            console.log('Loaded pipeline:', pipeline.name, 'with', pipeline.stages.length, 'stages');
+            setStages(pipeline.stages);
+          } else {
+            console.warn('Pipeline not found, showing default stages');
+            // Pipeline not found, show default stages
+            const now = new Date().toISOString();
+            const defaultStages = [
+              { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+              { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+              { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+              { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+              { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+              { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            ];
+            setStages(defaultStages);
+          }
+        } catch (error) {
+          console.error('Error loading pipeline, showing default stages:', error);
+          // Pipeline not found, show default stages
+          const now = new Date().toISOString();
+          const defaultStages = [
+            { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+            { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
+          ];
+          setStages(defaultStages);
         }
       }
 
@@ -80,6 +113,7 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
 
   const handleDrop = async (e: React.DragEvent, targetStageId: string) => {
     e.preventDefault();
+    
     if (draggedItem && draggedItem.stage_id !== targetStageId) {
       const previousStageId = draggedItem.stage_id;
       
@@ -112,7 +146,22 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
   };
 
   const getStageOpportunities = (stageId: string) => {
-    const filtered = opportunitiesList.filter(opp => opp.stage_id === stageId);
+    // If this is the first stage, also include opportunities with no matching stage
+    const isFirstStage = stages[0]?.id === stageId;
+    
+    const filtered = opportunitiesList.filter(opp => {
+      // Match exact stage_id
+      if (opp.stage_id === stageId) return true;
+      
+      // If first stage, include opportunities with stage_id that doesn't match any stage
+      if (isFirstStage) {
+        const hasMatchingStage = stages.some(s => s.id === opp.stage_id);
+        if (!hasMatchingStage) return true;
+      }
+      
+      return false;
+    });
+    
     console.log(`Stage ${stageId} opportunities:`, filtered);
     return filtered;
   };

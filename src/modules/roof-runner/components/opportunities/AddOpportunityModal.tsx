@@ -12,9 +12,10 @@ interface AddOpportunityModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultJobType?: JobType;
+  selectedPipelineId?: string | null;
 }
 
-export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial' }: AddOpportunityModalProps) {
+export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial', selectedPipelineId }: AddOpportunityModalProps) {
   const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
   const [selectedJobType, setSelectedJobType] = useState<JobType>(defaultJobType);
   const [pipeline, setPipeline] = useState<PipelineWithStages | null>(null);
@@ -46,45 +47,44 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedJobType(defaultJobType);
-      loadPipeline(defaultJobType);
+      loadPipelineFromSelection();
     }
-  }, [isOpen, defaultJobType]);
+  }, [isOpen, selectedPipelineId]);
 
-  useEffect(() => {
-    if (isOpen && selectedJobType) {
-      loadPipeline(selectedJobType);
-    }
-  }, [selectedJobType]);
-
-  const loadPipeline = async (jobType: JobType) => {
+  const loadPipelineFromSelection = async () => {
     try {
-      // Ensure embedded pipelines exist
-      await embeddedPipelinesService.ensureEmbeddedPipelinesExist();
-
-      // Load the embedded pipeline for the selected job type
-      const pipelineData = await embeddedPipelinesService.getEmbeddedPipelineByJobType(jobType);
-
-      if (pipelineData) {
-        setPipeline(pipelineData);
-        setFormData(prev => ({
-          ...prev,
-          pipeline_id: pipelineData.id,
-          stage_id: pipelineData.stages?.[0]?.id || '', // Set to first stage
-        }));
+      if (selectedPipelineId && selectedPipelineId !== 'default') {
+        // Load the selected pipeline
+        const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
+        const pipelineData = await pipelinesApi.getPipelineById(selectedPipelineId);
+        
+        if (pipelineData) {
+          setPipeline(pipelineData);
+          setFormData(prev => ({
+            ...prev,
+            pipeline_id: pipelineData.id,
+            stage_id: pipelineData.stages?.[0]?.id || '', // Set to first stage
+          }));
+        }
       } else {
-        console.error('No embedded pipeline found for job type:', jobType);
-        // Fallback to empty values
-        setPipeline(null);
+        // Default selected - set to first default stage
+        const defaultStages = [
+          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
+          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
+          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
+          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
+          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
+          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
+        ];
+        setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
         setFormData(prev => ({
           ...prev,
           pipeline_id: '',
-          stage_id: '',
+          stage_id: 'default-1', // First default stage
         }));
       }
     } catch (error) {
       console.error('Error loading pipeline:', error);
-      // Fallback to empty values
       setPipeline(null);
       setFormData(prev => ({
         ...prev,

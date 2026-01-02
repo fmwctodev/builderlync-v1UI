@@ -30,12 +30,37 @@ export default function OpportunitiesHeader({
 
   useEffect(() => {
     loadPipelines();
+    
+    // Listen for pipeline changes
+    const handleReload = () => {
+      loadPipelines();
+    };
+    window.addEventListener('reload-pipelines', handleReload);
+    
+    return () => {
+      window.removeEventListener('reload-pipelines', handleReload);
+    };
   }, []);
 
   const loadPipelines = async () => {
     try {
       const data = await pipelinesApi.getPipelines();
+      console.log('Loaded pipelines:', data);
       setPipelines(data);
+      
+      // Auto-select 'default' if no pipeline is selected or if selected pipeline doesn't exist
+      if (setSelectedPipelineId) {
+        if (!selectedPipelineId) {
+          setSelectedPipelineId('default');
+        } else if (selectedPipelineId !== 'default') {
+          // Check if selected pipeline still exists
+          const exists = data.some(p => p.id === selectedPipelineId);
+          if (!exists) {
+            console.warn('Selected pipeline no longer exists, resetting to default');
+            setSelectedPipelineId('default');
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading pipelines:', error);
     }
@@ -80,11 +105,11 @@ export default function OpportunitiesHeader({
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <select
-                      value={selectedPipelineId || ''}
-                      onChange={(e) => setSelectedPipelineId?.(e.target.value || null)}
+                      value={selectedPipelineId || 'default'}
+                      onChange={(e) => setSelectedPipelineId?.(e.target.value === 'default' ? 'default' : e.target.value)}
                       className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 cursor-pointer min-w-[200px]"
                     >
-                      <option value="">Select Pipeline</option>
+                      <option value="default">Default</option>
                       {pipelines.map((pipeline) => (
                         <option key={pipeline.id} value={pipeline.id}>
                           {pipeline.name}

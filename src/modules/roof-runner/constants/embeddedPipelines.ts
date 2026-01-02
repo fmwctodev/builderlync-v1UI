@@ -2,9 +2,9 @@ import type { JobType } from '../types/opportunities';
 import { Home, Building2, Shield } from 'lucide-react';
 
 export const EMBEDDED_PIPELINE_IDS = {
-  RESIDENTIAL: '00000000-0000-0000-0000-000000000001',
-  COMMERCIAL: '00000000-0000-0000-0000-000000000002',
-  INSURANCE: '00000000-0000-0000-0000-000000000003',
+  RESIDENTIAL: '1',
+  COMMERCIAL: '2',
+  INSURANCE: '3',
 } as const;
 
 export const EMBEDDED_PIPELINE_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance'];

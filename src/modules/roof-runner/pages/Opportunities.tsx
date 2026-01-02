@@ -8,13 +8,13 @@ import ViewEditOpportunityModal from '../components/opportunities/ViewEditOpport
 import PipelinesList from '../components/opportunities/PipelinesList';
 import CreatePipelineModal from '../components/opportunities/CreatePipelineModal';
 import EditPipelineModal from '../components/opportunities/EditPipelineModal';
-import { embeddedPipelinesService } from '../services/embeddedPipelinesService';
 
 export default function Opportunities() {
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
   const [internalView, setInternalView] = useState<'board' | 'list' | 'settings'>('board');
+  const [activeTab, setActiveTab] = useState<string>('opportunities');
 
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>('default');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewEditModal, setShowViewEditModal] = useState(false);
   const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
@@ -23,7 +23,7 @@ export default function Opportunities() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    embeddedPipelinesService.ensureEmbeddedPipelinesExist();
+    // Removed embedded pipelines service call
   }, []);
 
   const handleOpportunityAdded = () => {
@@ -50,14 +50,21 @@ export default function Opportunities() {
 
   const handlePipelineCreated = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handlePipelineUpdated = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handlePipelineDeleted = () => {
     setRefreshKey(prev => prev + 1);
+    // Reload pipelines in header and reset selection
+    setSelectedPipelineId('default');
+    window.dispatchEvent(new Event('reload-pipelines'));
   };
 
   const handleEditPipeline = (pipelineId: string) => {
@@ -81,6 +88,8 @@ export default function Opportunities() {
         onAddPipeline={() => setShowCreatePipelineModal(true)}
         internalView={internalView}
         onInternalViewChange={setInternalView}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
       <main className="flex-grow p-4">
         {activeView === 'opportunities' ? (
@@ -115,6 +124,7 @@ export default function Opportunities() {
         onClose={() => setShowAddModal(false)}
         onSuccess={handleOpportunityAdded}
         defaultJobType="Commercial"
+        selectedPipelineId={selectedPipelineId}
       />
 
       <ViewEditOpportunityModal
