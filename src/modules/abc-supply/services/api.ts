@@ -36,7 +36,7 @@ export const abcSupplyApi = {
     const response = await api.get('/abc-supply/items', {
       params: { page, limit }
     });
-    
+
     return {
       items: response.data.items || response.data.data || [],
       total: response.data.total || 0,
@@ -49,7 +49,7 @@ export const abcSupplyApi = {
     const response = await api.get('/abc-supply/search', {
       params: { q: query, limit }
     });
-    
+
     return response.data.items || response.data.data || response.data || [];
   },
 
@@ -66,7 +66,7 @@ export const abcSupplyApi = {
         pageNumber
       }
     });
-    
+
     // Handle different response format for filter API
     if (response.data.success && response.data.data) {
       return response.data.data.items || [];
@@ -84,7 +84,7 @@ export const abcSupplyApi = {
           distance: 100
         }
       });
-            
+
       // Handle the actual API response structure
       let branches = [];
       if (response.data.success && response.data.data) {
@@ -109,7 +109,7 @@ export const abcSupplyApi = {
       } else {
         console.log('No branches data found or API unsuccessful');
       }
-      
+
       return branches;
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -193,74 +193,147 @@ export const abcSupplyApi = {
   }): Promise<Order> => {
 
     console.log("Order data being sent:", orderData);
-    
+
+    // const orderPayload = {
+    //   requestId: `REQ-${Date.now()}`,
+    //   purchaseOrder: `PO-${Date.now()}`,
+    //   branchNumber: orderData.branchNumber,
+    //   deliveryService: "OTG",
+    //   typeCode: "SO",
+    //   dates: {
+    //     deliveryRequestedFor: orderData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    //   },
+    //   deliveryAppointment: {
+    //     instructionsTypeCode: "AT",
+    //     instructions: orderData.instructions || "Standard delivery",
+    //     fromTime: "09:00",
+    //     toTime: "17:00",
+    //     timeZoneCode: "CT"
+    //   },
+    //   currency: "USD",
+    //   shipTo: {
+    //     name: orderData.deliveryAddress.name,
+    //     number: "1008710",
+    //     address: {
+    //       line1: orderData.deliveryAddress.line1,
+    //       line2: orderData.deliveryAddress.line2 || "",
+    //       line3: "",
+    //       city: orderData.deliveryAddress.city,
+    //       state: orderData.deliveryAddress.state,
+    //       postal: orderData.deliveryAddress.postal,
+    //       country: "USA"
+    //     },
+    //     contacts: [{
+    //       name: orderData.contact.name,
+    //       functionCode: "SM",
+    //       email: orderData.contact.email,
+    //       phones: [{
+    //         number: orderData.contact.phone.replace(/\D/g, ''),
+    //         type: "MOBILE",
+    //         ext: ""
+    //       }]
+    //     }]
+    //   },
+    //   orderComments: [{
+    //     code: "H",
+    //     description: orderData.instructions || "Order created via BuilderLynk"
+    //   }],
+    //   lines: orderData.items.map((item, index) => ({
+    //     id: (index + 1).toString(),
+    //     itemNumber: item.sku,
+    //     itemDescription: item.name,
+    //     orderedQty: {
+    //       value: item.quantity,
+    //       uom: item.uom
+    //     },
+    //     unitPrice: {
+    //       value: item.unitPrice,
+    //       uom: item.uom,
+    //       instructions: `Quote: REQ-${Date.now()}`
+    //     },
+    //     comments: {
+    //       code: "D",
+    //       description: `Line item: ${item.name}`
+    //     }
+    //   }))
+    // };
+
     const orderPayload = {
-      requestId: `REQ-${Date.now()}`,
-      purchaseOrder: `PO-${Date.now()}`,
-      branchNumber: orderData.branchNumber,
-      deliveryService: "OTG",
-      typeCode: "SO",
-      dates: {
-        deliveryRequestedFor: orderData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      "requestId": "312345",
+      "purchaseOrder": "999999-9",
+      "branchNumber": "441",
+      "deliveryService": "OTG",
+      "typeCode": "SO",
+      "dates": {
+        "deliveryRequestedFor": "2025-03-05"
       },
-      deliveryAppointment: {
-        instructionsTypeCode: "AT",
-        instructions: orderData.instructions || "Standard delivery",
-        fromTime: "09:00",
-        toTime: "17:00",
-        timeZoneCode: "CT"
+      "deliveryAppointment": {
+        "instructionsTypeCode": "AT",
+        "instructions": "Please leave in driveway",
+        "fromTime": "10:00",
+        "toTime": "11:00",
+        "timeZoneCode": "CT"
       },
-      currency: "USD",
-      shipTo: {
-        name: orderData.deliveryAddress.name,
-        number: "1008710",
-        address: {
-          line1: orderData.deliveryAddress.line1,
-          line2: orderData.deliveryAddress.line2 || "",
-          line3: "",
-          city: orderData.deliveryAddress.city,
-          state: orderData.deliveryAddress.state,
-          postal: orderData.deliveryAddress.postal,
-          country: "USA"
+      "currency": "USD",
+      "shipTo": {
+        "name": "Test Account",
+        "number": "1008710",
+        "address": {
+          "line1": "123 Main St",
+          "line2": "Dock 123",
+          "line3": "Bldg. 1 Section 2",
+          "city": "Chicago",
+          "state": "IL",
+          "postal": "60661",
+          "country": "USA"
         },
-        contacts: [{
-          name: orderData.contact.name,
-          functionCode: "SM",
-          email: orderData.contact.email,
-          phones: [{
-            number: orderData.contact.phone.replace(/\D/g, ''),
-            type: "MOBILE",
-            ext: ""
-          }]
-        }]
+        "contacts": [
+          {
+            "name": "John Doe",
+            "functionCode": "SM",
+            "email": "john.doe@email.com",
+            "phones": [
+              {
+                "number": "8882221111",
+                "type": "MOBILE",
+                "ext": ""
+              }
+            ]
+          }
+        ]
       },
-      orderComments: [{
-        code: "H",
-        description: orderData.instructions || "Order created via BuilderLynk"
-      }],
-      lines: orderData.items.map((item, index) => ({
-        id: (index + 1).toString(),
-        itemNumber: item.sku,
-        itemDescription: item.name,
-        orderedQty: {
-          value: item.quantity,
-          uom: item.uom
-        },
-        unitPrice: {
-          value: item.unitPrice,
-          uom: item.uom,
-          instructions: `Quote: REQ-${Date.now()}`
-        },
-        comments: {
-          code: "D",
-          description: `Line item: ${item.name}`
+      "orderComments": [
+        {
+          "code": "H",
+          "description": "Order header comment here"
         }
-      }))
+      ],
+      "lines": [
+        {
+          "id": "1",
+          "itemNumber": "02GAFSL3AS",
+          "itemDescription": "Paint ABC Touch-UP Spray Black 12 OZ",
+          "orderedQty": {
+            "value": 10,
+            "uom": "BD"
+          },
+          "unitPrice": {
+            "value": 84.5,
+            "uom": "BD",
+            "instructions": "Quote: 312345"
+          },
+          "comments": {
+            "code": "D",
+            "description": "Line comment text here"
+          }
+        }
+      ]
     };
+
 
     const response = await api.post('/abc-supply/orders', orderPayload);
     console.log("response,", response.data);
-    
+
     return response.data;
   },
 
