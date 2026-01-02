@@ -43,11 +43,12 @@ export interface Proposal {
 }
 
 export interface CreateProposalRequest {
-  template_id: string;
+  template_id?: string;
   job_id?: number;
   title?: string;
   address?: Address;
   contractor_signature?: ContractorSignature;
+  report_id?: string;
 }
 
 export interface UpdateProposalRequest {
@@ -103,7 +104,7 @@ export const proposalsApi = {
 
   async getProposalById(id: number): Promise<Proposal> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/proposals/${id}`, {
+      const response = await axios.get(`${API_BASE_URL}/proposals/${id}?select=report.response_data.ReportIds`, {
         headers: getAuthHeaders(),
       });
       return response.data.data;

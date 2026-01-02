@@ -97,6 +97,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   if (!isOpen) return null;
 
   console.log('Staff data in modal:', staff);
+  console.log('Staff length:', staff?.length);
+  console.log('Staff sample:', staff?.[0]);
 
   const stages = [
     'Inspection/Estimate Booked',
@@ -270,12 +272,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
                     <select
                       value={formData.assignees[0] || ''}
-                      onChange={(e) => setFormData({...formData, assignees: e.target.value ? [e.target.value] : []})}
+                      onChange={(e) => setFormData({...formData, assignees: e.target.value ? [Number(e.target.value)] : []})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="">Unassigned</option>
                       {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
+                        <option key={member.id} value={member.id}>
                           {member.first_name} {member.last_name}
                         </option>
                       )) : (
@@ -288,12 +290,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
                     <select
                       value={formData.jobOwner}
-                      onChange={(e) => setFormData({...formData, jobOwner: e.target.value})}
+                      onChange={(e) => setFormData({...formData, jobOwner: e.target.value ? Number(e.target.value) : ''})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="">Select Job Owner</option>
                       {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
+                        <option key={member.id} value={member.id}>
                           {member.first_name} {member.last_name}
                         </option>
                       )) : (

@@ -15,6 +15,7 @@ import {
   Upload,
   Settings,
   Send,
+  ExternalLink,
 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
@@ -239,6 +240,8 @@ export default function ProposalBuilder({
   const [orderHistory, setOrderHistory] = useState<ABCSupplyOrderHistoryItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
+  const [showMeasurementDownloadModal, setShowMeasurementDownloadModal] = useState(false);
+  const [proposalData, setProposalData] = useState<any>(null);
 
   const [sections, setSections] = useState<Section[]>([
     { id: "cover", name: "Cover", active: true, order: 0 },
@@ -306,10 +309,16 @@ export default function ProposalBuilder({
       try {
         const response = await proposalsApi.getProposalById(Number(proposalId));
         const proposal = response.data || response;
+        setProposalData(proposal);
 
         if (proposal.status) setProposalStatus(proposal.status);
         if (proposal.title) setTemplateName(proposal.title);
         if (proposal.address?.address) setCustomerAddress(proposal.address.address);
+
+        // Store report data if available
+        if (proposal.report) {
+          console.log('Report data available:', proposal.report);
+        }
 
         const content = proposal.sections;
         if (!content) return;
@@ -1193,6 +1202,56 @@ export default function ProposalBuilder({
     );
   };
 
+  // Company details should always be editable regardless of proposal status
+  const CompanyEditableText = ({
+    value,
+    onChange,
+    className = "",
+    multiline = false,
+  }: Omit<EditableTextProps, 'triggerFocus' | 'onFocusComplete'>) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempValue, setTempValue] = useState(value);
+
+    useEffect(() => {
+      setTempValue(value);
+    }, [value]);
+
+    const handleBlur = () => {
+      setIsEditing(false);
+      onChange(tempValue);
+    };
+
+    if (isEditing) {
+      return multiline ? (
+        <textarea
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleBlur}
+          autoFocus
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+        />
+      ) : (
+        <input
+          type="text"
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleBlur}
+          autoFocus
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+        />
+      );
+    }
+
+    return (
+      <span
+        onClick={() => setIsEditing(true)}
+        className={`${className} cursor-pointer inline-block w-full py-1`}
+      >
+        {value}
+      </span>
+    );
+  };
+
   const addOptions = [
     {
       icon: Image,
@@ -1279,6 +1338,20 @@ export default function ProposalBuilder({
                   )}
                 </button>
               </div>
+
+              {proposalData?.report && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowMeasurementDownloadModal(true)}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <ExternalLink size={16} />
+                    <span className="text-sm font-medium">
+                      View Measurement
+                    </span>
+                  </button>
+                </div>
+              )}
 
               <div className="flex items-center justify-between gap-2 mb-4">
                 <span className="text-lg font-medium text-gray-900 dark:text-white">
@@ -1651,18 +1724,18 @@ export default function ProposalBuilder({
                               Company representative name
                             </div>
                             <div className="flex items-center gap-2">
-                              <EditableText
+                              <CompanyEditableText
                                 value={companyName}
                                 onChange={setCompanyName}
                                 className="font-medium text-gray-900 dark:text-white"
                               />
                             </div>
-                            <EditableText
+                            <CompanyEditableText
                               value={companyPhone}
                               onChange={setCompanyPhone}
                               className="text-sm text-gray-500 dark:text-gray-400 block"
                             />
-                            <EditableText
+                            <CompanyEditableText
                               value={companyEmail}
                               onChange={setCompanyEmail}
                               className="text-sm text-gray-500 dark:text-gray-400 block"
@@ -3873,6 +3946,74 @@ export default function ProposalBuilder({
                     className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
                   >
                     Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PDF Ready Modal */}
+          {showMeasurementDownloadModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+                    <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    PDF Ready
+                  </h2>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowMeasurementDownloadModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const reportId = proposalData?.report?.response_data?.ReportIds?.[0];
+                      if (!reportId) return;
+                      
+                      try {
+                        const token = localStorage.getItem('token');
+                        const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+                        
+                        const reportResponse = await fetch(
+                          `${API_BASE_URL}/eagleview/report?reportId=${reportId}`,
+                          {
+                            headers: {
+                              Authorization: `Bearer ${token}`
+                            }
+                          }
+                        );
+                        
+                        const reportData = await reportResponse.json();
+                        
+                        if (reportData.success && reportData.data?.ReportDownloadLink) {
+                          const link = document.createElement('a');
+                          link.href = reportData.data.ReportDownloadLink;
+                          link.setAttribute('download', `report-${reportId}.pdf`);
+                          link.setAttribute('target', '_blank');
+                          document.body.appendChild(link);
+                          link.click();
+                          link.remove();
+                        } else {
+                          alert('Report download link not available.');
+                        }
+                      } catch (error) {
+                        console.error('Error downloading report:', error);
+                        alert('Failed to download report. Please try again.');
+                      }
+                      setShowMeasurementDownloadModal(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                  >
+                    Download Now
                   </button>
                 </div>
               </div>

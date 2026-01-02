@@ -212,8 +212,22 @@ class EagleViewService {
   }
 
   async downloadReport(reportId: string, format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
-    console.log('Download endpoint not available');
-    return null;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://builderlyncapi.testenvapp.com/api/eagleview/report?reportId=${reportId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        return await response.blob();
+      }
+      return null;
+    } catch (error) {
+      console.error('Download report failed:', error);
+      return null;
+    }
   }
 
   createOrderData(formData: {

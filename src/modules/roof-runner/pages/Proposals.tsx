@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, ChevronDown } from 'lucide-react';
+import { Plus, Search, X, ChevronDown, Download } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
 import { getNearbyJobs } from '../../../shared/store/services/jobsApi';
+import { abcSupplyService } from '../services/abcSupplyService';
+import { eagleViewService } from '../services/eagleViewService';
 
 interface Job {
   id?: number;
@@ -88,9 +90,8 @@ export default function Proposals() {
   const fetchMeasurements = async () => {
     try {
       setLoadingMeasurements(true);
-      // Replace with actual API call
-      const data = await fetch('/api/measurements').then(res => res.json());
-      setMeasurements(data);
+      const reports = await eagleViewService.getReports();
+      setMeasurements(reports);
     } catch (error) {
       console.error('Error fetching measurements:', error);
       setMeasurements([]);
@@ -200,17 +201,6 @@ export default function Proposals() {
     return sections?.settings?.coverImage || null;
   };
 
-  const proposalsList = proposals.map(proposal => ({
-    id: String(proposal.id),
-    title: proposal.title,
-    subtitle: proposal.address?.address || 'No address',
-    assignedBy: proposal.author?.name || 'Unknown',
-    time: formatTimeAgo(proposal.created_at),
-    amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
-    status: mapStatusToProposalStatus(proposal.status),
-    image: getCoverImage(proposal.sections)
-  }));
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Sent': return 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300';
@@ -221,6 +211,17 @@ export default function Proposals() {
       default: return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
     }
   };
+
+  const proposalsList = proposals.map(proposal => ({
+    id: String(proposal.id),
+    title: proposal.title,
+    subtitle: proposal.address?.address || 'No address',
+    assignedBy: proposal.author?.name || 'Unknown',
+    time: formatTimeAgo(proposal.created_at),
+    amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
+    status: mapStatusToProposalStatus(proposal.status),
+    image: getCoverImage(proposal.sections)
+  }));
 
   return (
     <div className="space-y-6">
@@ -336,20 +337,64 @@ export default function Proposals() {
                   measurements.map((measurement, index) => (
                     <div 
                       key={measurement.id || index} 
-                      onClick={() => setSelectedMeasurement(measurement)}
-                      className={`flex items-center justify-between p-3 border rounded-md cursor-pointer ${
+                      className={`flex items-center justify-between p-3 border rounded-md ${
                         selectedMeasurement?.id === measurement.id
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                           : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => setSelectedMeasurement(measurement)}
+                      >
                         <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {measurement.version} BuilderLync Report
+                          {measurement.reference_id || 'BuilderLync Report'}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Created {new Date(measurement.created_at).toLocaleDateString()}</div>
                       </div>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const reportId = measurement.response_data?.ReportIds?.[0];
+                          if (!reportId) return;
+                          
+                          try {
+                            const token = localStorage.getItem('token');
+                            const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+                            
+                            const reportResponse = await fetch(
+                              `${API_BASE_URL}/eagleview/report?reportId=${reportId}`,
+                              {
+                                headers: {
+                                  Authorization: `Bearer ${token}`
+                                }
+                              }
+                            );
+                            
+                            const reportData = await reportResponse.json();
+                            
+                            if (reportData.success && reportData.data?.ReportDownloadLink) {
+                              const link = document.createElement('a');
+                              link.href = reportData.data.ReportDownloadLink;
+                              link.setAttribute('download', `report-${reportId}.pdf`);
+                              link.setAttribute('target', '_blank');
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                            } else {
+                              alert('Report download link not available.');
+                            }
+                          } catch (error) {
+                            console.error('Error downloading report:', error);
+                            alert('Failed to download report. Please try again.');
+                          }
+                        }}
+                        className="ml-3 p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded"
+                        title="Download report"
+                      >
+                        <Download size={16} />
+                      </button>
                     </div>
                   ))
                 )}
@@ -370,8 +415,8 @@ export default function Proposals() {
                 onClick={() => {
                   if (selectedMeasurement) {
                     setProposalAddress(selectedMeasurement.address);
-                    setProposalLat(selectedMeasurement.lat);
-                    setProposalLng(selectedMeasurement.lng);
+                    setProposalLat(selectedMeasurement.order_data?.orderReports?.reportAddresses?.latitude);
+                    setProposalLng(selectedMeasurement.order_data?.orderReports?.reportAddresses?.longitude);
                     setShowTemplateModal(true);
                   }
                 }}
@@ -630,15 +675,33 @@ export default function Proposals() {
                   }
                   try {
                     setCreatingProposal(true);
-                    const proposal = await proposalsApi.createProposal({
+                    
+                    // Get address and coordinates
+                    const address = proposalAddress || selectedMeasurement?.address;
+                    const latitude = proposalLat || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.latitude;
+                    const longitude = proposalLng || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.longitude;
+                    
+                    // Get customer details from selected job if available
+                    const selectedJob = nearbyJobs.find(job => job.id === selectedJobId);
+                    
+                    const proposalData = {
                       ...(selectedTemplate && { template_id: selectedTemplate.id }),
                       title: selectedTemplate?.name || 'New Proposal',
                       address: {
-                        address: proposalAddress,
-                        latitude: proposalLat,
-                        longitude: proposalLng
+                        address: address,
+                        latitude: latitude,
+                        longitude: longitude
                       },
-                    });
+                      ...(selectedMeasurement && { report_id: selectedMeasurement.id }),
+                      ...(attachToJob && selectedJobId && { job_id: selectedJobId }),
+                      ...(selectedJob && {
+                        customer_name: selectedJob.customer_name,
+                        customer_email: selectedJob.customer_email,
+                        customer_phone: selectedJob.customer_phone
+                      })
+                    };
+                    
+                    const proposal = await proposalsApi.createProposal(proposalData);
                     setShowTemplateModal(false);
                     setShowNewProposalModal(false);
                     setProposalAddress('');
