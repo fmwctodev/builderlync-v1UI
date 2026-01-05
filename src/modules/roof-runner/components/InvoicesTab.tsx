@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, FileText, Calendar, DollarSign, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, FileText, Calendar, DollarSign, Search, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getInvoices, getInvoicesByJobId, Invoice } from '../../../shared/store/services/invoicesApi';
+import { fetchInvoices } from '../../../shared/store/services/paymentsApi';
 
 interface InvoicesTabProps {
   jobId?: number;
@@ -10,31 +10,23 @@ interface InvoicesTabProps {
 const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [filteredInvoices, setFilteredInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const fetchInvoices = async () => {
+    const loadInvoices = async () => {
       try {
         setLoading(true);
-        console.log('Fetching invoices...');
-        const response = jobId 
-          ? await getInvoicesByJobId(jobId)
-          : await getInvoices();
-        console.log('Invoice API response:', response);
-        if (response.success) {
-          console.log('Setting invoices:', response.data.length, 'items');
-          setInvoices(response.data);
-          setFilteredInvoices(response.data);
-        } else {
-          setError(response.message);
-        }
+        const response = await fetchInvoices({ job_id: jobId, is_estimate: false });
+        setInvoices(response);
+        setFilteredInvoices(response);
       } catch (err) {
         setError('Failed to fetch invoices');
         console.error('Error fetching invoices:', err);
@@ -43,30 +35,29 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
       }
     };
 
-    fetchInvoices();
+    loadInvoices();
   }, [jobId]);
 
   useEffect(() => {
-    console.log('Filtering invoices. Search:', searchTerm, 'Status:', statusFilter, 'Total invoices:', invoices.length);
     let filtered = invoices;
 
     if (searchTerm) {
       filtered = filtered.filter(invoice => 
-        invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.doc_number.toLowerCase().includes(searchTerm.toLowerCase())
+        (invoice.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (invoice.invoice_number || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(invoice => {
-        if (statusFilter === 'paid') return invoice.balance === 0;
-        if (statusFilter === 'overdue') return new Date(invoice.due_date) < new Date() && invoice.balance > 0;
+        const balance = invoice.total || 0;
+        if (statusFilter === 'paid') return balance === 0;
+        if (statusFilter === 'overdue') return new Date(invoice.due_date) < new Date() && balance > 0;
         if (statusFilter === 'draft') return invoice.status === 'draft';
         return invoice.status === statusFilter;
       });
     }
 
-    console.log('Filtered invoices:', filtered.length);
     setFilteredInvoices(filtered);
     setCurrentPage(1);
   }, [searchTerm, statusFilter, invoices]);
@@ -91,16 +82,14 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
 
   const stats = {
     draft: invoices.filter(inv => inv.status === 'draft').length,
-    draftAmount: invoices.filter(inv => inv.status === 'draft').reduce((sum, inv) => sum + inv.total_amount, 0),
-    due: invoices.filter(inv => inv.balance > 0 && new Date(inv.due_date) >= new Date()).length,
-    dueAmount: invoices.filter(inv => inv.balance > 0 && new Date(inv.due_date) >= new Date()).reduce((sum, inv) => sum + inv.balance, 0),
-    paid: invoices.filter(inv => inv.balance === 0).length,
-    paidAmount: invoices.filter(inv => inv.balance === 0).reduce((sum, inv) => sum + inv.total_amount, 0),
-    overdue: invoices.filter(inv => inv.balance > 0 && new Date(inv.due_date) < new Date()).length,
-    overdueAmount: invoices.filter(inv => inv.balance > 0 && new Date(inv.due_date) < new Date()).reduce((sum, inv) => sum + inv.balance, 0)
+    draftAmount: invoices.filter(inv => inv.status === 'draft').reduce((sum, inv) => sum + (inv.total || 0), 0),
+    due: invoices.filter(inv => (inv.total || 0) > 0 && new Date(inv.due_date) >= new Date() && inv.status !== 'draft').length,
+    dueAmount: invoices.filter(inv => (inv.total || 0) > 0 && new Date(inv.due_date) >= new Date() && inv.status !== 'draft').reduce((sum, inv) => sum + (inv.total || 0), 0),
+    paid: invoices.filter(inv => inv.status === 'paid').length,
+    paidAmount: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0),
+    overdue: invoices.filter(inv => (inv.total || 0) > 0 && new Date(inv.due_date) < new Date() && inv.status !== 'draft' && inv.status !== 'paid').length,
+    overdueAmount: invoices.filter(inv => (inv.total || 0) > 0 && new Date(inv.due_date) < new Date() && inv.status !== 'draft' && inv.status !== 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0)
   };
-
-  console.log('InvoicesTab render - Loading:', loading, 'Error:', error, 'Invoices:', invoices.length, 'Filtered:', filteredInvoices.length);
 
   return (
     <div className="h-full flex flex-col">
@@ -196,18 +185,18 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {paginatedInvoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => setSelectedInvoice(invoice)}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {invoice.doc_number}
+                          {invoice.invoice_number}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           {invoice.customer_name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          ${invoice.total_amount.toFixed(2)}
+                          ${(invoice.total || 0).toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          ${invoice.balance.toFixed(2)}
+                          ${(invoice.total || 0).toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           <div className="flex items-center">
@@ -216,8 +205,8 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status, invoice.balance, invoice.due_date)}`}>
-                            {getStatusText(invoice.status, invoice.balance, invoice.due_date)}
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status, invoice.total || 0, invoice.due_date)}`}>
+                            {getStatusText(invoice.status, invoice.total || 0, invoice.due_date)}
                           </span>
                         </td>
                       </tr>
@@ -256,6 +245,114 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
           </div>
         )}
       </div>
+      
+      {/* Invoice Detail Modal */}
+      {selectedInvoice && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Invoice Details</h2>
+              <button onClick={() => setSelectedInvoice(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Invoice Number</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-white">{selectedInvoice.invoice_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedInvoice.status, selectedInvoice.total || 0, selectedInvoice.due_date)}`}>
+                    {getStatusText(selectedInvoice.status, selectedInvoice.total || 0, selectedInvoice.due_date)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Customer</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-white">{selectedInvoice.customer_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Issue Date</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-white">{new Date(selectedInvoice.issue_date).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Due Date</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-white">{new Date(selectedInvoice.due_date).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Payment Terms</p>
+                  <p className="text-base font-medium text-gray-900 dark:text-white">{selectedInvoice.payment_terms || 'N/A'}</p>
+                </div>
+              </div>
+              
+              {selectedInvoice.line_items && selectedInvoice.line_items.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Line Items</h3>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Description</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Qty</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Rate</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {selectedInvoice.line_items.map((item: any, index: number) => (
+                          <tr key={index}>
+                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.description}</td>
+                            <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white">{item.qty}</td>
+                            <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white">${(item.rate || 0).toFixed(2)}</td>
+                            <td className="px-4 py-2 text-sm text-right text-gray-900 dark:text-white">${(item.total || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">${(selectedInvoice.subtotal || 0).toFixed(2)}</span>
+                  </div>
+                  {selectedInvoice.discount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Discount</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">-${(selectedInvoice.discount || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Tax</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">${(selectedInvoice.tax || 0).toFixed(2)}</span>
+                  </div>
+                  {selectedInvoice.shipping > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Shipping</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">${(selectedInvoice.shipping || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">Total</span>
+                    <span className="text-base font-semibold text-gray-900 dark:text-white">${(selectedInvoice.total || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {selectedInvoice.notes && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedInvoice.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

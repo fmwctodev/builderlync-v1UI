@@ -5,15 +5,34 @@ import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { getInvoices, Invoice as QBInvoice } from '../../../../shared/store/services/invoicesApi';
+import { fetchInvoices, Invoice as PaymentInvoice } from '../../../../shared/store/services/paymentsApi';
+import CreateInvoiceModal from './CreateInvoiceModal';
 
 type SubView = 'all_invoices' | 'recurring_invoices' | 'templates' | 'estimates';
+
+interface Invoice {
+  id: number;
+  doc_number: string;
+  customer_name: string;
+  total_amount: number;
+  balance: number;
+  due_date: string;
+  invoice_date: string;
+  status: string;
+  currency_code: string;
+  email_status: string;
+  private_note: string | null;
+  customer_memo: string | null;
+  contacts: any;
+  invoice_line_items: any[];
+  rawData?: any;
+}
 
 const InvoicesEstimatesTab: React.FC = () => {
   const [subView, setSubView] = useState<SubView>('all_invoices');
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [invoices, setInvoices] = useState<QBInvoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -22,6 +41,10 @@ const InvoicesEstimatesTab: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const itemsPerPage = 10;
+  const [showNewDropdown, setShowNewDropdown] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<'invoice' | 'estimate'>('invoice');
+  const [editInvoice, setEditInvoice] = useState<PaymentInvoice | null>(null);
 
   useEffect(() => {
     loadData();
@@ -31,12 +54,25 @@ const InvoicesEstimatesTab: React.FC = () => {
     setLoading(true);
     try {
       console.log('Loading invoices...');
-      const response = await getInvoices();
+      const response = await fetchInvoices({ is_estimate: false });
       console.log('Invoice response:', response);
-      if (response.success) {
-        console.log('Setting invoices:', response.data.length, 'items');
-        setInvoices(response.data);
-      }
+      setInvoices(response.map((inv: any) => ({
+        id: inv.id,
+        doc_number: inv.invoice_number,
+        customer_name: inv.customer_name,
+        total_amount: inv.total || 0,
+        balance: inv.total || 0,
+        due_date: inv.due_date,
+        invoice_date: inv.issue_date,
+        status: inv.status,
+        currency_code: 'USD',
+        email_status: '',
+        private_note: inv.notes,
+        customer_memo: inv.message_to_customer,
+        contacts: null,
+        invoice_line_items: [],
+        rawData: inv
+      })));
     } catch (error) {
       console.error('Error loading invoices:', error);
     } finally {
@@ -196,14 +232,44 @@ const InvoicesEstimatesTab: React.FC = () => {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
+            {/* <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
               <Settings className="w-4 h-4" />
               <span>Settings</span>
-            </button>
-            <button className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg">
-              <Plus className="w-4 h-4" />
-              <span>New</span>
-            </button>
+            </button> */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNewDropdown(!showNewDropdown)}
+                className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {showNewDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      setInvoiceType('invoice');
+                      setShowInvoiceModal(true);
+                      setShowNewDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 rounded-t-lg"
+                  >
+                    Invoice
+                  </button>
+                  <button
+                    onClick={() => {
+                      setInvoiceType('estimate');
+                      setShowInvoiceModal(true);
+                      setShowNewDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 rounded-b-lg"
+                  >
+                    Estimate
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -381,6 +447,9 @@ const InvoicesEstimatesTab: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Status
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -416,6 +485,44 @@ const InvoicesEstimatesTab: React.FC = () => {
                               status={invoice.status}
                               type="invoice"
                             />
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                const invoiceData = invoice.rawData;
+                                setEditInvoice({
+                                  id: invoiceData.id.toString(),
+                                  invoice_number: invoiceData.invoice_number,
+                                  name: invoiceData.invoice_number,
+                                  customer_id: invoiceData.customer_id,
+                                  customer_name: invoiceData.customer_name,
+                                  amount: invoiceData.total,
+                                  status: invoiceData.status,
+                                  issue_date: invoiceData.issue_date,
+                                  due_date: invoiceData.due_date,
+                                  po_number: invoiceData.po_number,
+                                  payment_terms: invoiceData.payment_terms,
+                                  line_items: invoiceData.line_items || [],
+                                  subtotal: invoiceData.subtotal,
+                                  discount: invoiceData.discount,
+                                  tax: invoiceData.tax,
+                                  shipping: invoiceData.shipping,
+                                  total: invoiceData.total,
+                                  coupon_id: invoiceData.coupon_id,
+                                  coupon_discount: invoiceData.coupon_discount,
+                                  notes: invoiceData.notes,
+                                  message_to_customer: invoiceData.message_to_customer,
+                                  is_estimate: invoiceData.is_estimate,
+                                  job_id: invoiceData.job_id,
+                                  created_at: invoiceData.created_at,
+                                  updated_at: invoiceData.updated_at
+                                } as any);
+                                setShowInvoiceModal(true);
+                              }}
+                              className="text-primary-600 hover:text-primary-700 text-sm"
+                            >
+                              Edit
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -502,6 +609,21 @@ const InvoicesEstimatesTab: React.FC = () => {
           />
         )}
       </div>
+      
+      <CreateInvoiceModal
+        isOpen={showInvoiceModal}
+        onClose={() => {
+          setShowInvoiceModal(false);
+          setEditInvoice(null);
+        }}
+        onSuccess={(invoice) => {
+          setShowInvoiceModal(false);
+          setEditInvoice(null);
+          loadData();
+        }}
+        invoiceType={invoiceType}
+        editInvoice={editInvoice}
+      />
     </div>
     </div>
   );

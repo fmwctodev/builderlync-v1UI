@@ -100,7 +100,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     const day = today.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const defaultAssignee = jobData?.assignees && jobData.assignees.length > 0
-      ? staff.find(s => s.id === parseInt(jobData.assignees[0]))
+      ? staff.find(s => String(s.id) === jobData.assignees[0])
       : jobData?.jobOwner
         ? staff.find(s => `${s.first_name} ${s.last_name}` === jobData.jobOwner)
         : staff[0];
