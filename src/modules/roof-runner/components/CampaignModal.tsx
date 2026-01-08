@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, MessageSquare, Calendar, Users, Save, Send } from 'lucide-react';
 import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES, Campaign } from '../types/campaigns';
-import { templateApi, Template } from '../services/templateApi';
 
 interface CampaignModalProps {
   show: boolean;
@@ -15,7 +14,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [campaignType, setCampaignType] = useState<CampaignType>('email');
-  const [proposalTemplates, setProposalTemplates] = useState<Template[]>([]);
+
   const [sendImmediately, setSendImmediately] = useState(true);
 
   const [formData, setFormData] = useState<CampaignFormData>({
@@ -34,7 +33,6 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
 
   useEffect(() => {
     if (show) {
-      loadProposalTemplates();
       if (editingCampaign) {
         setFormData({
           name: editingCampaign.name,
@@ -70,14 +68,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
     }
   }, [show, editingCampaign]);
 
-  const loadProposalTemplates = async () => {
-    try {
-      const templates = await templateApi.getTemplates();
-      setProposalTemplates(templates);
-    } catch (error) {
-      console.error('Error loading proposal templates:', error);
-    }
-  };
+
 
   useEffect(() => {
     if (initialData) {
@@ -205,7 +196,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </button>
             </div>
 
-            {/* Template Selector */}
+            {/* Built-in Template Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Use Template (Optional)
@@ -213,25 +204,16 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
                 onChange={(e) => {
-                  const templateId = e.target.value;
-                  if (templateId) {
-                    const template = proposalTemplates.find(t => t.id === templateId);
-                    if (template) {
-                      setFormData({
-                        ...formData,
-                        name: template.name,
-                        template_id: templateId,
-                      });
-                    }
+                  const templateKey = e.target.value as keyof typeof CAMPAIGN_TEMPLATES;
+                  if (templateKey) {
+                    handleTemplateSelect(templateKey);
                   }
                 }}
               >
                 <option value="">Start from scratch</option>
-                {proposalTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
+                <option value="database_reactivation">Database Reactivation</option>
+                <option value="follow_up">Follow-up Sequence</option>
+                <option value="proposal_followup">Proposal Follow-up</option>
               </select>
             </div>
 
@@ -339,31 +321,77 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="all">All Contacts</option>
-                <option value="status">Filter by Job Status</option>
-                <option value="tags">Filter by Tags</option>
-                <option value="custom">Custom Filter</option>
+                <option value="status">By Job Status</option>
+                <option value="opportunities">By Opportunities</option>
               </select>
             </div>
+
+            {formData.target_audience.filter_type === 'opportunities' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Opportunity Stage
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'lead', label: 'Lead' },
+                    { value: 'qualified', label: 'Qualified' },
+                    { value: 'proposal', label: 'Proposal' },
+                    { value: 'negotiation', label: 'Negotiation' },
+                    { value: 'closed_won', label: 'Closed Won' },
+                    { value: 'closed_lost', label: 'Closed Lost' }
+                  ].map((stage) => (
+                    <label key={stage.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        value={stage.value}
+                        checked={formData.target_audience.opportunity_stages?.includes(stage.value) || false}
+                        onChange={(e) => {
+                          const currentStages = formData.target_audience.opportunity_stages || [];
+                          const newStages = e.target.checked
+                            ? [...currentStages, stage.value]
+                            : currentStages.filter(s => s !== stage.value);
+                          handleAudienceChange('opportunity_stages', newStages);
+                        }}
+                        className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{stage.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {formData.target_audience.filter_type === 'status' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Job Status
                 </label>
-                <select
-                  multiple
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                  onChange={(e) => {
-                    const values = Array.from(e.target.selectedOptions, option => option.value);
-                    handleAudienceChange('job_statuses', values);
-                  }}
-                >
-                  <option value="new_lead">New Lead</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="proposal_sent">Proposal Sent</option>
-                  <option value="job_lost">Job Lost</option>
-                  <option value="won">Won</option>
-                </select>
+                <div className="space-y-2">
+                  {[
+                    { value: 'new_lead', label: 'New Lead' },
+                    { value: 'qualified', label: 'Qualified' },
+                    { value: 'proposal_sent', label: 'Proposal Sent' },
+                    { value: 'job_lost', label: 'Job Lost' },
+                    { value: 'won', label: 'Won' }
+                  ].map((status) => (
+                    <label key={status.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        value={status.value}
+                        checked={formData.target_audience.job_statuses?.includes(status.value) || false}
+                        onChange={(e) => {
+                          const currentStatuses = formData.target_audience.job_statuses || [];
+                          const newStatuses = e.target.checked
+                            ? [...currentStatuses, status.value]
+                            : currentStatuses.filter(s => s !== status.value);
+                          handleAudienceChange('job_statuses', newStatuses);
+                        }}
+                        className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{status.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
 

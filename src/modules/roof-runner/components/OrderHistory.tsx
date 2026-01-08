@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, ChevronRight, Search, Filter, CheckCircle, Clock } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { srsApi } from '../services/srsApi';
 import { OrderHistoryItem } from '../../abc-supply/types';
 
 interface OrderHistoryProps {
   onBack: () => void;
+  supplier?: string;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
+const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Supply' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +25,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       tomorrow.setDate(tomorrow.getDate() + 1);
       const endDate = tomorrow.toISOString().split('T')[0];
       
-      const response = await abcSupplyApi.getOrdersHistory({
-        startDate: '2024-03-15',
-        endDate: endDate,
-        itemsPerPage: 20,
-        pageNumber: 1
-      });
+      let response;
+      if (supplier === 'SRS') {
+        response = await srsApi.getOrdersHistory({
+          startDate: '2024-03-15',
+          endDate: endDate,
+          itemsPerPage: 20,
+          pageNumber: 1
+        });
+      } else {
+        response = await abcSupplyApi.getOrdersHistory({
+          startDate: '2024-03-15',
+          endDate: endDate,
+          itemsPerPage: 20,
+          pageNumber: 1
+        });
+      }
 
       console.log("orders:", response);
       
@@ -79,7 +91,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
         >
           ← Back to Dashboard
         </button>
-        <h1 className="text-2xl font-bold text-white">Order History</h1>
+        <h1 className="text-2xl font-bold text-white">{supplier} Order History</h1>
         <p className="mt-2 text-gray-400">View and track your orders</p>
 
         <div className="mt-4 flex gap-2">

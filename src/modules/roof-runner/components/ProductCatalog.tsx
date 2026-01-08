@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, ShoppingCart } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { srsApi } from '../services/srsApi';
 import { Product } from '../../abc-supply/types';
 import ShoppingCartComponent from './ShoppingCart';
 
 interface ProductCatalogProps {
   onBack: () => void;
+  supplier?: string;
 }
 
-const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
+const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC Supply' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
   const [cart, setCart] = useState<Array<Product & { quantity: number }>>(() => {
-    const savedCart = localStorage.getItem('abc-supply-cart');
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
+    const savedCart = localStorage.getItem(cartKey);
     return savedCart ? JSON.parse(savedCart) : [];
   });
   const [showCart, setShowCart] = useState(false);
@@ -25,11 +29,36 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
     loadProducts();
   }, []);
 
-  const loadProducts = async () => {
+  const loadProducts = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await abcSupplyApi.getItems(1, 50);
-      setProducts(response.items.items);
+      if (supplier === 'SRS') {
+        const response = await srsApi.getItems(page, 50);
+        const srsData = response.data?.data || response.data || [];
+        const srsProducts = Array.isArray(srsData) ? srsData : [];
+        
+        // Map SRS product structure to expected format
+        const mappedProducts = srsProducts.map((product: any) => ({
+          itemNumber: product.productVariants?.[0]?.variantCode || product.productId.toString(),
+          itemDescription: product.productName,
+          familyName: product.productCategory,
+          supplierName: product.manufacturer,
+          status: 'Active',
+          productImageUrl: product.productImageUrl,
+          productVariants: product.productVariants
+        }));
+        setProducts(mappedProducts);
+        
+        // Set pagination info
+        if (response.data?.pagination) {
+          setPagination(response.data.pagination);
+        } else if (response.pagination) {
+          setPagination(response.pagination);
+        }
+      } else {
+        const response = await abcSupplyApi.getItems(page, 50);
+        setProducts(response.items.items);
+      }
     } catch (error) {
       console.error('Failed to load products:', error);
       setProducts([]);
@@ -46,9 +75,25 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
 
     try {
       setSearchLoading(true);
-      // Use filterItems API with search query in filters array
-      const data = await abcSupplyApi.filterItems([query], 50, 1);
-      setProducts(Array.isArray(data) ? data : []);
+      if (supplier === 'SRS') {
+        const response = await srsApi.searchItems(query, 50);
+        const srsData = response.data?.data || response.data || [];
+        const srsProducts = Array.isArray(srsData) ? srsData : [];
+        // Map SRS search results
+        const mappedProducts = srsProducts.map((product: any) => ({
+          itemNumber: product.productVariants?.[0]?.variantCode || product.productId.toString(),
+          itemDescription: product.productName,
+          familyName: product.productCategory,
+          supplierName: product.manufacturer,
+          status: 'Active',
+          productImageUrl: product.productImageUrl,
+          productVariants: product.productVariants
+        }));
+        setProducts(mappedProducts);
+      } else {
+        const data = await abcSupplyApi.filterItems([query], 50, 1);
+        setProducts(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error('Search failed:', error);
       setProducts([]);
@@ -58,6 +103,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
   };
 
   const handleAddToCart = (product: Product) => {
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.itemNumber === product.itemNumber);
       let newCart;
@@ -70,30 +116,33 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
       } else {
         newCart = [...prevCart, { ...product, quantity: 1 }];
       }
-      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
       return newCart;
     });
   };
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
     setCart(prevCart => {
       const newCart = prevCart.map(item =>
         item.itemNumber === productId ? { ...item, quantity } : item
       );
-      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
       return newCart;
     });
   };
 
   const handleRemoveItem = (productId: string) => {
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
     setCart(prevCart => {
       const newCart = prevCart.filter(item => item.itemNumber !== productId);
-      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
       return newCart;
     });
   };
 
   const handleVariantChange = (oldItemNumber: string, newVariant: any) => {
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
     setCart(prevCart => {
       const newCart = prevCart.map(item => {
         if (item.itemNumber === oldItemNumber) {
@@ -112,17 +161,20 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
         }
         return item;
       });
-      localStorage.setItem('abc-supply-cart', JSON.stringify(newCart));
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
       return newCart;
     });
   };
 
   const handleCheckout = () => {
+    const cartKey = supplier === 'SRS' ? 'srs-supply-cart' : 'abc-supply-cart';
     setCart([]);
-    localStorage.removeItem('abc-supply-cart');
+    localStorage.removeItem(cartKey);
   };
 
   const handleCategoryFilter = async (category: string, checked: boolean) => {
+    if (supplier !== 'ABC Supply') return; // Only ABC supports category filtering
+    
     const newCategories = checked 
       ? [...selectedCategories, category]
       : selectedCategories.filter(c => c !== category);
@@ -175,7 +227,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
             >
               ← Back to Dashboard
             </button>
-            <h1 className="text-2xl font-bold text-white">Product Catalog</h1>
+            <h1 className="text-2xl font-bold text-white">{supplier} Product Catalog</h1>
             <p className="text-white mt-1">Browse our complete selection of construction materials</p>
           </div>
 
@@ -273,6 +325,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
             <table className="min-w-full table-fixed divide-y divide-gray-700">
               <thead>
                 <tr>
+                  {supplier === 'SRS' && <th className="w-16 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Image</th>}
                   <th className="w-32 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Item Number</th>
                   <th className="w-64 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Family Name</th>
                   <th className="w-80 px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Description</th>
@@ -283,7 +336,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
               <tbody className="divide-y divide-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
+                    <td colSpan={supplier === 'SRS' ? 6 : 5} className="px-6 py-12 text-center">
                       <div className="flex justify-center items-center">
                         <div className="w-6 h-6 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mr-3"></div>
                         <span className="text-gray-400">Loading products...</span>
@@ -292,26 +345,48 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <td colSpan={supplier === 'SRS' ? 6 : 5} className="px-6 py-12 text-center text-gray-400">
                       No products found
                     </td>
                   </tr>
                 ) : (
                 filteredProducts.map((product) => (
                     <tr key={product.itemNumber} className="hover:bg-gray-800 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 text-sm font-medium text-white truncate">{product.itemNumber}</td>
+                      {supplier === 'SRS' && (
+                        <td className="px-6 py-4">
+                          {(product.productImageUrl || product.productVariants?.[0]?.variantImageURL) ? (
+                           <> <img 
+                              src={product.productImageUrl || product.productVariants?.[0]?.variantImageURL} 
+                              alt={product.itemDescription || 'Product image'}
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => { 
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                            <div className="hidden w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
+                              <span className="text-xs text-gray-400">No Image</span>
+                            </div></>
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
+                              <span className="text-xs text-gray-400">No Image</span>
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-6 py-4 text-sm font-medium text-white truncate">{product.itemNumber || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-gray-300">
-                        <div className="break-words">{product.familyName}</div>
+                        <div className="break-words">{product.familyName || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
-                          <span className="font-medium text-white">{product.supplierName}</span>
-                          <span className="text-gray-400">{product.itemDescription}</span>
+                          <span className="font-medium text-white">{product.supplierName || 'Unknown'}</span>
+                          <span className="text-gray-400">{product.itemDescription || 'No description'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900/50 text-green-300">
-                          {product.status}
+                          {product.status || 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
@@ -329,6 +404,34 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination */}
+          {supplier === 'SRS' && pagination.totalPages > 1 && (
+            <div className="bg-gray-900 dark:bg-gray-800 px-6 py-4 flex items-center justify-between border-t border-gray-700">
+              <div className="text-sm text-gray-400">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} products
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => loadProducts(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  className="px-3 py-1 text-sm bg-gray-700 text-white rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-400">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => loadProducts(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                  className="px-3 py-1 text-sm bg-gray-700 text-white rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -340,6 +443,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack }) => {
         onRemoveItem={handleRemoveItem}
         onCheckout={handleCheckout}
         onVariantChange={handleVariantChange}
+        supplier={supplier}
       />
     </div>
   );

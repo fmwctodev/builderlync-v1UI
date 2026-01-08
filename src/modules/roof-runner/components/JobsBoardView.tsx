@@ -118,7 +118,7 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                           ${job.jobValue.toLocaleString()}
                         </span>
                         <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
-                          {job.assignees[0]?.charAt(0) || 'U'}
+                          {job.assigneeUsers?.[0]?.first_name?.charAt(0) || job.assignees[0]?.toString().charAt(0) || 'U'}
                         </div>
                       </div>
                     </div>

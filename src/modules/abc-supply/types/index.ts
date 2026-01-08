@@ -49,6 +49,8 @@ export interface Contact {
 
 // Product Types
 export interface Product {
+  productImageUrl: any;
+  productVariants: any;
   itemNumber: string;
   familyId: string;
   familyName: string;
