@@ -105,7 +105,7 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
           </button>
         </div>
         
-        <div className="grid grid-cols-4 gap-4 mb-4">
+        {/* <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400">{stats.draft} Invoice(s) in Draft</p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">${stats.draftAmount.toFixed(2)}</p>
@@ -122,7 +122,7 @@ const InvoicesTab: React.FC<InvoicesTabProps> = ({ jobId }) => {
             <p className="text-xs text-gray-500 dark:text-gray-400">{stats.overdue} Invoice(s) Overdue</p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">${stats.overdueAmount.toFixed(2)}</p>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex items-center space-x-4">
           <div className="relative flex-1">

@@ -224,14 +224,14 @@ const InvoicesEstimatesTab: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button 
+            {/* <button 
               onClick={loadData}
               disabled={loading}
               className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
-            </button>
+            </button> */}
             {/* <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
               <Settings className="w-4 h-4" />
               <span>Settings</span>
@@ -286,7 +286,7 @@ const InvoicesEstimatesTab: React.FC = () => {
             </div>
           </div>
         )} */}
-
+{/* 
         {subView === 'all_invoices' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -322,7 +322,7 @@ const InvoicesEstimatesTab: React.FC = () => {
               </p>
             </div>
           </div>
-        )}
+        )} */}
 
         <div className="flex items-center space-x-4">
           <PaymentDateRangeFilter 
@@ -369,7 +369,7 @@ const InvoicesEstimatesTab: React.FC = () => {
             <p className="text-sm">Search: '{searchQuery}', Status filter: [{statusFilter.join(', ')}]</p>
           </div>
            */}
-          {!loading && filteredAndSortedInvoices.length > 0 && (
+          {/* {!loading && filteredAndSortedInvoices.length > 0 && (
             <div className="mb-4 flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
               <div className="flex items-center space-x-6">
                 <div>
@@ -405,7 +405,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                 </button>
               )}
             </div>
-          )}
+          )} */}
           
           {loading ? (
             <>            

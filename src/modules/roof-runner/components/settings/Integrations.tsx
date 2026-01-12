@@ -3,6 +3,7 @@ import { Check, ExternalLink } from 'lucide-react';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
 import { connectTwilio, getTwilioStatus, disconnectTwilio, TwilioStatus } from '../../../../shared/store/services/twilioApi';
 import TwilioManagementModal from './TwilioManagementModal';
+import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
 
 
 interface Integration {
@@ -21,6 +22,7 @@ interface Integration {
 const Integrations: React.FC = () => {
   const [quickbooksStatus, setQuickbooksStatus] = React.useState({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
+  const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
 
@@ -28,6 +30,8 @@ const Integrations: React.FC = () => {
   React.useEffect(() => {
     fetchQuickBooksStatus();
     fetchTwilioStatus();
+    fetchABCSupplyStatus();
+    handleABCSupplyCallback();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -49,6 +53,77 @@ const Integrations: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching Twilio status:', error);
+    }
+  };
+
+  const fetchABCSupplyStatus = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/status`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAbcSupplyStatus({ connected: data.data?.connected || false });
+      }
+    } catch (error) {
+      console.error('Error fetching ABC Supply status:', error);
+    }
+  };
+
+  const handleABCSupplyConnect = async () => {
+    try {
+      setLoading('abc-supply');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/connect`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.authUrl) {
+          window.location.href = data.data.authUrl;
+        }
+      }
+    } catch (error) {
+      console.error('Error connecting to ABC Supply:', error);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleABCSupplyCallback = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state === 'anythingworkshere') {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/callback?code=${code}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          setAbcSupplyStatus({ connected: true });
+          window.history.replaceState({}, document.title, window.location.pathname);
+          await fetchABCSupplyStatus();
+        }
+      } catch (error) {
+        console.error('Error handling ABC Supply callback:', error);
+      }
+    }
+  };
+
+  const handleABCSupplyDisconnect = async () => {
+    try {
+      setLoading('abc-supply');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/disconnect`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        setAbcSupplyStatus({ connected: false });
+      }
+    } catch (error) {
+      console.error('Error disconnecting ABC Supply:', error);
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -91,6 +166,10 @@ const Integrations: React.FC = () => {
       handleQuickBooksConnect();
     } else if (integrationId === 'twilio') {
       setShowTwilioModal(true);
+    } else if (integrationId === 'google-business') {
+      googleBusinessApi.connect();
+    } else if (integrationId === 'abc-supply') {
+      handleABCSupplyConnect();
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -101,6 +180,8 @@ const Integrations: React.FC = () => {
       handleQuickBooksDisconnect();
     } else if (integrationId === 'twilio') {
       setShowTwilioModal(true);
+    } else if (integrationId === 'abc-supply') {
+      handleABCSupplyDisconnect();
     } else {
       console.log(`Disconnecting from ${integrationId}...`);
     }
@@ -137,7 +218,7 @@ const Integrations: React.FC = () => {
       name: 'ABC Supply',
       description: "ABC is North America's leader in supplying and serving contractors",
       category: 'Supply Chain',
-      connected: false,
+      connected: abcSupplyStatus.connected,
       hasManage: true,
     },
     {
@@ -185,7 +266,7 @@ const Integrations: React.FC = () => {
       name: 'Google Business',
       description: 'Manage your Google Business Profile and sync customer reviews',
       category: 'Marketing',
-      connected: true,
+      connected: false,
       hasManage: true,
     },
     {

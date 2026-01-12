@@ -16,6 +16,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Add response interceptor to handle ABC Supply connection errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.data?.message?.includes('ABC Supply not connected')) {
+      throw new Error('ABC Supply not connected. Please connect your ABC Supply account in Settings > Integrations.');
+    }
+    throw error;
+  }
+);
+
 export interface ItemsResponse {
   items: Product[];
   total: number;

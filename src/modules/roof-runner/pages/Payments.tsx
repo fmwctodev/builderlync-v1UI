@@ -19,12 +19,12 @@ const Payments: React.FC = () => {
       icon: FileText,
       badge: 'New',
     },
-    {
-      id: 'documents' as TabType,
-      label: 'Documents & Contracts',
-      icon: FileCheck,
-      badge: 'New',
-    },
+    // {
+    //   id: 'documents' as TabType,
+    //   label: 'Documents & Contracts',
+    //   icon: FileCheck,
+    //   badge: 'New',
+    // },
     {
       id: 'transactions' as TabType,
       label: 'Transactions',
@@ -37,18 +37,18 @@ const Payments: React.FC = () => {
       icon: Tag,
       badge: 'New',
     },
-    {
-      id: 'settings' as TabType,
-      label: 'Settings',
-      icon: Settings,
-      badge: null,
-    },
-    {
-      id: 'integrations' as TabType,
-      label: 'Integrations',
-      icon: Link2,
-      badge: null,
-    },
+    // {
+    //   id: 'settings' as TabType,
+    //   label: 'Settings',
+    //   icon: Settings,
+    //   badge: null,
+    // },
+    // {
+    //   id: 'integrations' as TabType,
+    //   label: 'Integrations',
+    //   icon: Link2,
+    //   badge: null,
+    // },
   ];
 
   const renderTabContent = () => {

@@ -18,6 +18,7 @@ import { ReportingModule } from './modules/reporting/ReportingModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
 import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
 import { SierraAiModule } from './modules/sierra-ai/SierraAiModule';
+import OAuthCallback from './shared/components/OAuthCallback';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Routes>
             <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
             <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
+            <Route path="/auth/google/callback" element={<OAuthCallback />} />
             <Route path="/*" element={<RoofRunnerModule />} />
             {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
             <Route path="/crm/*" element={<CRMModule />} />

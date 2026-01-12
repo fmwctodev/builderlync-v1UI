@@ -8,7 +8,7 @@ interface OAuthConfig {
   scope: string;
   authUrl: string;
 }
-
+console.log("google client id", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 const OAUTH_CONFIGS: Record<CloudProvider, OAuthConfig> = {
   google: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
@@ -62,7 +62,7 @@ export const cloudAuthService = {
       const stateData = JSON.parse(state);
       const provider = stateData.provider;
 
-      const response = await fetch(`${API_BASE_URL}/auth/oauth/callback`, {
+      const response = await fetch(`${API_BASE_URL}/auth/google/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
