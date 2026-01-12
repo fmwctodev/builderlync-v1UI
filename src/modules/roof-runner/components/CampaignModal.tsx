@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, MessageSquare, Calendar, Users, Save, Send } from 'lucide-react';
+import { X, Mail, MessageSquare, Calendar, Users, Save, Send, Eye } from 'lucide-react';
 import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES, Campaign } from '../types/campaigns';
-import { templateApi, Template } from '../services/templateApi';
+import { campaignsApi } from '../../../shared/services/campaignsApi';
 
 interface CampaignModalProps {
   show: boolean;
@@ -15,8 +15,10 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [campaignType, setCampaignType] = useState<CampaignType>('email');
-  const [proposalTemplates, setProposalTemplates] = useState<Template[]>([]);
+
   const [sendImmediately, setSendImmediately] = useState(true);
+  const [recipientData, setRecipientData] = useState<{ count: number; recipients: Array<{ name: string; email?: string; phone?: string }> }>({ count: 0, recipients: [] });
+  const [showRecipients, setShowRecipients] = useState(false);
 
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
@@ -34,7 +36,6 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
 
   useEffect(() => {
     if (show) {
-      loadProposalTemplates();
       if (editingCampaign) {
         setFormData({
           name: editingCampaign.name,
@@ -70,15 +71,6 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
     }
   }, [show, editingCampaign]);
 
-  const loadProposalTemplates = async () => {
-    try {
-      const templates = await templateApi.getTemplates();
-      setProposalTemplates(templates);
-    } catch (error) {
-      console.error('Error loading proposal templates:', error);
-    }
-  };
-
   useEffect(() => {
     if (initialData) {
       setFormData({ ...formData, ...initialData });
@@ -100,22 +92,101 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
 
   const handleTemplateSelect = (templateKey: keyof typeof CAMPAIGN_TEMPLATES) => {
     const template = CAMPAIGN_TEMPLATES[templateKey];
+    
+    // Set predefined settings based on template
+    let targetAudience = { ...formData.target_audience };
+    let campaignName = template.name;
+    
+    // Configure audience based on template type
+    switch (templateKey) {
+      case 'database_reactivation':
+        targetAudience = {
+          filter_type: 'opportunities',
+          opportunity_stages: ['lost'],
+          estimated_count: 0
+        };
+        break;
+      case 'follow_up':
+        targetAudience = {
+          filter_type: 'opportunities', 
+          opportunity_stages: ['open'],
+          estimated_count: 0
+        };
+        break;
+      case 'proposal_followup':
+        targetAudience = {
+          filter_type: 'status',
+          job_statuses: ['Proposal Sent'],
+          estimated_count: 0
+        };
+        break;
+      default:
+        targetAudience = {
+          filter_type: 'all',
+          estimated_count: 0
+        };
+    }
+    
     setFormData({
       ...formData,
-      name: template.name,
+      name: campaignName,
       subject: campaignType === 'email' ? template.email_subject : '',
       content: campaignType === 'email' ? template.email_content : template.sms_content,
+      target_audience: targetAudience
     });
   };
 
-  const handleAudienceChange = (key: string, value: any) => {
+  const handleAudienceChange = async (key: string, value: any) => {
+    let newAudience = {
+      ...formData.target_audience,
+      [key]: value,
+    };
+    
+    // Clear other filter arrays when changing filter_type
+    if (key === 'filter_type') {
+      newAudience = {
+        filter_type: value,
+        estimated_count: 0,
+        // Clear all filter arrays
+        job_statuses: undefined,
+        opportunity_stages: undefined,
+        tags: undefined
+      };
+    }
+    
     setFormData({
       ...formData,
-      target_audience: {
-        ...formData.target_audience,
-        [key]: value,
-      },
+      target_audience: newAudience,
     });
+    
+    // Fetch recipient estimate
+    try {
+      const estimate = await campaignsApi.getRecipientEstimate({
+        filter_type: newAudience.filter_type,
+        job_statuses: newAudience.filter_type === 'status' ? newAudience.job_statuses : undefined,
+        opportunity_stages: newAudience.filter_type === 'opportunities' ? newAudience.opportunity_stages : undefined,
+        tags: newAudience.tags,
+      });
+      setRecipientData(estimate);
+      setFormData(prev => ({
+        ...prev,
+        target_audience: {
+          ...prev.target_audience,
+          estimated_count: estimate.count
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching recipient estimate:', error);
+      // Set default values on error
+      setRecipientData({ count: 0, recipients: [] });
+      setFormData(prev => ({
+        ...prev,
+        target_audience: {
+          ...prev.target_audience,
+          estimated_count: 0
+        }
+      }));
+    }
   };
 
   const calculateSMSSegments = (text: string): number => {
@@ -190,6 +261,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               <button
                 onClick={() => !editingCampaign && handleTypeChange('sms')}
                 disabled={!!editingCampaign}
+                data-type="sms"
                 className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                   campaignType === 'sms'
                     ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -205,7 +277,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </button>
             </div>
 
-            {/* Template Selector */}
+            {/* Built-in Template Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Use Template (Optional)
@@ -213,26 +285,20 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               <select
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
                 onChange={(e) => {
-                  const templateId = e.target.value;
-                  if (templateId) {
-                    const template = proposalTemplates.find(t => t.id === templateId);
-                    if (template) {
-                      setFormData({
-                        ...formData,
-                        name: template.name,
-                        template_id: templateId,
-                      });
-                    }
+                  const templateKey = e.target.value as keyof typeof CAMPAIGN_TEMPLATES;
+                  if (templateKey) {
+                    handleTemplateSelect(templateKey);
                   }
                 }}
               >
                 <option value="">Start from scratch</option>
-                {proposalTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
+                <option value="database_reactivation">Database Reactivation - Target closed lost jobs</option>
+                <option value="follow_up">Follow-up Sequence - Target new jobs</option>
+                <option value="proposal_followup">Proposal Follow-up - Target proposal sent jobs</option>
               </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Templates automatically configure campaign type, content, and target audience
+              </p>
             </div>
 
             {/* Campaign Name */}
@@ -317,7 +383,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 placeholder={campaignType === 'email' ? 'Enter your email content...' : 'Enter your SMS message...'}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Use merge fields: {'{'}{'{'} first_name {'}'}{'}'}, {'{'}{'{'} last_name {'}'}{'}'}, {'{'}{'{'} company_name {'}'}{'}'}
+                Use merge fields: {'{'}{'{'} first_name {'}'}{'}'}, {'{'}{'{'} last_name {'}'}{'}'}, {'{'}{'{'} company_name {'}'}{'}'} 
               </p>
             </div>
           </div>
@@ -339,9 +405,8 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="all">All Contacts</option>
-                <option value="status">Filter by Job Status</option>
-                <option value="tags">Filter by Tags</option>
-                <option value="custom">Custom Filter</option>
+                <option value="status">By Job Status</option>
+                <option value="opportunities">By Opportunities Status</option>
               </select>
             </div>
 
@@ -350,28 +415,111 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Job Status
                 </label>
-                <select
-                  multiple
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                  onChange={(e) => {
-                    const values = Array.from(e.target.selectedOptions, option => option.value);
-                    handleAudienceChange('job_statuses', values);
-                  }}
-                >
-                  <option value="new_lead">New Lead</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="proposal_sent">Proposal Sent</option>
-                  <option value="job_lost">Job Lost</option>
-                  <option value="won">Won</option>
-                </select>
+                <div className="space-y-2">
+                  {[
+                    { value: 'Inspection/Estimate Booked', label: 'Inspection/Estimate Booked' },
+                    { value: 'Inspection/Estimate Complete', label: 'Inspection/Estimate Complete' },
+                    { value: 'Proposal Drafted', label: 'Proposal Drafted' },
+                    { value: 'Proposal Sent', label: 'Proposal Sent' },
+                    { value: 'Proposal Accepted', label: 'Proposal Accepted' },
+                    { value: 'Job Lost', label: 'Job Lost' },
+                    { value: 'Job Won', label: 'Job Won' },
+                    { value: 'Under Contract', label: 'Under Contract' },
+                    { value: 'Invoice Sent', label: 'Invoice Sent' },
+                    { value: 'Invoice Paid', label: 'Invoice Paid' },
+                    { value: 'Job Scheduled', label: 'Job Scheduled' },
+                    { value: 'Materials Ordered', label: 'Materials Ordered' },
+                    { value: 'Job Started', label: 'Job Started' },
+                    { value: 'Job Complete', label: 'Job Complete' }
+                  ].map((status) => (
+                    <label key={status.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        value={status.value}
+                        checked={formData.target_audience.job_statuses?.includes(status.value) || false}
+                        onChange={(e) => {
+                          const currentStatuses = formData.target_audience.job_statuses || [];
+                          const newStatuses = e.target.checked
+                            ? [...currentStatuses, status.value]
+                            : currentStatuses.filter(s => s !== status.value);
+                          handleAudienceChange('job_statuses', newStatuses);
+                        }}
+                        className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{status.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                Estimated Recipients: <span className="font-semibold">{formData.target_audience.estimated_count || '0'}</span>
-              </p>
-            </div>
+            {formData.target_audience.filter_type === 'opportunities' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Opportunities Status
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'open', label: 'Open' },
+                    { value: 'won', label: 'Won' },
+                    { value: 'lost', label: 'Lost' },
+                    { value: 'abandoned', label: 'Abandoned' }
+                  ].map((stage) => (
+                    <label key={stage.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        value={stage.value}
+                        checked={formData.target_audience.opportunity_stages?.includes(stage.value) || false}
+                        onChange={(e) => {
+                          const currentStages = formData.target_audience.opportunity_stages || [];
+                          const newStages = e.target.checked
+                            ? [...currentStages, stage.value]
+                            : currentStages.filter(s => s !== stage.value);
+                          handleAudienceChange('opportunity_stages', newStages);
+                        }}
+                        className="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{stage.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                {recipientData.count > 0 && (
+                  <button
+                    onClick={() => setShowRecipients(!showRecipients)}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                  >
+                    <Eye size={14} />
+                    {showRecipients ? 'Hide' : 'View'} Recipients
+                  </button>
+                )}
+              </div>
+              
+              {showRecipients && recipientData.recipients.length > 0 && (
+                <div className="mt-3 max-h-40 overflow-y-auto border-t border-gray-200 dark:border-gray-600 pt-3">
+                  <div className="space-y-2">
+                    {recipientData.recipients.slice(0, 10).map((recipient, index) => (
+                      <div key={index} className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-gray-900 dark:text-white">{recipient.name}</span>
+                        <div className="flex gap-2 text-gray-500 dark:text-gray-400">
+                          {recipient.email && <span>{recipient.email}</span>}
+                          {recipient.phone && <span>{recipient.phone}</span>}
+                        </div>
+                      </div>
+                    ))}
+                    {recipientData.recipients.length > 10 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2">
+                        ... and {recipientData.recipients.length - 10} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div> */}
           </div>
 
           {/* Step 4: Schedule */}

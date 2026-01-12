@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BarChart3, Target, Share2, TrendingUp, Plus, Settings, ExternalLink } from 'lucide-react';
+import { BarChart3, Target, Share2, TrendingUp, Plus, Settings, ExternalLink, Mail, MessageSquare } from 'lucide-react';
+import CampaignModal from '../../roof-runner/components/CampaignModal';
 
 const MarketingDashboard: React.FC = () => {
   const location = useLocation();
@@ -151,107 +152,331 @@ const AnalyticsTab: React.FC = () => {
 };
 
 const CampaignsTab: React.FC = () => {
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaigns, setCampaigns] = useState([
+    {
+      id: '1',
+      name: 'Winter Roof Check',
+      type: 'email',
+      status: 'completed',
+      recipients: 1247,
+      sent: 1247,
+      opened: 305,
+      clicked: 89,
+      created_at: '2024-01-15T10:00:00Z',
+      sent_at: '2024-01-15T14:30:00Z'
+    },
+    {
+      id: '2',
+      name: 'Follow-up Sequence',
+      type: 'sms',
+      status: 'scheduled',
+      recipients: 156,
+      sent: 0,
+      opened: 0,
+      clicked: 0,
+      created_at: '2024-01-20T09:00:00Z',
+      scheduled_date: '2024-01-22T11:00:00Z'
+    },
+    {
+      id: '3',
+      name: 'Proposal Reminder',
+      type: 'email',
+      status: 'draft',
+      recipients: 89,
+      sent: 0,
+      opened: 0,
+      clicked: 0,
+      created_at: '2024-01-18T16:00:00Z'
+    }
+  ]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  const campaignTemplates = [
+    {
+      id: 'database_reactivation',
+      name: 'Database Reactivation',
+      description: 'Re-engage cold leads and past customers',
+      target: 'Job Lost',
+      type: 'Email + SMS',
+      estimatedRecipients: 342
+    },
+    {
+      id: 'follow_up',
+      name: 'Follow-up Sequence',
+      description: 'Automated follow-up for new leads',
+      target: 'New Leads',
+      type: 'SMS Series',
+      estimatedRecipients: 156
+    },
+    {
+      id: 'proposal_followup',
+      name: 'Proposal Follow-up',
+      description: 'Follow up on sent proposals',
+      target: 'Proposal Sent',
+      type: 'Email',
+      estimatedRecipients: 89
+    },
+    {
+      id: 'seasonal_maintenance',
+      name: 'Seasonal Maintenance',
+      description: 'Remind customers about seasonal roof maintenance',
+      target: 'Past Customers',
+      type: 'Email',
+      estimatedRecipients: 567
+    }
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'sending': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'scheduled': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'draft': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'paused': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleCreateCampaign = (templateId?: string) => {
+    setSelectedTemplate(templateId || null);
+    setShowCampaignModal(true);
+  };
+
+  const handleSaveCampaign = async (campaignData: any, sendNow: boolean) => {
+    // Mock save campaign logic
+    const newCampaign = {
+      id: Date.now().toString(),
+      ...campaignData,
+      status: sendNow ? 'sending' : (campaignData.scheduled_date ? 'scheduled' : 'draft'),
+      recipients: campaignData.target_audience?.estimated_count || 0,
+      sent: sendNow ? campaignData.target_audience?.estimated_count || 0 : 0,
+      opened: 0,
+      clicked: 0,
+      created_at: new Date().toISOString(),
+      ...(sendNow && { sent_at: new Date().toISOString() })
+    };
+    
+    setCampaigns(prev => [newCampaign, ...prev]);
+    setShowCampaignModal(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email & SMS Campaigns</h3>
-        <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email & SMS Campaigns</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Create and manage your marketing campaigns</p>
+        </div>
+        <button 
+          onClick={() => handleCreateCampaign()}
+          className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+        >
           <Plus size={16} />
           <span>New Campaign</span>
         </button>
       </div>
 
-      {/* Campaign Templates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Database Reactivation</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Re-engage cold leads and past customers</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">Job Lost</span>
+      {/* Campaign Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Campaigns</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.length}</p>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Type:</span>
-              <span className="text-gray-900 dark:text-white">SMS + Email</span>
-            </div>
+            <Target className="h-8 w-8 text-red-600" />
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-            Use Template
-          </button>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Follow-up Sequence</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Automated follow-up for new leads</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">New Leads</span>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Sent</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.reduce((sum, c) => sum + c.sent, 0).toLocaleString()}</p>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Type:</span>
-              <span className="text-gray-900 dark:text-white">SMS Series</span>
-            </div>
+            <Mail className="h-8 w-8 text-blue-600" />
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-            Use Template
-          </button>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Proposal Follow-up</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Follow up on sent proposals</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">Proposal Sent</span>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Open Rate</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">24.5%</p>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Type:</span>
-              <span className="text-gray-900 dark:text-white">Email</span>
-            </div>
+            <TrendingUp className="h-8 w-8 text-green-600" />
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-            Use Template
-          </button>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Click Rate</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">7.1%</p>
+            </div>
+            <ExternalLink className="h-8 w-8 text-purple-600" />
+          </div>
         </div>
       </div>
 
-      {/* Active Campaigns */}
+      {/* Campaign Templates */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Active Campaigns</h3>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Campaign Templates</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Quick start with pre-built campaign templates</p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {campaignTemplates.map((template) => (
+              <div key={template.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:border-red-300 dark:hover:border-red-600 transition-colors">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-2">{template.name}</h5>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{template.description}</p>
+                <div className="space-y-1 mb-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Target:</span>
+                    <span className="text-gray-700 dark:text-gray-300">{template.target}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                    <span className="text-gray-700 dark:text-gray-300">{template.type}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Recipients:</span>
+                    <span className="text-gray-700 dark:text-gray-300">{template.estimatedRecipients}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleCreateCampaign(template.id)}
+                  className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Use Template
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Campaigns List */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">All Campaigns</h4>
+            <div className="flex items-center space-x-2">
+              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-3 py-1 dark:bg-gray-700 dark:text-white">
+                <option value="all">All Status</option>
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="sending">Sending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recipients</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sent</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Open Rate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Campaign</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recipients</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Performance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-              <tr>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">Winter Roof Check</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Email</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">1,247</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">1,247</td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">24.5%</td>
-                <td className="px-6 py-4">
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs dark:bg-green-900 dark:text-green-200">
-                    Completed
-                  </span>
-                </td>
-              </tr>
+              {campaigns.map((campaign) => (
+                <tr key={campaign.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{campaign.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">ID: {campaign.id}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center">
+                      {campaign.type === 'email' ? (
+                        <Mail className="h-4 w-4 text-blue-600 mr-2" />
+                      ) : (
+                        <MessageSquare className="h-4 w-4 text-green-600 mr-2" />
+                      )}
+                      <span className="text-sm text-gray-900 dark:text-white capitalize">{campaign.type}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    {campaign.recipients.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    {campaign.sent > 0 ? (
+                      <div className="text-sm">
+                        <div className="text-gray-900 dark:text-white">
+                          {((campaign.opened / campaign.sent) * 100).toFixed(1)}% opened
+                        </div>
+                        <div className="text-gray-500 dark:text-gray-400">
+                          {((campaign.clicked / campaign.sent) * 100).toFixed(1)}% clicked
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Not sent</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status)}`}>
+                      {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {campaign.sent_at ? formatDate(campaign.sent_at) : 
+                     campaign.scheduled_date ? `Scheduled: ${formatDate(campaign.scheduled_date)}` :
+                     formatDate(campaign.created_at)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                      <button className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        View
+                      </button>
+                      {campaign.status === 'draft' && (
+                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                          Edit
+                        </button>
+                      )}
+                      <button className="text-gray-600 hover:text-gray-800 text-sm font-medium">
+                        Duplicate
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Campaign Modal */}
+      {showCampaignModal && (
+        <CampaignModal
+          show={showCampaignModal}
+          onClose={() => setShowCampaignModal(false)}
+          onSave={handleSaveCampaign}
+          initialData={selectedTemplate ? {
+            name: campaignTemplates.find(t => t.id === selectedTemplate)?.name || '',
+            type: 'email'
+          } : undefined}
+        />
+      )}
     </div>
   );
 };

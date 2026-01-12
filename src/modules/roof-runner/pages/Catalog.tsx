@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link } from 'lucide-react';
 import { getCatalogItems, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
+import { abcSupplyService } from '../services/abcSupplyService';
+import { srsService } from '../services/srsService';
 
 interface ColumnVisibility {
   itemType: boolean;
@@ -32,6 +34,8 @@ export default function Catalog() {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
+  const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
+  const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
     itemType: true,
@@ -52,7 +56,28 @@ export default function Catalog() {
 
   useEffect(() => {
     loadItems();
+    checkAbcSupplyIntegration();
+    checkSrsIntegration();
   }, [searchQuery, filterTypes, sortOption]);
+
+  const checkAbcSupplyIntegration = async () => {
+    try {
+      // Try to get branches to check if integration is working
+      const branches = await abcSupplyService.getBranches();
+      setAbcSupplyIntegrated(branches.length > 0);
+    } catch (error) {
+      setAbcSupplyIntegrated(false);
+    }
+  };
+
+  const checkSrsIntegration = async () => {
+    try {
+      const isConnected = await srsService.validateConnection();
+      setSrsIntegrated(isConnected);
+    } catch (error) {
+      setSrsIntegrated(false);
+    }
+  };
 
   const loadItems = async () => {
     setLoading(true);
@@ -254,6 +279,24 @@ export default function Catalog() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Catalog</h1>
           <p className="text-gray-600 dark:text-gray-400">Manage your catalog items</p>
+          
+          {/* Connect Section */}
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Connect</h3>
+            <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+              <Link size={16} className="text-gray-500 dark:text-gray-400" />
+              <span className="text-gray-900 dark:text-white">ABC Supply</span>
+              {abcSupplyIntegrated !== null && (
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  abcSupplyIntegrated 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                }`}>
+                  {abcSupplyIntegrated ? 'Connected' : 'Not Connected'}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
         <button
           onClick={addItem}

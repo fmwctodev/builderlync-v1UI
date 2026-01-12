@@ -24,9 +24,10 @@ export interface Campaign {
 }
 
 export interface TargetAudience {
-  filter_type?: 'all' | 'tags' | 'status' | 'custom';
+  filter_type?: 'all' | 'status' | 'opportunities';
   tags?: string[];
   job_statuses?: string[];
+  opportunity_stages?: string[];
   date_range?: {
     start: string;
     end: string;
