@@ -124,7 +124,16 @@ const Jobs: React.FC = () => {
       // Set customerId from contactId
       const jobData = {
         ...formData,
-        customerId: formData.contactId
+        customerId: formData.contactId || null,
+        customer_id: formData.contactId || null,
+        // Ensure numeric fields are properly handled
+        jobValue: Number(formData.jobValue) || 0,
+        claimAmount: Number(formData.claimAmount) || 0,
+        deductible: Number(formData.deductible) || 0,
+        // Ensure assignees is an array of numbers
+        assignees: formData.assignees.filter(id => id && !isNaN(Number(id))).map(id => Number(id)),
+        // Ensure editedBy is a number
+        editedBy: Number(formData.editedBy) || 1
       };
 
       if (editingJob) {
@@ -157,7 +166,7 @@ const Jobs: React.FC = () => {
           setEditingJob(updatedJob);
         }
       } else {
-        const response = await createJob(formData);
+        const response = await createJob(jobData);
         const newJob = response.data;
         const newJobId = newJob.id;
 
