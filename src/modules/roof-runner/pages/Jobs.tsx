@@ -58,12 +58,9 @@ const Jobs: React.FC = () => {
     deductible: 0,
     claimDetails: '',
     createdBy: '',
-    createdByName: 'Current User',
     editedBy: '',
-    editedByName: 'Current User',
     jobType: 'residential',
-    contactId: null,
-    contactName: null
+    contactId: null
   });
 
   const fetchJobs = async (page: number = 1) => {
@@ -111,7 +108,7 @@ const Jobs: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.contactId || !formData.contactName) {
+    if (!formData.contactId) {
       setToast({ message: 'Please select a customer or lead before saving', type: 'error' });
       return;
     }
@@ -124,7 +121,16 @@ const Jobs: React.FC = () => {
       // Set customerId from contactId
       const jobData = {
         ...formData,
-        customerId: formData.contactId
+        customerId: formData.contactId || null,
+        customer_id: formData.contactId || null,
+        // Ensure numeric fields are properly handled
+        jobValue: Number(formData.jobValue) || 0,
+        claimAmount: Number(formData.claimAmount) || 0,
+        deductible: Number(formData.deductible) || 0,
+        // Ensure assignees is an array of numbers
+        assignees: formData.assignees.filter(id => id && !isNaN(Number(id))).map(id => Number(id)),
+        // Ensure editedBy is a number
+        editedBy: Number(formData.editedBy) || undefined
       };
 
       if (editingJob) {
@@ -157,7 +163,7 @@ const Jobs: React.FC = () => {
           setEditingJob(updatedJob);
         }
       } else {
-        const response = await createJob(formData);
+        const response = await createJob(jobData);
         const newJob = response.data;
         const newJobId = newJob.id;
 
@@ -231,12 +237,9 @@ const Jobs: React.FC = () => {
       deductible: job.deductible || 0,
       claimDetails: job.claimDetails || '',
       createdBy: job.createdBy,
-      createdByName: job.createdByName,
-      editedBy: 1,
-      editedByName: 'Current User',
+      editedBy: typeof job.editedBy === 'number' ? job.editedBy : 1,
       jobType: job.jobType || 'residential',
-      contactId: job.contactId || null,
-      contactName: job.contactName || null
+      contactId: job.contactId || null
     });
     setShowJobDetails(true);
   };
@@ -265,12 +268,9 @@ const Jobs: React.FC = () => {
       deductible: job.deductible || 0,
       claimDetails: job.claimDetails || '',
       createdBy: job.createdBy,
-      createdByName: job.createdByName,
-      editedBy: 1,
-      editedByName: 'Current User',
+      editedBy: typeof job.editedBy === 'number' ? job.editedBy : 1,
       jobType: job.jobType || 'residential',
-      contactId: job.contactId || null,
-      contactName: job.contactName || null
+      contactId: job.contactId || null
     });
     setShowJobDetails(true);
   };
@@ -297,12 +297,9 @@ const Jobs: React.FC = () => {
       deductible: 0,
       claimDetails: '',
       createdBy: '',
-      createdByName: 'Current User',
       editedBy: '',
-      editedByName: 'Current User',
       jobType: 'residential',
-      contactId: null,
-      contactName: null
+      contactId: null
     });
   };
 
@@ -323,11 +320,11 @@ const Jobs: React.FC = () => {
   }, [toast]);
 
   const handleNewReport = () => {
-    navigate(`${orgPrefix}/roof-runner/measurements`);
+    navigate(`${orgPrefix}/measurements`);
   };
 
   const handleNewCustomer = () => {
-    navigate(`${orgPrefix}/roof-runner/contacts`);
+    navigate(`${orgPrefix}/contacts`);
   };
 
 
@@ -361,7 +358,7 @@ const Jobs: React.FC = () => {
                 try {
                   const job = jobs.find(j => j.id === jobId);
                   if (job) {
-                    await updateJob(jobId, { ...job, workflowStages: newStage, editedBy: 1, editedByName: job.editedByName ?? 'Current User' });
+                    await updateJob(jobId, { ...job, workflowStages: newStage, editedBy: 1 });
                     fetchJobs();
                   }
                 } catch (error) {
@@ -382,7 +379,7 @@ const Jobs: React.FC = () => {
             />
           )}
 
-          {activeView === 'settings' && (hasPermission('jobs', 'manage') || hasPermission('projects', 'manage')) && <JobsSettings />}
+          {activeView === 'settings' && hasPermission('jobs', 'manage') && <JobsSettings />}
         </div>
 
         <FiltersSidebar

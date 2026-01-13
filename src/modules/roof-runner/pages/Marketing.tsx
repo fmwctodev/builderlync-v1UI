@@ -4,11 +4,11 @@ import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
   Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings,
-  Eye, Trash2, Edit2
+  Eye, Trash2, Edit2, Mail, MessageSquare
 } from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
-import { Campaign, CampaignFormData } from '../types/campaigns';
+import { Campaign, CampaignFormData, CampaignStatus } from '../types/campaigns';
 import { Toast } from '../components/Toast';
 import { socialMediaApi, SocialPlatform, CreateSocialPostData } from '../../../shared/services/socialMediaApi';
 import SettingsModal from '../components/social-planner/SettingsModal';
@@ -170,15 +170,25 @@ const CampaignsTab: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [campaignStats, setCampaignStats] = useState<any>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'email' | 'sms'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | CampaignStatus>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [pageSize] = useState(10);
 
   useEffect(() => {
     loadCampaigns();
-  }, []);
+  }, [filterType, filterStatus, currentPage]);
 
   const loadCampaigns = async () => {
     try {
-      const data = await campaignsApi.getCampaigns();
-      setCampaigns(data);
+      const typeFilter = filterType === 'all' ? undefined : filterType;
+      const statusFilter = filterStatus === 'all' ? undefined : filterStatus;
+      const result = await campaignsApi.getCampaigns(typeFilter, statusFilter, undefined, currentPage, pageSize);
+      setCampaigns(result.campaigns);
+      setTotalPages(result.totalPages);
+      setTotalCampaigns(result.total);
     } catch (error) {
       console.error('Error loading campaigns:', error);
     }
@@ -187,19 +197,47 @@ const CampaignsTab: React.FC = () => {
   const handleSaveCampaign = async (data: CampaignFormData, sendNow: boolean) => {
     try {
       setIsLoading(true);
+      
+      // Check credentials before creating campaign
+      const credentials = await campaignsApi.checkCredentials();
+      
+      if (data.type === 'email' && !credentials.email) {
+        setToast({ 
+          show: true, 
+          message: 'Please configure your email credentials in settings before creating email campaigns.', 
+          type: 'error' 
+        });
+        return;
+      }
+      
+      if (data.type === 'sms' && !credentials.sms) {
+        setToast({ 
+          show: true, 
+          message: 'Please configure your SMS credentials in settings before creating SMS campaigns.', 
+          type: 'error' 
+        });
+        return;
+      }
+      
       if (editingCampaign) {
         await campaignsApi.updateCampaign(editingCampaign.id, data);
         setToast({ show: true, message: 'Campaign updated successfully!', type: 'success' });
       } else {
         await campaignsApi.createCampaign(data, sendNow);
-        setToast({ show: true, message: sendNow ? 'Campaign sent successfully!' : 'Campaign saved as draft', type: 'success' });
+        const message = sendNow 
+          ? 'Campaign sent successfully!' 
+          : data.scheduled_date 
+            ? 'Campaign scheduled successfully!' 
+            : 'Campaign saved as draft';
+        setToast({ show: true, message, type: 'success' });
       }
       setShowModal(false);
       setEditingCampaign(null);
       loadCampaigns();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving campaign:', error);
-      setToast({ show: true, message: 'Failed to save campaign', type: 'error' });
+      const errorMessage = error.response?.data?.message || 'Failed to save campaign';
+      setToast({ show: true, message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -235,8 +273,20 @@ const CampaignsTab: React.FC = () => {
     return styles[status] || styles.draft;
   };
 
+  const getTypeIcon = (type: string) => {
+    return type === 'email' ? <Mail size={16} className="text-blue-600" /> : <MessageSquare size={16} className="text-green-600" />;
+  };
+
+  const getTypeBadge = (type: string) => {
+    const styles = {
+      email: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      sms: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    };
+    return styles[type as keyof typeof styles] || styles.email;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <CampaignModal
         show={showModal}
         onClose={() => {
@@ -348,15 +398,81 @@ const CampaignsTab: React.FC = () => {
         />
       )}
 
+      {/* Campaign Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Campaigns</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.length}</p>
+            </div>
+            <Target className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Email Campaigns</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.filter(c => c.type === 'email').length}</p>
+            </div>
+            <Mail className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">SMS Campaigns</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.filter(c => c.type === 'sms').length}</p>
+            </div>
+            <MessageSquare className="h-8 w-8 text-green-500" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Active</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.filter(c => ['sending', 'scheduled'].includes(c.status)).length}</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-green-500" />
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email & SMS Campaigns</h3>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-        >
-          <Plus size={16} />
-          <span>New Campaign</span>
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Filters */}
+          <div className="flex items-center gap-2">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as 'all' | 'email' | 'sms')}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+            >
+              <option value="all">All Types</option>
+              <option value="email">Email Only</option>
+              <option value="sms">SMS Only</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | CampaignStatus)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="sending">Sending</option>
+              <option value="sent">Sent</option>
+              <option value="paused">Paused</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            <Plus size={16} />
+            <span>New Campaign</span>
+          </button>
+        </div>
       </div>
 
       {/* Active Campaigns */}
@@ -379,7 +495,24 @@ const CampaignsTab: React.FC = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                 {campaigns.map((campaign) => (
                   <tr key={campaign.id}>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{campaign.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        {getTypeIcon(campaign.type)}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{campaign.name}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-0.5 rounded text-xs capitalize ${getTypeBadge(campaign.type)}`}>
+                              {campaign.type}
+                            </span>
+                            {campaign.subject && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                                {campaign.subject}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">{campaign.type}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusBadge(campaign.status)}`}>
@@ -422,6 +555,30 @@ const CampaignsTab: React.FC = () => {
               </tbody>
             </table>
           </div>
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCampaigns)} of {totalCampaigns} campaigns
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -433,14 +590,26 @@ const CampaignsTab: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">Job Lost</span>
+              <span className="text-gray-900 dark:text-white">Closed Lost Jobs</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Type:</span>
               <span className="text-gray-900 dark:text-white">SMS + Email</span>
             </div>
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          <button 
+            onClick={() => {
+              setShowModal(true);
+              setTimeout(() => {
+                const selectElement = document.querySelector('select') as HTMLSelectElement;
+                if (selectElement) {
+                  selectElement.value = 'database_reactivation';
+                  selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }, 100);
+            }}
+            className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          >
             Use Template
           </button>
         </div>
@@ -451,14 +620,32 @@ const CampaignsTab: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">New Leads</span>
+              <span className="text-gray-900 dark:text-white">New Jobs</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Type:</span>
               <span className="text-gray-900 dark:text-white">SMS Series</span>
             </div>
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          <button 
+            onClick={() => {
+              setShowModal(true);
+              setTimeout(() => {
+                // Set template
+                const selectElement = document.querySelector('select') as HTMLSelectElement;
+                if (selectElement) {
+                  selectElement.value = 'follow_up';
+                  selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                // Set campaign type to SMS
+                const smsButton = document.querySelector('button[data-type="sms"]') as HTMLButtonElement;
+                if (smsButton) {
+                  smsButton.click();
+                }
+              }, 100);
+            }}
+            className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          >
             Use Template
           </button>
         </div>
@@ -469,14 +656,26 @@ const CampaignsTab: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Target:</span>
-              <span className="text-gray-900 dark:text-white">Proposal Sent</span>
+              <span className="text-gray-900 dark:text-white">Proposal Sent Jobs</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Type:</span>
               <span className="text-gray-900 dark:text-white">Email</span>
             </div>
           </div>
-          <button className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+          <button 
+            onClick={() => {
+              setShowModal(true);
+              setTimeout(() => {
+                const selectElement = document.querySelector('select') as HTMLSelectElement;
+                if (selectElement) {
+                  selectElement.value = 'proposal_followup';
+                  selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }, 100);
+            }}
+            className="w-full mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          >
             Use Template
           </button>
         </div>

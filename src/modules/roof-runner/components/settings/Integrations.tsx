@@ -4,6 +4,8 @@ import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '..
 import { connectTwilio, getTwilioStatus, disconnectTwilio, TwilioStatus } from '../../../../shared/store/services/twilioApi';
 import TwilioManagementModal from './TwilioManagementModal';
 import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
+import { srsService } from '../../services/srsService';
+import SRSConnection from '../catalog/SRSConnection';
 
 
 interface Integration {
@@ -20,11 +22,13 @@ interface Integration {
 }
 
 const Integrations: React.FC = () => {
-  const [quickbooksStatus, setQuickbooksStatus] = React.useState({ connected: false, companyInfo: null });
+  const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
+  const [srsStatus, setSrsStatus] = React.useState({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
+  const [showSrsModal, setShowSrsModal] = React.useState(false);
 
 
   React.useEffect(() => {
@@ -32,6 +36,7 @@ const Integrations: React.FC = () => {
     fetchTwilioStatus();
     fetchABCSupplyStatus();
     handleABCSupplyCallback();
+    fetchSrsStatus();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -127,6 +132,15 @@ const Integrations: React.FC = () => {
     }
   };
 
+  const fetchSrsStatus = async () => {
+    try {
+      const isConnected = await srsService.validateConnection();
+      setSrsStatus({ connected: isConnected });
+    } catch (error) {
+      setSrsStatus({ connected: false });
+    }
+  };
+
   const handleQuickBooksConnect = async () => {
     try {
       setLoading('quickbooks');
@@ -170,6 +184,8 @@ const Integrations: React.FC = () => {
       googleBusinessApi.connect();
     } else if (integrationId === 'abc-supply') {
       handleABCSupplyConnect();
+    } else if (integrationId === 'srs-distribution') {
+      setShowSrsModal(true);
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -182,6 +198,9 @@ const Integrations: React.FC = () => {
       setShowTwilioModal(true);
     } else if (integrationId === 'abc-supply') {
       handleABCSupplyDisconnect();
+    } else if (integrationId === 'srs-distribution') {
+      srsService.logout();
+      setSrsStatus({ connected: false });
     } else {
       console.log(`Disconnecting from ${integrationId}...`);
     }
@@ -190,6 +209,8 @@ const Integrations: React.FC = () => {
   const handleManage = (integrationId: string) => {
     if (integrationId === 'twilio') {
       setShowTwilioModal(true);
+    } else if (integrationId === 'srs-distribution') {
+      setShowSrsModal(true);
     } else {
       console.log(`Managing ${integrationId}...`);
     }
@@ -226,7 +247,7 @@ const Integrations: React.FC = () => {
       name: 'SRS Distribution',
       description: 'SRS Distribution is the fastest growing distributor of building products in the United States.',
       category: 'Supply Chain',
-      connected: true,
+      connected: srsStatus.connected,
       hasManage: true,
     },
     {
@@ -417,6 +438,16 @@ const Integrations: React.FC = () => {
         onStatusChange={handleTwilioStatusChange}
         initialStatus={twilioStatus}
       />
+      
+      {showSrsModal && (
+        <SRSConnection
+          onConnectionSuccess={() => {
+            setSrsStatus({ connected: true });
+            setShowSrsModal(false);
+          }}
+          onClose={() => setShowSrsModal(false)}
+        />
+      )}
     </div>
   );
 };

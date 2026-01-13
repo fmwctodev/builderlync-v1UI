@@ -46,17 +46,34 @@ export const campaignsApi = {
     });
   },
 
-  async getCampaigns(type?: string, status?: string, search?: string): Promise<Campaign[]> {
+  async getCampaigns(type?: string, status?: string, search?: string, page?: number, limit?: number): Promise<{ campaigns: Campaign[]; total: number; currentPage: number; totalPages: number }> {
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     if (status) params.append('status', status);
     if (search) params.append('search', search);
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
 
-    const response = await axios.get(`${API_BASE_URL}/campaigns?${params.toString()}`, {
-      headers: getAuthHeaders()
-    });
+    try {
+      const response = await axios.get(`${API_BASE_URL}/campaigns?${params.toString()}`, {
+        headers: getAuthHeaders()
+      });
 
-    return response.data.data.campaigns || [];
+      return {
+        campaigns: response.data.data.campaigns || response.data.data || [],
+        total: response.data.data.total || response.data.data.length || 0,
+        currentPage: response.data.data.currentPage || page || 1,
+        totalPages: response.data.data.totalPages || Math.ceil((response.data.data.total || response.data.data.length || 0) / (limit || 10))
+      };
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      return {
+        campaigns: [],
+        total: 0,
+        currentPage: 1,
+        totalPages: 1
+      };
+    }
   },
 
   async getCampaign(id: string): Promise<Campaign> {
@@ -105,4 +122,12 @@ export const campaignsApi = {
       { headers: getAuthHeaders() }
     );
   },
+
+  async checkCredentials(service?: 'email' | 'sms'): Promise<{ email: boolean; sms: boolean }> {
+    const params = service ? `?service=${service}` : '';
+    const response = await axios.get(`${API_BASE_URL}/auth/user/credentials/check${params}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data.data;
+  }
 };

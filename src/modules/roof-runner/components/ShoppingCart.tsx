@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, X, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, X, ChevronDown, Search } from 'lucide-react';
 import { Product } from '../../abc-supply/types';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { srsApi } from '../services/srsApi';
 import CheckoutForm, { CheckoutFormData } from '../../abc-supply/components/CheckoutForm';
 
 interface CartItem extends Product {
   quantity: number;
+  price?: number;
 }
 
 interface ShoppingCartProps {
@@ -16,6 +18,7 @@ interface ShoppingCartProps {
   onRemoveItem: (productId: string) => void;
   onCheckout: () => void;
   onVariantChange?: (oldItemNumber: string, newVariant: any) => void;
+  supplier?: string;
 }
 
 const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
@@ -25,18 +28,54 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onCheckout,
-  onVariantChange
+  onVariantChange,
+  supplier = 'ABC Supply'
 }) => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  const [branches, setBranches] = useState([]);
-  const [shipTos, setShipTos] = useState([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [shipTos, setShipTos] = useState<any[]>([]);
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
+  const [branchSearch, setBranchSearch] = useState('');
+  const [showBranchSuggestions, setShowBranchSuggestions] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [shipTo, setShipTo] = useState({
+    name: '',
+    addressLine1: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  });
+
+  // Debounced search for SRS branches
+  React.useEffect(() => {
+    if (supplier === 'SRS' && branchSearch.length > 2) {
+      setSearchLoading(true);
+      const timeoutId = setTimeout(async () => {
+        try {
+          const response = await srsApi.getBranches(undefined, undefined, undefined, 1, 10, branchSearch);
+          const srsData = response.data?.data || response.data || [];
+          setSearchResults(srsData);
+        } catch (error) {
+          console.error('Failed to search SRS branches:', error);
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
+    } else if (branchSearch.length <= 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+    }
+  }, [branchSearch, supplier]);
 
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && supplier === 'ABC Supply') {
       const fetchShipTos = async () => {
         try {
           const response = await fetch('https://builderlyncapi.testenvapp.com/api/abc-supply/accounts/search', {
@@ -61,21 +100,6 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           if (data.success && data.data?.shipTos) {
             const sellableShipTos = data.data.shipTos.filter(item => item.isSellable === true);
             setShipTos(sellableShipTos);
-            
-            // Extract all branches from shipTos
-            const allBranches = [];
-            sellableShipTos.forEach(shipTo => {
-              if (shipTo.branches) {
-                shipTo.branches.forEach(branch => {
-                  allBranches.push({
-                    id: branch.number,
-                    name: branch.name,
-                    shipToNumber: shipTo.number
-                  });
-                });
-              }
-            });
-            setBranches(allBranches);
           }
         } catch (error) {
           console.error('Failed to load shipTos:', error);
@@ -83,7 +107,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
       };
       fetchShipTos();
     }
-  }, [isOpen]);
+  }, [isOpen, supplier]);
 
   React.useEffect(() => {
     if (selectedBranch && items.length > 0) {
@@ -218,32 +242,124 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             </button>
           </div>
 
-          {/* ShipTo Selection */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Ship To Address
-            </label>
-            <select
-              value={selectedBranch}
-              onChange={(e) => {
-                const newBranch = e.target.value;
-                setSelectedBranch(newBranch);
-                if (newBranch && items.length > 0) {
-                  const selectedShipTo = shipTos.find(shipTo => shipTo.number === newBranch);
-                  if (selectedShipTo?.branches?.[0]) {
-                    fetchPrices(newBranch, selectedShipTo.branches[0].number);
-                  }
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select a ship to address...</option>
-              {shipTos.map((shipTo) => (
-                <option key={shipTo.number} value={shipTo.number}>
-                  {shipTo.name} ({shipTo.number})
-                </option>
-              ))}
-            </select>
+          {/* Branch and Shipping Selection */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Branch
+              </label>
+              {supplier === 'SRS' ? (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search branches..."
+                    value={branchSearch}
+                    onChange={(e) => {
+                      setBranchSearch(e.target.value);
+                      setShowBranchSuggestions(e.target.value.length > 0);
+                    }}
+                    onFocus={() => branchSearch && setShowBranchSuggestions(true)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                  />
+                  {showBranchSuggestions && branchSearch && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">
+                      {searchLoading ? (
+                        <div className="px-3 py-2 text-gray-500">Searching...</div>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map((branch) => (
+                          <button
+                            key={branch.id}
+                            onClick={() => {
+                              setSelectedBranch(branch.id);
+                              setBranchSearch(`${branch.name} - ${branch.address?.city}, ${branch.address?.state}`);
+                              setShowBranchSuggestions(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900 dark:text-white">{branch.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {branch.address?.street}, {branch.address?.city}, {branch.address?.state} {branch.address?.zip}
+                            </div>
+                          </button>
+                        ))
+                      ) : branchSearch.length > 2 ? (
+                        <div className="px-3 py-2 text-gray-500">No branches found</div>
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500">Type at least 3 characters to search</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => {
+                    const newBranch = e.target.value;
+                    setSelectedBranch(newBranch);
+                    if (newBranch && items.length > 0) {
+                      const selectedShipTo = shipTos.find(shipTo => shipTo.number === newBranch);
+                      if (selectedShipTo?.branches?.[0]) {
+                        fetchPrices(newBranch, selectedShipTo.branches[0].number);
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select a branch...</option>
+                  {shipTos.map((shipTo) => (
+                    <option key={shipTo.number} value={shipTo.number}>
+                      {shipTo.name} ({shipTo.number})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Shipping Address
+              </label>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={shipTo.name}
+                  onChange={(e) => setShipTo({...shipTo, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Address Line 1"
+                  value={shipTo.addressLine1}
+                  onChange={(e) => setShipTo({...shipTo, addressLine1: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={shipTo.city}
+                    onChange={(e) => setShipTo({...shipTo, city: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={shipTo.state}
+                    onChange={(e) => setShipTo({...shipTo, state: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Zip Code"
+                  value={shipTo.zipCode}
+                  onChange={(e) => setShipTo({...shipTo, zipCode: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Cart Items */}
@@ -375,7 +491,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
 
               <button
                 onClick={handleProceedToCheckout}
-                disabled={!selectedBranch || items.length === 0}
+                disabled={!selectedBranch || items.length === 0 || !shipTo.name || !shipTo.addressLine1 || !shipTo.city || !shipTo.state || !shipTo.zipCode}
                 className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Proceed to Checkout

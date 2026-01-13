@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { MapPin, Phone, Clock, Navigation, Search } from 'lucide-react';
 import { Wrapper } from '@googlemaps/react-wrapper';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { srsApi } from '../services/srsApi';
 import { Branch } from '../../abc-supply/types';
 
 interface MapComponentProps {
@@ -95,27 +96,41 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
 
 interface BranchLocatorProps {
   onBack: () => void;
+  supplier?: string;
 }
 
-const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
+const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC Supply' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [branchesPerPage] = useState(10);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
 
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return [];
 
     const query = searchQuery.toLowerCase();
-    return branches.filter(branch =>
-      branch.name.toLowerCase().includes(query) ||
-      branch.address.street1.toLowerCase().includes(query) ||
-      branch.address.city.toLowerCase().includes(query) ||
-      branch.address.state.toLowerCase().includes(query) ||
-      branch.address.zipCode.includes(query)
-    ).slice(0, 5);
-  }, [branches, searchQuery]);
+    return branches.filter(branch => {
+      if (supplier === 'SRS') {
+        // SRS branch structure
+        return (branch.name || '').toLowerCase().includes(query) ||
+               (branch.address?.street || '').toLowerCase().includes(query) ||
+               (branch.address?.city || '').toLowerCase().includes(query) ||
+               (branch.address?.state || '').toLowerCase().includes(query) ||
+               (branch.address?.zip || '').includes(query);
+      } else {
+        // ABC Supply branch structure
+        return (branch.name || '').toLowerCase().includes(query) ||
+               (branch.address?.street1 || '').toLowerCase().includes(query) ||
+               (branch.address?.city || '').toLowerCase().includes(query) ||
+               (branch.address?.state || '').toLowerCase().includes(query) ||
+               (branch.address?.zipCode || '').includes(query);
+      }
+    }).slice(0, 5);
+  }, [branches, searchQuery, supplier]);
 
   const handleBranchSelect = useCallback((branch: Branch) => {
     setSelectedBranch(branch);
@@ -139,14 +154,46 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    loadBranches();
+    loadBranches(1);
   }, []);
 
-  const loadBranches = async () => {
+  const geocodeAddress = async (address: string, city: string, state: string, zipCode: string) => {
+    try {
+      const fullAddress = `${address}, ${city}, ${state} ${zipCode}`;
+      const geocoder = new google.maps.Geocoder();
+      const result = await geocoder.geocode({ address: fullAddress });
+      
+      if (result.results[0]) {
+        const location = result.results[0].geometry.location;
+        return {
+          latitude: location.lat(),
+          longitude: location.lng()
+        };
+      }
+    } catch (error) {
+      console.error('Geocoding failed:', error);
+    }
+    return null;
+  };
+
+  const loadBranches = async (page = 1) => {
     try {
       setLoading(true);
-      const data = await abcSupplyApi.getBranches();
-      setBranches(data);
+      if (supplier === 'SRS') {
+        const response = await srsApi.getBranches(undefined, undefined, undefined, page, branchesPerPage);
+        const srsData = response.data?.data || response.data || [];
+        setBranches(srsData);
+        
+        // Update pagination info
+        if (response.data?.pagination) {
+          setPagination(response.data.pagination);
+        } else if (response.pagination) {
+          setPagination(response.pagination);
+        }
+      } else {
+        const data = await abcSupplyApi.getBranches();
+        setBranches(data);
+      }
     } catch (error) {
       console.error('Failed to load branches:', error);
       setBranches([]);
@@ -191,7 +238,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
         </button>
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="h-6 w-6 text-green-400" />
-          <h1 className="text-2xl font-bold text-white">Branch Locator</h1>
+          <h1 className="text-2xl font-bold text-white">{supplier} Branch Locator</h1>
         </div>
 
         <div className="max-w-md relative">
@@ -246,9 +293,16 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
         <div className="mb-6">
-          <Wrapper apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-            <MapComponent branches={branches} selectedBranch={selectedBranch} />
-          </Wrapper>
+          {supplier === 'ABC Supply' ? (
+            <Wrapper apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+              <MapComponent branches={branches} selectedBranch={selectedBranch} />
+            </Wrapper>
+          ) : (
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 text-center">
+              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">Map view available for ABC Supply branches only</p>
+            </div>
+          )}
         </div>
 
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -256,7 +310,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
         </h2>
 
         <div className="space-y-4">
-          {(selectedBranch ? [selectedBranch] : branches).map((branch) => (
+          {branches.map((branch) => (
             <div key={branch.id} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-medium text-gray-900 dark:text-white">{branch.name}</h3>
@@ -265,7 +319,12 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin size={14} />
-                  <span>{branch.address.street1}, {branch.address.city}, {branch.address.state} {branch.address.zipCode}</span>
+                  <span>
+                    {supplier === 'SRS' ? 
+                      `${branch.address?.street || branch.address?.full || ''}, ${branch.address?.city}, ${branch.address?.state} ${branch.address?.zip}` :
+                      `${branch.address.street1}, ${branch.address.city}, ${branch.address.state} ${branch.address.zipCode}`
+                    }
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -273,10 +332,10 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
                   <span>{branch.phone}</span>
                 </div>
 
-                {branch.hours && (
+                {branch.businessHours && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Clock size={14} />
-                    <span>Store Hours Available</span>
+                    <span>{branch.businessHours}</span>
                   </div>
                 )}
               </div>
@@ -293,6 +352,33 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack }) => {
             </div>
           ))}
         </div>
+        
+        {supplier === 'SRS' && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} branches
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => loadBranches(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <button
+                onClick={() => loadBranches(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+                className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

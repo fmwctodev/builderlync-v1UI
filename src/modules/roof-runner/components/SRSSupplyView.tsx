@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown, AlertCircle, Settings } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
-import { abcSupplyApi } from '../../abc-supply/services/api';
-import { Order, Product, Branch } from '../../abc-supply/types';
-import { useNavigate } from 'react-router-dom';
+import { srsApi } from '../services/srsApi';
 
-const ABCSupplyView: React.FC = () => {
-  const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('view') || 'dashboard';
-  });
+interface Product {
+  productImageUrl: any;
+  productVariants: any;
+  itemNumber: string;
+  itemDescription: string;
+  familyName?: string;
+  supplierName?: string;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+  address: {
+    city: string;
+    state: string;
+  };
+  phone: string;
+}
+
+const SRSSupplyView: React.FC = () => {
+  const [currentView, setCurrentView] = useState('dashboard');
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
@@ -21,10 +34,15 @@ const ABCSupplyView: React.FC = () => {
     products: true,
     branches: true
   });
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
-  const [isConnected, setIsConnected] = useState(true);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleNavigateToProducts = () => {
+      setCurrentView('products');
+    };
+
+    window.addEventListener('navigateToProducts', handleNavigateToProducts);
+    return () => window.removeEventListener('navigateToProducts', handleNavigateToProducts);
+  }, []);
 
   useEffect(() => {
     const loadRecentOrders = async () => {
@@ -33,7 +51,7 @@ const ABCSupplyView: React.FC = () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
         const endDate = tomorrow.toISOString().split('T')[0];
         
-        const response = await abcSupplyApi.getOrdersHistory({
+        const response = await srsApi.getOrdersHistory({
           startDate: '2024-03-15',
           endDate: endDate,
           itemsPerPage: 20,
@@ -41,18 +59,13 @@ const ABCSupplyView: React.FC = () => {
         });
         
         if (response.success) {
-          const orders = response.data.items || [];
+          const orders = response.data?.items || [];
           setRecentOrders(orders.slice(0, 10));
         } else {
           setRecentOrders([]);
         }
       } catch (error) {
         console.error('Failed to load recent orders:', error);
-        console.error('Error details:', (error as any).response?.data);
-        if ((error as Error).message?.includes('ABC Supply not connected')) {
-          setIsConnected(false);
-          setConnectionError((error as Error).message);
-        }
         setRecentOrders([]);
       } finally {
         setLoading(prev => ({ ...prev, orders: false }));
@@ -64,17 +77,21 @@ const ABCSupplyView: React.FC = () => {
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        const response = await abcSupplyApi.getItems(1, 4);
-        // Handle the nested structure: response.items.items
-        const products = Array.isArray((response as any).items) ? (response as any).items : (response as any).items?.items || [];
-        setFeaturedProducts(products);
+        const response = await srsApi.getItems(1, 4);
+        // Handle nested data structure: response.data.data
+        const products = response.data?.data || response.data || [];
+        // Map to preserve image data
+        const mappedProducts = products.map((product: any) => ({
+          itemNumber: product.productVariants?.[0]?.variantCode || product.productId?.toString() || product.itemNumber,
+          itemDescription: product.productName || product.itemDescription,
+          familyName: product.productCategory || product.familyName,
+          supplierName: product.manufacturer || product.supplierName,
+          productImageUrl: product.productImageUrl,
+          productVariants: product.productVariants
+        }));
+        setFeaturedProducts(mappedProducts);
       } catch (error) {
         console.error('Failed to load featured products:', error);
-        console.error('Error details:', (error as any).response?.data);
-        if ((error as Error).message?.includes('ABC Supply not connected')) {
-          setIsConnected(false);
-          setConnectionError((error as Error).message);
-        }
         setFeaturedProducts([]);
       } finally {
         setLoading(prev => ({ ...prev, products: false }));
@@ -86,16 +103,34 @@ const ABCSupplyView: React.FC = () => {
   useEffect(() => {
     const loadNearestBranches = async () => {
       try {
-        const branches = await abcSupplyApi.getBranches();
-        setNearestBranches(branches.slice(0, 3));
+        // Try to get user's location for nearest branches
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              const response = await srsApi.getBranches(latitude, longitude, 50, 1, 4);
+              const branches = response.data?.data || response.data || [];
+              setNearestBranches(branches.slice(0, 4));
+              setLoading(prev => ({ ...prev, branches: false }));
+            },
+            async () => {
+              // Fallback: get branches without location
+              const response = await srsApi.getBranches(undefined, undefined, undefined, 1, 4);
+              const branches = response.data?.data || response.data || [];
+              setNearestBranches(branches.slice(0, 4));
+              setLoading(prev => ({ ...prev, branches: false }));
+            }
+          );
+        } else {
+          // Fallback: get branches without location
+          const response = await srsApi.getBranches(undefined, undefined, undefined, 1, 4);
+          const branches = response.data?.data || response.data || [];
+          setNearestBranches(branches.slice(0, 4));
+          setLoading(prev => ({ ...prev, branches: false }));
+        }
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
-        if ((error as Error).message?.includes('ABC Supply not connected')) {
-          setIsConnected(false);
-          setConnectionError((error as Error).message);
-        }
         setNearestBranches([]);
-      } finally {
         setLoading(prev => ({ ...prev, branches: false }));
       }
     };
@@ -111,34 +146,6 @@ const ABCSupplyView: React.FC = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      {/* Connection Error Banner */}
-      {!isConnected && connectionError && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">ABC Supply Not Connected</h3>
-              <p className="mt-1 text-sm text-red-700 dark:text-red-400">
-                {connectionError}
-              </p>
-              <button
-                onClick={() => {
-                  const user = JSON.parse(localStorage.getItem('user') || '{}');
-                  const companySlug = user.companySlug;
-                  if (companySlug) {
-                    navigate(`/org/${companySlug}/settings/integrations`);
-                  }
-                }}
-                className="mt-3 inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Go to Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Welcome Section */}
       <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
         <div className="flex justify-between items-start">
@@ -147,7 +154,7 @@ const ABCSupplyView: React.FC = () => {
               {getGreeting()}, Contractor
             </h1>
             <p className="mt-2 text-gray-400">
-              Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
+              Welcome to your SRS Distribution Portal. Here's what's happening with your account today.
             </p>
           </div>
         </div>
@@ -225,19 +232,19 @@ const ABCSupplyView: React.FC = () => {
                           {order.branchCityState} - {order.productQty} items
                         </p>
                         <div className="mt-1 flex items-center">
-                          {order.orderStatus === 'processing' && (
+                          {order.orderStatus === 'PROCESSING' && (
                             <Package className="h-4 w-4 text-yellow-500 mr-1" />
                           )}
-                          {order.orderStatus === 'shipped' && (
+                          {order.orderStatus === 'SHIPPED' && (
                             <Truck className="h-4 w-4 text-primary-500 mr-1" />
                           )}
-                          {order.orderStatus === 'delivered' && (
+                          {order.orderStatus === 'DELIVERED' && (
                             <Truck className="h-4 w-4 text-green-500 mr-1" />
                           )}
                           <span className={`text-sm capitalize ${
-                            order.orderStatus === 'processing' ? 'text-yellow-600' :
-                            order.orderStatus === 'shipped' ? 'text-primary-600' :
-                            order.orderStatus === 'delivered' ? 'text-green-600' :
+                            order.orderStatus === 'PROCESSING' ? 'text-yellow-600' :
+                            order.orderStatus === 'SHIPPED' ? 'text-primary-600' :
+                            order.orderStatus === 'DELIVERED' ? 'text-green-600' :
                             'text-gray-500'
                           }`}>
                             {order.orderStatus || order.orderType}
@@ -288,9 +295,26 @@ const ABCSupplyView: React.FC = () => {
                       className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
                     >
                       <div className="flex items-center">
-                        <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                          <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                        </div>
+                        {(product.productImageUrl || product.productVariants?.[0]?.variantImageURL) ? (
+                          <><img 
+                            src={product.productImageUrl || product.productVariants?.[0]?.variantImageURL} 
+                            alt={product.itemDescription || 'Product image'}
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => { 
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                          <div className="hidden w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                            <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          </>
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                            <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                          </div>
+                        )}
                         <div className="ml-3 overflow-hidden">
                           <h4 className="font-medium text-gray-900 dark:text-white truncate">
                             {product.familyName || product.itemDescription || 'Product'}
@@ -315,7 +339,10 @@ const ABCSupplyView: React.FC = () => {
           <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Nearest Branches</h2>
-              <button className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition">
+              <button 
+                onClick={() => setCurrentView('branches')}
+                className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
+              >
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
@@ -358,10 +385,10 @@ const ABCSupplyView: React.FC = () => {
     </div>
   );
 
-  if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="ABC Supply" />;
-  if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} />;
-  if (currentView === 'orders') return <OrderHistory onBack={() => setCurrentView('dashboard')} />;
+  if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
+  if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
+  if (currentView === 'orders') return <OrderHistory onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
   return renderDashboard();
 };
 
-export default ABCSupplyView;
+export default SRSSupplyView;
