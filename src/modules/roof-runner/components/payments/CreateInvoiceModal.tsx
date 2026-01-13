@@ -1,0 +1,667 @@
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Trash2, Upload, Edit2, Check } from 'lucide-react';
+import { createInvoice, updateInvoice, Invoice } from '../../../../shared/store/services/paymentsApi';
+import { getActiveCoupons, validateCoupon, Coupon } from '../../../../shared/store/services/couponsApi';
+
+interface CreateInvoiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (invoice: Invoice) => void;
+  editInvoice?: Invoice | null;
+  invoiceType?: 'invoice' | 'estimate';
+}
+
+interface LineItem {
+  description: string;
+  qty: number;
+  rate: number;
+  discount: number;
+  tax: number;
+  total: number;
+}
+
+const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose, onSuccess, editInvoice, invoiceType = 'invoice' }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [showTemplate, setShowTemplate] = useState(false);
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
+  const [showCouponList, setShowCouponList] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [lineItems, setLineItems] = useState<LineItem[]>([{
+    description: '',
+    qty: 1,
+    rate: 0,
+    discount: 0,
+    tax: 0,
+    total: 0
+  }]);
+
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    customer_name: '',
+    invoice_number: '',
+    issue_date: new Date().toISOString().split('T')[0],
+    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    po_number: '',
+    payment_terms: 'Net 30',
+    notes: '',
+    message_to_customer: '',
+    subtotal: 0,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    total: 0,
+    coupon_discount: 0,
+    status: 'draft' as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled',
+    is_estimate: false,
+    job_id: ''
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editInvoice) {
+        setFormData({
+          customer_id: editInvoice.customer_id ? String(editInvoice.customer_id) : '',
+          customer_name: editInvoice.customer_name || '',
+          invoice_number: editInvoice.invoice_number || '',
+          issue_date: editInvoice.issue_date || new Date().toISOString().split('T')[0],
+          due_date: editInvoice.due_date || '',
+          po_number: editInvoice.po_number || '',
+          payment_terms: editInvoice.payment_terms || 'Net 30',
+          notes: editInvoice.notes || '',
+          message_to_customer: editInvoice.message_to_customer || '',
+          subtotal: editInvoice.subtotal || 0,
+          discount: editInvoice.discount || 0,
+          tax: editInvoice.tax || 0,
+          shipping: editInvoice.shipping || 0,
+          total: editInvoice.total || 0,
+          coupon_discount: editInvoice.coupon_discount || 0,
+          status: editInvoice.status || 'draft',
+          is_estimate: (editInvoice as any).is_estimate || false,
+          job_id: (editInvoice as any).job_id ? String((editInvoice as any).job_id) : ''
+        });
+        setLineItems(editInvoice.line_items || [{ description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+      } else {
+        generateInvoiceNumber();
+        setFormData(prev => ({ ...prev, is_estimate: invoiceType === 'estimate' }));
+      }
+      loadActiveCoupons();
+      loadCustomers();
+      loadJobs();
+    }
+  }, [isOpen, editInvoice, invoiceType]);
+
+  useEffect(() => {
+    calculateTotals();
+  }, [lineItems, formData.discount, formData.shipping, appliedCoupon]);
+
+  const loadCustomers = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/contacts`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setCustomers(data.data.contacts || []);
+    } catch (err) {
+      console.error('Failed to load customers:', err);
+      setCustomers([]);
+    }
+  };
+
+  const loadJobs = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/jobs?page=1&limit=1000`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setJobs(data.data?.data || data.data || []);
+    } catch (err) {
+      console.error('Failed to load jobs:', err);
+      setJobs([]);
+    }
+  };
+
+  const loadActiveCoupons = async () => {
+    try {
+      const coupons = await getActiveCoupons();
+      setAvailableCoupons(coupons);
+    } catch (err) {
+      console.error('Failed to load coupons:', err);
+    }
+  };
+
+  const generateInvoiceNumber = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const prefix = invoiceType === 'estimate' ? 'EST' : 'INV';
+    setFormData(prev => ({ ...prev, invoice_number: `${prefix}-${timestamp}` }));
+  };
+
+  const calculateTotals = () => {
+    const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
+    const tax = lineItems.reduce((sum, item) => sum + (item.total * item.tax / 100), 0);
+    let coupon_discount = 0;
+    
+    if (appliedCoupon) {
+      if (appliedCoupon.discount_type === 'percentage') {
+        coupon_discount = subtotal * (appliedCoupon.discount_value / 100);
+      } else {
+        coupon_discount = appliedCoupon.discount_value;
+      }
+    }
+    
+    const total = subtotal + tax + formData.shipping - formData.discount - coupon_discount;
+    setFormData(prev => ({ ...prev, subtotal, tax, total, coupon_discount }));
+  };
+
+  const handleSelectCustomer = (customer: any) => {
+    const customerName = customer.fullName || customer.first_name + ' ' + customer.last_name;
+    setFormData({ ...formData, customer_id: customer.id, customer_name: customerName });
+    setCustomerSearch(customerName);
+    setShowCustomerList(false);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    try {
+      const coupon = await validateCoupon(couponCode);
+      setAppliedCoupon(coupon);
+      setShowCouponList(false);
+      setCouponCode('');
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    }
+  };
+
+  const handleSelectCoupon = (coupon: Coupon) => {
+    setAppliedCoupon(coupon);
+    setCouponCode(coupon.coupon_code);
+    setShowCouponList(false);
+    setError(null);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
+
+  const handleLineItemChange = (index: number, field: keyof LineItem, value: any) => {
+    const updatedItems = [...lineItems];
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    const item = updatedItems[index];
+    const baseAmount = item.qty * item.rate;
+    const discountAmount = baseAmount * (item.discount / 100);
+    item.total = baseAmount - discountAmount;
+    setLineItems(updatedItems);
+  };
+
+  const addLineItem = () => {
+    setLineItems([...lineItems, { description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+  };
+
+  const removeLineItem = (index: number) => {
+    if (lineItems.length > 1) {
+      setLineItems(lineItems.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const invoiceData: any = {
+        ...formData,
+        job_id: formData.job_id ? parseInt(formData.job_id) : null,
+        line_items: lineItems,
+        coupon_id: appliedCoupon?.id,
+        status: isDraft ? 'draft' : 'sent'
+      };
+      
+      let response;
+      if (editInvoice) {
+        response = await updateInvoice(editInvoice.id, invoiceData);
+      } else {
+        response = await createInvoice(invoiceData);
+      }
+      
+      onSuccess(response);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create invoice');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {editInvoice ? `Edit ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          {error && (
+            <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 flex items-start gap-2">
+              <span className="text-yellow-600 dark:text-yellow-400 text-sm">{error}</span>
+              <button type="button" className="ml-auto px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded">
+                Connect QuickBooks
+              </button>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="rounded" />
+              Make this a recurring invoice
+            </label>
+          </div>
+
+          <div className="space-y-6">
+            {/* Customer Section */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Customer <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Search customers..."
+                value={customerSearch || formData.customer_name}
+                onChange={(e) => {
+                  setCustomerSearch(e.target.value);
+                  setFormData({ ...formData, customer_name: e.target.value });
+                  setShowCustomerList(true);
+                }}
+                onFocus={() => setShowCustomerList(true)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+              />
+              
+              {showCustomerList && customers.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {customers
+                    .filter(c => {
+                      const search = customerSearch.toLowerCase();
+                      const fullName = (c.fullName || c.first_name + ' ' + c.last_name).toLowerCase();
+                      const email = (c.email || '').toLowerCase();
+                      return fullName.includes(search) || email.includes(search);
+                    })
+                    .map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        onClick={() => handleSelectCustomer(customer)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-0"
+                      >
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {customer.fullName || customer.first_name + ' ' + customer.last_name}
+                        </div>
+                        {customer.email && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{customer.email}</div>
+                        )}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Invoice Details */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Invoice Number</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.invoice_number}
+                  onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Issue Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.issue_date}
+                  onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Terms</label>
+                <select
+                  value={formData.payment_terms}
+                  onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option>Net 30</option>
+                  <option>Net 60</option>
+                  <option>Due on Receipt</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PO Number (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.po_number}
+                  onChange={(e) => setFormData({ ...formData, po_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Job Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job (Optional)</label>
+              <select
+                value={formData.job_id}
+                onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    #{job.id} ({job.createdByName})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Line Items */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Line Items</label>
+                <button type="button" onClick={() => setShowTemplate(!showTemplate)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                  <span className="inline-block w-4 h-4 border border-current rounded"></span> Show Template
+                </button>
+              </div>
+              
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <div className="col-span-4">Description</div>
+                  <div className="col-span-1">Qty</div>
+                  <div className="col-span-2">Rate</div>
+                  <div className="col-span-1">Discount %</div>
+                  <div className="col-span-1">Tax %</div>
+                  <div className="col-span-2">Total</div>
+                  <div className="col-span-1">Action</div>
+                </div>
+                
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {lineItems.map((item, index) => (
+                    <div key={index} className="px-3 py-2 grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-900">
+                      <input
+                        type="text"
+                        placeholder="Description"
+                        value={item.description}
+                        onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                        className="col-span-4 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        value={item.qty}
+                        onChange={(e) => handleLineItemChange(index, 'qty', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) => handleLineItemChange(index, 'rate', parseFloat(e.target.value) || 0)}
+                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) => handleLineItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        value={item.tax}
+                        onChange={(e) => handleLineItemChange(index, 'tax', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white">${item.total.toFixed(2)}</div>
+                      <button type="button" onClick={() => removeLineItem(index)} className="col-span-1 text-red-600 hover:text-red-700 justify-self-center">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <button type="button" onClick={addLineItem} className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                <Plus className="w-4 h-4" /> Add Line Item
+              </button>
+            </div>
+
+            {/* Apply Coupon Code */}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <input 
+                  type="checkbox" 
+                  checked={showCouponInput}
+                  onChange={(e) => {
+                    console.log('Coupon checkbox clicked:', e.target.checked);
+                    setShowCouponInput(e.target.checked);
+                  }}
+                  className="rounded" 
+                />
+                Apply Coupon Code
+              </label>
+              
+              {showCouponInput && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value.toUpperCase());
+                        setShowCouponList(true);
+                      }}
+                      onFocus={() => setShowCouponList(true)}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      className="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  
+                  {appliedCoupon && (
+                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm text-green-700 dark:text-green-300">
+                          {appliedCoupon.coupon_code} - {appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`} off
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-red-600 hover:text-red-700 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  
+                  {showCouponList && availableCoupons.length > 0 && !appliedCoupon && (
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto">
+                      {availableCoupons
+                        .filter(c => !couponCode || c.coupon_code.includes(couponCode))
+                        .map((coupon) => (
+                          <button
+                            key={coupon.id}
+                            type="button"
+                            onClick={() => handleSelectCoupon(coupon)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{coupon.coupon_code}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{coupon.coupon_name}</div>
+                              </div>
+                              <div className="text-sm font-semibold text-primary-600">
+                                {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `$${coupon.discount_value}`}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Totals and Notes */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={4}
+                  placeholder="Additional notes (not visible for customers)"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                />
+                <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                  <Edit2 className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="text-gray-900 dark:text-white font-medium">${formData.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                  <input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right"
+                  />
+                </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Coupon ({appliedCoupon.coupon_code})</span>
+                    <span className="text-green-600 dark:text-green-400">-${formData.coupon_discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                  <span className="text-gray-900 dark:text-white">${formData.tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Shipping</span>
+                  <input
+                    type="number"
+                    value={formData.shipping}
+                    onChange={(e) => setFormData({ ...formData, shipping: parseFloat(e.target.value) || 0 })}
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right"
+                  />
+                </div>
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-semibold">
+                  <span className="text-gray-900 dark:text-white">Total:</span>
+                  <span className="text-gray-900 dark:text-white">${formData.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Message to Customer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message to Customer</label>
+              <textarea
+                value={formData.message_to_customer}
+                onChange={(e) => setFormData({ ...formData, message_to_customer: e.target.value })}
+                rows={3}
+                placeholder="This message will appear on the invoice"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+              />
+              <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                <Edit2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Attachments */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachments</label>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">Drag and drop files here, or <span className="text-primary-600">Browse</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Supports: Image, PDF, Document, Video, Midi and Zip file</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <button 
+              type="button" 
+              onClick={(e: any) => handleSubmit(e, true)}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+            >
+              Save as Draft
+            </button>
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                Cancel
+              </button>
+              <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+                {isLoading ? 'Creating...' : editInvoice ? `Update ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default CreateInvoiceModal;

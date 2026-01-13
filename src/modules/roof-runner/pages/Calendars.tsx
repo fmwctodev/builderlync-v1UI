@@ -218,7 +218,7 @@ const Calendars: React.FC = () => {
       endTime: (event as any).end_time || event.endTime,
       allDay: event.allDay || false,
       location: event.location || '',
-      job: selectedJob?.id || '',
+      job: selectedJob?.id ? String(selectedJob.id) : '',
       teamMember: defaultStaff ? `${defaultStaff.first_name} ${defaultStaff.last_name}` : '',
       invitees: event.invitees ? (Array.isArray(event.invitees) ? event.invitees : [event.invitees]) : [],
       description: event.description || ''
@@ -437,8 +437,8 @@ const Calendars: React.FC = () => {
              year === currentDate.getFullYear();
     });
 
-    const allDayEvents = dayEvents.filter(event => event.all_day);
-    const timedEvents = dayEvents.filter(event => !event.all_day);
+    const allDayEvents = dayEvents.filter(event => event.allDay);
+    const timedEvents = dayEvents.filter(event => !event.allDay);
 
     return (
       <div className="flex flex-col h-full">
@@ -537,7 +537,7 @@ const Calendars: React.FC = () => {
                     const matchesDate = dayNum === day.getDate() &&
                            month - 1 === day.getMonth() &&
                            year === day.getFullYear();
-                    const matchesTime = !event.all_day && eventTime && eventTime.startsWith(String(hour).padStart(2, '0'));
+                    const matchesTime = !event.allDay && eventTime && eventTime.startsWith(String(hour).padStart(2, '0'));
                     return matchesDate && matchesTime;
                   });
 
@@ -779,7 +779,7 @@ const Calendars: React.FC = () => {
                 >
                   <option value="">Select a contact (optional)</option>
                   {contacts.map(contact => (
-                    <option key={contact.id} value={contact.id}>
+                    <option key={contact.id} value={String(contact.id)}>
                       {contact.fullName} {contact.email ? `(${contact.email})` : ''}
                     </option>
                   ))}

@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown, AlertCircle, Settings } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { Order, Product, Branch } from '../../abc-supply/types';
+import { useNavigate } from 'react-router-dom';
 
 const ABCSupplyView: React.FC = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
-
-  useEffect(() => {
-    const handleNavigateToProducts = (event: any) => {
-      setCurrentView('products');
-    };
-
-    window.addEventListener('navigateToProducts', handleNavigateToProducts);
-    return () => window.removeEventListener('navigateToProducts', handleNavigateToProducts);
-  }, []);
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('view') || 'dashboard';
+  });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
@@ -25,6 +21,10 @@ const ABCSupplyView: React.FC = () => {
     products: true,
     branches: true
   });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
+  const [isConnected, setIsConnected] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadRecentOrders = async () => {
@@ -49,6 +49,10 @@ const ABCSupplyView: React.FC = () => {
       } catch (error) {
         console.error('Failed to load recent orders:', error);
         console.error('Error details:', (error as any).response?.data);
+        if ((error as Error).message?.includes('ABC Supply not connected')) {
+          setIsConnected(false);
+          setConnectionError((error as Error).message);
+        }
         setRecentOrders([]);
       } finally {
         setLoading(prev => ({ ...prev, orders: false }));
@@ -67,6 +71,10 @@ const ABCSupplyView: React.FC = () => {
       } catch (error) {
         console.error('Failed to load featured products:', error);
         console.error('Error details:', (error as any).response?.data);
+        if ((error as Error).message?.includes('ABC Supply not connected')) {
+          setIsConnected(false);
+          setConnectionError((error as Error).message);
+        }
         setFeaturedProducts([]);
       } finally {
         setLoading(prev => ({ ...prev, products: false }));
@@ -82,6 +90,10 @@ const ABCSupplyView: React.FC = () => {
         setNearestBranches(branches.slice(0, 3));
       } catch (error) {
         console.error('Failed to load nearest branches:', error);
+        if ((error as Error).message?.includes('ABC Supply not connected')) {
+          setIsConnected(false);
+          setConnectionError((error as Error).message);
+        }
         setNearestBranches([]);
       } finally {
         setLoading(prev => ({ ...prev, branches: false }));
@@ -99,6 +111,34 @@ const ABCSupplyView: React.FC = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
+      {/* Connection Error Banner */}
+      {!isConnected && connectionError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">ABC Supply Not Connected</h3>
+              <p className="mt-1 text-sm text-red-700 dark:text-red-400">
+                {connectionError}
+              </p>
+              <button
+                onClick={() => {
+                  const user = JSON.parse(localStorage.getItem('user') || '{}');
+                  const companySlug = user.companySlug;
+                  if (companySlug) {
+                    navigate(`/org/${companySlug}/settings/integrations`);
+                  }
+                }}
+                className="mt-3 inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Go to Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Section */}
       <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
         <div className="flex justify-between items-start">

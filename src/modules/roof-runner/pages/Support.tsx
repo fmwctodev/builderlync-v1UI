@@ -120,7 +120,7 @@ const Support: React.FC = () => {
               To enable ChatterMate widget:
             </p>
             <ol className="text-xs text-gray-500 dark:text-gray-500 text-left space-y-1">
-              <li>1. Add localhost:5174 to allowed domains in ChatterMate dashboard</li>
+              <li>1. Add localhost:5173 to allowed domains in ChatterMate dashboard</li>
               <li>2. Widget will appear in bottom right corner</li>
             </ol>
           </div>
@@ -158,7 +158,7 @@ const Support: React.FC = () => {
         </div>
 
         {/* Knowledge Base */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Knowledge Base</h3>
@@ -188,7 +188,7 @@ const Support: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* FAQ Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
