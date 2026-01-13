@@ -24,8 +24,8 @@ interface Integration {
 const Integrations: React.FC = () => {
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
-  const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [srsStatus, setSrsStatus] = React.useState({ connected: false });
+  const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
   const [showSrsModal, setShowSrsModal] = React.useState(false);
@@ -37,6 +37,8 @@ const Integrations: React.FC = () => {
     fetchABCSupplyStatus();
     handleABCSupplyCallback();
     fetchSrsStatus();
+    fetchABCSupplyStatus();
+    handleABCSupplyCallback();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -180,6 +182,8 @@ const Integrations: React.FC = () => {
       handleQuickBooksConnect();
     } else if (integrationId === 'twilio') {
       setShowTwilioModal(true);
+    } else if (integrationId === 'srs-distribution') {
+      setShowSrsModal(true);
     } else if (integrationId === 'google-business') {
       googleBusinessApi.connect();
     } else if (integrationId === 'abc-supply') {
@@ -201,6 +205,11 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'srs-distribution') {
       srsService.logout();
       setSrsStatus({ connected: false });
+    } else if (integrationId === 'srs-distribution') {
+      srsService.logout();
+      setSrsStatus({ connected: false });
+    } else if (integrationId === 'abc-supply') {
+      handleABCSupplyDisconnect();
     } else {
       console.log(`Disconnecting from ${integrationId}...`);
     }
