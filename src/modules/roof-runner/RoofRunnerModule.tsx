@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from './store/hooks';
 import { Provider } from 'react-redux';
 import { store } from './store';
@@ -36,6 +36,8 @@ import Marketing from './pages/Marketing';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import { GoogleAnalyticsPage } from './pages/GoogleAnalyticsPage';
 import { GoogleAnalyticsCallback } from './pages/GoogleAnalyticsCallback';
+import GoogleBusinessPage from './pages/GoogleBusinessPage';
+import GoogleAdsPage from './pages/GoogleAdsPage';
 import Catalog from './pages/Catalog';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
@@ -53,6 +55,8 @@ import { FormBuilder } from '../marketing/pages/FormBuilder';
 import { FormSubmissions } from '../marketing/pages/FormSubmissions';
 import { SierraAiModule } from '../sierra-ai/SierraAiModule';
 import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
+import { useEffect } from 'react';
+import OutlookCallback from './pages/OutlookCallback';
 
 const RootRedirect = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -60,12 +64,28 @@ const RootRedirect = () => {
   return <Navigate to={orgSlug ? `/org/${orgSlug}` : '/auth/login'} replace />;
 };
 
+const OrgSettingsRedirect = () => {
+  const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
+  const orgId = user?.organizationId || localStorage.getItem('organizationId');
+  
+  useEffect(() => {
+    if (orgId) {
+      const path = window.location.pathname.replace('/org/settings', `/org/company-${orgId}/settings`);
+      navigate(path + window.location.search, { replace: true });
+    }
+  }, [orgId, navigate]);
+  
+  return null;
+};
+
 export function RoofRunnerModule() {
   return (
     <Provider store={store}>
-      <OrgProvider>
       <Routes>
-      <Route path="/" element={<ProtectedRoute><RootRedirect /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><OrgProvider><RootRedirect /></OrgProvider></ProtectedRoute>} />
+      <Route path="outlook-callback" element={<OutlookCallback />} />
+      <Route path="org/settings/*" element={<ProtectedRoute><OrgProvider><OrgSettingsRedirect /></OrgProvider></ProtectedRoute>} />
       <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
       <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
       <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
@@ -76,7 +96,7 @@ export function RoofRunnerModule() {
       <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
       <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
       <Route path="proposal/view" element={<PublicProposalView />} />
-      <Route path="org/:orgSlug" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+      <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
 
@@ -107,6 +127,8 @@ export function RoofRunnerModule() {
         <Route path="marketing" element={<Marketing />} />
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
         <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
+        <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
+        <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
         <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
         <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
         <Route path="file-manager" element={<FileManager />} />
@@ -119,9 +141,8 @@ export function RoofRunnerModule() {
         <Route path="auth/google/callback" element={<OAuthCallback />} />
         <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
       </Route>
-      <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><GoogleAnalyticsPage /></ProtectedRoute>} />
+      <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><OrgProvider><GoogleAnalyticsPage /></OrgProvider></ProtectedRoute>} />
       </Routes>
-      </OrgProvider>
     </Provider>
   );
 }

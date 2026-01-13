@@ -1,16 +1,53 @@
 import { supabase } from '../../lib/supabase';
+import { getAuthToken } from '../../utils/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+
+const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(error.message || `API Error: ${response.status}`);
+  }
+
+  return response.json();
+};
 
 export interface Invoice {
   id: string;
   invoice_number: string;
   name: string;
-  customer_id?: string;
+  customer_id?: number;
+  customer_name?: string;
+  user_id?: string;
   amount: number;
-  status: 'draft' | 'due' | 'received' | 'overdue';
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   issue_date: string;
   due_date?: string;
-  items: any[];
+  po_number?: string;
+  payment_terms?: string;
+  line_items?: any[];
+  subtotal?: number;
+  discount?: number;
+  tax?: number;
+  shipping?: number;
+  total?: number;
+  coupon_id?: number;
+  coupon_discount?: number;
   notes?: string;
+  message_to_customer?: string;
+  is_estimate?: boolean;
+  job_id?: number;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -93,69 +130,44 @@ export interface PaymentIntegration {
 
 export const fetchInvoices = async (filters?: {
   status?: string;
+  is_estimate?: boolean;
+  job_id?: number;
   startDate?: string;
   endDate?: string;
   search?: string;
 }): Promise<Invoice[]> => {
-  let query = supabase
-    .from('invoices')
-    .select('*')
-    .order('issue_date', { ascending: false });
-
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-
-  if (filters?.startDate) {
-    query = query.gte('issue_date', filters.startDate);
-  }
-
-  if (filters?.endDate) {
-    query = query.lte('issue_date', filters.endDate);
-  }
-
-  if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,invoice_number.ilike.%${filters.search}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data || [];
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.is_estimate !== undefined) params.append('is_estimate', String(filters.is_estimate));
+  if (filters?.job_id) params.append('job_id', String(filters.job_id));
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.search) params.append('search', filters.search);
+  
+  const response = await makeRequest(`/invoices?${params}`);
+  return response.data;
 };
 
 export const createInvoice = async (invoice: Partial<Invoice>): Promise<Invoice> => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data, error } = await supabase
-    .from('invoices')
-    .insert([{ ...invoice, created_by: user?.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest('/invoices', {
+    method: 'POST',
+    body: JSON.stringify(invoice),
+  });
+  return response.data;
 };
 
 export const updateInvoice = async (id: string, updates: Partial<Invoice>): Promise<Invoice> => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest(`/invoices/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return response.data;
 };
 
 export const deleteInvoice = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('invoices')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await makeRequest(`/invoices/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 export const fetchEstimates = async (filters?: {

@@ -11,24 +11,24 @@ export const GoogleAnalyticsCallback: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const errorParam = urlParams.get('error');
+    const state = urlParams.get('state');
     const token = localStorage.getItem('token');
     const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
     
-    console.log('Callback received:', { 
-      code: !!code, 
-      error: errorParam, 
-      token: !!token, 
-      orgSlug,
-      user: user?.email,
-      companySlug: user?.companySlug
-    });
+    // Determine which service based on state or referrer
+    let service = 'google-analytics';
+    if (state === 'google-business') {
+      service = 'google-business';
+    } else if (state === 'google-ads') {
+      service = 'google-ads';
+    }
     
     if (errorParam) {
       setError(`Google OAuth Error: ${errorParam}`);
       alert(`Authentication failed: ${errorParam}`);
       setTimeout(() => {
         if (orgSlug && token) {
-          navigate(`/org/${orgSlug}/marketing/analytics/google-analytics`, { replace: true });
+          navigate(`/org/${orgSlug}/marketing/analytics/${service}`, { replace: true });
         } else {
           navigate('/marketing', { replace: true });
         }
@@ -37,28 +37,25 @@ export const GoogleAnalyticsCallback: React.FC = () => {
     }
     
     if (!token) {
-      console.error('No auth token found');
       setError('Please login first');
-      alert('Please login to connect Google Analytics');
+      alert('Please login to connect Google services');
       navigate('/auth/login', { replace: true });
       return;
     }
     
     if (code) {
-      console.log('Redirecting to Google Analytics page with code');
       if (orgSlug) {
-        navigate(`/org/${orgSlug}/marketing/analytics/google-analytics?code=${code}`, { replace: true });
+        navigate(`/org/${orgSlug}/marketing/analytics/${service}?code=${code}`, { replace: true });
       } else {
-        navigate(`/marketing/analytics/google-analytics?code=${code}`, { replace: true });
+        navigate(`/marketing/analytics/${service}?code=${code}`, { replace: true });
       }
     } else {
-      console.error('No code received from Google');
       setError('No authorization code received');
       alert('Authorization failed. Please try again.');
       if (orgSlug) {
-        navigate(`/org/${orgSlug}/marketing/analytics/google-analytics`, { replace: true });
+        navigate(`/org/${orgSlug}/marketing/analytics/${service}`, { replace: true });
       } else {
-        navigate('/marketing/analytics/google-analytics', { replace: true });
+        navigate('/marketing/analytics/${service}', { replace: true });
       }
     }
   }, [navigate, user]);
