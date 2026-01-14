@@ -134,4 +134,9 @@ export const apiService = {
     const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/generate-estimate`, formData);
     return response.data;
   },
+
+  getBusinessProfile: async () => {
+    const response = await apiClient.get('/organizations/profile');
+    return response.data;
+  },
 };

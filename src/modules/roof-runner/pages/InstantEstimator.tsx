@@ -23,10 +23,23 @@ const InstantEstimator: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [estimatorToDelete, setEstimatorToDelete] = useState<number | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<{ friendly_business_name: string; business_logo: string | null } | null>(null);
 
   useEffect(() => {
     fetchEstimators();
-  }, [currentPage]);
+    if (activeTab === 'settings') {
+      fetchBusinessProfile();
+    }
+  }, [currentPage, activeTab]);
+
+  const fetchBusinessProfile = async () => {
+    try {
+      const response = await apiService.getBusinessProfile();
+      setBusinessProfile(response.data || response);
+    } catch (error) {
+      console.error('Failed to fetch business profile:', error);
+    }
+  };
 
   const fetchEstimators = async () => {
     try {
@@ -263,34 +276,141 @@ const InstantEstimator: React.FC = () => {
           </div>
         )}
         {activeTab === 'settings' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"> Project Showcase</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              To set up the  Project Showcase we need the data showcase ID from . Please see our set up guide to see where to find this ID in .
-            </p>
+          <div className="space-y-6">
+            {/* Customer Reviews Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer reviews</h3>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Beta</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Select Google Reviews you would like to show to your customers to build trust.
+                  </p>
+                </div>
+                <button className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  How to use
+                </button>
+              </div>
 
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">How to use</h4>
+              <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                <div className="flex gap-1 mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="w-8 h-8 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Show your Google Reviews to customers
+                </p>
+                <button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Connect Google Reviews
+                </button>
+              </div>
+            </div>
+
+            {/* Material Options Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Material options</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Add the materials you offer along with their approximate prices, which should include tear-off, waste, and markup costs. Your customers will have the option to choose the materials they want and will receive estimates based on the information you provide below.
+                  </p>
+                </div>
+              </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Data showcase ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter data showcase ID"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#dc2626] focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
+                <div className="flex items-center justify-between mb-3">
+                  <button className="text-sm text-blue-600 hover:text-blue-700">Materials</button>
+                  <button className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700">
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+                
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">NAME</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">LOW</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MODERATE</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">STEEP</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">FLAT</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MULTI-STORY SURCHARGE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                          No materials added yet
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
+            </div>
 
-              <div className="flex items-center space-x-3">
-                <button className="px-4 py-2 bg-[#dc2626] hover:bg-red-700 text-white rounded-lg transition-colors">
-                  Save
-                </button>
-                <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                  Preview
-                </button>
+            {/* Contact Information Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Contact information</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Contact information is pulled from your organization's business info. To update, please edit your business info in settings.
+              </p>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Company profile
+                  </label>
+                  <input
+                    type="text"
+                    value={businessProfile?.friendly_business_name || 'Loading...'}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Preview
+                  </label>
+                  <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                    <div className="flex flex-col items-center">
+                      {businessProfile?.business_logo ? (
+                        <img 
+                          src={businessProfile.business_logo} 
+                          alt={businessProfile.friendly_business_name}
+                          className="w-50 h-50 object-contain rounded mb-2"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded mb-2 flex items-center justify-center text-gray-400 text-xs">
+                          Logo
+                        </div>
+                      )}
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {businessProfile?.friendly_business_name || 'Business Name'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors">
+                Save All Settings
+              </button>
             </div>
           </div>
         )}
