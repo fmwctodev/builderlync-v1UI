@@ -141,6 +141,14 @@ export const abcSupplyApi = {
     }
   },
 
+  searchAccounts: async (filters: any[], pagination: { itemsPerPage: number, pageNumber: number }): Promise<any> => {
+    const response = await api.post('/abc-supply/accounts/search', {
+      filters,
+      pagination
+    });
+    return response.data;
+  },
+
   // Pricing
   getPrices: async (priceRequest: PriceRequest): Promise<any> => {
     const response = await api.post('/abc-supply/prices', priceRequest);

@@ -36,7 +36,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
         const response = await srsApi.getItems(page, 50);
         const srsData = response.data?.data || response.data || [];
         const srsProducts = Array.isArray(srsData) ? srsData : [];
-        
+
         // Map SRS product structure to expected format
         const mappedProducts = srsProducts.map((product: any) => ({
           itemNumber: product.productVariants?.[0]?.variantCode || product.productId.toString(),
@@ -48,7 +48,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
           productVariants: product.productVariants
         }));
         setProducts(mappedProducts);
-        
+
         // Set pagination info
         if (response.data?.pagination) {
           setPagination(response.data.pagination);
@@ -61,7 +61,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
       }
     } catch (error) {
       console.error('Failed to load products:', error);
-      setProducts([]);
+      // Keep existing products if refresh fails
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
       }
     } catch (error) {
       console.error('Search failed:', error);
-      setProducts([]);
+      // Keep existing products if search fails
     } finally {
       setSearchLoading(false);
     }
@@ -174,19 +174,19 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
 
   const handleCategoryFilter = async (category: string, checked: boolean) => {
     if (supplier !== 'ABC Supply') return; // Only ABC supports category filtering
-    
-    const newCategories = checked 
+
+    const newCategories = checked
       ? [...selectedCategories, category]
       : selectedCategories.filter(c => c !== category);
-    
+
     setSelectedCategories(newCategories);
-    
+
     // Combine search query and category filters
     const allFilters = [...newCategories];
     if (searchQuery.trim()) {
       allFilters.push(searchQuery.trim());
     }
-    
+
     if (allFilters.length > 0) {
       try {
         setLoading(true);
@@ -210,9 +210,9 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
   };
 
   const filteredProducts = Array.isArray(products) ? products.filter(product => {
-    const matchesManufacturer = selectedManufacturers.length === 0 || 
+    const matchesManufacturer = selectedManufacturers.length === 0 ||
       selectedManufacturers.includes(product.supplierName || '');
-    
+
     return matchesManufacturer;
   }) : [];
 
@@ -350,23 +350,23 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
                     </td>
                   </tr>
                 ) : (
-                filteredProducts.map((product) => (
+                  filteredProducts.map((product) => (
                     <tr key={product.itemNumber} className="hover:bg-gray-800 dark:hover:bg-gray-700">
                       {supplier === 'SRS' && (
                         <td className="px-6 py-4">
                           {(product.productImageUrl || product.productVariants?.[0]?.variantImageURL) ? (
-                           <> <img 
-                              src={product.productImageUrl || product.productVariants?.[0]?.variantImageURL} 
+                            <> <img
+                              src={product.productImageUrl || product.productVariants?.[0]?.variantImageURL}
                               alt={product.itemDescription || 'Product image'}
                               className="w-12 h-12 object-cover rounded"
-                              onError={(e) => { 
+                              onError={(e) => {
                                 e.currentTarget.style.display = 'none';
                                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
                               }}
                             />
-                            <div className="hidden w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
-                              <span className="text-xs text-gray-400">No Image</span>
-                            </div></>
+                              <div className="hidden w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
+                                <span className="text-xs text-gray-400">No Image</span>
+                              </div></>
                           ) : (
                             <div className="w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
                               <span className="text-xs text-gray-400">No Image</span>
@@ -404,7 +404,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
               </tbody>
             </table>
           </div>
-          
+
           {/* Pagination */}
           {supplier === 'SRS' && pagination.totalPages > 1 && (
             <div className="bg-gray-900 dark:bg-gray-800 px-6 py-4 flex items-center justify-between border-t border-gray-700">

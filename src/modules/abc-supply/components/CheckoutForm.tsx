@@ -80,26 +80,44 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   useEffect(() => {
     console.log('CheckoutForm - selectedShipTos:', selectedShipTos);
     console.log('CheckoutForm - shipTos:', shipTos);
-    
+
     // Get branches from selected shipTos
     const branches: ShipToBranch[] = [];
     selectedShipTos.forEach(shipToNumber => {
       const shipTo = shipTos.find(s => s.number === shipToNumber);
       console.log(`Found shipTo for ${shipToNumber}:`, shipTo);
-      if (shipTo && shipTo.branches) {
-        console.log(`Adding branches for ${shipToNumber}:`, shipTo.branches);
-        branches.push(...shipTo.branches);
+
+      if (shipTo) {
+        if (shipTo.branches && Array.isArray(shipTo.branches) && shipTo.branches.length > 0) {
+          console.log(`Adding branches for ${shipToNumber}:`, shipTo.branches);
+          branches.push(...shipTo.branches);
+        } else {
+          // Fallback: Check for flat branch properties
+          const syntheticBranch: any = {};
+          if (shipTo.branch) {
+            syntheticBranch.number = shipTo.branch.number;
+            syntheticBranch.name = shipTo.branch.name || `Branch ${shipTo.branch.number}`;
+          } else if ((shipTo as any).branchNumber) {
+            syntheticBranch.number = (shipTo as any).branchNumber;
+            syntheticBranch.name = (shipTo as any).branchName || `Branch ${(shipTo as any).branchNumber}`;
+          }
+
+          if (syntheticBranch.number) {
+            console.log(`Synthesized branch for ${shipToNumber}:`, syntheticBranch);
+            branches.push(syntheticBranch);
+          }
+        }
       }
     });
-    
+
     // Remove duplicates based on branch number
-    const uniqueBranches = branches.filter((branch, index, self) => 
+    const uniqueBranches = branches.filter((branch, index, self) =>
       index === self.findIndex(b => b.number === branch.number)
     );
-    
+
     console.log('Final uniqueBranches:', uniqueBranches);
     setAvailableBranches(uniqueBranches);
-    
+
     // Auto-select first branch if only one available
     if (uniqueBranches.length === 1 && !formData.branchNumber) {
       setFormData(prev => ({ ...prev, branchNumber: uniqueBranches[0].number }));
@@ -114,7 +132,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   const updateField = (section: keyof CheckoutFormData, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [section]: typeof prev[section] === 'object' 
+      [section]: typeof prev[section] === 'object'
         ? { ...prev[section], [field]: value }
         : value
     }));

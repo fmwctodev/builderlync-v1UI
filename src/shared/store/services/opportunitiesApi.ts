@@ -20,7 +20,7 @@ interface OpportunityFilters {
 class OpportunitiesApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,

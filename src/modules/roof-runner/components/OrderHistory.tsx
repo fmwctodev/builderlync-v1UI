@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, ChevronRight, Search, Filter, CheckCircle, Clock } from 'lucide-react';
+import { Package, Truck, ChevronRight, Search, Filter } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { srsApi } from '../services/srsApi';
 import { OrderHistoryItem } from '../../abc-supply/types';
+import OrderDetailsModal from './OrderDetailsModal';
 
 interface OrderHistoryProps {
   onBack: () => void;
@@ -13,6 +14,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
   const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   useEffect(() => {
     loadOrders();
@@ -24,7 +26,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const endDate = tomorrow.toISOString().split('T')[0];
-      
+
       let response;
       if (supplier === 'SRS') {
         response = await srsApi.getOrdersHistory({
@@ -43,7 +45,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
       }
 
       console.log("orders:", response);
-      
+
       if (response.success) {
         setOrders(response.data.items || []);
       } else {
@@ -121,7 +123,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
         ) : filteredOrders.length > 0 ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredOrders.map((order) => (
-              <div key={order.orderNumber} className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer">
+              <div
+                key={order.orderNumber}
+                className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer"
+                onClick={() => setSelectedOrder(order)}
+              >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -179,6 +185,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
           </div>
         )}
       </div>
+
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 };

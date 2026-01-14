@@ -20,7 +20,7 @@ const PublicEstimator: React.FC = () => {
   const mapInstanceRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   // Form data
   const [formData, setFormData] = useState({
     roofSteepness: '',
@@ -77,20 +77,20 @@ const PublicEstimator: React.FC = () => {
           position: window.google.maps.ControlPosition.LEFT_CENTER
         }
       });
-      
+
       // Initialize autocomplete
       if (inputRef.current) {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['address']
         });
-        
+
         autocompleteRef.current.addListener('place_changed', () => {
           const place = autocompleteRef.current?.getPlace();
           if (place?.geometry?.location && mapInstanceRef.current) {
             mapInstanceRef.current.setCenter(place.geometry.location);
             mapInstanceRef.current.setZoom(20);
             setAddress(place.formatted_address || '');
-            
+
             // Show continue button after location is selected
             setTimeout(() => {
               setShowRoofOutline(true);
@@ -125,14 +125,14 @@ const PublicEstimator: React.FC = () => {
 
   const handleSubmitEstimate = async () => {
     if (!publicUrl) return;
-    
+
     try {
       setSubmitting(true);
       const submitData = {
         ...formData,
         address // Include the address from the map step
       };
-      
+
       const response = await apiService.generateEstimate(publicUrl, submitData);
       setEstimateData(response.data);
       setShowEstimateReview(true);
@@ -147,12 +147,12 @@ const PublicEstimator: React.FC = () => {
   // Show estimate review page
   if (showEstimateReview && estimateData) {
     return (
-      <EstimateReview 
-        estimateData={estimateData} 
+      <EstimateReview
+        estimateData={estimateData}
         onBack={() => {
           setShowEstimateReview(false);
           setEstimateData(null);
-        }} 
+        }}
       />
     );
   }
@@ -214,7 +214,7 @@ const PublicEstimator: React.FC = () => {
 
             {/* Map */}
             <div ref={mapRef} className="w-full h-full" />
-            
+
             {/* Continue Button */}
             {showRoofOutline && (
               <div className="absolute bottom-4 right-4 z-10">
@@ -226,13 +226,13 @@ const PublicEstimator: React.FC = () => {
                 </button>
               </div>
             )}
-            
+
             {/* Address Display */}
             {showRoofOutline && address && (
               <div className="absolute top-20 left-4 z-10">
                 <div className="bg-white rounded-lg shadow-lg p-3 flex items-center gap-2">
                   <span className="text-gray-700">{address}</span>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowRoofOutline(false);
                       setAddress('');
@@ -262,7 +262,7 @@ const PublicEstimator: React.FC = () => {
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">How steep is your roof?</h1>
           <p className="text-gray-600 mb-8">Note: We do not currently offer flat roofing services</p>
-          
+
           <div className="grid grid-cols-4 gap-4">
             {[
               { id: 'flat', title: 'Flat', desc: 'Not offered', disabled: true },
@@ -272,11 +272,10 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => !option.disabled && (setFormData({...formData, roofSteepness: option.id}), setCurrentStep(4))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  option.disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50' :
+                onClick={() => !option.disabled && (setFormData({ ...formData, roofSteepness: option.id }), setCurrentStep(4))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${option.disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50' :
                   formData.roofSteepness === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded flex items-center justify-center">
                   <div className="w-8 h-8 bg-gray-400 transform rotate-12"></div>
@@ -300,7 +299,7 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 4 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of building do you have?</h1>
-          
+
           <div className="grid grid-cols-2 gap-6">
             {[
               { id: 'residential', title: 'Residential', image: 'house' },
@@ -308,14 +307,12 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, buildingType: option.id}), setCurrentStep(5))}
-                className={`relative h-80 rounded-lg overflow-hidden cursor-pointer transition-all ${
-                  formData.buildingType === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, buildingType: option.id }), setCurrentStep(5))}
+                className={`relative h-80 rounded-lg overflow-hidden cursor-pointer transition-all ${formData.buildingType === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
               >
-                <div className={`w-full h-full ${
-                  option.id === 'residential' ? 'bg-gradient-to-br from-blue-200 to-blue-400' : 'bg-gradient-to-br from-gray-300 to-gray-500'
-                }`}></div>
+                <div className={`w-full h-full ${option.id === 'residential' ? 'bg-gradient-to-br from-blue-200 to-blue-400' : 'bg-gradient-to-br from-gray-300 to-gray-500'
+                  }`}></div>
                 <div className="absolute bottom-6 left-6">
                   <h3 className="text-2xl font-bold text-white">{option.title}</h3>
                 </div>
@@ -336,20 +333,19 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 5 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What is currently on your roof?</h1>
-          
+
           <div className="grid grid-cols-4 gap-4">
             {[
               { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.jpg' },
-              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.jpg'},
-              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.jpg'},
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.jpg' },
+              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.jpg' },
               { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.jpg' }
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, currentRoof: option.id}), setCurrentStep(6))}
-                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
-                  formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(6))}
+                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
               >
                 <div className={`w-full h-full`}>
                   <img src={option.image} alt="" />
@@ -374,18 +370,17 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 6 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of roof would you like?</h1>
-          
+
           <div className="grid grid-cols-1 gap-4 max-w-md">
             <div
-              onClick={() => (setFormData({...formData, desiredRoof: 'metal'}), setCurrentStep(7))}
-              className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
-                formData.desiredRoof === 'metal' ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
-              }`}
+              onClick={() => (setFormData({ ...formData, desiredRoof: 'metal' }), setCurrentStep(7))}
+              className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.desiredRoof === 'metal' ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                }`}
             >
               <div className={`w-full h-full`}>
-                  <img src='../rooftypes/residential/metal-2.jpg' alt="" />
-                </div>
-                  {/* <h3 className="text-xl font-bold text-black">Metal</h3> */}
+                <img src='../rooftypes/residential/metal-2.jpg' alt="" />
+              </div>
+              {/* <h3 className="text-xl font-bold text-black">Metal</h3> */}
               <div className="absolute bottom-6 left-6">
                 <h3 className="text-xl font-bold text-white">Metal</h3>
               </div>
@@ -405,7 +400,7 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 7 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">When would you like to start your project?</h1>
-          
+
           <div className="grid grid-cols-3 gap-6">
             {[
               { id: 'no-timeline', title: 'No timeline', desc: 'I do not have a timeline in mind yet' },
@@ -414,10 +409,9 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, timeline: option.id}), setCurrentStep(8))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.timeline === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, timeline: option.id }), setCurrentStep(8))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${formData.timeline === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
                 <p className="text-gray-600">{option.desc}</p>
@@ -438,7 +432,7 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 8 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Are you interested in financing?</h1>
-          
+
           <div className="grid grid-cols-3 gap-6">
             {[
               { id: 'yes', title: 'Yes', desc: 'I am interested in financing' },
@@ -447,10 +441,9 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, financing: option.id}), setCurrentStep(9))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.financing === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, financing: option.id }), setCurrentStep(9))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${formData.financing === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
                 <p className="text-gray-600">{option.desc}</p>
@@ -471,15 +464,15 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 9 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tell us about your project (optional)</h1>
-          
+
           <div className="bg-white rounded-lg p-6">
             <textarea
               value={formData.projectDetails}
-              onChange={(e) => setFormData({...formData, projectDetails: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, projectDetails: e.target.value })}
               placeholder="Provide any additional details which will help us prepare your roofing estimate"
               className="w-full h-40 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            
+
             <div className="mt-6 flex justify-center">
               <button
                 onClick={() => setCurrentStep(10)}
@@ -500,7 +493,7 @@ const PublicEstimator: React.FC = () => {
       <div className="min-h-screen bg-gray-900 bg-opacity-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-lg p-8 max-w-lg w-full">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Where should we send your estimates?</h1>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -509,12 +502,12 @@ const PublicEstimator: React.FC = () => {
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter your full name"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -523,7 +516,7 @@ const PublicEstimator: React.FC = () => {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="Enter your email"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -535,31 +528,31 @@ const PublicEstimator: React.FC = () => {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Enter your phone number"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={formData.agreeToTerms}
-                  onChange={(e) => setFormData({...formData, agreeToTerms: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
                   I agree to <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a><span className="text-red-500">*</span>
                 </span>
               </label>
-              
+
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={formData.agreeToContact}
-                  onChange={(e) => setFormData({...formData, agreeToContact: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, agreeToContact: e.target.checked })}
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
@@ -567,7 +560,7 @@ const PublicEstimator: React.FC = () => {
                 </span>
               </label>
             </div>
-            
+
             <button
               onClick={handleSubmitEstimate}
               disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms || submitting}
@@ -591,11 +584,11 @@ const PublicEstimator: React.FC = () => {
           <div className="w-4 h-4 bg-gray-300"></div>
         </div>
       </div>
-      
+
       <div className="absolute top-20 right-20 opacity-10">
         <div className="w-8 h-8 rounded-full bg-gray-300 mb-4"></div>
       </div>
-      
+
       <div className="absolute bottom-20 right-32 opacity-10">
         <div className="w-24 h-24 border-2 border-gray-300 transform -rotate-12">
           <div className="w-full h-6 bg-gray-300 mb-2"></div>
@@ -603,15 +596,15 @@ const PublicEstimator: React.FC = () => {
           <div className="w-3 h-3 bg-gray-300"></div>
         </div>
       </div>
-      
+
       <div className="absolute bottom-32 left-20 opacity-10">
         <div className="w-20 h-20 rounded-full bg-gray-300"></div>
       </div>
-      
+
       <div className="absolute bottom-10 right-10 opacity-10">
         <div className="w-6 h-8 bg-gray-300"></div>
       </div>
-      
+
       <div className="absolute bottom-20 left-32 opacity-10">
         <div className="w-6 h-8 bg-gray-300"></div>
       </div>
@@ -621,14 +614,17 @@ const PublicEstimator: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto">
           {/* Logo */}
           <div className="mb-8">
-            <div className="w-32 h-20 mx-auto mb-4 bg-black rounded-lg flex items-center justify-center">
-              <div className="text-white font-bold text-lg">
-                {/* <div className="text-xs">TARRYTOWN</div> */}
-                <div className="text-sm font-black">ROOFING</div>
-                {/* <div className="text-xs font-normal">WE'VE GOT YOU COVERED</div> */}
-              </div>
+            <div className="w-32 h-20 mx-auto mb-4 rounded-lg flex items-center justify-center">
+              {estimatorData?.business_logo && (
+                <img
+                  src={estimatorData.business_logo}
+                  alt="Business Logo"
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
           </div>
+
 
           {/* Main heading */}
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -641,7 +637,7 @@ const PublicEstimator: React.FC = () => {
           </p>
 
           {/* Get started button */}
-          <button 
+          <button
             onClick={handleGetStarted}
             className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-4 rounded-full text-lg font-medium transition-colors inline-flex items-center gap-2"
           >
