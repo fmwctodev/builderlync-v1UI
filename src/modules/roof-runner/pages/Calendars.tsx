@@ -173,6 +173,15 @@ const Calendars: React.FC = () => {
 
   const handleDateClick = (day: number, time?: string) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    clickedDate.setHours(0, 0, 0, 0);
+    
+    if (clickedDate < today) {
+      alert('Cannot create events for past dates');
+      return;
+    }
+    
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -226,6 +235,17 @@ const Calendars: React.FC = () => {
     console.log('Form data being set:', formDataToSet);
     setFormData(formDataToSet);
     setShowModal(true);
+  };
+
+  const isEventInPast = () => {
+    if (!editingEvent) return false;
+    const eventDate = new Date((editingEvent as any).start_date || editingEvent.startDate);
+    const eventTime = (editingEvent as any).start_time || editingEvent.startTime;
+    if (eventTime) {
+      const [hours, minutes] = eventTime.split(':').map(Number);
+      eventDate.setHours(hours, minutes, 0, 0);
+    }
+    return eventDate < new Date();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -719,7 +739,9 @@ const Calendars: React.FC = () => {
                 <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
                   <CalendarIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{editingEvent ? 'Edit Event' : 'New Event'}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {editingEvent ? (isEventInPast() ? 'View Event' : 'Edit Event') : 'New Event'}
+                </h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -914,7 +936,7 @@ const Calendars: React.FC = () => {
 
               <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div>
-                  {editingEvent && (
+                  {editingEvent && !isEventInPast() && (
                     <button
                       type="button"
                       onClick={() => setShowDeleteConfirm(true)}
@@ -932,13 +954,15 @@ const Calendars: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (editingEvent ? 'Updating...' : 'Creating...') : (editingEvent ? 'Update Event' : 'Create Event')}
-                  </button>
+                  {!isEventInPast() && (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? (editingEvent ? 'Updating...' : 'Creating...') : (editingEvent ? 'Update Event' : 'Create Event')}
+                    </button>
+                  )}
                 </div>
               </div>
             </form>

@@ -9,6 +9,7 @@ interface CreateRoleModalProps {
   onSuccess: () => void;
   role?: Role;
   isEdit?: boolean;
+  selectedTemplateId?: string;
 }
 
 const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
@@ -17,6 +18,7 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   onSuccess,
   role,
   isEdit = false,
+  selectedTemplateId = '',
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -36,10 +38,15 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
       setName('');
       setDescription('');
       setPermissions(getDefaultPermissions());
-      setSelectedTemplate('');
+      setSelectedTemplate(selectedTemplateId);
       setShowTemplates(true);
+      
+      // Auto-select template if provided
+      if (selectedTemplateId) {
+        handleTemplateSelect(selectedTemplateId);
+      }
     }
-  }, [role, isEdit, isOpen]);
+  }, [role, isEdit, isOpen, selectedTemplateId]);
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -318,6 +325,7 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Sales Manager"
+                maxLength={50}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required
               />

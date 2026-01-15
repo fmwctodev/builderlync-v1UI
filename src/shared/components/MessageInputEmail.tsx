@@ -109,7 +109,11 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
               <h4 className="text-sm font-medium text-red-800 dark:text-red-200">Email Service Not Configured</h4>
               <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
               <button
-                onClick={() => navigate('/settings/email-service')}
+                onClick={() => {
+                  const user = JSON.parse(localStorage.getItem('user') || '{}');
+                  const orgSlug = user.companySlug || 'default';
+                  navigate(`/org/${orgSlug}/settings/email-service`);
+                }}
                 className="mt-2 inline-flex items-center space-x-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
               >
                 <Settings className="w-4 h-4" />

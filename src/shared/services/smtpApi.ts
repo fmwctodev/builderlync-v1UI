@@ -65,13 +65,6 @@ export const smtpApi = {
     });
     if (!response.ok) {
       const error = await response.json();
-      if (error.redirectUrl) {
-        // Show error with redirect option
-        const shouldRedirect = confirm(`${error.error}\n\nWould you like to configure SMS service now?`);
-        if (shouldRedirect) {
-          window.location.href = '/settings/integrations';
-        }
-      }
       throw error;
     }
     return response.json();

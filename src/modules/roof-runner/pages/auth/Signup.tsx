@@ -4,6 +4,8 @@ import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { registerRequest, clearError, clearRegistrationEmail } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
+import ContentModal from '../../../../shared/components/ContentModal';
+import { PRIVACY_POLICY_CONTENT, TERMS_OF_SERVICE_CONTENT } from '../../../../shared/constants/contentData';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +18,8 @@ const Signup: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
@@ -247,7 +251,24 @@ const Signup: React.FC = () => {
           <div className="flex items-center">
             <input type="checkbox" className="rounded border-gray-300 focus:ring-2" style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties} required />
             <span className="ml-2 text-sm text-gray-600">
-              I agree to the <Link to="#" style={{color: '#dc2626'} as React.CSSProperties} className="hover:opacity-80">Terms of Service</Link> and <Link to="#" style={{color: '#dc2626'} as React.CSSProperties} className="hover:opacity-80">Privacy Policy</Link>
+              I agree to the{' '}
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                style={{color: '#dc2626'} as React.CSSProperties}
+                className="hover:opacity-80 underline"
+              >
+                Terms of Service
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                style={{color: '#dc2626'} as React.CSSProperties}
+                className="hover:opacity-80 underline"
+              >
+                Privacy Policy
+              </button>
             </span>
           </div>
 
@@ -281,6 +302,22 @@ const Signup: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+      
+      {/* Privacy Policy Modal */}
+      <ContentModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        title="Privacy Policy"
+        content={PRIVACY_POLICY_CONTENT}
+      />
+      
+      {/* Terms of Service Modal */}
+      <ContentModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Terms of Service"
+        content={TERMS_OF_SERVICE_CONTENT}
+      />
     </div>
   );
 };
