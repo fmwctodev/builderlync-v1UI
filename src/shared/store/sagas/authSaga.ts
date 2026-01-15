@@ -44,7 +44,7 @@ function* verify2FASaga(action: PayloadAction<Verify2FARequest>): Generator<any,
     const response = yield call(authApi.verify2FA, action.payload);
     yield put(verify2FASuccess(response.data));
   } catch (error: any) {
-    const message = error.message || 'Verification failed';
+    const message = error.response?.data?.error || error.response?.data?.message || error.message || 'Verification failed';
     const attemptsRemaining = error.attemptsRemaining;
     yield put(verify2FAFailure({ message, attemptsRemaining }));
   }
@@ -65,7 +65,9 @@ function* verifyOtpSaga(action: PayloadAction<VerifyOtpRequest>): Generator<any,
     console.log('OTP verification response:', JSON.stringify(response));
     yield put(verifyOtpSuccess(response.data.token));
   } catch (error: any) {
-    yield put(verifyOtpFailure(error.message || 'OTP verification failed'));
+    console.log('OTP verification error:', JSON.stringify(error));
+    const message = error.response?.data?.error || error.response?.data?.message || error.message || 'OTP verification failed';
+    yield put(verifyOtpFailure(message));
   }
 }
 
@@ -81,9 +83,12 @@ function* resetPasswordSaga(action: PayloadAction<ResetPasswordRequest>): Genera
 function* verifyRegistrationOtpSaga(action: PayloadAction<VerifyRegistrationOtpRequest>): Generator<any, void, any> {
   try {
     const response = yield call(authApi.verifyRegistrationOtp, action.payload);
+    console.log(response)
     yield put(verifyRegistrationOtpSuccess(response.data));
   } catch (error: any) {
-    yield put(verifyRegistrationOtpFailure(error.message || 'OTP verification failed'));
+    console.log('OTP verification error:', error);
+    const message = error.response?.data?.error || error.response?.data?.message || error.message || error || 'OTP verification failed';
+    yield put(verifyRegistrationOtpFailure(message));
   }
 }
 

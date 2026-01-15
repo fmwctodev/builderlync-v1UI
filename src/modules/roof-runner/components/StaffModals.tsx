@@ -108,18 +108,27 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     if (name === 'phone') {
       const cleaned = value.replace(/[^0-9+]/g, '');
       setFormData({ ...formData, [name]: cleaned });
+    } else if (name === 'firstName' || name === 'lastName') {
+      const cleaned = value.replace(/[^a-zA-Z\s]/g, '');
+      setFormData({ ...formData, [name]: cleaned });
+    } else if (name === 'email') {
+      setFormData({ ...formData, [name]: value.trim() });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
   const isFormValid = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    
     return (
       formData.firstName.trim() !== '' &&
       formData.lastName.trim() !== '' &&
       formData.email.trim() !== '' &&
+      emailRegex.test(formData.email) &&
       formData.phone.trim() !== '' &&
-      /^\+?[0-9]{10,15}$/.test(formData.phone) &&
+      phoneRegex.test(formData.phone) &&
       formData.roleId !== ''
     );
   };
@@ -168,7 +177,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                First Name
+                First Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -176,12 +185,16 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 value={formData.firstName}
                 onChange={handleInputChange}
                 required
+                pattern="[a-zA-Z\s]+"
+                maxLength={30}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="John"
+                title="Only letters and spaces allowed (max 30 characters)"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Last Name
+                Last Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -189,14 +202,18 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 value={formData.lastName}
                 onChange={handleInputChange}
                 required
+                pattern="[a-zA-Z\s]+"
+                maxLength={30}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Doe"
+                title="Only letters and spaces allowed (max 30 characters)"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -204,13 +221,16 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               value={formData.email}
               onChange={handleInputChange}
               required
+              pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="example@email.com"
+              title="Please enter a valid email address"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Phone Number
+              Phone Number <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
@@ -228,7 +248,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
           {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role
+              Role <span className="text-red-500">*</span>
             </label>
             <select
               name="roleId"

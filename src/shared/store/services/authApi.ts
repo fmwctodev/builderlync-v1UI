@@ -222,9 +222,10 @@ export const authApi = {
     });
 
     const result = await response.json();
+    console.log(result)
 
     if (!response.ok) {
-      throw new Error(result.error || 'OTP verification failed');
+      throw new Error(result.message || 'OTP verification failed');
     }
 
     return result;

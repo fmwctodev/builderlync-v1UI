@@ -16,8 +16,11 @@ import {
   ChevronUp,
   MessageSquare,
   Mail,
-  FileText
+  FileText,
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ChannelTabs, ChannelType } from './ChannelTabs';
 import { MessageInputSMS } from './MessageInputSMS';
 import { MessageInputEmail } from './MessageInputEmail';
@@ -38,11 +41,14 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ conversationId }: ChatAreaProps) {
+  const navigate = useNavigate();
   const [activeChannel, setActiveChannel] = useState<ChannelType | 'team'>('sms');
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSmtpError, setShowSmtpError] = useState(false);
   const [messageContent, setMessageContent] = useState('');
   const [subject, setSubject] = useState('');
   const [showSnippetSelector, setShowSnippetSelector] = useState(false);
@@ -142,32 +148,36 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
   const handleSendMessage = async () => {
     if (!messageContent.trim() || !conversationId || !conversation?.contact?.id) return;
     
-    // Add message instantly to UI
-    const newMessage = {
-      id: Date.now().toString(),
-      conversation_id: conversationId,
-      message_type: 'sms' as any,
-      direction: 'outbound' as const,
-      sender_id: 'current_user',
-      content: messageContent,
-      is_internal: false,
-      email_metadata: {},
-      sms_metadata: {},
-      delivery_status: 'sent' as const,
-      external_id: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setMessageContent('');
-    
+    setSending(true);
     try {
       const { smtpApi } = await import('../services/smtpApi');
       await smtpApi.sendSMSMessage(conversation.contact.id.toString(), messageContent);
-    } catch (error) {
+      
+      const newMessage = {
+        id: Date.now().toString(),
+        conversation_id: conversationId,
+        message_type: 'sms' as any,
+        direction: 'outbound' as const,
+        sender_id: 'current_user',
+        content: messageContent,
+        is_internal: false,
+        email_metadata: {},
+        sms_metadata: {},
+        delivery_status: 'sent' as const,
+        external_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+      setMessageContent('');
+      setShowSmtpError(false);
+    } catch (error: any) {
       console.error('Failed to send message:', error);
-      setError('Failed to send message');
+      setError(error.message || 'Failed to send message');
+      setShowSmtpError(true);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -362,6 +372,34 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
               />
             ) : (
               <div>
+                {showSmtpError && error && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-3">
+                    <div className="flex items-start space-x-3">
+                      <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-red-800 dark:text-red-200">SMS Twilio Service Not Configured</h4>
+                        <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+                        <button
+                          onClick={() => {
+                            const user = JSON.parse(localStorage.getItem('user') || '{}');
+                            const orgSlug = user.companySlug || 'default';
+                            navigate(`/org/${orgSlug}/settings/integrations`);
+                          }}
+                          className="mt-2 inline-flex items-center space-x-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Configure SMS Service</span>
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowSmtpError(false)}
+                        className="text-red-400 hover:text-red-600 dark:hover:text-red-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <textarea
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
@@ -395,10 +433,20 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
                     </button>
                     <button 
                       onClick={handleSendMessage}
-                      disabled={!messageContent.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!messageContent.trim() || sending}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
-                      Send
+                      {sending ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Send</span>
+                      )}
                     </button>
                   </div>
                 </div>
