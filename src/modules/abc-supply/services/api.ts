@@ -43,6 +43,16 @@ export interface PriceRequest {
 }
 
 export const abcSupplyApi = {
+  // Connection Status
+  getStatus: async (): Promise<{ connected: boolean }> => {
+    try {
+      const response = await api.get('/abc-supply/status');
+      return response.data.data || { connected: false };
+    } catch (error) {
+      return { connected: false };
+    }
+  },
+
   // Products
   getItems: async (page: number = 1, limit: number = 20): Promise<ItemsResponse> => {
     const response = await api.get('/abc-supply/items', {
@@ -57,36 +67,33 @@ export const abcSupplyApi = {
     };
   },
 
-  searchItems: async (query: string, limit: number = 20): Promise<Product[]> => {
+  searchItems: async (query: string, limit: number = 20, branchId?: string): Promise<Product[]> => {
     const response = await api.get('/abc-supply/search', {
-      params: { q: query, limit }
+      params: { q: query, limit, branchId }
     });
 
     return response.data.items || response.data.data || response.data || [];
   },
 
-  filterItems: async (filters: string[], itemsPerPage: number = 20, pageNumber: number = 1): Promise<Product[]> => {
-    const response = await api.post('/abc-supply/products/search', {
-      filters: [{
-        key: "itemDescription",
-        condition: "contains",
-        values: filters,
-        joinCondition: null
-      }],
-      pagination: {
-        itemsPerPage,
-        pageNumber
+  filterItems: async (filters: string[], itemsPerPage: number = 20, pageNumber: number = 1, branchId?: string): Promise<Product[]> => {
+    // Pass branchId in query params. The backend controller (at /search) needs to extract and use it.
+    // filters argument here is treated as the 'query' string for now based on previous usage
+    const response = await api.get(`/abc-supply/search`, {
+      params: {
+        query: filters[0] || '', // Assuming filters is array of strings, usually just one search term
+        branchId,
+        page: pageNumber,
+        limit: itemsPerPage
       }
     });
 
-    // Handle different response format for filter API
     if (response.data.success && response.data.data) {
       return response.data.data.items || [];
     }
     return response.data.items || response.data.data || response.data || [];
   },
 
-  // Branches
+  // Branches - Generic locator (still useful for map visualization if needed, but not for ordering)
   getBranches: async (): Promise<Branch[]> => {
     try {
       const response = await api.get('/abc-supply/branches', {
@@ -97,14 +104,13 @@ export const abcSupplyApi = {
         }
       });
 
-      // Handle the actual API response structure
       let branches = [];
       if (response.data.success && response.data.data) {
-        branches = response.data.data.map(item => ({
+        branches = response.data.data.map((item: any) => ({
           id: item.branch.number,
           name: item.branch.name,
           address: {
-            street1: item.address.addressLine1,
+            street1: item.address.addressLine1, // Fixed type error mapping
             street2: item.address.addressLine2,
             city: item.address.city,
             state: item.address.state,
@@ -118,23 +124,28 @@ export const abcSupplyApi = {
           hours: item.hoursOfOperation,
           services: []
         }));
-      } else {
-        console.log('No branches data found or API unsuccessful');
       }
-
       return branches;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching branches:', error);
-      console.error('Error details:', error.response?.data);
       return [];
     }
   },
 
-  // ShipTos
+  // ShipTos - Fetch user's ship-to accounts (which contain available branches)
   getShipTos: async (): Promise<ShipTo[]> => {
     try {
-      const response = await api.get('/abc-supply/shiptos');
-      return response.data.shipTos || [];
+      const response = await api.post('/abc-supply/accounts/search', {
+        filters: [{
+          key: "storefront",
+          condition: "equals",
+          values: ["abc"]
+        }],
+        pagination: { itemsPerPage: 50, pageNumber: 1 }
+      });
+
+      const data = response.data.data || response.data;
+      return data.shipTos || [];
     } catch (error) {
       console.error('Error fetching shipTos:', error);
       return [];
@@ -150,7 +161,7 @@ export const abcSupplyApi = {
   },
 
   // Pricing
-  getPrices: async (priceRequest: PriceRequest): Promise<any> => {
+  getPrices: async (priceRequest: PriceRequest & { shipToNumber: string }): Promise<any> => {
     const response = await api.post('/abc-supply/prices', priceRequest);
     return response.data;
   },
@@ -184,6 +195,13 @@ export const abcSupplyApi = {
     return response.data;
   },
 
+  getOrderDetails: async (confirmationNumber: string): Promise<any> => {
+    const response = await api.get('/abc-supply/orderDetails', {
+      params: { confirmationNumber }
+    });
+    return response.data;
+  },
+
   getOrders: async (): Promise<Order[]> => {
     const response = await api.get('/abc-supply/orders');
     return response.data.orders || response.data;
@@ -199,6 +217,7 @@ export const abcSupplyApi = {
       uom: string;
     }>;
     branchNumber: string;
+    shipToAccountNumber: string;
     deliveryAddress: {
       name: string;
       line1: string;
@@ -214,150 +233,76 @@ export const abcSupplyApi = {
     };
     deliveryDate?: string;
     instructions?: string;
+    deliveryService?: string;
   }): Promise<Order> => {
 
     console.log("Order data being sent:", orderData);
 
-    // const orderPayload = {
-    //   requestId: `REQ-${Date.now()}`,
-    //   purchaseOrder: `PO-${Date.now()}`,
-    //   branchNumber: orderData.branchNumber,
-    //   deliveryService: "OTG",
-    //   typeCode: "SO",
-    //   dates: {
-    //     deliveryRequestedFor: orderData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    //   },
-    //   deliveryAppointment: {
-    //     instructionsTypeCode: "AT",
-    //     instructions: orderData.instructions || "Standard delivery",
-    //     fromTime: "09:00",
-    //     toTime: "17:00",
-    //     timeZoneCode: "CT"
-    //   },
-    //   currency: "USD",
-    //   shipTo: {
-    //     name: orderData.deliveryAddress.name,
-    //     number: "1008710",
-    //     address: {
-    //       line1: orderData.deliveryAddress.line1,
-    //       line2: orderData.deliveryAddress.line2 || "",
-    //       line3: "",
-    //       city: orderData.deliveryAddress.city,
-    //       state: orderData.deliveryAddress.state,
-    //       postal: orderData.deliveryAddress.postal,
-    //       country: "USA"
-    //     },
-    //     contacts: [{
-    //       name: orderData.contact.name,
-    //       functionCode: "SM",
-    //       email: orderData.contact.email,
-    //       phones: [{
-    //         number: orderData.contact.phone.replace(/\D/g, ''),
-    //         type: "MOBILE",
-    //         ext: ""
-    //       }]
-    //     }]
-    //   },
-    //   orderComments: [{
-    //     code: "H",
-    //     description: orderData.instructions || "Order created via BuilderLynk"
-    //   }],
-    //   lines: orderData.items.map((item, index) => ({
-    //     id: (index + 1).toString(),
-    //     itemNumber: item.sku,
-    //     itemDescription: item.name,
-    //     orderedQty: {
-    //       value: item.quantity,
-    //       uom: item.uom
-    //     },
-    //     unitPrice: {
-    //       value: item.unitPrice,
-    //       uom: item.uom,
-    //       instructions: `Quote: REQ-${Date.now()}`
-    //     },
-    //     comments: {
-    //       code: "D",
-    //       description: `Line item: ${item.name}`
-    //     }
-    //   }))
-    // };
-
     const orderPayload = {
-      "requestId": "312345",
-      "purchaseOrder": "999999-9",
-      "branchNumber": "441",
-      "deliveryService": "OTG",
-      "typeCode": "SO",
-      "dates": {
-        "deliveryRequestedFor": "2025-03-05"
+      requestId: `REQ-${Date.now()}`,
+      purchaseOrder: `PO-${Date.now()}`,
+      branchNumber: orderData.branchNumber,
+      deliveryService: orderData.deliveryService || "OTG",
+      typeCode: "SO",
+      dates: {
+        deliveryRequestedFor: orderData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       },
-      "deliveryAppointment": {
-        "instructionsTypeCode": "AT",
-        "instructions": "Please leave in driveway",
-        "fromTime": "10:00",
-        "toTime": "11:00",
-        "timeZoneCode": "CT"
+      deliveryAppointment: {
+        instructionsTypeCode: "AT",
+        instructions: orderData.instructions || "Standard delivery",
+        fromTime: "09:00",
+        toTime: "17:00",
+        timeZoneCode: "CT"
       },
-      "currency": "USD",
-      "shipTo": {
-        "name": "Test Account",
-        "number": "1008710",
-        "address": {
-          "line1": "123 Main St",
-          "line2": "Dock 123",
-          "line3": "Bldg. 1 Section 2",
-          "city": "Chicago",
-          "state": "IL",
-          "postal": "60661",
-          "country": "USA"
+      currency: "USD",
+      shipTo: {
+        name: orderData.deliveryAddress.name,
+        number: orderData.shipToAccountNumber,
+        address: {
+          line1: orderData.deliveryAddress.line1,
+          line2: orderData.deliveryAddress.line2 || "",
+          line3: "",
+          city: orderData.deliveryAddress.city,
+          state: orderData.deliveryAddress.state,
+          postal: orderData.deliveryAddress.postal,
+          country: "USA"
         },
-        "contacts": [
-          {
-            "name": "John Doe",
-            "functionCode": "SM",
-            "email": "john.doe@email.com",
-            "phones": [
-              {
-                "number": "8882221111",
-                "type": "MOBILE",
-                "ext": ""
-              }
-            ]
-          }
-        ]
+        contacts: [{
+          name: orderData.contact.name,
+          functionCode: "SM",
+          email: orderData.contact.email,
+          phones: [{
+            number: orderData.contact.phone.replace(/\D/g, ''),
+            type: "MOBILE",
+            ext: ""
+          }]
+        }]
       },
-      "orderComments": [
-        {
-          "code": "H",
-          "description": "Order header comment here"
+      orderComments: [{
+        code: "H",
+        description: orderData.instructions || "Order created via BuilderLynk"
+      }],
+      lines: orderData.items.map((item, index) => ({
+        id: (index + 1).toString(),
+        itemNumber: item.sku,
+        itemDescription: item.name,
+        orderedQty: {
+          value: item.quantity,
+          uom: item.uom
+        },
+        unitPrice: {
+          value: item.unitPrice,
+          uom: item.uom,
+          instructions: `Quote: REQ-${Date.now()}`
+        },
+        comments: {
+          code: "D",
+          description: `Line item: ${item.name}`
         }
-      ],
-      "lines": [
-        {
-          "id": "1",
-          "itemNumber": "02GAFSL3AS",
-          "itemDescription": "Paint ABC Touch-UP Spray Black 12 OZ",
-          "orderedQty": {
-            "value": 10,
-            "uom": "BD"
-          },
-          "unitPrice": {
-            "value": 84.5,
-            "uom": "BD",
-            "instructions": "Quote: 312345"
-          },
-          "comments": {
-            "code": "D",
-            "description": "Line comment text here"
-          }
-        }
-      ]
+      }))
     };
 
-
     const response = await api.post('/abc-supply/orders', orderPayload);
-    console.log("response,", response.data);
-
     return response.data;
   },
 

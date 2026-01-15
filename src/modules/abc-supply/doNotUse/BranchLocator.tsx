@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { MapPin, Phone, Clock, Loader2, Search } from 'lucide-react';
+import { MapPin, Phone, Clock, Loader2, Search, Check } from 'lucide-react';
 import { Wrapper } from '@googlemaps/react-wrapper';
 import { abcSupplyApi } from '../services/api';
 import { Branch } from '../types';
+import { useCart } from '../context/CartContext';
 
 interface MapComponentProps {
   branches: Branch[];
@@ -85,12 +86,20 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
 };
 
 const BranchLocator: React.FC = () => {
+  const { selectedBranch: globalSelectedBranch, setSelectedBranch: setGlobalSelectedBranch } = useCart();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(globalSelectedBranch);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Sync local selected branch with global state if it changes externally
+  useEffect(() => {
+    if (globalSelectedBranch) {
+      setSelectedBranch(globalSelectedBranch);
+    }
+  }, [globalSelectedBranch]);
 
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -107,22 +116,24 @@ const BranchLocator: React.FC = () => {
 
   const handleBranchSelect = useCallback((branch: Branch) => {
     setSelectedBranch(branch);
+    setGlobalSelectedBranch(branch); // Update global context
     setSearchQuery(branch.name);
     setShowSuggestions(false);
-  }, []);
+  }, [setGlobalSelectedBranch]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
     setShowSuggestions(value.trim().length > 0);
     if (!value.trim()) {
-      setSelectedBranch(null);
+      // Don't deselect automatically on clear, user might want to keep selection
+      // But if they explicitly want to clear logic implies clearing selection usually
     }
   }, []);
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
-    setSelectedBranch(null);
+    // setSelectedBranch(null); // Optional: keep selected branch even if search cleared
     setShowSuggestions(false);
   }, []);
 
@@ -173,7 +184,14 @@ const BranchLocator: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Branch Locator</h1>
         <div className="text-sm text-gray-400">
-          {selectedBranch ? '1 branch selected' : `${branches.length} branches`}
+          {selectedBranch ? (
+            <span className="flex items-center text-green-400">
+              <Check className="w-4 h-4 mr-1" />
+              Selected: {selectedBranch.name}
+            </span>
+          ) : (
+            `${branches.length} branches available`
+          )}
         </div>
       </div>
 
@@ -221,9 +239,15 @@ const BranchLocator: React.FC = () => {
       </div>
 
       {selectedBranch && (
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-gray-800 rounded-lg p-6 border border-blue-500/30">
           <div className="flex items-start justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">{selectedBranch.name}</h3>
+            <div>
+              <h3 className="text-lg font-semibold text-white">{selectedBranch.name}</h3>
+              <p className="text-sm text-green-400 mt-1 flex items-center">
+                <Check className="w-3 h-3 mr-1" />
+                Currently Selected Branch
+              </p>
+            </div>
             <MapPin className="w-5 h-5 text-blue-400 flex-shrink-0" />
           </div>
 

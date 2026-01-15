@@ -14,13 +14,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
     useEffect(() => {
         const fetchOrderDetails = async () => {
             try {
-                if (initialOrder.orderNumber) {
-                    // Determine if we need to fetch details. 
-                    // If the initialOrder doesn't have 'lines' or 'items', we probably need to fetch.
-                    // For now, let's always fetch to be safe and ensure fresh data.
-                    // Note: API might reject if orderNumber is not a valid ID format, 
-                    // but we'll assume orderNumber is the ID.
-                    const details = await abcSupplyApi.getOrderById(initialOrder.orderNumber);
+                const confirmationNumber = initialOrder.confirmationNumber || initialOrder.confirmationId;
+
+                if (confirmationNumber) {
+                    // Use the specialized endpoint for confirmation number
+                    const response = await abcSupplyApi.getOrderDetails(confirmationNumber);
+                    const details = (response as any).data || response;
+                    setOrderDetails({ ...initialOrder, ...details });
+                } else if (initialOrder.orderNumber) {
+                    const response = await abcSupplyApi.getOrderById(initialOrder.orderNumber);
+                    const details = (response as any).data || response;
                     setOrderDetails({ ...initialOrder, ...details });
                 }
             } catch (error) {
@@ -33,6 +36,10 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
         fetchOrderDetails();
     }, [initialOrder]);
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     const steps = [
         { id: 'pending', label: 'Pending', icon: FileText },
         { id: 'processing', label: 'Processing', icon: Package },
@@ -43,14 +50,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
     const currentStepIndex = steps.findIndex(s => s.id === (orderDetails.orderStatus?.toLowerCase() || 'processing'));
     const isStepComplete = (index: number) => index <= (currentStepIndex === -1 ? 1 : currentStepIndex);
 
-    // Map API lines to display format if available, else use placeholder or empty
-    const orderItems = orderDetails.lines ? orderDetails.lines.map((line: any) => ({
-        name: line.itemDescription || line.description || 'Item',
-        desc: line.itemNumber || line.productCode || '',
+    // Robust mapping for lines/items
+    const lines = orderDetails.lines || orderDetails.items || [];
+    const orderItems = lines.map((line: any) => ({
+        name: line.itemDescription || line.description || line.name || 'Item',
+        desc: line.itemNumber || line.productCode || line.sku || '',
         qty: `${line.orderedQty?.value || line.quantity || 0} ${line.orderedQty?.uom || line.uom || ''}`,
-        price: line.unitPrice?.value || line.price || 0,
-        total: (line.unitPrice?.value || line.price || 0) * (line.orderedQty?.value || line.quantity || 0)
-    })) : [];
+        price: line.unitPrice?.value || line.price || line.unitPrice || 0,
+        total: (line.unitPrice?.value || line.price || line.unitPrice || 0) * (line.orderedQty?.value || line.quantity || 0)
+    }));
 
     // Calculate totals if not provided
     const subtotal = orderItems.reduce((acc: number, item: any) => acc + item.total, 0);
@@ -58,12 +66,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
     const total = subtotal + tax;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 print:bg-white print:p-0 print:absolute print:inset-0">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:rounded-none">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start sticky top-0 bg-white dark:bg-gray-800 z-10 print:static print:border-none">
                     <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                        <div className="h-12 w-12 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center print:hidden">
                             <FileText className="h-6 w-6 text-[#D71920]" />
                         </div>
                         <div>
@@ -71,7 +79,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                             <p className="text-gray-500 text-sm">Confirmation: {orderDetails.confirmationNumber || orderDetails.orderNumber || '---'}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 print:hidden">
                         <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium flex items-center gap-1">
                             <Package className="h-3 w-3" /> {orderDetails.orderStatus || 'Processing'}
                         </span>
@@ -85,8 +93,18 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                 </div>
 
                 <div className="p-6 space-y-8">
-                    {/* Progress Bar */}
-                    <div className="w-full py-4">
+                    {/* Error Message / Processing Status */}
+                    {(orderDetails.errorMessage || orderDetails.processingStatus) && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+                            <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Order Status Notice</h3>
+                            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                                {orderDetails.errorMessage || orderDetails.processingStatus}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Progress Bar - Hidden in print */}
+                    <div className="w-full py-4 print:hidden">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-6">Order Progress</h3>
                         <div className="relative flex justify-between items-center px-4 md:px-12">
                             <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200 dark:bg-gray-700 -z-0" />
@@ -197,7 +215,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                         <div>
                             <p className="text-xs text-gray-500 uppercase">Est. Delivery</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                                {orderDetails.dates?.deliveryRequestedFor || '---'}
+                                {orderDetails.dates?.deliveryRequestedFor || orderDetails.estDeliveryDate || '---'}
                             </p>
                         </div>
                         <div>
@@ -211,12 +229,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                 </div>
 
                 {/* Modal Footer */}
-                <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-b-xl">
+                <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-b-xl print:hidden">
                     <div className="text-sm text-gray-500">
                         Account: Main Ship-To Account
                     </div>
                     <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-colors">
+                        <button
+                            onClick={handlePrint}
+                            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-colors"
+                        >
                             <Printer className="h-4 w-4" /> Print
                         </button>
                         <button

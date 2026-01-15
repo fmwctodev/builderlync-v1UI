@@ -1,28 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin } from 'lucide-react';
+import { X } from 'lucide-react';
 import { abcSupplyApi } from '../services/api';
-import { Branch, ShipTo, ShipToBranch } from '../../roof-runner/types';
 
 interface CheckoutFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: CheckoutFormData) => void;
   loading: boolean;
-  selectedShipTos: string[];
-  shipTos: ShipTo[];
 }
 
 export interface CheckoutFormData {
-  branchNumber: string;
   jobId?: number | null;
-  deliveryAddress: {
-    name: string;
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    postal: string;
-  };
+  deliveryService: string;
   contact: {
     name: string;
     email: string;
@@ -32,20 +21,11 @@ export interface CheckoutFormData {
   instructions?: string;
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, selectedShipTos, shipTos }) => {
-  const [availableBranches, setAvailableBranches] = useState<ShipToBranch[]>([]);
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading }) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
-    branchNumber: '',
     jobId: null,
-    deliveryAddress: {
-      name: '',
-      line1: '',
-      line2: '',
-      city: '',
-      state: '',
-      postal: ''
-    },
+    deliveryService: 'OTG', // Default to Our Truck Ground
     contact: {
       name: '',
       email: '',
@@ -76,53 +56,6 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
       fetchJobs();
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    console.log('CheckoutForm - selectedShipTos:', selectedShipTos);
-    console.log('CheckoutForm - shipTos:', shipTos);
-
-    // Get branches from selected shipTos
-    const branches: ShipToBranch[] = [];
-    selectedShipTos.forEach(shipToNumber => {
-      const shipTo = shipTos.find(s => s.number === shipToNumber);
-      console.log(`Found shipTo for ${shipToNumber}:`, shipTo);
-
-      if (shipTo) {
-        if (shipTo.branches && Array.isArray(shipTo.branches) && shipTo.branches.length > 0) {
-          console.log(`Adding branches for ${shipToNumber}:`, shipTo.branches);
-          branches.push(...shipTo.branches);
-        } else {
-          // Fallback: Check for flat branch properties
-          const syntheticBranch: any = {};
-          if (shipTo.branch) {
-            syntheticBranch.number = shipTo.branch.number;
-            syntheticBranch.name = shipTo.branch.name || `Branch ${shipTo.branch.number}`;
-          } else if ((shipTo as any).branchNumber) {
-            syntheticBranch.number = (shipTo as any).branchNumber;
-            syntheticBranch.name = (shipTo as any).branchName || `Branch ${(shipTo as any).branchNumber}`;
-          }
-
-          if (syntheticBranch.number) {
-            console.log(`Synthesized branch for ${shipToNumber}:`, syntheticBranch);
-            branches.push(syntheticBranch);
-          }
-        }
-      }
-    });
-
-    // Remove duplicates based on branch number
-    const uniqueBranches = branches.filter((branch, index, self) =>
-      index === self.findIndex(b => b.number === branch.number)
-    );
-
-    console.log('Final uniqueBranches:', uniqueBranches);
-    setAvailableBranches(uniqueBranches);
-
-    // Auto-select first branch if only one available
-    if (uniqueBranches.length === 1 && !formData.branchNumber) {
-      setFormData(prev => ({ ...prev, branchNumber: uniqueBranches[0].number }));
-    }
-  }, [selectedShipTos, shipTos]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,75 +104,24 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              <MapPin className="w-4 h-4 inline mr-1" />
-              Select Branch
+              Delivery Service
             </label>
             <select
-              value={formData.branchNumber}
-              onChange={(e) => updateField('branchNumber', '', e.target.value)}
-              required
+              value={formData.deliveryService}
+              onChange={(e) => updateField('deliveryService', '', e.target.value)}
               className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
             >
-              <option value="">Select a branch...</option>
-              {availableBranches.map((branch) => (
-                <option key={branch.number} value={branch.number}>
-                  {branch.name} ({branch.number})
-                </option>
-              ))}
+              <option value="OTG">Our Truck Ground (OTG)</option>
+              <option value="COM">Common Carrier (COM)</option>
+              <option value="CPU">Customer Pickup (CPU)</option>
+              <option value="EXP">Express Pickup (EXP)</option>
+              <option value="OTR">Our Truck Roof (OTR)</option>
+              <option value="OTW">Our Truck Window (OTW)</option>
+              <option value="TPC">Third-Party Carrier (TPC)</option>
             </select>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-medium text-white mb-4">Delivery Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Company/Name"
-                value={formData.deliveryAddress.name}
-                onChange={(e) => updateField('deliveryAddress', 'name', e.target.value)}
-                required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-              <input
-                type="text"
-                placeholder="Address Line 1"
-                value={formData.deliveryAddress.line1}
-                onChange={(e) => updateField('deliveryAddress', 'line1', e.target.value)}
-                required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-              <input
-                type="text"
-                placeholder="Address Line 2 (Optional)"
-                value={formData.deliveryAddress.line2}
-                onChange={(e) => updateField('deliveryAddress', 'line2', e.target.value)}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-              <input
-                type="text"
-                placeholder="City"
-                value={formData.deliveryAddress.city}
-                onChange={(e) => updateField('deliveryAddress', 'city', e.target.value)}
-                required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-              <input
-                type="text"
-                placeholder="State"
-                value={formData.deliveryAddress.state}
-                onChange={(e) => updateField('deliveryAddress', 'state', e.target.value)}
-                required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-              <input
-                type="text"
-                placeholder="ZIP Code"
-                value={formData.deliveryAddress.postal}
-                onChange={(e) => updateField('deliveryAddress', 'postal', e.target.value)}
-                required
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-              />
-            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Note: Delivery Services available are dependent on the branch and are subject to change at the discretion of the branch.
+            </p>
           </div>
 
           <div>

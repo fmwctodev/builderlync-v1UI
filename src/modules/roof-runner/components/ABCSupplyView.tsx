@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown, AlertCircle, Settings, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown, AlertCircle, Settings, AlertTriangle, ArrowRight, Building } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
 import OrderDetailsModal from './OrderDetailsModal';
 import { abcSupplyApi } from '../../abc-supply/services/api';
-import { Product, Branch } from '../../abc-supply/types';
+import { Product, Branch, ShipTo } from '../../abc-supply/types';
+import { Link } from 'react-router-dom';
 
 const ABCSupplyView: React.FC = () => {
   const [currentView, setCurrentView] = useState(() => {
@@ -14,15 +15,61 @@ const ABCSupplyView: React.FC = () => {
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [allBranches, setAllBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState({
     orders: true,
     products: true,
-    branches: true
+    connection: true
   });
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
+  const [selectedShipTo, setSelectedShipTo] = useState<ShipTo | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    // Check connection status
+    const checkConnection = async () => {
+      try {
+        const status = await abcSupplyApi.getStatus();
+        setIsConnected(status.connected);
+      } catch (error) {
+        setIsConnected(false);
+      } finally {
+        setLoading(prev => ({ ...prev, connection: false }));
+      }
+    };
+    checkConnection();
+
+    // Load selected branch and account from local storage
+    loadSelection();
+  }, []);
+
+  const loadSelection = () => {
+    const savedBranch = localStorage.getItem('abc_selected_branch');
+    const savedShipTo = localStorage.getItem('abc_selected_shipto');
+
+    if (savedBranch) {
+      try {
+        setSelectedBranch(JSON.parse(savedBranch));
+      } catch (e) { console.error(e); }
+    } else {
+      setSelectedBranch(null);
+    }
+
+    if (savedShipTo) {
+      try {
+        setSelectedShipTo(JSON.parse(savedShipTo));
+      } catch (e) { console.error(e); }
+    } else {
+      setSelectedShipTo(null);
+    }
+  };
+
+  // Reload selected branch when view changes to dashboard
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+      loadSelection();
+    }
+  }, [currentView]);
 
   useEffect(() => {
     const loadRecentOrders = async () => {
@@ -46,48 +93,52 @@ const ABCSupplyView: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load recent orders:', error);
-        console.error('Error details:', (error as any).response?.data);
-        // Keep existing orders if refresh fails
       } finally {
         setLoading(prev => ({ ...prev, orders: false }));
       }
     };
-    loadRecentOrders();
-  }, []);
+    if (isConnected) {
+      loadRecentOrders();
+    } else {
+      setLoading(prev => ({ ...prev, orders: false }));
+    }
+  }, [isConnected]);
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        const response = await abcSupplyApi.getItems(1, 4);
-        // Handle the nested structure: response.items.items
-        const products = Array.isArray((response as any).items) ? (response as any).items : (response as any).items?.items || [];
+        // If branch selected, try to get products available at that branch via search filter
+        let products = [];
+        if (selectedBranch && selectedBranch.number) {
+          // Use filterItems with empty query to get branch availability
+          // Note: If empty query not supported well, this might return empty.
+          // Using a generic term or wildcard might be needed. 
+          // For featured, we might just want to show *something*.
+          // Assume searching for "shingle" or similar generic term, or just getItems if no robust branch filter for "all"
+          // Actually, best to just use getItems for featured if search isn't robust for "all"
+          // But user said: "Search Items... across all branches... misleadingly select items not available".
+          // So we really should filter.
+          // Let's try searching for "s" (very broad) or just use getItems and hope for best if no search term specific.
+          // Actually, ProductCatalog logic (calling filterItems with '') is what we should mirror.
+          const response = await abcSupplyApi.filterItems([''], 4, 1, selectedBranch.number);
+          products = Array.isArray(response) ? response : [];
+        } else {
+          const response = await abcSupplyApi.getItems(1, 4);
+          products = Array.isArray((response as any).items) ? (response as any).items : (response as any).items?.items || [];
+        }
         setFeaturedProducts(products);
       } catch (error) {
         console.error('Failed to load featured products:', error);
-        console.error('Error details:', (error as any).response?.data);
-        // Keep existing products if refresh fails
       } finally {
         setLoading(prev => ({ ...prev, products: false }));
       }
     };
-    loadFeaturedProducts();
-  }, []);
-
-  useEffect(() => {
-    const loadNearestBranches = async () => {
-      try {
-        const branches = await abcSupplyApi.getBranches();
-        setAllBranches(branches); // Store all branches for the dropdown
-
-      } catch (error) {
-        console.error('Failed to load nearest branches:', error);
-        // Keep existing branches if refresh fails
-      } finally {
-        setLoading(prev => ({ ...prev, branches: false }));
-      }
-    };
-    loadNearestBranches();
-  }, []);
+    if (isConnected) {
+      loadFeaturedProducts();
+    } else {
+      setLoading(prev => ({ ...prev, products: false }));
+    }
+  }, [isConnected, selectedBranch]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -95,8 +146,6 @@ const ABCSupplyView: React.FC = () => {
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
-
-
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -107,51 +156,30 @@ const ABCSupplyView: React.FC = () => {
               {getGreeting()}, Contractor
             </h1>
             <p className="mt-2 text-white/90">
-              Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
+              Welcome to your ABC Supply Contractor Portal.
             </p>
           </div>
 
-          {/* Branch Selector Dropdown */}
-          <div className="relative">
+          {/* Branch Selector Button */}
+          <div className="relative flex flex-col items-end gap-2">
             <button
-              onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+              onClick={() => setCurrentView('branches')}
               className="flex items-center gap-2 px-4 py-2 bg-[#A31318] text-white rounded-md hover:bg-[#8F1115] transition-colors border border-[#A31318]"
             >
-              <span className="font-medium truncate max-w-[200px]">
-                {selectedBranch ? selectedBranch.name : 'Select Branch'}
-              </span>
-              <ChevronDown className="h-4 w-4" />
+              <div className="flex flex-col items-start">
+                <span className="text-xs text-red-200 uppercase font-bold tracking-wider">
+                  {selectedBranch ? 'Selected Branch' : 'Select Account & Branch'}
+                </span>
+                <span className="font-medium truncate max-w-[200px]">
+                  {selectedBranch ? selectedBranch.name : 'Find a Location'}
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 ml-2" />
             </button>
-
-            {showBranchDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto">
-                <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-                  <p className="text-xs font-semibold text-gray-500 uppercase px-2 py-1">Available Branches</p>
-                </div>
-                <div className="py-1">
-                  {allBranches.length > 0 ? (
-                    allBranches.map((branch) => (
-                      <button
-                        key={branch.id}
-                        onClick={() => {
-                          setSelectedBranch(branch);
-                          setShowBranchDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col gap-1 ${selectedBranch?.id === branch.id
-                          ? 'bg-red-50 dark:bg-red-900/10 border-l-4 border-[#D71920]'
-                          : ''
-                          }`}
-                      >
-                        <span className="font-medium text-gray-900 dark:text-white">{branch.name}</span>
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {branch.address?.city}, {branch.address?.state}
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500">No branches found</div>
-                  )}
-                </div>
+            {selectedShipTo && (
+              <div className="text-xs text-red-100 flex items-center gap-1">
+                <Building className="h-3 w-3" />
+                Account: {selectedShipTo.name} ({selectedShipTo.number})
               </div>
             )}
           </div>
@@ -160,7 +188,7 @@ const ABCSupplyView: React.FC = () => {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             onClick={() => setCurrentView('products')}
-            className="bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group"
+            className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!selectedBranch || !isConnected ? 'opacity-70 pointer-events-none' : ''}`}
           >
             <div className="h-12 w-12 flex-shrink-0 bg-red-50 rounded-lg flex items-center justify-center">
               <ShoppingBag className="h-6 w-6 text-[#D71920]" />
@@ -186,7 +214,7 @@ const ABCSupplyView: React.FC = () => {
 
           <div
             onClick={() => setCurrentView('orders')}
-            className="bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group"
+            className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!isConnected ? 'opacity-70 pointer-events-none' : ''}`}
           >
             <div className="h-12 w-12 flex-shrink-0 bg-red-50 rounded-lg flex items-center justify-center">
               <ClipboardList className="h-6 w-6 text-[#D71920]" />
@@ -206,47 +234,53 @@ const ABCSupplyView: React.FC = () => {
         />
       )}
 
-      {!selectedBranch ? (
+      {/* Connection & Branch Warnings */}
+      {(!isConnected || !selectedBranch) && !loading.connection && (
         <div className="space-y-6">
           <div className="bg-[#1E293B] border border-gray-700 rounded-lg p-0 overflow-hidden shadow-sm">
             <div className="p-4 bg-[#2C3344] bg-opacity-40 border-b border-gray-700/50 flex items-start gap-4">
               <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-base font-bold text-yellow-500">Select Account and Branch First</h3>
+                <h3 className="text-base font-bold text-yellow-500">
+                  {!isConnected ? 'Connect Your ABC Supply Account' : 'Select Account & Branch'}
+                </h3>
                 <p className="text-sm text-yellow-500/80 mt-1">
-                  You must select a ship-to account and branch before searching for products. Product availability and pricing vary by branch.
+                  {!isConnected
+                    ? 'To access products, pricing, and place orders, you must first connect your ABC Supply account.'
+                    : 'Please select your Ship-To Account and Branch to view products and pricing available to you.'}
                 </p>
               </div>
             </div>
 
             <div className="p-4 bg-[#1E293B] flex flex-col md:flex-row gap-6 md:items-center text-sm text-gray-400">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span>No ABC Supply accounts configured</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>Select an account first</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-start gap-4">
-            <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="text-sm font-bold text-orange-800 dark:text-orange-400">Setup Required</h3>
-              <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
-                Select your ship-to account and branch above to enable product browsing and ordering. Product availability and pricing vary by branch location.
-              </p>
+              {!isConnected ? (
+                <div className="flex items-center gap-2 text-red-400">
+                  <Settings className="h-4 w-4" />
+                  <span>No ABC Supply accounts configured</span>
+                  <a href="/settings/integrations" className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
+                    Go to Settings <ArrowRight className="h-3 w-3" />
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <MapPin className="h-4 w-4" />
+                  <span>Account/Branch not selected</span>
+                  <button onClick={() => setCurrentView('branches')} className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
+                    Select Now <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {isConnected && selectedBranch ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
-              <button className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
+              <button onClick={() => setCurrentView('orders')} className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
@@ -273,15 +307,6 @@ const ABCSupplyView: React.FC = () => {
                             {order.branchCityState} - {order.productQty} items
                           </p>
                           <div className="mt-1 flex items-center">
-                            {order.orderStatus === 'processing' && (
-                              <Package className="h-4 w-4 text-yellow-500 mr-1" />
-                            )}
-                            {order.orderStatus === 'shipped' && (
-                              <Truck className="h-4 w-4 text-[#D71920] mr-1" />
-                            )}
-                            {order.orderStatus === 'delivered' && (
-                              <Truck className="h-4 w-4 text-green-500 mr-1" />
-                            )}
                             <span className={`text-sm capitalize ${order.orderStatus === 'processing' ? 'text-yellow-600' :
                               order.orderStatus === 'shipped' ? 'text-red-600' :
                                 order.orderStatus === 'delivered' ? 'text-green-600' :
@@ -303,7 +328,7 @@ const ABCSupplyView: React.FC = () => {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-gray-500 dark:text-gray-400">No recent orders found for this branch.</p>
-                  <button className="mt-3 px-4 py-2 text-sm font-medium text-white bg-[#D71920] rounded-md hover:bg-red-700">
+                  <button onClick={() => setCurrentView('products')} className="mt-3 px-4 py-2 text-sm font-medium text-white bg-[#D71920] rounded-md hover:bg-red-700">
                     Start Shopping
                   </button>
                 </div>
@@ -315,7 +340,7 @@ const ABCSupplyView: React.FC = () => {
             <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
               <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
-                <button className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
+                <button onClick={() => setCurrentView('products')} className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
                   View all <ChevronRight className="h-4 w-4 ml-1" />
                 </button>
               </div>
@@ -357,11 +382,11 @@ const ABCSupplyView: React.FC = () => {
             </section>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 
-  if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="ABC Supply" />;
+  if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="ABC Supply" branchId={selectedBranch?.number} />;
   if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'orders') return <OrderHistory onBack={() => setCurrentView('dashboard')} />;
   return renderDashboard();

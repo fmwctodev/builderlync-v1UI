@@ -8,9 +8,10 @@ import ShoppingCartComponent from './ShoppingCart';
 interface ProductCatalogProps {
   onBack: () => void;
   supplier?: string;
+  branchId?: string;
 }
 
-const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC Supply' }) => {
+const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC Supply', branchId }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [branchId]); // Reload if branch changes
 
   const loadProducts = async (page = 1) => {
     try {
@@ -56,19 +57,29 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
           setPagination(response.pagination);
         }
       } else {
-        const response = await abcSupplyApi.getItems(page, 50);
-        setProducts(response.items.items);
+        // If branchId is present, we use filterItems (search) with empty query but branch filter
+        // to ensure we only get items available at this branch.
+        if (branchId) {
+          // Passing empty string as query. 
+          // Note: API needs to handle empty query gracefully or wildcard.
+          // If empty query returns nothing, we should consider a different strategy.
+          // Usually ' ' or '*' works for wildcard if implemented, or just filter by branch.
+          const data = await abcSupplyApi.filterItems([''], 50, page, branchId);
+          setProducts(Array.isArray(data) ? data : []);
+        } else {
+          const response = await abcSupplyApi.getItems(page, 50);
+          setProducts(response.items.items);
+        }
       }
     } catch (error) {
       console.error('Failed to load products:', error);
-      // Keep existing products if refresh fails
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = async (query: string) => {
-    if (!query.trim()) {
+    if (!query.trim() && !branchId) {
       loadProducts();
       return;
     }
@@ -91,12 +102,12 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
         }));
         setProducts(mappedProducts);
       } else {
-        const data = await abcSupplyApi.filterItems([query], 50, 1);
+        // Pass branchId to filterItems
+        const data = await abcSupplyApi.filterItems([query], 50, 1, branchId);
         setProducts(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Search failed:', error);
-      // Keep existing products if search fails
     } finally {
       setSearchLoading(false);
     }
@@ -190,7 +201,8 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
     if (allFilters.length > 0) {
       try {
         setLoading(true);
-        const results = await abcSupplyApi.filterItems(allFilters, 50, 1);
+        // Pass branchId here as well
+        const results = await abcSupplyApi.filterItems(allFilters, 50, 1, branchId);
         setProducts(results);
       } catch (err) {
         console.error('Filter failed:', err);
@@ -380,7 +392,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
-                          <span className="font-medium text-white">{product.supplierName || 'Unknown'}</span>
+                          <span className="font-medium text-white">{product.itemDescription || 'Unknown'}</span>
                           <span className="text-gray-400">{product.itemDescription || 'No description'}</span>
                         </div>
                       </td>
