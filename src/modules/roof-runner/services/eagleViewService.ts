@@ -189,7 +189,7 @@ class EagleViewService {
       const params = new URLSearchParams();
       if (referenceId) params.append('referenceId', referenceId);
       if (reportId) params.append('reportId', reportId.toString());
-      
+
       const url = `https://builderlyncapi.testenvapp.com/api/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url, {
         method: 'GET',
@@ -219,7 +219,7 @@ class EagleViewService {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.ok) {
         return await response.blob();
       }
@@ -286,6 +286,25 @@ class EagleViewService {
       promoCode: '',
       placeOrderUser: formData.userName
     };
+  }
+
+  async getConnectionStatus(): Promise<{ connected: boolean; usingOwnAccount: boolean; credits: number }> {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('https://builderlyncapi.testenvapp.com/api/eagleview/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+      return { connected: false, usingOwnAccount: false, credits: 0 };
+    } catch (error) {
+      console.error('Failed to get connection status:', error);
+      return { connected: false, usingOwnAccount: false, credits: 0 };
+    }
   }
 }
 

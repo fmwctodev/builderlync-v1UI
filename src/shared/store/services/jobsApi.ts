@@ -1,6 +1,6 @@
 import { getAuthToken } from '../../utils/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3100/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface Job {
   id: number;
@@ -108,7 +108,7 @@ export interface CreateJobRequest {
 class JobsApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
-    
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {

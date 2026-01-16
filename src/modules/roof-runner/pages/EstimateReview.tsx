@@ -32,6 +32,10 @@ interface EstimateReviewProps {
       contact_settings: any;
       additional_settings: any;
     };
+    business: {
+      name: string;
+      logo: string | null;
+    };
   };
   onBack?: () => void;
 }
@@ -127,7 +131,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{getMaterialDisplayName(calculations.materialType)}</h3>
-                      <div className="text-3xl font-bold text-gray-900">{formatPrice(calculations.finalPrice)}*</div>
+                      <div className="text-3xl font-bold text-gray-900">{formatPrice(calculations.basePrice || 0)}*</div>
                     </div>
                   </div>
 
