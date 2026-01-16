@@ -6,15 +6,9 @@ import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
-import { getNearbyJobs } from '../../../shared/store/services/jobsApi';
+import { getNearbyJobs, Job } from '../../../shared/store/services/jobsApi';
 import { abcSupplyService } from '../services/abcSupplyService';
 import { eagleViewService } from '../services/eagleViewService';
-
-interface Job {
-  id?: number;
-  name: string;
-  location: string;
-}
 
 export default function Proposals() {
   const location = useLocation();
@@ -133,7 +127,7 @@ export default function Proposals() {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffInDays === 0) return 'Today';
     if (diffInDays === 1) return '1 day ago';
     if (diffInDays < 7) return `${diffInDays} days ago`;
@@ -154,7 +148,7 @@ export default function Proposals() {
 
   const handleDeleteProposal = async () => {
     if (!deletingProposalId) return;
-    
+
     try {
       await proposalsApi.deleteProposal(Number(deletingProposalId));
       setProposals(proposals.filter(p => p.id !== Number(deletingProposalId)));
@@ -335,15 +329,14 @@ export default function Proposals() {
                   </div>
                 ) : (
                   measurements.map((measurement, index) => (
-                    <div 
-                      key={measurement.id || index} 
-                      className={`flex items-center justify-between p-3 border rounded-md ${
-                        selectedMeasurement?.id === measurement.id
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
+                    <div
+                      key={measurement.id || index}
+                      className={`flex items-center justify-between p-3 border rounded-md ${selectedMeasurement?.id === measurement.id
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
                     >
-                      <div 
+                      <div
                         className="flex-1 cursor-pointer"
                         onClick={() => setSelectedMeasurement(measurement)}
                       >
@@ -358,11 +351,11 @@ export default function Proposals() {
                           e.stopPropagation();
                           const reportId = measurement.response_data?.ReportIds?.[0];
                           if (!reportId) return;
-                          
+
                           try {
                             const token = localStorage.getItem('token');
-                            const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
-                            
+                            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
                             const reportResponse = await fetch(
                               `${API_BASE_URL}/eagleview/report?reportId=${reportId}`,
                               {
@@ -371,9 +364,9 @@ export default function Proposals() {
                                 }
                               }
                             );
-                            
+
                             const reportData = await reportResponse.json();
-                            
+
                             if (reportData.success && reportData.data?.ReportDownloadLink) {
                               const link = document.createElement('a');
                               link.href = reportData.data.ReportDownloadLink;
@@ -464,7 +457,7 @@ export default function Proposals() {
                     if (isFromAutocomplete && lat && lng) {
                       setProposalLat(lat);
                       setProposalLng(lng);
-                      
+
                       // Fetch nearby jobs
                       try {
                         setLoadingNearbyJobs(true);
@@ -516,11 +509,10 @@ export default function Proposals() {
                       {nearbyJobs.map((job) => (
                         <label
                           key={job.id}
-                          className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
-                            selectedJobId === job.id
-                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                              : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
+                          className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${selectedJobId === job.id
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                            : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
                         >
                           <input
                             type="radio"
@@ -622,20 +614,19 @@ export default function Proposals() {
                   </div>
                 ) : (
                   templates.map((template) => (
-                    <div 
-                      key={template.id} 
-                      className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${
-                        selectedTemplate?.id === template.id
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
+                    <div
+                      key={template.id}
+                      className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${selectedTemplate?.id === template.id
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
                       onClick={() => {
                         setSelectedTemplate(template);
                       }}
                     >
                       {template.content?.settings?.coverImage ? (
-                        <img 
-                          src={template.content.settings.coverImage} 
+                        <img
+                          src={template.content.settings.coverImage}
                           alt={template.name}
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -675,15 +666,15 @@ export default function Proposals() {
                   }
                   try {
                     setCreatingProposal(true);
-                    
+
                     // Get address and coordinates
                     const address = proposalAddress || selectedMeasurement?.address;
                     const latitude = proposalLat || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.latitude;
                     const longitude = proposalLng || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.longitude;
-                    
+
                     // Get customer details from selected job if available
                     const selectedJob = nearbyJobs.find(job => job.id === selectedJobId);
-                    
+
                     const proposalData = {
                       ...(selectedTemplate && { template_id: selectedTemplate.id }),
                       title: selectedTemplate?.name || 'New Proposal',
@@ -695,12 +686,12 @@ export default function Proposals() {
                       ...(selectedMeasurement && { report_id: selectedMeasurement.id }),
                       ...(attachToJob && selectedJobId && { job_id: selectedJobId }),
                       ...(selectedJob && {
-                        customer_name: selectedJob.customer_name,
-                        customer_email: selectedJob.customer_email,
-                        customer_phone: selectedJob.customer_phone
+                        customer_name: selectedJob.customer?.full_name || selectedJob.contactName,
+                        customer_email: selectedJob.customer?.email,
+                        customer_phone: selectedJob.customer?.phone
                       })
                     };
-                    
+
                     const proposal = await proposalsApi.createProposal(proposalData);
                     setShowTemplateModal(false);
                     setShowNewProposalModal(false);
@@ -730,37 +721,40 @@ export default function Proposals() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Are you sure you want to delete this proposal? This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeletingProposalId(null);
-                }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteProposal}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-              >
-                Delete
-              </button>
+      {
+        showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Are you sure you want to delete this proposal? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletingProposalId(null);
+                  }}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProposal}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

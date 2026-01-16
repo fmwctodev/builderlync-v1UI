@@ -288,7 +288,7 @@ export default function ProposalBuilder({
 
   const handleViewJobDetails = async () => {
     if (!proposalData?.job_id) return;
-    
+
     setLoadingJob(true);
     try {
       const response = await getJobById(proposalData.job_id);
@@ -330,7 +330,7 @@ export default function ProposalBuilder({
   const handleJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobData?.id) return;
-    
+
     try {
       await updateJob(jobData.id, jobFormData);
       setShowJobDetailsModal(false);
@@ -464,7 +464,7 @@ export default function ProposalBuilder({
           itemsPerPage: 20,
           pageNumber: 1
         });
-        
+
         if (response.success) {
           setOrderHistory(response.data.items || []);
         }
@@ -477,7 +477,7 @@ export default function ProposalBuilder({
 
     loadProposal();
     loadOrderHistory();
-    
+
     // Load staff data
     const loadStaff = async () => {
       try {
@@ -489,7 +489,7 @@ export default function ProposalBuilder({
         console.error('Error loading staff:', error);
       }
     };
-    
+
     loadStaff();
   }, [proposalId]);
 
@@ -604,14 +604,14 @@ export default function ProposalBuilder({
               prev.map((s) =>
                 s.name === sectionName && s.content?.photos
                   ? {
-                      ...s,
-                      content: {
-                        ...s.content,
-                        photos: s.content.photos.map((url) =>
-                          url === blobUrl ? permanentUrl : url
-                        ),
-                      },
-                    }
+                    ...s,
+                    content: {
+                      ...s.content,
+                      photos: s.content.photos.map((url) =>
+                        url === blobUrl ? permanentUrl : url
+                      ),
+                    },
+                  }
                   : s
               )
             );
@@ -629,12 +629,12 @@ export default function ProposalBuilder({
       sections.map((section) =>
         section.name === sectionName && section.content?.photos
           ? {
-              ...section,
-              content: {
-                ...section.content,
-                photos: [...section.content.photos, photoUrl],
-              },
-            }
+            ...section,
+            content: {
+              ...section.content,
+              photos: [...section.content.photos, photoUrl],
+            },
+          }
           : section
       )
     );
@@ -652,8 +652,7 @@ export default function ProposalBuilder({
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5175/api";
         const token = localStorage.getItem("token");
         await fetch(
-          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${
-            section.id
+          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${section.id
           }&url=${encodeURIComponent(photoUrl)}&type=photo`,
           {
             method: "DELETE",
@@ -669,12 +668,12 @@ export default function ProposalBuilder({
       sections.map((s) =>
         s.name === sectionName && s.content?.photos
           ? {
-              ...s,
-              content: {
-                ...s.content,
-                photos: s.content.photos.filter((_, i) => i !== index),
-              },
-            }
+            ...s,
+            content: {
+              ...s.content,
+              photos: s.content.photos.filter((_, i) => i !== index),
+            },
+          }
           : s
       )
     );
@@ -753,12 +752,12 @@ export default function ProposalBuilder({
       sections.map((section) =>
         section.name === sectionName && section.content?.pdfs
           ? {
-              ...section,
-              content: {
-                ...section.content,
-                pdfs: [...section.content.pdfs, pdf],
-              },
-            }
+            ...section,
+            content: {
+              ...section.content,
+              pdfs: [...section.content.pdfs, pdf],
+            },
+          }
           : section
       )
     );
@@ -776,8 +775,7 @@ export default function ProposalBuilder({
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5175/api";
         const token = localStorage.getItem("token");
         await fetch(
-          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${
-            section.id
+          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${section.id
           }&url=${encodeURIComponent(pdf.url)}&type=pdf`,
           {
             method: "DELETE",
@@ -793,12 +791,12 @@ export default function ProposalBuilder({
       sections.map((s) =>
         s.name === sectionName && s.content?.pdfs
           ? {
-              ...s,
-              content: {
-                ...s.content,
-                pdfs: s.content.pdfs.filter((_, i) => i !== index),
-              },
-            }
+            ...s,
+            content: {
+              ...s.content,
+              pdfs: s.content.pdfs.filter((_, i) => i !== index),
+            },
+          }
           : s
       )
     );
@@ -907,14 +905,14 @@ export default function ProposalBuilder({
         prevItems.map((i) =>
           i.id === editingItemId
             ? {
-                ...i,
-                name: catalogItem.name,
-                description: catalogItem.description || "",
-                coverage: catalogItem.coverage?.toString() || "",
-                unitCost: catalogItem.preTaxCost?.toString() || "0",
-                unit: catalogItem.unit || "square",
-                salesTax: catalogItem.salesTax?.toString() || "0",
-              }
+              ...i,
+              name: catalogItem.name,
+              description: catalogItem.description || "",
+              coverage: catalogItem.coverage?.toString() || "",
+              unitCost: catalogItem.preTaxCost?.toString() || "0",
+              unit: catalogItem.unit || "square",
+              salesTax: catalogItem.salesTax?.toString() || "0",
+            }
             : i
         )
       );
@@ -953,21 +951,21 @@ export default function ProposalBuilder({
         prevUpgrades.map((u) =>
           u.id === upgradeId
             ? {
-                ...u,
-                items: u.items.map((i) =>
-                  i.id === editingUpgradeItemId.itemId
-                    ? {
-                        ...i,
-                        name: catalogItem.name,
-                        description: catalogItem.description || "",
-                        coverage: catalogItem.coverage?.toString() || "",
-                        unitCost: catalogItem.preTaxCost?.toString() || "0",
-                        unit: catalogItem.unit || "square",
-                        salesTax: catalogItem.salesTax?.toString() || "0",
-                      }
-                    : i
-                ),
-              }
+              ...u,
+              items: u.items.map((i) =>
+                i.id === editingUpgradeItemId.itemId
+                  ? {
+                    ...i,
+                    name: catalogItem.name,
+                    description: catalogItem.description || "",
+                    coverage: catalogItem.coverage?.toString() || "",
+                    unitCost: catalogItem.preTaxCost?.toString() || "0",
+                    unit: catalogItem.unit || "square",
+                    salesTax: catalogItem.salesTax?.toString() || "0",
+                  }
+                  : i
+              ),
+            }
             : u
         )
       );
@@ -1022,9 +1020,9 @@ export default function ProposalBuilder({
       upgrades.map((upgrade) =>
         upgrade.id === upgradeId
           ? {
-              ...upgrade,
-              items: upgrade.items.filter((item) => item.id !== itemId),
-            }
+            ...upgrade,
+            items: upgrade.items.filter((item) => item.id !== itemId),
+          }
           : upgrade
       )
     );
@@ -1035,11 +1033,11 @@ export default function ProposalBuilder({
       upgrades.map((upgrade) =>
         upgrade.id === upgradeId
           ? {
-              ...upgrade,
-              items: upgrade.items.map((item) =>
-                item.id === itemId ? { ...item, visible: !item.visible } : item
-              ),
-            }
+            ...upgrade,
+            items: upgrade.items.map((item) =>
+              item.id === itemId ? { ...item, visible: !item.visible } : item
+            ),
+          }
           : upgrade
       )
     );
@@ -1168,11 +1166,11 @@ export default function ProposalBuilder({
       upgrades.map((u) =>
         u.id === upgradeId
           ? {
-              ...u,
-              items: u.items.map((item) =>
-                selected.has(item.id) ? { ...item, visible: false } : item
-              ),
-            }
+            ...u,
+            items: u.items.map((item) =>
+              selected.has(item.id) ? { ...item, visible: false } : item
+            ),
+          }
           : u
       )
     );
@@ -1187,11 +1185,11 @@ export default function ProposalBuilder({
       upgrades.map((u) =>
         u.id === upgradeId
           ? {
-              ...u,
-              items: u.items.map((item) =>
-                selected.has(item.id) ? { ...item, visible: true } : item
-              ),
-            }
+            ...u,
+            items: u.items.map((item) =>
+              selected.has(item.id) ? { ...item, visible: true } : item
+            ),
+          }
           : u
       )
     );
@@ -1491,11 +1489,10 @@ export default function ProposalBuilder({
                       className={index > 0 ? "cursor-move" : ""}
                     >
                       <div
-                        className={`flex items-center gap-2 p-2 rounded ${
-                          activeSection === section.name
-                            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-                            : "hover:bg-gray-100 dark:hover:bg-gray-700"
-                        }`}
+                        className={`flex items-center gap-2 p-2 rounded ${activeSection === section.name
+                          ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                          }`}
                       >
                         {index > 0 && (
                           <GripVertical
@@ -1537,54 +1534,54 @@ export default function ProposalBuilder({
                         </button>
                         {index > 0 && proposalStatus !== 'sent' && (
                           <div className="flex items-center gap-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingSectionId(section.id);
-                                }}
-                                className="text-gray-400 hover:text-primary-600"
-                                title="Rename section"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSections(
-                                    sections.map((s) =>
-                                      s.id === section.id
-                                        ? { ...s, active: !s.active }
-                                        : s
-                                    )
-                                  );
-                                }}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                title={
-                                  section.active
-                                    ? "Hide section"
-                                    : "Show section"
-                                }
-                              >
-                                {section.active ? (
-                                  <Eye size={14} />
-                                ) : (
-                                  <EyeOff size={14} />
-                                )}
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSections(
-                                    sections.filter((s) => s.id !== section.id)
-                                  );
-                                }}
-                                className="text-gray-400 hover:text-red-600"
-                                title="Delete section"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSectionId(section.id);
+                              }}
+                              className="text-gray-400 hover:text-primary-600"
+                              title="Rename section"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSections(
+                                  sections.map((s) =>
+                                    s.id === section.id
+                                      ? { ...s, active: !s.active }
+                                      : s
+                                  )
+                                );
+                              }}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                              title={
+                                section.active
+                                  ? "Hide section"
+                                  : "Show section"
+                              }
+                            >
+                              {section.active ? (
+                                <Eye size={14} />
+                              ) : (
+                                <EyeOff size={14} />
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSections(
+                                  sections.filter((s) => s.id !== section.id)
+                                );
+                              }}
+                              className="text-gray-400 hover:text-red-600"
+                              title="Delete section"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                       {section.subsections && (
                         <div className="ml-4 space-y-1">
@@ -1605,11 +1602,10 @@ export default function ProposalBuilder({
                                     block: "start",
                                   });
                               }}
-                              className={`flex items-center justify-between p-2 rounded w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                activeSubsection === sub
-                                  ? "bg-gray-100 dark:bg-gray-700"
-                                  : ""
-                              }`}
+                              className={`flex items-center justify-between p-2 rounded w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${activeSubsection === sub
+                                ? "bg-gray-100 dark:bg-gray-700"
+                                : ""
+                                }`}
                             >
                               <span className="text-sm text-gray-600 dark:text-gray-400">
                                 {idx === 0 ? optionTitle : sub}
@@ -1708,9 +1704,8 @@ export default function ProposalBuilder({
                   className={
                     activeSection === "Estimate"
                       ? "space-y-8"
-                      : `bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${
-                          activeSection === "Cover" ? "" : "p-8"
-                        }`
+                      : `bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${activeSection === "Cover" ? "" : "p-8"
+                      }`
                   }
                 >
                   {/* Render active section content */}
@@ -1882,165 +1877,165 @@ export default function ProposalBuilder({
                   {sections.find(
                     (s) => s.name === activeSection && s.type === "photos"
                   ) && (
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                        Photos
-                      </h2>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        {sections
-                          .find((s) => s.name === activeSection)
-                          ?.content?.photos?.map((photo, idx) => (
-                            <div
-                              key={idx}
-                              className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden relative group"
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                          Photos
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          {sections
+                            .find((s) => s.name === activeSection)
+                            ?.content?.photos?.map((photo, idx) => (
+                              <div
+                                key={idx}
+                                className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden relative group"
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {proposalStatus !== 'sent' && (
+                                  <button
+                                    onClick={() => deletePhoto(activeSection, idx)}
+                                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          {proposalStatus !== 'sent' && (
+                            <button
+                              onClick={() => photoInputRef.current?.click()}
+                              className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                             >
-                              <img
-                                src={photo}
-                                alt={`Photo ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {proposalStatus !== 'sent' && (
-                                <button
-                                  onClick={() => deletePhoto(activeSection, idx)}
-                                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X size={16} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        {proposalStatus !== 'sent' && (
-                          <button
-                            onClick={() => photoInputRef.current?.click()}
-                            className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                          >
-                            <Plus className="w-8 h-8 text-gray-400" />
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                              Upload Photo
-                            </span>
-                          </button>
-                        )}
-                        <input
-                          ref={photoInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => handlePhotoUpload(e, activeSection)}
-                          className="hidden"
-                        />
+                              <Plus className="w-8 h-8 text-gray-400" />
+                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Upload Photo
+                              </span>
+                            </button>
+                          )}
+                          <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handlePhotoUpload(e, activeSection)}
+                            className="hidden"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {sections.find(
                     (s) => s.name === activeSection && s.type === "pdf"
                   ) && (
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                        PDF Documents
-                      </h2>
-                      <div className="space-y-6 mb-4">
-                        {sections
-                          .find((s) => s.name === activeSection)
-                          ?.content?.pdfs?.map((pdf, idx) => (
-                            <div
-                              key={idx}
-                              className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
-                            >
-                              <div className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-800">
-                                <div className="flex items-center gap-3">
-                                  <FileType className="w-6 h-6 text-red-500" />
-                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {pdf.name}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setViewingPdf(pdf)}
-                                    className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
-                                  >
-                                    <Eye size={16} />
-                                    View Fullscreen
-                                  </button>
-                                  {proposalStatus !== 'sent' && (
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                          PDF Documents
+                        </h2>
+                        <div className="space-y-6 mb-4">
+                          {sections
+                            .find((s) => s.name === activeSection)
+                            ?.content?.pdfs?.map((pdf, idx) => (
+                              <div
+                                key={idx}
+                                className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                              >
+                                <div className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-800">
+                                  <div className="flex items-center gap-3">
+                                    <FileType className="w-6 h-6 text-red-500" />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {pdf.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
                                     <button
-                                      onClick={() =>
-                                        deletePDF(activeSection, idx)
-                                      }
-                                      className="text-red-500 hover:text-red-600"
+                                      onClick={() => setViewingPdf(pdf)}
+                                      className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
                                     >
-                                      <Trash2 size={16} />
+                                      <Eye size={16} />
+                                      View Fullscreen
                                     </button>
-                                  )}
+                                    {proposalStatus !== 'sent' && (
+                                      <button
+                                        onClick={() =>
+                                          deletePDF(activeSection, idx)
+                                        }
+                                        className="text-red-500 hover:text-red-600"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
+                                <iframe
+                                  src={pdf.url}
+                                  className="w-full h-[600px]"
+                                  title={pdf.name}
+                                />
                               </div>
-                              <iframe
-                                src={pdf.url}
-                                className="w-full h-[600px]"
-                                title={pdf.name}
-                              />
-                            </div>
-                          ))}
+                            ))}
+                        </div>
+                        {proposalStatus !== 'sent' && (
+                          <button
+                            onClick={() => pdfInputRef.current?.click()}
+                            className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          >
+                            <Plus className="w-5 h-5 text-gray-400" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              Upload PDF
+                            </span>
+                          </button>
+                        )}
+                        <input
+                          ref={pdfInputRef}
+                          type="file"
+                          accept=".pdf"
+                          multiple
+                          onChange={(e) => handlePDFUpload(e, activeSection)}
+                          className="hidden"
+                        />
                       </div>
-                      {proposalStatus !== 'sent' && (
-                        <button
-                          onClick={() => pdfInputRef.current?.click()}
-                          className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        >
-                          <Plus className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            Upload PDF
-                          </span>
-                        </button>
-                      )}
-                      <input
-                        ref={pdfInputRef}
-                        type="file"
-                        accept=".pdf"
-                        multiple
-                        onChange={(e) => handlePDFUpload(e, activeSection)}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
+                    )}
 
                   {sections.find(
                     (s) => s.name === activeSection && s.type === "text"
                   ) && (
-                    <div>
-                      <EditableText
-                        value={
-                          sections.find((s) => s.name === activeSection)
-                            ?.content?.text || "Click to add title"
-                        }
-                        onChange={(val) =>
-                          updateTextContent(
-                            activeSection,
-                            val,
+                      <div>
+                        <EditableText
+                          value={
                             sections.find((s) => s.name === activeSection)
-                              ?.content?.description
-                          )
-                        }
-                        className="text-2xl font-bold text-gray-900 dark:text-white mb-4 block"
-                      />
-                      <EditableText
-                        value={
-                          sections.find((s) => s.name === activeSection)
-                            ?.content?.description || "Click to add description"
-                        }
-                        onChange={(val) =>
-                          updateTextContent(
-                            activeSection,
+                              ?.content?.text || "Click to add title"
+                          }
+                          onChange={(val) =>
+                            updateTextContent(
+                              activeSection,
+                              val,
+                              sections.find((s) => s.name === activeSection)
+                                ?.content?.description
+                            )
+                          }
+                          className="text-2xl font-bold text-gray-900 dark:text-white mb-4 block"
+                        />
+                        <EditableText
+                          value={
                             sections.find((s) => s.name === activeSection)
-                              ?.content?.text || "",
-                            val
-                          )
-                        }
-                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap"
-                        multiline={true}
-                      />
-                    </div>
-                  )}
+                              ?.content?.description || "Click to add description"
+                          }
+                          onChange={(val) =>
+                            updateTextContent(
+                              activeSection,
+                              sections.find((s) => s.name === activeSection)
+                                ?.content?.text || "",
+                              val
+                            )
+                          }
+                          className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap"
+                          multiline={true}
+                        />
+                      </div>
+                    )}
 
                   {activeSection === "Estimate" && (
                     <>
@@ -2395,7 +2390,7 @@ export default function ProposalBuilder({
                                 <span className="text-lg font-bold text-gray-900 dark:text-white">Overall Total</span>
                                 <span className="text-lg font-bold text-gray-900 dark:text-white">
                                   ${(
-                                    (parseFloat(calculateEstimateSubtotal()) + parseFloat(calculateUpgradeSubtotal())) * 
+                                    (parseFloat(calculateEstimateSubtotal()) + parseFloat(calculateUpgradeSubtotal())) *
                                     (1 + parseFloat(defaultMargin) / 100)
                                   ).toFixed(2)}
                                 </span>
@@ -2534,11 +2529,10 @@ export default function ProposalBuilder({
                         <button
                           key={tab}
                           onClick={() => setActiveTab(tab)}
-                          className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                            activeTab === tab
-                              ? "border-primary-500 text-primary-600 dark:text-primary-400"
-                              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                          }`}
+                          className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === tab
+                            ? "border-primary-500 text-primary-600 dark:text-primary-400"
+                            : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                            }`}
                         >
                           {tab}
                         </button>
@@ -2668,9 +2662,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      name: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    name: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             )
@@ -2802,7 +2796,7 @@ export default function ProposalBuilder({
                                                         {item.description}
                                                       </div>
                                                       <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        ${item.unitCost} per{" "}
+                                                        ${item.preTaxCost} per{" "}
                                                         {item.unit}
                                                       </div>
                                                     </button>
@@ -2820,10 +2814,10 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      description:
-                                                        e.target.value,
-                                                    }
+                                                    ...i,
+                                                    description:
+                                                      e.target.value,
+                                                  }
                                                   : i
                                               )
                                             );
@@ -2840,9 +2834,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      mapping: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    mapping: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             );
@@ -2859,9 +2853,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      coverage: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    coverage: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             )
@@ -2879,9 +2873,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      unitCost: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    unitCost: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             )
@@ -2899,9 +2893,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      unit: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    unit: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             )
@@ -2919,9 +2913,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      qty: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    qty: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             );
@@ -2932,9 +2926,9 @@ export default function ProposalBuilder({
                                       <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">
                                         {item.unitCost && item.qty
                                           ? `$${(
-                                              parseFloat(item.unitCost) *
-                                              parseFloat(item.qty)
-                                            ).toFixed(2)}`
+                                            parseFloat(item.unitCost) *
+                                            parseFloat(item.qty)
+                                          ).toFixed(2)}`
                                           : "$0.00"}
                                       </td>
                                       <td className="px-3 py-2 text-sm">
@@ -2946,9 +2940,9 @@ export default function ProposalBuilder({
                                               items.map((i) =>
                                                 i.id === item.id
                                                   ? {
-                                                      ...i,
-                                                      salesTax: e.target.value,
-                                                    }
+                                                    ...i,
+                                                    salesTax: e.target.value,
+                                                  }
                                                   : i
                                               )
                                             )
@@ -3045,7 +3039,7 @@ export default function ProposalBuilder({
                                             {item.description}
                                           </div>
                                           <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            ${item.unitCost} per {item.unit}
+                                            ${item.preTaxCost} per {item.unit}
                                           </div>
                                         </button>
                                       ))}
@@ -3116,48 +3110,48 @@ export default function ProposalBuilder({
 
                                 {(selectedUpgradeItems.get(upgrade.id)?.size ||
                                   0) > 0 && (
-                                  <div className="mb-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-center justify-between">
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {selectedUpgradeItems.get(upgrade.id)
-                                        ?.size || 0}{" "}
-                                      item(s) selected
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <button
-                                        onClick={() =>
-                                          bulkHideUpgradeItems(upgrade.id)
-                                        }
-                                        className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
-                                      >
-                                        Hide
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          bulkUnhideUpgradeItems(upgrade.id)
-                                        }
-                                        className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
-                                      >
-                                        Unhide
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          bulkDeleteUpgradeItems(upgrade.id)
-                                        }
-                                        className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                                      >
-                                        Delete
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          bulkUnselectUpgradeItems(upgrade.id)
-                                        }
-                                        className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                                      >
-                                        Unselect
-                                      </button>
+                                    <div className="mb-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-center justify-between">
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {selectedUpgradeItems.get(upgrade.id)
+                                          ?.size || 0}{" "}
+                                        item(s) selected
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() =>
+                                            bulkHideUpgradeItems(upgrade.id)
+                                          }
+                                          className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                                        >
+                                          Hide
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            bulkUnhideUpgradeItems(upgrade.id)
+                                          }
+                                          className="px-3 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+                                        >
+                                          Unhide
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            bulkDeleteUpgradeItems(upgrade.id)
+                                          }
+                                          className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                                        >
+                                          Delete
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            bulkUnselectUpgradeItems(upgrade.id)
+                                          }
+                                          className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                        >
+                                          Unselect
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
 
                                 <table className="w-full border border-gray-200 dark:border-gray-700 mt-2">
                                   <thead className="bg-gray-50 dark:bg-gray-800">
@@ -3252,19 +3246,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    name: e
-                                                                      .target
-                                                                      .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                name: e
+                                                                  .target
+                                                                  .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3374,7 +3368,7 @@ export default function ProposalBuilder({
                                             {showUpgradeCatalogDropdown ===
                                               upgrade.id &&
                                               editingUpgradeItemId?.itemId ===
-                                                uItem.id && (
+                                              uItem.id && (
                                                 <div className="absolute top-full left-0 mt-1 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
                                                   <div className="p-3 border-b border-gray-200 dark:border-gray-600">
                                                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -3434,7 +3428,7 @@ export default function ProposalBuilder({
                                                             {item.description}
                                                           </div>
                                                           <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                            ${item.unitCost} per{" "}
+                                                            ${item.preTaxCost} per{" "}
                                                             {item.unit}
                                                           </div>
                                                         </button>
@@ -3452,19 +3446,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    description:
-                                                                      e.target
-                                                                        .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                description:
+                                                                  e.target
+                                                                    .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3481,19 +3475,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    mapping:
-                                                                      e.target
-                                                                        .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                mapping:
+                                                                  e.target
+                                                                    .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3510,19 +3504,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    coverage:
-                                                                      e.target
-                                                                        .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                coverage:
+                                                                  e.target
+                                                                    .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3539,19 +3533,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    unitCost:
-                                                                      e.target
-                                                                        .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                unitCost:
+                                                                  e.target
+                                                                    .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3568,19 +3562,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    unit: e
-                                                                      .target
-                                                                      .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                unit: e
+                                                                  .target
+                                                                  .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3597,19 +3591,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    qty: e
-                                                                      .target
-                                                                      .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                qty: e
+                                                                  .target
+                                                                  .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 );
@@ -3620,9 +3614,9 @@ export default function ProposalBuilder({
                                           <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">
                                             {uItem.unitCost && uItem.qty
                                               ? `$${(
-                                                  parseFloat(uItem.unitCost) *
-                                                  parseFloat(uItem.qty)
-                                                ).toFixed(2)}`
+                                                parseFloat(uItem.unitCost) *
+                                                parseFloat(uItem.qty)
+                                              ).toFixed(2)}`
                                               : "$0.00"}
                                           </td>
                                           <td className="px-3 py-2 text-sm">
@@ -3634,19 +3628,19 @@ export default function ProposalBuilder({
                                                   upgrades.map((u) =>
                                                     u.id === upgrade.id
                                                       ? {
-                                                          ...u,
-                                                          items: u.items.map(
-                                                            (i) =>
-                                                              i.id === uItem.id
-                                                                ? {
-                                                                    ...i,
-                                                                    salesTax:
-                                                                      e.target
-                                                                        .value,
-                                                                  }
-                                                                : i
-                                                          ),
-                                                        }
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? {
+                                                                ...i,
+                                                                salesTax:
+                                                                  e.target
+                                                                    .value,
+                                                              }
+                                                              : i
+                                                        ),
+                                                      }
                                                       : u
                                                   )
                                                 )
@@ -3711,65 +3705,65 @@ export default function ProposalBuilder({
                                     </button>
                                     {showUpgradeCatalogDropdown ===
                                       upgrade.id && (
-                                      <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                        <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                          <input
-                                            ref={upgradeCatalogInputRef}
-                                            type="text"
-                                            value={upgradeCatalogSearch}
-                                            onChange={(e) =>
-                                              setUpgradeCatalogSearch(
-                                                e.target.value
-                                              )
-                                            }
-                                            placeholder="Search catalog..."
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                            onBlur={() =>
-                                              setTimeout(
-                                                () =>
-                                                  setShowUpgradeCatalogDropdown(
-                                                    null
-                                                  ),
-                                                200
-                                              )
-                                            }
-                                          />
-                                        </div>
-                                        <div className="max-h-64 overflow-y-auto">
-                                          {catalogItems
-                                            .filter((item) =>
-                                              item.name
-                                                .toLowerCase()
-                                                .includes(
-                                                  upgradeCatalogSearch.toLowerCase()
+                                        <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
+                                          <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                                            <input
+                                              ref={upgradeCatalogInputRef}
+                                              type="text"
+                                              value={upgradeCatalogSearch}
+                                              onChange={(e) =>
+                                                setUpgradeCatalogSearch(
+                                                  e.target.value
                                                 )
-                                            )
-                                            .map((item, idx) => (
-                                              <button
-                                                key={idx}
-                                                onClick={() =>
-                                                  addItemToUpgradeFromCatalog(
-                                                    upgrade.id,
-                                                    item
+                                              }
+                                              placeholder="Search catalog..."
+                                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                              onBlur={() =>
+                                                setTimeout(
+                                                  () =>
+                                                    setShowUpgradeCatalogDropdown(
+                                                      null
+                                                    ),
+                                                  200
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                          <div className="max-h-64 overflow-y-auto">
+                                            {catalogItems
+                                              .filter((item) =>
+                                                item.name
+                                                  .toLowerCase()
+                                                  .includes(
+                                                    upgradeCatalogSearch.toLowerCase()
                                                   )
-                                                }
-                                                className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                              >
-                                                <div className="font-medium text-gray-900 dark:text-white text-sm">
-                                                  {item.name}
-                                                </div>
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                  {item.description}
-                                                </div>
-                                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                  ${item.unitCost} per{" "}
-                                                  {item.unit}
-                                                </div>
-                                              </button>
-                                            ))}
+                                              )
+                                              .map((item, idx) => (
+                                                <button
+                                                  key={idx}
+                                                  onClick={() =>
+                                                    addItemToUpgradeFromCatalog(
+                                                      upgrade.id,
+                                                      item
+                                                    )
+                                                  }
+                                                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
+                                                >
+                                                  <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                                    {item.name}
+                                                  </div>
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {item.description}
+                                                  </div>
+                                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                    ${item.preTaxCost} per{" "}
+                                                    {item.unit}
+                                                  </div>
+                                                </button>
+                                              ))}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
                                   </div>
                                   <button
                                     onClick={() =>
@@ -3946,33 +3940,33 @@ export default function ProposalBuilder({
                       <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading contacts...</div>
                     ) : contacts && contacts.length > 0 ? (
                       contacts.map((contact) => (
-                          <button
-                            key={contact.id}
-                            onClick={() => {
-                              setSelectedContact(contact);
-                              setCustomerName(contact.fullName || contact.full_name);
-                              setCustomerEmail(contact.email || "");
-                              setCustomerPhone(contact.phone || "");
-                              setCustomerAddress(contact.address || "");
-                              setShowContactModal(false);
-                              setContactSearch("");
-                            }}
-                            className="w-full text-left p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-                          >
-                            <div className="font-medium text-gray-900 dark:text-white text-sm">
-                              {contact.fullName || contact.full_name}
-                            </div>
-                            {contact.company && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">{contact.company}</div>
-                            )}
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {contact.email}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {contact.phone}
-                            </div>
-                          </button>
-                        ))
+                        <button
+                          key={contact.id}
+                          onClick={() => {
+                            setSelectedContact(contact);
+                            setCustomerName(contact.fullName || "");
+                            setCustomerEmail(contact.email || "");
+                            setCustomerPhone(contact.phone || "");
+                            setCustomerAddress(contact.address || "");
+                            setShowContactModal(false);
+                            setContactSearch("");
+                          }}
+                          className="w-full text-left p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <div className="font-medium text-gray-900 dark:text-white text-sm">
+                            {contact.fullName || ""}
+                          </div>
+                          {contact.company && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{contact.company}</div>
+                          )}
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {contact.email}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {contact.phone}
+                          </div>
+                        </button>
+                      ))
                     ) : (
                       <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                         {contactSearch ? "No contacts found" : "Type to search contacts"}
@@ -4005,9 +3999,8 @@ export default function ProposalBuilder({
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        items.length > 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${items.length > 0 ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
+                        }`}>
                         {items.length > 0 ? (
                           <span className="text-green-600 dark:text-green-400 text-xs">✓</span>
                         ) : (
@@ -4015,9 +4008,8 @@ export default function ProposalBuilder({
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className={`text-sm font-medium ${
-                          items.length > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
-                        }`}>
+                        <p className={`text-sm font-medium ${items.length > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                          }`}>
                           Add items to the proposal
                         </p>
                         {items.length === 0 && (
@@ -4028,9 +4020,8 @@ export default function ProposalBuilder({
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        customerName !== "Customer Name" && customerName ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${customerName !== "Customer Name" && customerName ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
+                        }`}>
                         {customerName !== "Customer Name" && customerName ? (
                           <span className="text-green-600 dark:text-green-400 text-xs">✓</span>
                         ) : (
@@ -4038,9 +4029,8 @@ export default function ProposalBuilder({
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className={`text-sm font-medium ${
-                          customerName !== "Customer Name" && customerName ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
-                        }`}>
+                        <p className={`text-sm font-medium ${customerName !== "Customer Name" && customerName ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                          }`}>
                           Select a customer or client
                         </p>
                         {(customerName === "Customer Name" || !customerName) && (
@@ -4078,7 +4068,7 @@ export default function ProposalBuilder({
                     PDF Ready
                   </h2>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowMeasurementDownloadModal(false)}
@@ -4090,11 +4080,11 @@ export default function ProposalBuilder({
                     onClick={async () => {
                       const reportId = proposalData?.report?.response_data?.ReportIds?.[0];
                       if (!reportId) return;
-                      
+
                       try {
                         const token = localStorage.getItem('token');
-                        const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
-                        
+                        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+
                         const reportResponse = await fetch(
                           `${API_BASE_URL}/eagleview/report?reportId=${reportId}`,
                           {
@@ -4103,9 +4093,9 @@ export default function ProposalBuilder({
                             }
                           }
                         );
-                        
+
                         const reportData = await reportResponse.json();
-                        
+
                         if (reportData.success && reportData.data?.ReportDownloadLink) {
                           const link = document.createElement('a');
                           link.href = reportData.data.ReportDownloadLink;
@@ -4269,7 +4259,7 @@ export default function ProposalBuilder({
                 <button
                   onClick={async () => {
                     if (!customerEmail || !emailSubject || !buttonLabel) return;
-                    
+
                     try {
                       setSendingEmail(true);
                       await proposalSharingApi.sendEmail(Number(proposalId), {
@@ -4417,12 +4407,12 @@ export default function ProposalBuilder({
           )}
         </div>
       )}
-      
+
       {/* Job Details Modal */}
       <JobDetailsModal
         isOpen={showJobDetailsModal}
         onClose={() => setShowJobDetailsModal(false)}
-        onSubmit={() => {}}
+        onSubmit={() => { }}
         formData={jobFormData}
         setFormData={setJobFormData}
         staff={staff}

@@ -121,7 +121,7 @@ class ABCSupplyService {
       console.log('Token API:', this.config.tokenApi);
       console.log('Client ID:', this.config.clientId);
       console.log('Refresh Token:', this.config.refreshToken ? 'Present' : 'Missing');
-      
+
       const response = await fetch(this.config.tokenApi, {
         method: 'POST',
         headers: {
@@ -136,7 +136,7 @@ class ABCSupplyService {
       });
 
       console.log('Token response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Token request error response:', errorText);
@@ -157,7 +157,7 @@ class ABCSupplyService {
 
   private async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const token = await this.getAccessToken();
-    
+
     return fetch(url, {
       ...options,
       headers: {
@@ -269,11 +269,11 @@ class ABCSupplyService {
         itemsPerPage: (params.itemsPerPage || 20).toString(),
         pageNumber: (params.pageNumber || 1).toString()
       });
-      
+
       const response = await this.makeAuthenticatedRequest(
-        `https://builderlyncapi.testenvapp.com/api/abc-supply/ordersHistory?${queryParams}`
+        `${import.meta.env.VITE_API_BASE_URL}/abc-supply/ordersHistory?${queryParams}`
       );
-      
+
       if (!response.ok) {
         throw new Error(`Get orders history failed: ${response.status}`);
       }
@@ -294,7 +294,7 @@ class ABCSupplyService {
   async getOrders(): Promise<ABCSupplyOrder[]> {
     try {
       const response = await this.makeAuthenticatedRequest(`${this.config.baseUrl}/order/v1/orders`);
-      
+
       if (!response.ok) {
         throw new Error(`Get orders failed: ${response.status}`);
       }
@@ -313,7 +313,7 @@ class ABCSupplyService {
         method: 'POST',
         body: JSON.stringify(orderData)
       });
-      
+
       if (!response.ok) {
         throw new Error(`Create order failed: ${response.status}`);
       }
@@ -327,12 +327,12 @@ class ABCSupplyService {
 }
 
 export const abcSupplyService = new ABCSupplyService();
-export type { 
-  ABCSupplyProduct, 
-  ABCSupplyBranch, 
-  ABCSupplyOrder, 
+export type {
+  ABCSupplyProduct,
+  ABCSupplyBranch,
+  ABCSupplyOrder,
   ABCSupplyOrderItem,
   ABCSupplyOrderHistoryItem,
   ABCSupplyOrderHistoryResponse,
-  PriceRequest 
+  PriceRequest
 };

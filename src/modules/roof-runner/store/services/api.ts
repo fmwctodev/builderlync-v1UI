@@ -174,5 +174,11 @@ export const apiService = {
   getPipelineStages: async (pipelineId: string) => {
     const response = await apiClient.get(`/pipelines/${pipelineId}/stages`);
     return response.data;
+  },
+
+  // Staff
+  getStaff: async () => {
+    const response = await apiClient.get('/staff?limit=100');
+    return response.data;
   }
 };

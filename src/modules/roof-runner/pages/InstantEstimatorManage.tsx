@@ -39,11 +39,14 @@ const InstantEstimatorManage: React.FC = () => {
   const [materialTemplates, setMaterialTemplates] = useState<any[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [selectedStageId, setSelectedStageId] = useState('');
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [defaultJobOwnerId, setDefaultJobOwnerId] = useState('');
 
   useEffect(() => {
     fetchEstimatorData();
     fetchPipelines();
     fetchMaterialTemplates();
+    fetchStaff();
   }, [id]);
 
   const fetchPipelines = async () => {
@@ -61,6 +64,34 @@ const InstantEstimatorManage: React.FC = () => {
       setMaterialTemplates(Array.isArray(response) ? response : response.data || []);
     } catch (error) {
       console.error('Failed to fetch material templates:', error);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      const response = await apiService.getStaff();
+      // Handle array or object wrapper
+      let staffList = [];
+      // The USER provided response: { success: true, data: { data: [...] } }
+      // apiService.getStaff() returns response.data from axios.
+      // So 'response' here is likely the full body: { success: true, data: { data: [...] } }
+
+      if (Array.isArray(response)) {
+        staffList = response;
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Handles: { success: true, data: { data: [...] } }
+        staffList = response.data.data;
+      } else if (response.data && Array.isArray(response.data)) {
+        // Handles: { data: [...] }
+        staffList = response.data;
+      } else if (response.data && response.data.staff && Array.isArray(response.data.staff)) {
+        // Fallback
+        staffList = response.data.staff;
+      }
+
+      setStaffMembers(staffList);
+    } catch (error) {
+      console.error('Failed to fetch staff:', error);
     }
   };
 
@@ -97,6 +128,7 @@ const InstantEstimatorManage: React.FC = () => {
         setShowProjectShowcase(additionalSettings.show_project_showcase || false);
         setShowSocialMedia(additionalSettings.show_social_media || false);
         setSelectedStageId(additionalSettings.stage_id || '');
+        setDefaultJobOwnerId(additionalSettings.default_job_owner_id || '');
       } else {
         setEstimatorName('Estimator Not Found');
       }
@@ -140,7 +172,8 @@ const InstantEstimatorManage: React.FC = () => {
       await apiService.updateInstantEstimatorAdditionalSettings(parseInt(id), {
         show_project_showcase: showProjectShowcase,
         show_social_media: showSocialMedia,
-        stage_id: selectedStageId
+        stage_id: selectedStageId,
+        default_job_owner_id: defaultJobOwnerId
       });
 
       setToast({ message: 'Settings saved successfully!', type: 'success' });
@@ -494,8 +527,17 @@ const InstantEstimatorManage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Default job owner
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                      <option>Select a team member</option>
+                    <select
+                      value={defaultJobOwnerId}
+                      onChange={(e) => setDefaultJobOwnerId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select a team member</option>
+                      {Array.isArray(staffMembers) && staffMembers.map((member: any) => (
+                        <option key={member.id} value={member.id}>
+                          {member.first_name} {member.last_name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
