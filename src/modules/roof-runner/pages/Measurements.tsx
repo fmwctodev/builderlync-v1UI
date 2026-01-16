@@ -45,9 +45,9 @@ export default function Measurements() {
     setLoading(false);
   };
 
-  const handleOrderComplete = (data: OrderData) => {
-    setOrderData(data);
-    setActiveTab('order-summary');
+  const handleOrderComplete = () => {
+    setOrderData(null);
+    setActiveTab('Dashboard');
   };
 
   const handleSaveBusinessInfo = async (newInfo: BusinessInfo) => {
@@ -98,7 +98,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.company_name || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, company_name: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, company_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -107,7 +107,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.address || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, address: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, address: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -116,7 +116,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.city || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, city: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, city: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -125,7 +125,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.state || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, state: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, state: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -134,7 +134,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.zip_code || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, zip_code: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, zip_code: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -248,43 +248,39 @@ export default function Measurements() {
             <div className="flex items-center space-x-6">
               <button
                 onClick={() => setActiveTab('Dashboard')}
-                className={`text-sm font-medium transition-colors ${
-                  activeTab === 'Dashboard'
+                className={`text-sm font-medium transition-colors ${activeTab === 'Dashboard'
                     ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => setActiveTab('Order History')}
-                className={`flex items-center text-sm font-medium transition-colors ${
-                  activeTab === 'Order History'
+                className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'Order History'
                     ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 <History className="inline-block mr-1" size={16} />
                 Order History
               </button>
               <button
                 onClick={() => setActiveTab('EagleView')}
-                className={`flex items-center text-sm font-medium transition-colors ${
-                  activeTab === 'EagleView'
+                className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'EagleView'
                     ? 'text-primary-600 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 <Camera className="inline-block mr-1" size={16} />
                 EagleView
               </button>
               <button
                 onClick={() => setActiveTab('Order')}
-                className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${
-                  activeTab === 'Order'
+                className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${activeTab === 'Order'
                     ? 'border-primary-600 text-primary-600 bg-primary-50 dark:bg-primary-900/20'
                     : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
-                }`}
+                  }`}
               >
                 Order
               </button>

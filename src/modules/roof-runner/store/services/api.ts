@@ -135,6 +135,16 @@ export const apiService = {
     return response.data;
   },
 
+  requestPropertyData: async (publicUrl: string, address: string) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/property-data`, { address });
+    return response.data;
+  },
+
+  getPropertyDataResult: async (publicUrl: string, requestId: string) => {
+    const response = await apiClient.get(`/instant-estimators/public/${publicUrl}/property-data/${requestId}`);
+    return response.data;
+  },
+
   getBusinessProfile: async () => {
     const response = await apiClient.get('/organizations/profile');
     return response.data;

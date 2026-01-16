@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Product, Branch, Order, CartItem, ShipTo, OrderHistoryResponse } from '../types';
+import { Product, Branch, Order, ShipTo, OrderHistoryResponse } from '../types';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
 const api = axios.create({
@@ -205,6 +205,13 @@ export const abcSupplyApi = {
   getOrders: async (): Promise<Order[]> => {
     const response = await api.get('/abc-supply/orders');
     return response.data.orders || response.data;
+  },
+
+  getJobs: async (limit: number = 100): Promise<any> => {
+    const response = await api.get('/jobs', {
+      params: { limit }
+    });
+    return response.data;
   },
 
   createOrder: async (orderData: {

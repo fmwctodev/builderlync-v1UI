@@ -39,14 +39,12 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
     // Fetch jobs
     const fetchJobs = async () => {
       try {
-        const response = await fetch('https://builderlyncapi.testenvapp.com/api/jobs?limit=100', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
+        const data = await abcSupplyApi.getJobs(100);
         if (data.success) {
           setJobs(data.data.data || []);
+        } else if (data.data && Array.isArray(data.data.data)) {
+          // Fallback in case success flag works differently or data structure varies slightly
+          setJobs(data.data.data);
         }
       } catch (error) {
         console.error('Failed to fetch jobs:', error);
