@@ -131,8 +131,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [customerEmail, setCustomerEmail] = useState("customer@email.com");
 
   // Template data states
-  const [optionTitle, setOptionTitle] = useState("Option 1");
-  const [optionDescription, setOptionDescription] = useState("Add description");
+  const [optionTitle, setOptionTitle] = useState("");
+  const [optionDescription, setOptionDescription] = useState("");
   const [itemSectionTitle, setItemSectionTitle] = useState("Item");
   const [itemDescription1, setItemDescription1] = useState("This is a testing");
   const [itemDescription2, setItemDescription2] = useState(
@@ -210,6 +210,30 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     },
   ]);
 
+  const handleUseTemplate = async () => {
+    // Check if there's at least one item
+    const hasItems = items.some(item => !item.isHeading);
+    
+    if (!hasItems) {
+      alert('Please add at least one item to use this template');
+      return;
+    }
+    
+    // Check if title is provided
+    if (!optionTitle || optionTitle.trim() === '') {
+      alert('Please add a title to use this template');
+      return;
+    }
+    
+    // Save the template first
+    await handleSave();
+    
+    // Navigate to proposals tab
+    onClose();
+    // You can add navigation logic here if needed
+    // For example: navigate('/proposals') or trigger a tab change
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -271,13 +295,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           setUpgrades(data.content.upgrades || []);
           
           if (data.content.settings) {
-            const loadedOptionTitle = data.content.settings.optionTitle || "Option 1";
+            const loadedOptionTitle = data.content.settings.optionTitle || "";
             setOptionTitle(loadedOptionTitle);
             // Update subsection name to match option title
             setSections(prev => prev.map(s => 
-              s.id === 'estimate' ? { ...s, subsections: [loadedOptionTitle, "Summary"] } : s
+              s.id === 'estimate' ? { ...s, subsections: [loadedOptionTitle || "Option 1", "Summary"] } : s
             ));
-            setOptionDescription(data.content.settings.optionDescription || "Add description");
+            setOptionDescription(data.content.settings.optionDescription || "");
             setItemSectionTitle(data.content.settings.itemSectionTitle || "Item");
             setUpgradesTitle(data.content.settings.upgradesTitle || "Upgrades");
             setCompanyName(data.content.settings.companyName || "");
@@ -1176,7 +1200,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               <Save size={16} />
               {saving ? 'Saving...' : 'Save Template'}
             </button>
-            <button className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium">
+            <button
+              onClick={handleUseTemplate}
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium"
+            >
               Use this template
             </button>
           </div>
@@ -1498,12 +1525,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   <div id="estimate-page-1" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 min-h-[1000px] flex flex-col mb-8">
                     <div className="mb-6">
                       <div className="flex items-center justify-between mb-4">
-                        <EditableText
-                          value={optionTitle || "Add title"}
-                          onChange={setOptionTitle}
-                          className="text-lg font-medium text-gray-900 dark:text-white"
-                          triggerFocus={triggerFocus}
-                          onFocusComplete={() => setTriggerFocus(false)}
+                        <input
+                          type="text"
+                          value={optionTitle}
+                          onChange={(e) => setOptionTitle(e.target.value)}
+                          placeholder="Add title"
+                          className="text-lg font-medium text-gray-900 dark:text-white bg-transparent border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-0 py-1"
                         />
                         <button
                           onClick={() => setShowEditModal(true)}
@@ -1514,10 +1541,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                         </button>
                       </div>
                       <div className="flex items-center gap-2 mb-4">
-                        <EditableText
-                          value={optionDescription || "Add description"}
-                          onChange={setOptionDescription}
-                          className="text-sm text-gray-500 dark:text-gray-400"
+                        <input
+                          type="text"
+                          value={optionDescription}
+                          onChange={(e) => setOptionDescription(e.target.value)}
+                          placeholder="Add description"
+                          className="text-sm text-gray-500 dark:text-gray-400 bg-transparent border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-0 py-1 w-full"
                         />
                       </div>
                     </div>
@@ -1594,13 +1623,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
+                       {upgrades?.length > 0 && <div className="flex items-center gap-2 mb-2">
                           <EditableText
                             value={upgradesTitle}
                             onChange={setUpgradesTitle}
                             className="font-medium text-gray-900 dark:text-white"
                           />
-                        </div>
+                        </div>}
                         
                         {upgrades.map((upgrade) => (
                           <div key={upgrade.id} className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
@@ -1705,42 +1734,46 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       </div>
 
                       <div className="space-y-6">
-                        <div>
-                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                            <div className="font-medium text-gray-900 dark:text-white">{optionTitle}</div>
+                        {items.filter(item => item.visible && !item.isHeading).length > 0 && (
+                          <div>
+                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                              <div className="font-medium text-gray-900 dark:text-white">{optionTitle}</div>
+                            </div>
+                            <div className="flex justify-between items-center py-2 pl-3">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                {optionDescription}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                              <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                              <span className="font-medium text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center py-2 pl-3">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {optionDescription}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                            <span className="font-medium text-gray-900 dark:text-white">Total</span>
-                            <span className="font-medium text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
-                          </div>
-                        </div>
+                        )}
 
-                        <div>
-                          <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                            <div className="font-medium text-gray-900 dark:text-white">{upgradesTitle}</div>
-                          </div>
-                          {upgrades.map((upgrade) => (
-                            <div key={upgrade.id} className="mb-2 pl-3 text-sm">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
-                                </div>
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  ${upgrade.items.filter(item => item.visible && !item.isHeading).reduce((sum, item) => sum + (parseFloat(item.unitCost || '0') * parseFloat(item.qty || '0')), 0).toFixed(2)}
+                        {upgrades.length > 0 && upgrades.some(u => u.items.filter(item => item.visible && !item.isHeading).length > 0) && (
+                          <div>
+                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                              <div className="font-medium text-gray-900 dark:text-white">{upgradesTitle}</div>
+                            </div>
+                            {upgrades.map((upgrade) => (
+                              <div key={upgrade.id} className="mb-2 pl-3 text-sm">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
+                                  </div>
+                                  <div className="font-medium text-gray-900 dark:text-white">
+                                    ${upgrade.items.filter(item => item.visible && !item.isHeading).reduce((sum, item) => sum + (parseFloat(item.unitCost || '0') * parseFloat(item.qty || '0')), 0).toFixed(2)}
+                                  </div>
                                 </div>
                               </div>
+                            ))}
+                            <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                              <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                              <span className="font-medium text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
                             </div>
-                          ))}
-                          <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                            <span className="font-medium text-gray-900 dark:text-white">Total</span>
-                            <span className="font-medium text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
                           </div>
-                        </div>
+                        )}
 
                         <div className="pt-4 border-t-2 border-gray-300 dark:border-gray-600">
                           <div className="flex justify-between items-center py-2">
