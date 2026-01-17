@@ -335,6 +335,19 @@ export const getTeamContacts = async (): Promise<any[]> => {
 };
 
 /**
+ * Add a member to an existing team
+ */
+export const addTeamMember = async (teamId: string, member: { user_id: number; email: string; phone?: string; role?: string }): Promise<any> => {
+  try {
+    const { smtpApi } = await import('../../services/smtpApi');
+    return await smtpApi.addTeamMember(teamId, member);
+  } catch (error) {
+    console.error('Error adding team member:', error);
+    throw error;
+  }
+};
+
+/**
  * Search for a conversation with specific participants
  * Returns null if no conversation exists
  */

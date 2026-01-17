@@ -29,6 +29,10 @@ const InstantEstimatorManage: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [showEditLinkModal, setShowEditLinkModal] = useState(false);
+  const [customSlug, setCustomSlug] = useState('');
 
   useEffect(() => {
     fetchEstimatorData();
@@ -43,6 +47,7 @@ const InstantEstimatorManage: React.FC = () => {
       if (response && response.data) {
         setEstimatorName(response.data.name);
         setPublicUrl(response.data.public_url || '');
+        setCustomSlug(response.data.public_url || '');
         setSelectedQuestions(response.data.questions || []);
         setSelectedMaterials(response.data.materials || []);
         setSelectedJobId(response.data.job_id?.toString() || '');
@@ -107,6 +112,29 @@ const InstantEstimatorManage: React.FC = () => {
     } catch (error) {
       console.error('Failed to rename estimator:', error);
     }
+  };
+
+  const updateCustomSlug = async () => {
+    if (!customSlug.trim() || !id) return;
+    try {
+      await apiService.updateInstantEstimator(parseInt(id), {
+        public_url: customSlug.trim()
+      });
+      setPublicUrl(customSlug.trim());
+      setShowEditLinkModal(false);
+      setToast({ message: 'Link updated successfully!', type: 'success' });
+    } catch (error) {
+      console.error('Failed to update link:', error);
+      setToast({ message: 'Failed to update link', type: 'error' });
+    }
+  };
+
+  const generateQRCode = (url: string) => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  };
+
+  const getEmbedCode = (url: string) => {
+    return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
   };
 
   const saveAllSettings = async () => {
@@ -197,6 +225,7 @@ const InstantEstimatorManage: React.FC = () => {
                 readOnly
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
+            <div className="flex items-center gap-3">
               <button 
                 onClick={async () => {
                   const url = `${window.location.origin}/estimator/${publicUrl}`;
@@ -204,7 +233,6 @@ const InstantEstimatorManage: React.FC = () => {
                     await navigator.clipboard.writeText(url);
                     setToast({ message: 'Link copied to clipboard!', type: 'success' });
                   } catch (err) {
-                    // Fallback for browsers that don't support clipboard API
                     const textArea = document.createElement('textarea');
                     textArea.value = url;
                     document.body.appendChild(textArea);
@@ -214,23 +242,21 @@ const InstantEstimatorManage: React.FC = () => {
                     setToast({ message: 'Link copied to clipboard!', type: 'success' });
                   }
                 }}
-                className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
               >
                 <Copy className="w-4 h-4" />
-                Copy link
+                Copy
               </button>
+            </div>
+                
             </div>
 
             <div className="flex gap-4">
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
-                <Edit className="w-4 h-4" />
-                Edit link
-              </button>
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
+              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm cursor-pointer" onClick={() => setShowQRModal(true)}>
                 <QrCode className="w-4 h-4" />
                 QR code
               </button>
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
+              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm cursor-pointer" onClick={() => setShowEmbedModal(true)}>
                 <Code className="w-4 h-4" />
                 Embed code
               </button>
@@ -558,6 +584,80 @@ const InstantEstimatorManage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">QR Code</h3>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="text-center">
+                <img 
+                  src={generateQRCode(`${window.location.origin}/estimator/${publicUrl}`)}
+                  alt="QR Code"
+                  className="mx-auto mb-4"
+                />
+                <p className="text-sm text-gray-600 dark:text-gray-400">Scan to access the estimator</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embed Code Modal */}
+      {showEmbedModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Embed Code</h3>
+                <button
+                  onClick={() => setShowEmbedModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <textarea
+                  value={getEmbedCode(`${window.location.origin}/estimator/${publicUrl}`)}
+                  readOnly
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  const embedCode = getEmbedCode(`${window.location.origin}/estimator/${publicUrl}`);
+                  try {
+                    await navigator.clipboard.writeText(embedCode);
+                    setToast({ message: 'Embed code copied to clipboard!', type: 'success' });
+                  } catch (err) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = embedCode;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    setToast({ message: 'Embed code copied to clipboard!', type: 'success' });
+                  }
+                  setShowEmbedModal(false);
+                }}
+                className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+              >
+                Copy Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rename Modal */}
       {showRenameModal && (

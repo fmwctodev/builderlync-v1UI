@@ -4,6 +4,7 @@ import { ChatArea } from '../../../shared/components/ChatArea';
 import ConversationList from '../components/team-messaging/ConversationList';
 import MessageThread from '../components/team-messaging/MessageThread';
 import { CreateTeamModal } from '../../../shared/components/CreateTeamModal';
+import { AddMemberModal } from '../../../shared/components/AddMemberModal';
 import { SnippetsPanel } from '../../../modules/crm/components/conversations/SnippetsPanel';
 import {
   getTeamConversations,
@@ -25,6 +26,8 @@ const ConversationsNew: React.FC = () => {
   const [conversationMessages, setConversationMessages] = useState<TeamMessageItem[]>([]);
 
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedTeamForMember, setSelectedTeamForMember] = useState<{ id: string; name: string; existingMembers?: string[] } | null>(null);
   const [teamMessagingLoading, setTeamMessagingLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
 
@@ -202,9 +205,34 @@ const ConversationsNew: React.FC = () => {
     }
   };
 
+  const handleCloseNormalConversation = () => {
+    setSelectedConversation(null);
+  };
+
+  const handleCloseConversation = () => {
+    setSelectedTeamConversationId(null);
+    setConversationMessages([]);
+  };
+
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedTeamConversationId(conversationId);
     await loadConversationMessages(conversationId);
+  };
+
+  const handleAddMember = (teamId: string) => {
+    const team = teamConversations.find(t => t.id === `team_${teamId}`);
+    if (team) {
+      setSelectedTeamForMember({ 
+        id: teamId, 
+        name: team.name || 'Team',
+        existingMembers: team.participants.map(p => p.id)
+      });
+      setShowAddMemberModal(true);
+    }
+  };
+
+  const handleMemberAdded = async () => {
+    await loadTeamConversations();
   };
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -282,7 +310,10 @@ const ConversationsNew: React.FC = () => {
               selectedConversation={selectedConversation}
               onSelectConversation={setSelectedConversation}
             />
-            <ChatArea conversationId={selectedConversation} />
+            <ChatArea 
+              conversationId={selectedConversation} 
+              onCloseConversation={handleCloseNormalConversation}
+            />
           </div>
         )}
 
@@ -295,12 +326,14 @@ const ConversationsNew: React.FC = () => {
               onConversationSelect={handleConversationSelect}
               onNewMessage={() => setShowCreateTeamModal(true)}
               onDeleteTeam={handleDeleteTeam}
+              onAddMember={handleAddMember}
               loading={teamMessagingLoading}
             />
             <MessageThread
               conversationId={selectedTeamConversationId}
               messages={conversationMessages}
               onSendMessage={handleSendMessage}
+              onCloseConversation={handleCloseConversation}
               loading={messagesLoading}
             />
             <CreateTeamModal
@@ -311,6 +344,20 @@ const ConversationsNew: React.FC = () => {
                 loadTeamConversations();
               }}
             />
+            
+            {selectedTeamForMember && (
+              <AddMemberModal
+                isOpen={showAddMemberModal}
+                onClose={() => {
+                  setShowAddMemberModal(false);
+                  setSelectedTeamForMember(null);
+                }}
+                teamId={selectedTeamForMember.id}
+                teamName={selectedTeamForMember.name}
+                existingMembers={selectedTeamForMember.existingMembers || []}
+                onMemberAdded={handleMemberAdded}
+              />
+            )}
           </div>
         )}
 

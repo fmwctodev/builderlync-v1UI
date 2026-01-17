@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Users, Filter, Edit, ChevronDown, Trash2, MoreVertical } from 'lucide-react';
+import { Search, Users, Filter, Edit, ChevronDown, Trash2, MoreVertical, UserPlus } from 'lucide-react';
 import { TeamConversationListItem } from '../../types/teamMessaging';
 
 interface ConversationListProps {
@@ -8,6 +8,7 @@ interface ConversationListProps {
   onConversationSelect: (conversationId: string) => void;
   onNewMessage: () => void;
   onDeleteTeam?: (teamId: string) => void;
+  onAddMember?: (teamId: string) => void;
   loading?: boolean;
 }
 
@@ -19,6 +20,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onConversationSelect,
   onNewMessage,
   onDeleteTeam,
+  onAddMember,
   loading = false,
 }) => {
   const [activeFilter, setActiveFilter] = React.useState<FilterTab>('all');
@@ -176,7 +178,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDate(conversation.last_message_time)}
                           </span>
-                          {conversation.is_group && onDeleteTeam && (
+                          {conversation.is_group && (onDeleteTeam || onAddMember) && (
                             <div className="relative">
                               <button
                                 onClick={(e) => {
@@ -189,18 +191,34 @@ const ConversationList: React.FC<ConversationListProps> = ({
                               </button>
                               {showDropdown === conversation.id && (
                                 <div className="absolute right-0 top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const teamId = conversation.id.replace('team_', '');
-                                      onDeleteTeam(teamId);
-                                      setShowDropdown(null);
-                                    }}
-                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    <span>Delete Team</span>
-                                  </button>
+                                  {onAddMember && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const teamId = conversation.id.replace('team_', '');
+                                        onAddMember(teamId);
+                                        setShowDropdown(null);
+                                      }}
+                                      className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                    >
+                                      <UserPlus className="w-3 h-3" />
+                                      <span>Add Member</span>
+                                    </button>
+                                  )}
+                                  {onDeleteTeam && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const teamId = conversation.id.replace('team_', '');
+                                        onDeleteTeam(teamId);
+                                        setShowDropdown(null);
+                                      }}
+                                      className="flex items-center space-x-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>Delete Team</span>
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>

@@ -38,9 +38,10 @@ import {
 
 interface ChatAreaProps {
   conversationId: string | null;
+  onCloseConversation?: () => void;
 }
 
-export function ChatArea({ conversationId }: ChatAreaProps) {
+export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps) {
   const navigate = useNavigate();
   const [activeChannel, setActiveChannel] = useState<ChannelType | 'team'>('sms');
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -236,10 +237,12 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
             </h3>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <button 
+              onClick={onCloseConversation}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
               <X className="w-5 h-5" />
             </button>
-            <span className="text-sm text-gray-500">Close conversation</span>
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-sm font-semibold text-white">
                 {getInitials(conversation?.contact?.full_name || '')}

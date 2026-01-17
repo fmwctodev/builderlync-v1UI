@@ -125,6 +125,16 @@ export const smtpApi = {
     return response.json();
   },
 
+  async addTeamMember(teamId: string, member: { user_id: number; email: string; phone?: string; role?: string }) {
+    const response = await fetch(`${API_BASE_URL}/teams/${teamId}/members`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(member)
+    });
+    if (!response.ok) throw new Error('Failed to add team member');
+    return response.json();
+  },
+
   // Twilio SMS Configuration
   async connectTwilio(accountSid: string, authToken: string) {
     const response = await fetch(`${API_BASE_URL}/twilio/connect`, {
