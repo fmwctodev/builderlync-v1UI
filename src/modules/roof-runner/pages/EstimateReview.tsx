@@ -1,5 +1,6 @@
 import React from 'react';
-import { Share, Mail, Phone } from 'lucide-react';
+import { Share, Mail, Phone, Check } from 'lucide-react';
+import { apiService } from '../store/services/api';
 
 interface EstimateReviewProps {
   estimateData: {
@@ -29,6 +30,7 @@ interface EstimateReviewProps {
     };
     estimator: {
       name: string;
+      materials: any[];
       contact_settings: any;
       additional_settings: any;
     };
@@ -37,12 +39,69 @@ interface EstimateReviewProps {
       logo: string | null;
     };
   };
+  propertyImage?: string | null;
+  leadId?: string | null;
   onBack?: () => void;
 }
 
-const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack }) => {
-  const { estimate, estimator, business } = estimateData;
+const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyImage, leadId, onBack }) => {
+  const [requestedMaterials, setRequestedMaterials] = React.useState<string[]>([]);
+  console.log('[EstimateReview] Rendering with data:', estimateData);
+
+  if (!estimateData || !estimateData.estimate) {
+    console.error('[EstimateReview] Missing estimate data:', estimateData);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid Estimate Data</h1>
+          <p className="text-gray-600">We couldn't load the estimate details. Please try refreshing.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const { estimate, business, estimator } = estimateData;
   const { calculations, project_details } = estimate;
+
+  if (!calculations || !project_details) {
+    console.error('[EstimateReview] Missing calculations or project_details:', estimate);
+    return <div>Missing calculation details</div>;
+  }
+
+  const handleRequestProposal = async (materialId: string) => {
+    if (!leadId) {
+      console.error('Lead ID not found for proposal request');
+      alert('Error: Could not identify this estimate. Please try starting over.');
+      return;
+    }
+
+    try {
+      await apiService.requestProposal(leadId, materialId);
+      setRequestedMaterials(prev => [...prev, materialId]);
+    } catch (error) {
+      console.error('Failed to request proposal:', error);
+      alert('There was an error requesting your proposal. Please try again or contact us directly.');
+    }
+  };
+
+  const calculateMaterialPrice = (material: any) => {
+    const areaSqFt = calculations.roofArea || 0;
+    const pricing = material.pricing || {};
+    let pricePerSqFt = 0;
+
+    switch (project_details.roofSteepness?.toLowerCase()) {
+      case 'low': pricePerSqFt = parseFloat(pricing.lowPitch); break;
+      case 'moderate': pricePerSqFt = parseFloat(pricing.moderatePitch); break;
+      case 'steep': pricePerSqFt = parseFloat(pricing.steepPitch); break;
+      default: pricePerSqFt = parseFloat(pricing.moderatePitch);
+    }
+
+    if (isNaN(pricePerSqFt)) pricePerSqFt = 0;
+    return areaSqFt * pricePerSqFt;
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -62,15 +121,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
     }
   };
 
-  const getMaterialDisplayName = (material: string) => {
-    switch (material) {
-      case 'metal': return 'Metal';
-      case 'asphalt': return 'Asphalt';
-      case 'tile': return 'Tile';
-      case 'cedar': return 'Cedar';
-      default: return 'Metal';
-    }
-  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -94,14 +145,15 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
             )}
             <button
               onClick={() => {
-                const url = window.location.href;
-                navigator.clipboard.writeText(url).then(() => {
-                  alert('Link copied to clipboard!');
+                const baseUrl = window.location.origin + window.location.pathname;
+                const shareUrl = leadId ? `${baseUrl}?estimateId=${leadId}` : window.location.href;
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  alert('Shareable link copied to clipboard!');
                 }).catch(() => {
                   alert('Failed to copy link');
                 });
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
             >
               <Share className="w-4 h-4" />
               Share link
@@ -114,41 +166,66 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Review your estimate</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">
+              Review your {estimator.materials?.length || 0} estimate{estimator.materials?.length !== 1 ? 's' : ''}
+            </h1>
 
-            {/* Estimate Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-              <div className="flex gap-6">
-                {/* Metal Roof Image */}
-                <div className="w-48 h-32 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex-shrink-0 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-black bg-opacity-10"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 transform skew-y-12 origin-bottom-left"></div>
-                  </div>
-                </div>
+            {/* Estimate Cards */}
+            <div className="space-y-8 mb-8">
+              {(estimator.materials || []).map((material: any) => {
+                const materialPrice = calculateMaterialPrice(material);
+                const isRequested = requestedMaterials.includes(material.id);
 
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{getMaterialDisplayName(calculations.materialType)}</h3>
-                      <div className="text-3xl font-bold text-gray-900">{formatPrice(calculations.basePrice || 0)}*</div>
+                return (
+                  <div key={material.id} className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      {/* Material Image */}
+                      <div className="w-full md:w-48 h-32 bg-gray-100 rounded-lg flex-shrink-0 relative overflow-hidden border border-gray-200">
+                        {material.imageUrl ? (
+                          <img src={material.imageUrl} alt={material.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                            {material.name}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{material.name}</h3>
+                            <div className="text-3xl font-bold text-gray-900">{formatPrice(materialPrice)}*</div>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-600 text-sm mb-4">
+                          {material.materialType === 'Asphalt'
+                            ? 'An asphalt shingle is a petroleum-based roof shingle that uses asphalt for waterproofing. It is one of the most widely used roofing covers in North America.'
+                            : `A ${material.materialType?.toLowerCase() || 'roofing'} roof is a roofing system made from ${material.materialType?.toLowerCase() || 'quality'} pieces or tiles characterized by its high resistance, impermeability and longevity.`}
+                        </p>
+
+                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4 flex items-center gap-1">
+                          See more <span className="text-xs">∨</span>
+                        </button>
+
+                        {isRequested ? (
+                          <div className="flex items-center gap-2 text-gray-600 font-medium py-2">
+                            <Check className="w-5 h-5 text-gray-400" />
+                            <span>Request received. We'll contact you shortly.</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRequestProposal(material.id)}
+                            className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                          >
+                            Get free proposal →
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  <p className="text-gray-600 text-sm mb-4">
-                    A {getMaterialDisplayName(calculations.materialType).toLowerCase()} roof is a roofing system made from {calculations.materialType} pieces or tiles characterized by its
-                    high resistance, impermeability and longevity.
-                  </p>
-
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4">
-                    See more →
-                  </button>
-
-                  <button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                    Get free proposal →
-                  </button>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Roof Details Section */}
@@ -164,7 +241,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
 
                   <div className="space-y-6">
                     <div>
-                      <div className="text-3xl font-bold">{calculations.roofArea.toLocaleString()}</div>
+                      <div className="text-3xl font-bold">{(calculations.roofArea || 0).toLocaleString()}</div>
                       <div className="text-gray-300">Square feet</div>
                     </div>
 
@@ -176,17 +253,23 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
                 </div>
 
                 <div className="flex items-center justify-center">
-                  {/* Satellite Map Placeholder */}
                   <div className="w-full h-64 bg-gray-700 rounded-lg relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-900"></div>
+                    {propertyImage ? (
+                      <img src={propertyImage} alt="Satellite View" className="w-full h-full object-cover opacity-90" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-900"></div>
+                    )}
                     <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-800">
                       Satellite view
                     </div>
-                    <div className="absolute bottom-2 left-2 text-xs text-white opacity-75">
-                      CNES / Airbus, Maxar Technologies | Terms | Report a map error
-                    </div>
-                    {/* Blue highlighted roof area */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-20 bg-blue-500 bg-opacity-70 rounded"></div>
+                    {!propertyImage && (
+                      <>
+                        <div className="absolute bottom-2 left-2 text-xs text-white opacity-75">
+                          CNES / Airbus, Maxar Technologies | Terms | Report a map error
+                        </div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-20 bg-blue-500 bg-opacity-70 rounded"></div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

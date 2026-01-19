@@ -15,6 +15,7 @@ export interface CreateContactRequest {
 }
 
 export interface Contact {
+  full_name: string;
   id: string;
   fullName: string;
   type: string;
@@ -40,6 +41,7 @@ export interface ContactResponse {
 export interface ContactsListResponse {
   success: boolean;
   data: {
+    contacts: never[];
     data: Contact[];
     pagination: {
       page: number;
