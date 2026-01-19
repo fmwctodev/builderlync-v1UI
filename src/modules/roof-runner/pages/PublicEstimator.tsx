@@ -1,12 +1,18 @@
+console.log('[PublicEstimator] Module loaded');
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
 import { ArrowLeft } from 'lucide-react';
 import EstimateReview from './EstimateReview';
 
 const PublicEstimator: React.FC = () => {
+  console.log('[PublicEstimator] Component hit');
   const { publicUrl } = useParams();
+  const [searchParams] = useSearchParams();
+  const estimateId = searchParams.get('estimateId');
   const navigate = useNavigate();
+
+  console.log('[PublicEstimator] Params:', { publicUrl, estimateId });
   const [estimatorData, setEstimatorData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,9 +21,11 @@ const PublicEstimator: React.FC = () => {
   const [estimateData, setEstimateData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [address, setAddress] = useState('');
+  const [leadId, setLeadId] = useState<string | null>(null);
   const [showRoofOutline, setShowRoofOutline] = useState(false);
   const [propertyData, setPropertyData] = useState<any>(null);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
@@ -41,8 +49,52 @@ const PublicEstimator: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchEstimatorData();
-  }, [publicUrl]);
+    if (estimateId) {
+      loadSavedEstimate(estimateId);
+    } else {
+      fetchEstimatorData();
+    }
+  }, [publicUrl, estimateId]);
+
+  const loadSavedEstimate = async (id: string) => {
+    try {
+      console.log('[PublicEstimator] Loading saved estimate:', id);
+      setLoading(true);
+      const response = await apiService.getGeneratedEstimate(id);
+      console.log('[PublicEstimator] API Response raw:', response);
+
+      // The backend returns { success: true, data: { estimate, business, estimator } }
+      // apiService returns response.data (the backend response body)
+      const data = response.data || response;
+      console.log('[PublicEstimator] Extracted data:', data);
+
+      if (!data || !data.estimate) {
+        console.error('[PublicEstimator] Estimate data is missing in response:', data);
+        throw new Error('Estimate data is missing');
+      }
+
+      setEstimateData(data);
+      setLeadId(id);
+
+      // Also set estimatorData for consistent branding if needed
+      if (data.estimator) {
+        console.log('[PublicEstimator] Setting estimator data for branding:', data.estimator);
+        setEstimatorData({
+          ...data.estimator,
+          business_logo: data.business?.logo,
+          friendly_business_name: data.business?.name
+        });
+      }
+
+      console.log('[PublicEstimator] Showing estimate review');
+      setShowEstimateReview(true);
+      setLoading(false);
+    } catch (err) {
+      console.error('[PublicEstimator] Failed to load estimate:', err);
+      // Fallback: fetch estimator data to at least show the landing page
+      fetchEstimatorData();
+    }
+  };
 
   useEffect(() => {
     if (currentStep === 2) {
@@ -51,7 +103,10 @@ const PublicEstimator: React.FC = () => {
   }, [currentStep]);
 
   const fetchEstimatorData = async () => {
-    if (!publicUrl) return;
+    if (!publicUrl) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const response = await apiService.getInstantEstimatorByPublicUrl(publicUrl);
@@ -79,9 +134,8 @@ const PublicEstimator: React.FC = () => {
         const response = await apiService.getPropertyDataResult(publicUrl, requestId);
         const data = response.data || response;
 
-        console.log('Polling Property Data status:', data?.status || 'Unknown');
-
-        if (data?.status === 'completed' || data?.status === 'success' || (data?.structures && data?.structures.length > 0)) {
+        const status = (data?.status || data?.request?.status || '').toLowerCase();
+        if (status === 'completed' || status === 'complete' || status === 'success' || (data?.structures && data?.structures.length > 0)) {
           console.log('Property Data Received:', data);
           setPropertyData(data);
 
@@ -150,9 +204,13 @@ const PublicEstimator: React.FC = () => {
               apiService.requestPropertyData(publicUrl, formattedAddress)
                 .then((response: any) => {
                   console.log('Initial Property Request Response:', response);
-                  if (response && (response.requestId || response.RequestId || response.id)) {
-                    const reqId = response.requestId || response.RequestId || response.id;
-                    console.log('Starting polling for Request ID:', reqId);
+                  // Robust ID extraction from various possible response structures
+                  const d = response.data || response;
+                  const reqId = d.request?.id || d.requestId || d.RequestId || d.id || response.requestId || response.id;
+
+                  if (reqId) {
+                    setRequestId(reqId);
+                    console.log('Step 2: Starting polling for Request ID:', reqId);
                     pollPropertyData(reqId);
                   } else if (response && response.data) {
                     setPropertyData(response.data);
@@ -197,20 +255,65 @@ const PublicEstimator: React.FC = () => {
 
     try {
       setSubmitting(true);
-      console.log('Submitting Estimate. Property Data:', propertyData);
 
-      let calculatedRoofArea = 0;
-      const roofSquares = propertyData?.structures?.[0]?.roof?.structure_roof_area_squares?.value;
+      let currentPropertyData = propertyData;
+      const effectiveRequestId = requestId || currentPropertyData?.request?.id || currentPropertyData?.id;
 
-      if (roofSquares !== undefined && roofSquares !== null) {
-        const squaresValue = typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares);
-        if (!isNaN(squaresValue)) {
-          calculatedRoofArea = squaresValue * 100;
+      if (effectiveRequestId && (!currentPropertyData || !currentPropertyData.structures || currentPropertyData.structures.length === 0)) {
+        console.log('Last Step: Attempting final fetch from DB for RequestId:', effectiveRequestId);
+
+        // Try up to 3 times with a short delay if it's still "In Progress"
+        for (let i = 0; i < 3; i++) {
+          try {
+            const response = await apiService.getPropertyDataResult(publicUrl!, effectiveRequestId);
+            const data = response.data || response;
+
+            if (data && data.structures && data.structures.length > 0) {
+              console.log('Final fetch successful on attempt', i + 1, 'data:', data);
+              currentPropertyData = data;
+              setPropertyData(data);
+              break;
+            } else {
+              console.log(`Attempt ${i + 1}: Data still In Progress or incomplete...`);
+              if (i < 2) await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } catch (e) {
+            console.error(`Final attempt ${i + 1} failed:`, e);
+          }
         }
       }
 
-      console.log('Extracted Roof Squares:', roofSquares);
-      console.log('Calculated Roof Area (SqFt):', calculatedRoofArea);
+      console.log('Submitting Estimate. Property Data Context:', {
+        hasRequestId: !!effectiveRequestId,
+        hasData: !!currentPropertyData,
+        hasStructures: !!currentPropertyData?.structures?.length,
+        status: currentPropertyData?.request?.status || currentPropertyData?.status
+      });
+
+      let calculatedRoofArea = 0;
+      const structure = currentPropertyData?.structures?.[0];
+      const roofSquares = structure?.roof?.structure_roof_area_squares?.value;
+      const footprintValue = structure?.structure_footprint_sqft?.value;
+
+      console.log('Final Area Extraction Check:', { footprintValue, roofSquares });
+
+      if (footprintValue !== undefined && footprintValue !== null) {
+        const val = typeof footprintValue === 'string' ? parseFloat(footprintValue) : Number(footprintValue);
+        if (!isNaN(val) && val > 0) {
+          calculatedRoofArea = val;
+          console.log('Using Footprint Value (SqFt):', calculatedRoofArea);
+        }
+      }
+
+      if (calculatedRoofArea <= 0 && roofSquares !== undefined && roofSquares !== null) {
+        const squaresValue = typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares);
+        if (!isNaN(squaresValue)) {
+          calculatedRoofArea = squaresValue * 100;
+          console.log('Using Roof Squares (Converted to SqFt):', calculatedRoofArea);
+        }
+      }
+
+      console.log('Calculated Final Roof Area (SqFt):', calculatedRoofArea);
 
       const submitData = {
         ...formData,
@@ -220,10 +323,21 @@ const PublicEstimator: React.FC = () => {
 
       console.log('Sending Submit Data:', submitData);
 
-      const response = await apiService.generateEstimate(publicUrl, submitData);
-      console.log('Estimate Response:', response);
-      setEstimateData(response.data);
+      const response = await apiService.generateEstimate(publicUrl!, submitData);
+      const data = response.data || response;
+      const newLeadId = response.leadId || data?.leadId;
+
+      console.log('Estimate generated. Lead ID:', newLeadId);
+
+      setEstimateData(data);
+      setLeadId(newLeadId);
       setShowEstimateReview(true);
+      setSubmitting(false);
+
+      // Update the URL to include the estimateId so refreshing works and share link is correct
+      if (newLeadId && publicUrl) {
+        navigate(`/estimator/${publicUrl}?estimateId=${newLeadId}`, { replace: true });
+      }
     } catch (error) {
       console.error('Failed to generate estimate:', error);
       alert('Failed to generate estimate. Please try again.');
@@ -236,7 +350,12 @@ const PublicEstimator: React.FC = () => {
     return (
       <EstimateReview
         estimateData={estimateData}
+        propertyImage={propertyImage}
+        leadId={leadId}
         onBack={() => {
+          if (estimateId) {
+            navigate(`/estimator/${publicUrl}`);
+          }
           setShowEstimateReview(false);
           setEstimateData(null);
         }}
@@ -431,7 +550,7 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(6))}
+                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(7))}
                 className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
                   }`}
               >
@@ -457,11 +576,18 @@ const PublicEstimator: React.FC = () => {
     const getEstimatedPrice = (material: any) => {
       if (!propertyData || !formData.roofSteepness) return null;
 
-      const roofSquares = propertyData?.structures?.[0]?.roof?.structure_roof_area_squares?.value;
-      if (!roofSquares) return null;
+      const structure = propertyData?.structures?.[0];
+      const footprintValue = structure?.structure_footprint_sqft?.value;
+      const roofSquares = structure?.roof?.structure_roof_area_squares?.value;
 
-      const areaSqFt = (typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares)) * 100;
-      if (isNaN(areaSqFt)) return null;
+      let areaSqFt = 0;
+      if (footprintValue) {
+        areaSqFt = typeof footprintValue === 'string' ? parseFloat(footprintValue) : Number(footprintValue);
+      } else if (roofSquares) {
+        areaSqFt = (typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares)) * 100;
+      }
+
+      if (!areaSqFt || isNaN(areaSqFt)) return null;
 
       const pricing = material.pricing || {};
       // Map steepness to pricing key. 
@@ -547,7 +673,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(6)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={() => setCurrentStep(5)} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 7 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">When would you like to start your project?</h1>
