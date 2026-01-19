@@ -38,7 +38,7 @@ export default function TemplateBuilderPage({
       proposalId={isProposal ? id : undefined}
       isProposal={isProposal}
       onClose={() => {
-        if (from === "templates") {
+        if (from === "templates" || !event) {
           navigate(`/org/${orgSlug}/proposals`, { state: { activeTab: "Templates" } });
         } else {
           navigate(`/org/${orgSlug}/proposals`);

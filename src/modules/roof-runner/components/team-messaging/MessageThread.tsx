@@ -7,6 +7,7 @@ interface MessageThreadProps {
   conversationId: string | null;
   messages: TeamMessageItem[];
   onSendMessage: (content: string, messageType?: 'sms' | 'email' | 'team', subject?: string) => void;
+  onCloseConversation?: () => void;
   loading?: boolean;
 }
 
@@ -14,6 +15,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   conversationId,
   messages,
   onSendMessage,
+  onCloseConversation,
   loading = false,
 }) => {
   const [activeChannel, setActiveChannel] = useState<'sms' | 'email'>('sms');
@@ -96,10 +98,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           </h3>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button 
+            onClick={onCloseConversation}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
             <X className="w-5 h-5" />
           </button>
-          <span className="text-sm text-gray-500">Close conversation</span>
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
             <Users className="w-4 h-4 text-white" />
           </div>

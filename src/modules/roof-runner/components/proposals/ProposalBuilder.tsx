@@ -587,7 +587,7 @@ export default function ProposalBuilder({
           formData.append("type", "photo");
 
           const response = await fetch(
-            `${API_BASE_URL}/templates/${proposalId}/media`,
+            `${API_BASE_URL}/proposals/${proposalId}/media`,
             {
               method: "POST",
               headers: {
@@ -652,7 +652,8 @@ export default function ProposalBuilder({
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5175/api";
         const token = localStorage.getItem("token");
         await fetch(
-          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${section.id
+          `${API_BASE_URL}/proposals/${proposalId}/media?sectionId=${
+            section.id
           }&url=${encodeURIComponent(photoUrl)}&type=photo`,
           {
             method: "DELETE",
@@ -704,7 +705,7 @@ export default function ProposalBuilder({
           formData.append("type", "pdf");
 
           const response = await fetch(
-            `${API_BASE_URL}/templates/${proposalId}/media`,
+            `${API_BASE_URL}/proposals/${proposalId}/media`,
             {
               method: "POST",
               headers: {
@@ -775,7 +776,8 @@ export default function ProposalBuilder({
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5175/api";
         const token = localStorage.getItem("token");
         await fetch(
-          `${API_BASE_URL}/templates/${proposalId}/media?sectionId=${section.id
+          `${API_BASE_URL}/proposals/${proposalId}/media?sectionId=${
+            section.id
           }&url=${encodeURIComponent(pdf.url)}&type=pdf`,
           {
             method: "DELETE",
@@ -4371,7 +4373,7 @@ export default function ProposalBuilder({
                             formData.append("type", "photo");
 
                             const response = await fetch(
-                              `${API_BASE_URL}/templates/${proposalId}/media`,
+                              `${API_BASE_URL}/proposals/${proposalId}/media`,
                               {
                                 method: "POST",
                                 headers: {

@@ -424,10 +424,10 @@ const PublicEstimator: React.FC = () => {
 
           <div className="grid grid-cols-4 gap-4">
             {[
-              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.jpg' },
-              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.jpg' },
-              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.jpg' },
-              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.jpg' }
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.webp' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp'},
+              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.webp'},
+              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.webp' }
             ].map((option) => (
               <div
                 key={option.id}
