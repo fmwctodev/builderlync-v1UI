@@ -17,21 +17,21 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
 
   const handleDownloadReport = async (order: any) => {
     if (!order.response_data?.ReportIds?.length) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       const reportId = order.response_data.ReportIds[0];
-      
+
       // First get report details
       const reportResponse = await axios.get(
-        `https://builderlyncapi.testenvapp.com/api/eagleview/report?reportId=${reportId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/eagleview/report?reportId=${reportId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
           }
         }
       );
-      
+
       if (reportResponse.data.success && reportResponse.data.data?.ReportDownloadLink) {
         // Use the download link to download the file
         const downloadLink = reportResponse.data.data.ReportDownloadLink;
@@ -55,19 +55,19 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams();
       if (search.trim()) params.append('search', search.trim());
       if (status !== 'all') params.append('status', status);
-      
-      const url = `https://builderlyncapi.testenvapp.com/api/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
-      
+
+      const url = `${import.meta.env.VITE_API_BASE_URL}/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
+
       const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      
+
       if (response.data.success) {
         setOrders(response.data.data || []);
         setTotalOrders(response.data.total || response.data.data?.length || 0);

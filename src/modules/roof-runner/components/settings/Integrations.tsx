@@ -1,11 +1,13 @@
 import React from 'react';
 import { Check, ExternalLink } from 'lucide-react';
+import axios from 'axios';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
 import { connectTwilio, getTwilioStatus, disconnectTwilio, TwilioStatus } from '../../../../shared/store/services/twilioApi';
 import TwilioManagementModal from './TwilioManagementModal';
+import EagleViewConnectionModal from './EagleViewConnectionModal';
+import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
 import { srsService } from '../../services/srsService';
 import SRSConnection from '../catalog/SRSConnection';
-import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
 
 
 interface Integration {
@@ -19,24 +21,28 @@ interface Integration {
   hasManage?: boolean;
   learnMoreUrl?: string;
   setupInstructionsUrl?: string;
+  customStatus?: React.ReactNode;
 }
 
 const Integrations: React.FC = () => {
-  const [quickbooksStatus, setQuickbooksStatus] = React.useState({ connected: false, companyInfo: null });
+  const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
   const [srsStatus, setSrsStatus] = React.useState({ connected: false });
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
+  const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
   const [showSrsModal, setShowSrsModal] = React.useState(false);
+  const [showEagleViewModal, setShowEagleViewModal] = React.useState(false);
 
 
   React.useEffect(() => {
     fetchQuickBooksStatus();
     fetchTwilioStatus();
-    fetchSrsStatus();
     fetchABCSupplyStatus();
     handleABCSupplyCallback();
+    fetchSrsStatus();
+    fetchEagleViewStatus();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -61,12 +67,20 @@ const Integrations: React.FC = () => {
     }
   };
 
-  const fetchSrsStatus = async () => {
+  const fetchEagleViewStatus = async () => {
     try {
-      const isConnected = await srsService.validateConnection();
-      setSrsStatus({ connected: isConnected });
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/eagleview/status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setEagleViewStatus(data.data);
+        }
+      }
     } catch (error) {
-      setSrsStatus({ connected: false });
+      console.error('Error fetching EagleView status:', error);
     }
   };
 
@@ -107,7 +121,7 @@ const Integrations: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
-    
+
     if (code && state === 'anythingworkshere') {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/callback?code=${code}`, {
@@ -138,6 +152,15 @@ const Integrations: React.FC = () => {
       console.error('Error disconnecting ABC Supply:', error);
     } finally {
       setLoading(null);
+    }
+  };
+
+  const fetchSrsStatus = async () => {
+    try {
+      const isConnected = await srsService.validateConnection();
+      setSrsStatus({ connected: isConnected });
+    } catch (error) {
+      setSrsStatus({ connected: false });
     }
   };
 
@@ -186,21 +209,36 @@ const Integrations: React.FC = () => {
       googleBusinessApi.connect();
     } else if (integrationId === 'abc-supply') {
       handleABCSupplyConnect();
+    } else if (integrationId === 'eagleview') {
+      setShowEagleViewModal(true);
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
   };
 
-  const handleDisconnect = (integrationId: string) => {
+  const handleDisconnect = async (integrationId: string) => {
     if (integrationId === 'quickbooks') {
       handleQuickBooksDisconnect();
     } else if (integrationId === 'twilio') {
       setShowTwilioModal(true);
+    } else if (integrationId === 'abc-supply') {
+      handleABCSupplyDisconnect();
     } else if (integrationId === 'srs-distribution') {
       srsService.logout();
       setSrsStatus({ connected: false });
-    } else if (integrationId === 'abc-supply') {
-      handleABCSupplyDisconnect();
+    } else if (integrationId === 'eagleview') {
+      try {
+        setLoading('eagleview');
+        const token = localStorage.getItem('token');
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/eagleview/disconnect`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        await fetchEagleViewStatus();
+      } catch (error) {
+        console.error('Error disconnecting EagleView:', error);
+      } finally {
+        setLoading(null);
+      }
     } else {
       console.log(`Disconnecting from ${integrationId}...`);
     }
@@ -262,9 +300,16 @@ const Integrations: React.FC = () => {
     {
       id: 'eagleview',
       name: 'EagleView',
-      description: 'Aerial imagery and property measurement services for roofing professionals',
+      description: eagleViewStatus.usingOwnAccount
+        ? 'Aerial imagery connected via your own account.'
+        : 'Aerial imagery and property measurement services for roofing professionals.',
       category: 'Imaging',
-      connected: false,
+      connected: eagleViewStatus.connected,
+      customStatus: !eagleViewStatus.connected && !eagleViewStatus.usingOwnAccount ? (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+          Credits: {eagleViewStatus.credits}
+        </span>
+      ) : null
     },
     {
       id: 'meta',
@@ -348,6 +393,7 @@ const Integrations: React.FC = () => {
                       <span>Connected</span>
                     </span>
                   )}
+                  {integration.customStatus}
                 </div>
                 <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(integration.category)}`}>
                   {integration.category}
@@ -438,7 +484,7 @@ const Integrations: React.FC = () => {
         onStatusChange={handleTwilioStatusChange}
         initialStatus={twilioStatus}
       />
-      
+
       {showSrsModal && (
         <SRSConnection
           onConnectionSuccess={() => {
@@ -448,6 +494,13 @@ const Integrations: React.FC = () => {
           onClose={() => setShowSrsModal(false)}
         />
       )}
+
+      <EagleViewConnectionModal
+        isOpen={showEagleViewModal}
+        onClose={() => setShowEagleViewModal(false)}
+        onSuccess={() => fetchEagleViewStatus()}
+        currentCredits={eagleViewStatus.credits}
+      />
     </div>
   );
 };

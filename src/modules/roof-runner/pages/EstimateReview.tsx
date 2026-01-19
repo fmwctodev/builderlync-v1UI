@@ -32,14 +32,18 @@ interface EstimateReviewProps {
       contact_settings: any;
       additional_settings: any;
     };
+    business: {
+      name: string;
+      logo: string | null;
+    };
   };
   onBack?: () => void;
 }
 
 const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack }) => {
-  const { estimate, estimator } = estimateData;
+  const { estimate, estimator, business } = estimateData;
   const { calculations, project_details } = estimate;
-  
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -48,7 +52,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
       maximumFractionDigits: 0,
     }).format(price);
   };
-  
+
   const getSlopeText = (steepness: string) => {
     switch (steepness) {
       case 'low': return 'Low';
@@ -57,7 +61,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
       default: return 'Low';
     }
   };
-  
+
   const getMaterialDisplayName = (material: string) => {
     switch (material) {
       case 'metal': return 'Metal';
@@ -75,21 +79,20 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
           <div className="flex items-center gap-4">
             <div className="w-24 h-10 bg-black rounded flex items-center justify-center">
               <div className="text-white font-bold text-xs">
-                <div className="text-xs">TARRYTOWN</div>
-                <div className="text-xs">ROOFING</div>
+                <div className="text-xs">{business?.name}</div>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {onBack && (
-              <button 
+              <button
                 onClick={onBack}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 ← Back
               </button>
             )}
-            <button 
+            <button
               onClick={() => {
                 const url = window.location.href;
                 navigator.clipboard.writeText(url).then(() => {
@@ -112,7 +115,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
           {/* Main Content */}
           <div className="lg:col-span-2">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Review your estimate</h1>
-            
+
             {/* Estimate Card */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
               <div className="flex gap-6">
@@ -123,24 +126,24 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
                     <div className="w-full h-full bg-gradient-to-r from-blue-300 to-blue-500 transform skew-y-12 origin-bottom-left"></div>
                   </div>
                 </div>
-                
+
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{getMaterialDisplayName(calculations.materialType)}</h3>
-                      <div className="text-3xl font-bold text-gray-900">{formatPrice(calculations.finalPrice)}*</div>
+                      <div className="text-3xl font-bold text-gray-900">{formatPrice(calculations.basePrice || 0)}*</div>
                     </div>
                   </div>
-                  
+
                   <p className="text-gray-600 text-sm mb-4">
-                    A {getMaterialDisplayName(calculations.materialType).toLowerCase()} roof is a roofing system made from {calculations.materialType} pieces or tiles characterized by its 
+                    A {getMaterialDisplayName(calculations.materialType).toLowerCase()} roof is a roofing system made from {calculations.materialType} pieces or tiles characterized by its
                     high resistance, impermeability and longevity.
                   </p>
-                  
+
                   <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4">
                     See more →
                   </button>
-                  
+
                   <button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                     Get free proposal →
                   </button>
@@ -154,24 +157,24 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Your roof by</h2>
                   <h2 className="text-2xl font-bold mb-6">the numbers—</h2>
-                  
+
                   <p className="text-gray-300 text-sm mb-8">
                     This is an estimate. Actual roof size will vary based on the exact slope (steepness) of your roof.
                   </p>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <div className="text-3xl font-bold">{calculations.roofArea.toLocaleString()}</div>
                       <div className="text-gray-300">Square feet</div>
                     </div>
-                    
+
                     <div>
                       <div className="text-3xl font-bold">{getSlopeText(project_details.roofSteepness)}</div>
                       <div className="text-gray-300">Slope</div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-center">
                   {/* Satellite Map Placeholder */}
                   <div className="w-full h-64 bg-gray-700 rounded-lg relative overflow-hidden">
@@ -208,14 +211,18 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
             <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-8">
               {/* Company Logo */}
               <div className="text-center mb-6">
-                <div className="w-24 h-16 mx-auto bg-black rounded flex items-center justify-center mb-4">
-                  <div className="text-white font-bold text-xs">
-                    <div className="text-xs">TARRYTOWN</div>
-                    <div className="text-xs">ROOFING</div>
-                  </div>
+                <div className="w-24 h-16 mx-auto rounded flex items-center justify-center mb-4">
+                  {business?.logo && (
+                    <img
+                      src={business.logo}
+                      alt="Business Logo"
+                      className="w-full h-full object-contain"
+                    />
+                  )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">{estimator.name || 'Tarrytown Roofing'}</h3>
-                <p className="text-xl font-bold text-gray-900">LLC</p>
+
+                <h3 className="text-xl font-bold text-gray-900">{business.name || 'Tarrytown Roofing'}</h3>
+                {/* <p className="text-xl font-bold text-gray-900">LLC</p> */}
               </div>
 
               {/* Contact Info */}
@@ -224,7 +231,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, onBack })
                   <Mail className="w-4 h-4" />
                   <span className="font-medium">Email</span>
                 </button>
-                
+
                 <button className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                   <Phone className="w-4 h-4" />
                   <span className="font-medium">Call</span>

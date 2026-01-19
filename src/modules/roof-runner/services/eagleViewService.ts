@@ -145,7 +145,8 @@ class EagleViewService {
   async submitOrder(orderData: EagleViewOrderRequest): Promise<EagleViewOrderResponse> {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://builderlyncapi.testenvapp.com/api/eagleview/orders', {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const response = await fetch(`${API_BASE_URL}/eagleview/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,11 +187,12 @@ class EagleViewService {
   async getReports(referenceId?: string, reportId?: number): Promise<EagleViewReport[]> {
     try {
       const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
       const params = new URLSearchParams();
       if (referenceId) params.append('referenceId', referenceId);
       if (reportId) params.append('reportId', reportId.toString());
-      
-      const url = `https://builderlyncapi.testenvapp.com/api/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
+
+      const url = `${API_BASE_URL}/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -214,12 +216,13 @@ class EagleViewService {
   async downloadReport(reportId: string, format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://builderlyncapi.testenvapp.com/api/eagleview/report?reportId=${reportId}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const response = await fetch(`${API_BASE_URL}/eagleview/report?reportId=${reportId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.ok) {
         return await response.blob();
       }
@@ -230,62 +233,26 @@ class EagleViewService {
     }
   }
 
-  createOrderData(formData: {
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-    country?: string;
-    latitude?: number;
-    longitude?: number;
-    buildingId: string;
-    productId: number;
-    claimInfo?: {
-      claimNumber?: string;
-      claimInformation?: string;
-      poNumber?: string;
-      dateOfLoss?: string;
-      insuredName?: string;
-      policyNumber?: string;
-      catId?: string;
-    };
-    specialInstructions?: string;
-    userName: string;
-  }): EagleViewOrderRequest {
-    return {
-      orderReports: {
-        reportAddresses: {
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-          country: formData.country || 'USA',
-          latitude: formData.latitude || 0,
-          longitude: formData.longitude || 0,
-          addressType: 0
-        },
-        buildingId: formData.buildingId,
-        primaryProductId: formData.productId,
-        deliveryProductId: 1,
-        addOnProductIds: [],
-        measurementInstructionType: 1,
-        reportAttributes: {},
-        claimNumber: formData.claimInfo?.claimNumber || '',
-        claimInfo: formData.claimInfo?.claimInformation || '',
-        batchId: `Batch-${Date.now()}`,
-        catId: formData.claimInfo?.catId || '',
-        changesInLast4Years: false,
-        pONumber: formData.claimInfo?.poNumber || '',
-        comments: formData.specialInstructions || '',
-        referenceId: `Ref-${Date.now()}`,
-        insuredName: formData.claimInfo?.insuredName || '',
-        upgradeFromReportId: 0,
-        policyNumber: formData.claimInfo?.policyNumber || '',
-        dateOfLoss: formData.claimInfo?.dateOfLoss || new Date().toISOString().split('T')[0],
-      },
-      promoCode: '',
-      placeOrderUser: formData.userName
-    };
+  // ... other methods ...
+
+  async getConnectionStatus(): Promise<{ connected: boolean; usingOwnAccount: boolean; credits: number }> {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const response = await fetch(`${API_BASE_URL}/eagleview/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+      return { connected: false, usingOwnAccount: false, credits: 0 };
+    } catch (error) {
+      console.error('Failed to get connection status:', error);
+      return { connected: false, usingOwnAccount: false, credits: 0 };
+    }
   }
 }
 

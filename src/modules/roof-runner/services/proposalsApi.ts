@@ -25,13 +25,14 @@ export interface ContractorSignature {
 }
 
 export interface Proposal {
+  data: Proposal;
   id: number;
   type: string;
   title: string;
   status: 'incomplete' | 'complete' | 'sent' | 'signed';
   identifier: string;
   template_id?: string;
-  sections: any[];
+  sections: any;
   author_id: number;
   assignee_id: number;
   job_id?: number;
@@ -40,6 +41,8 @@ export interface Proposal {
   contractor_signature?: ContractorSignature;
   created_at: string;
   updated_at: string;
+  report_id?: string;
+  report?: any;
 }
 
 export interface CreateProposalRequest {
@@ -54,7 +57,7 @@ export interface CreateProposalRequest {
 export interface UpdateProposalRequest {
   title?: string;
   status?: 'incomplete' | 'complete' | 'sent' | 'signed' | 'lost';
-  sections?: any[];
+  sections?: any;
   total?: number;
   total_manual?: number;
   notes?: string;

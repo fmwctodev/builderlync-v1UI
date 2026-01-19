@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export interface MeasurementData {
   id?: number;

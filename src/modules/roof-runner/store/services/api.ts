@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -134,4 +134,51 @@ export const apiService = {
     const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/generate-estimate`, formData);
     return response.data;
   },
+
+  requestPropertyData: async (publicUrl: string, address: string) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/property-data`, { address });
+    return response.data;
+  },
+
+  getPropertyDataResult: async (publicUrl: string, requestId: string) => {
+    const response = await apiClient.get(`/instant-estimators/public/${publicUrl}/property-data/${requestId}`);
+    return response.data;
+  },
+
+  getBusinessProfile: async () => {
+    const response = await apiClient.get('/organizations/profile');
+    return response.data;
+  },
+  // Material Templates
+  getMaterialTemplates: async () => {
+    const response = await apiClient.get('/instant-estimators/material-templates');
+    return response.data;
+  },
+
+  addMaterialTemplate: async (data: any) => {
+    const response = await apiClient.post('/instant-estimators/material-templates', data);
+    return response.data;
+  },
+
+  deleteMaterialTemplate: async (id: string) => {
+    const response = await apiClient.delete(`/instant-estimators/material-templates/${id}`);
+    return response.data;
+  },
+
+  // Pipelines
+  getPipelines: async () => {
+    const response = await apiClient.get('/pipelines');
+    return response.data;
+  },
+
+  getPipelineStages: async (pipelineId: string) => {
+    const response = await apiClient.get(`/pipelines/${pipelineId}/stages`);
+    return response.data;
+  },
+
+  // Staff
+  getStaff: async () => {
+    const response = await apiClient.get('/staff?limit=100');
+    return response.data;
+  }
 };

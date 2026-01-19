@@ -5,6 +5,8 @@ import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
 import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
 import EagleViewMeasurement from '../components/measurements/EagleViewMeasurement';
+import { eagleViewService } from '../services/eagleViewService';
+import { profileService } from '../../../shared/services/profileService';
 
 type ViewType = 'dashboard' | 'place-order' | 'order-summary' | 'order-history' | 'eagleview';
 
@@ -19,6 +21,7 @@ interface OrderData {
 }
 
 interface BusinessInfo {
+  id?: number;
   company_name: string;
   address: string;
   city: string;
@@ -33,29 +36,141 @@ export default function Measurements() {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    pendingOrders: 0,
+    completedYTD: 0,
+    balance: 0
+  });
 
   useEffect(() => {
     loadBusinessInfo();
+    fetchEagleViewStats();
   }, []);
+
+  const fetchEagleViewStats = async () => {
+    try {
+      const [ordersResponse, statusResponse] = await Promise.all([
+        eagleViewService.getReports(),
+        eagleViewService.getConnectionStatus()
+      ]);
+
+      // Handle potentially wrapped orders data
+      const orders = Array.isArray(ordersResponse)
+        ? ordersResponse
+        : (ordersResponse as any).data || (ordersResponse as any).items || [];
+
+      // Process orders for stats
+      const currentYear = new Date().getFullYear();
+      let pending = 0;
+      let completedThisYear = 0;
+
+      orders.forEach((order: any) => {
+        // Status check
+        if (order.status !== 'completed' && order.status !== 'delivered' && order.status !== 'failed') {
+          pending++;
+        }
+
+        // Year check
+        if ((order.status === 'completed' || order.status === 'delivered')) {
+          if (order.created_at) {
+            const orderYear = new Date(order.created_at).getFullYear();
+            if (orderYear === currentYear) {
+              completedThisYear++;
+            }
+          } else {
+            // Count as current if no date (fallback)
+            completedThisYear++;
+          }
+        }
+      });
+
+      // Check if status is wrapped in data object
+      const connectionData = (statusResponse as any).data || statusResponse;
+
+      setStats({
+        totalOrders: orders.length,
+        pendingOrders: pending,
+        completedYTD: completedThisYear,
+        balance: connectionData.credits || 0
+      });
+    } catch (error) {
+      console.error('Failed to fetch EagleView stats:', error);
+    }
+  };
 
   const loadBusinessInfo = async () => {
     setLoading(true);
-    const data = await measurementsApi.getMeasurements();
-    setBusinessInfo(data);
-    setLoading(false);
+    try {
+      const data = await measurementsApi.getMeasurements();
+
+      if (data) {
+        // Map API response (zipCode) to Component State (zip_code)
+        setBusinessInfo({
+          ...data,
+          company_name: data.company_name,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zipCode || (data as any).zip_code || '' // Handle likely property name difference
+        });
+      } else {
+        // Fallback to Profile Service
+        try {
+          const profile = await profileService.getUserProfile();
+          if (profile) {
+            setBusinessInfo({
+              company_name: profile.company_name || profile.companyName || profile.organization || '',
+              address: profile.address || '',
+              city: profile.city || '',
+              state: profile.state || '',
+              zip_code: profile.zip_code || profile.zipCode || ''
+            });
+          }
+        } catch (profileError) {
+          console.error('Error fetching fallback profile:', profileError);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading business info:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleOrderComplete = (data: OrderData) => {
-    setOrderData(data);
-    setActiveTab('order-summary');
+  const handleOrderComplete = () => {
+    setOrderData(null);
+    setActiveTab('Dashboard');
+    // Refresh stats after order
+    fetchEagleViewStats();
   };
 
   const handleSaveBusinessInfo = async (newInfo: BusinessInfo) => {
     console.log("newInfo", newInfo);
-    const updatedInfo = { ...newInfo, companyName: newInfo.company_name, zipCode: newInfo.zip_code };
-    const result = await measurementsApi.createOrUpdateMeasurement(updatedInfo);
+    // Convert back to API format if needed (zip_code -> zipCode)
+    const payload = {
+      ...newInfo,
+      companyName: newInfo.company_name, // API likely expects camelCase or snake_case depending on backend, keeping one ensures at least one hits
+      company_name: newInfo.company_name,
+      zipCode: newInfo.zip_code,
+      zip_code: newInfo.zip_code
+    };
+
+    // measurementsApi expects specific fields, cast to any to allow flexible payload
+    const result = await measurementsApi.createOrUpdateMeasurement(payload as any);
+    console.log("Save Result:", result);
+
     if (result) {
-      setBusinessInfo(result?.data);
+      // Update local state with result
+      setBusinessInfo({
+        ...result,
+        // Handle both casing from API response to ensure UI updates
+        company_name: result.company_name || (result as any).companyName || newInfo.company_name,
+        address: result.address || newInfo.address,
+        city: result.city || newInfo.city,
+        state: result.state || newInfo.state,
+        zip_code: result.zipCode || (result as any).zip_code || newInfo.zip_code
+      });
       setIsEditing(false);
     }
   };
@@ -98,7 +213,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.company_name || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, company_name: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, company_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -107,7 +222,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.address || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, address: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, address: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -116,7 +231,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.city || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, city: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, city: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -125,7 +240,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.state || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, state: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, state: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -134,7 +249,7 @@ export default function Measurements() {
                   <input
                     type="text"
                     value={businessInfo?.zip_code || ''}
-                    onChange={(e) => setBusinessInfo({...businessInfo!, zip_code: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo!, zip_code: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -193,11 +308,11 @@ export default function Measurements() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Total order</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-white">{stats.totalOrders}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Order pending</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-white">{stats.pendingOrders}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Avg. report cost</p>
@@ -206,11 +321,11 @@ export default function Measurements() {
             </div>
 
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">2025 Year To Date</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">{new Date().getFullYear()} Year To Date</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Reports Completed</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">0</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{stats.completedYTD}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Prepayments</p>
@@ -218,7 +333,7 @@ export default function Measurements() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Balance</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-white">$ 0.00</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">$ {stats.balance.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -226,7 +341,7 @@ export default function Measurements() {
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">You have no recent orders at this time</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">You have {stats.totalOrders} order(s) placed.</p>
             <button
               onClick={() => setActiveTab('Order')}
               className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -248,43 +363,39 @@ export default function Measurements() {
             <div className="flex items-center space-x-6">
               <button
                 onClick={() => setActiveTab('Dashboard')}
-                className={`text-sm font-medium transition-colors ${
-                  activeTab === 'Dashboard'
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                className={`text-sm font-medium transition-colors ${activeTab === 'Dashboard'
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => setActiveTab('Order History')}
-                className={`flex items-center text-sm font-medium transition-colors ${
-                  activeTab === 'Order History'
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'Order History'
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
               >
                 <History className="inline-block mr-1" size={16} />
                 Order History
               </button>
               <button
                 onClick={() => setActiveTab('EagleView')}
-                className={`flex items-center text-sm font-medium transition-colors ${
-                  activeTab === 'EagleView'
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'EagleView'
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
               >
                 <Camera className="inline-block mr-1" size={16} />
                 EagleView
               </button>
               <button
                 onClick={() => setActiveTab('Order')}
-                className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${
-                  activeTab === 'Order'
-                    ? 'border-primary-600 text-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
-                }`}
+                className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${activeTab === 'Order'
+                  ? 'border-primary-600 text-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                  }`}
               >
                 Order
               </button>

@@ -8,13 +8,11 @@ import ShoppingCartComponent from "./ShoppingCart";
 interface ProductCatalogProps {
   onBack: () => void;
   supplier?: string;
+  branchId?: string;
 }
 
-const ProductCatalog: React.FC<ProductCatalogProps> = ({
-  onBack,
-  supplier = "ABC Supply",
-}) => {
-  const [searchQuery, setSearchQuery] = useState("");
+const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC Supply', branchId }) => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -40,7 +38,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [branchId]); // Reload if branch changes
 
   const loadProducts = async (page = 1) => {
     try {
@@ -71,8 +69,19 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
           setPagination(response.pagination);
         }
       } else {
-        const response = await abcSupplyApi.getItems(page, 50);
-        setProducts(response.items.items);
+        // If branchId is present, we use filterItems (search) with empty query but branch filter
+        // to ensure we only get items available at this branch.
+        if (branchId) {
+          // Passing empty string as query. 
+          // Note: API needs to handle empty query gracefully or wildcard.
+          // If empty query returns nothing, we should consider a different strategy.
+          // Usually ' ' or '*' works for wildcard if implemented, or just filter by branch.
+          const data = await abcSupplyApi.filterItems([''], 50, page, branchId);
+          setProducts(Array.isArray(data) ? data : []);
+        } else {
+          const response = await abcSupplyApi.getItems(page, 50);
+          setProducts(response.items.items);
+        }
       }
     } catch (error) {
       console.error("Failed to load products:", error);
@@ -83,7 +92,7 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
   };
 
   const handleSearch = async (query: string) => {
-    if (!query.trim()) {
+    if (!query.trim() && !branchId) {
       loadProducts();
       return;
     }
@@ -108,7 +117,8 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
         }));
         setProducts(mappedProducts);
       } else {
-        const data = await abcSupplyApi.filterItems([query], 50, 1);
+        // Pass branchId to filterItems
+        const data = await abcSupplyApi.filterItems([query], 50, 1, branchId);
         setProducts(Array.isArray(data) ? data : []);
       }
     } catch (error) {
@@ -211,7 +221,8 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
     if (allFilters.length > 0) {
       try {
         setLoading(true);
-        const results = await abcSupplyApi.filterItems(allFilters, 50, 1);
+        // Pass branchId here as well
+        const results = await abcSupplyApi.filterItems(allFilters, 50, 1, branchId);
         setProducts(results);
       } catch (err) {
         console.error("Filter failed:", err);
@@ -230,15 +241,12 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
     );
   };
 
-  const filteredProducts = Array.isArray(products)
-    ? products.filter((product) => {
-        const matchesManufacturer =
-          selectedManufacturers.length === 0 ||
-          selectedManufacturers.includes(product.supplierName || "");
+  const filteredProducts = Array.isArray(products) ? products.filter(product => {
+    const matchesManufacturer = selectedManufacturers.length === 0 ||
+      selectedManufacturers.includes(product.supplierName || '');
 
-        return matchesManufacturer;
-      })
-    : [];
+    return matchesManufacturer;
+  }) : [];
 
   return (
     <div className="space-y-6">
@@ -416,36 +424,22 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   </tr>
                 ) : (
                   filteredProducts.map((product) => (
-                    <tr
-                      key={product.itemNumber}
-                      className="hover:bg-gray-800 dark:hover:bg-gray-700"
-                    >
-                      {supplier === "SRS" && (
+                    <tr key={product.itemNumber} className="hover:bg-gray-800 dark:hover:bg-gray-700">
+                      {supplier === 'SRS' && (
                         <td className="px-6 py-4">
-                          {product.productImageUrl ||
-                          product.productVariants?.[0]?.variantImageURL ? (
-                            <>
-                              {" "}
-                              <img
-                                src={
-                                  product.productImageUrl ||
-                                  product.productVariants?.[0]?.variantImageURL
-                                }
-                                alt={product.itemDescription || "Product image"}
-                                className="w-12 h-12 object-cover rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  e.currentTarget.nextElementSibling?.classList.remove(
-                                    "hidden"
-                                  );
-                                }}
-                              />
+                          {(product.productImageUrl || product.productVariants?.[0]?.variantImageURL) ? (
+                            <> <img
+                              src={product.productImageUrl || product.productVariants?.[0]?.variantImageURL}
+                              alt={product.itemDescription || 'Product image'}
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
                               <div className="hidden w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
-                                <span className="text-xs text-gray-400">
-                                  No Image
-                                </span>
-                              </div>
-                            </>
+                                <span className="text-xs text-gray-400">No Image</span>
+                              </div></>
                           ) : (
                             <div className="w-12 h-12 bg-gray-600 rounded flex items-center justify-center">
                               <span className="text-xs text-gray-400">
@@ -465,12 +459,8 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
-                          <span className="font-medium text-white">
-                            {product.supplierName || "Unknown"}
-                          </span>
-                          <span className="text-gray-400">
-                            {product.itemDescription || "No description"}
-                          </span>
+                          <span className="font-medium text-white">{product.itemDescription || 'Unknown'}</span>
+                          <span className="text-gray-400">{product.itemDescription || 'No description'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
