@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Settings, Edit, Copy, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
 import type { InstantEstimator } from '../types';
 import Toast from '../../../shared/components/Toast';
+import InstantEstimatorManageModal from '../components/InstantEstimatorManageModal';
 
 const InstantEstimator: React.FC = () => {
-  const navigate = useNavigate();
-  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [activeTab, setActiveTab] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -22,7 +20,9 @@ const InstantEstimator: React.FC = () => {
   const limit = 10;
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
   const [estimatorToDelete, setEstimatorToDelete] = useState<number | null>(null);
+  const [manageEstimatorId, setManageEstimatorId] = useState<number | null>(null);
   const [materialTemplates, setMaterialTemplates] = useState([]);
   const [businessProfile, setBusinessProfile] = useState<{ friendly_business_name: string; business_logo: string | null } | null>(null);
   const [showMaterialTemplateModal, setShowMaterialTemplateModal] = useState(false);
@@ -237,7 +237,10 @@ const InstantEstimator: React.FC = () => {
                       <tr key={estimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <button
-                            onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
+                            onClick={() => {
+                              setManageEstimatorId(estimator.id);
+                              setShowManageModal(true);
+                            }}
                             className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
                           >
                             {estimator.name}
@@ -246,7 +249,10 @@ const InstantEstimator: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
+                              onClick={() => {
+                                setManageEstimatorId(estimator.id);
+                                setShowManageModal(true);
+                              }}
                               className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                             >
                               <Settings className="w-3 h-3" />
@@ -802,6 +808,19 @@ const InstantEstimator: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Manage Modal */}
+      {showManageModal && manageEstimatorId && (
+        <InstantEstimatorManageModal
+          isOpen={showManageModal}
+          onClose={() => {
+            setShowManageModal(false);
+            setManageEstimatorId(null);
+          }}
+          estimatorId={manageEstimatorId}
+          onSaved={fetchEstimators}
+        />
       )}
 
       {toast && (

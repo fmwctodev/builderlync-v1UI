@@ -82,6 +82,7 @@ export const apiService = {
 
   getInstantEstimator: async (id: number) => {
     const response = await apiClient.get(`/instant-estimators/${id}`);
+    console.log("get instant estimator ", response.data);
     return response.data;
   },
 

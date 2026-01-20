@@ -292,8 +292,9 @@ const PublicEstimator: React.FC = () => {
 
       let calculatedRoofArea = 0;
       const structure = currentPropertyData?.structures?.[0];
-      const roofSquares = structure?.roof?.structure_roof_area_squares?.value;
+
       const footprintValue = structure?.structure_footprint_sqft?.value;
+      const roofSquares = structure?.roof?.structure_roof_area_squares?.value || structure?.structure_roof_area_squares?.value;
 
       console.log('Final Area Extraction Check:', { footprintValue, roofSquares });
 
@@ -307,7 +308,7 @@ const PublicEstimator: React.FC = () => {
 
       if (calculatedRoofArea <= 0 && roofSquares !== undefined && roofSquares !== null) {
         const squaresValue = typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares);
-        if (!isNaN(squaresValue)) {
+        if (!isNaN(squaresValue) && squaresValue > 0) {
           calculatedRoofArea = squaresValue * 100;
           console.log('Using Roof Squares (Converted to SqFt):', calculatedRoofArea);
         }
@@ -544,8 +545,8 @@ const PublicEstimator: React.FC = () => {
           <div className="grid grid-cols-4 gap-4">
             {[
               { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.webp' },
-              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp'},
-              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.webp'},
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp' },
+              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.webp' },
               { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.webp' }
             ].map((option) => (
               <div
@@ -578,7 +579,7 @@ const PublicEstimator: React.FC = () => {
 
       const structure = propertyData?.structures?.[0];
       const footprintValue = structure?.structure_footprint_sqft?.value;
-      const roofSquares = structure?.roof?.structure_roof_area_squares?.value;
+      const roofSquares = structure?.roof?.structure_roof_area_squares?.value || structure?.structure_roof_area_squares?.value;
 
       let areaSqFt = 0;
       if (footprintValue) {
