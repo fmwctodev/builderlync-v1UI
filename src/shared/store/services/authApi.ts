@@ -48,6 +48,14 @@ export interface User {
   lastName: string;
   email: string;
   companyName: string;
+  companySlug?: string;
+  organizationId?: number | string;
+  organization_id?: number | string;
+  role?: {
+    id: string;
+    name: string;
+    permissions: any;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -200,7 +208,7 @@ export const authApi = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${data.token}`,
       },
-      body: JSON.stringify({token: data.token, newPassword: data.newPassword }),
+      body: JSON.stringify({ token: data.token, newPassword: data.newPassword }),
     });
 
     const result = await response.json();

@@ -167,8 +167,9 @@ class EagleViewService {
       console.log('API Success:', result);
       return {
         success: true,
-        orderId: result.orderId || result.id,
-        message: result.message || 'Order submitted successfully'
+        orderId: result.order?.id || result.id,
+        message: result.message || 'Order submitted successfully',
+        ...result
       };
     } catch (error) {
       console.error('EagleView order submission failed:', error);

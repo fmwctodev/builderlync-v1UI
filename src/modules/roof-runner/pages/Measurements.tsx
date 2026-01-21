@@ -380,7 +380,7 @@ export default function Measurements() {
                 <History className="inline-block mr-1" size={16} />
                 Order History
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab('EagleView')}
                 className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'EagleView'
                   ? 'text-primary-600 dark:text-primary-400'
@@ -389,7 +389,7 @@ export default function Measurements() {
               >
                 <Camera className="inline-block mr-1" size={16} />
                 EagleView
-              </button>
+              </button> */}
               <button
                 onClick={() => setActiveTab('Order')}
                 className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${activeTab === 'Order'
