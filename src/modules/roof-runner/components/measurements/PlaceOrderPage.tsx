@@ -66,6 +66,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; orderId?: string; message?: string } | null>(null);
 
   // Order Data State
   const [address, setAddress] = useState('');
@@ -154,7 +155,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <Wallet className="w-5 h-5 text-gray-400" />
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">${connectionStatus.credits?.toFixed(2) || '0.00'}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{connectionStatus.credits?.toFixed(2) || '0.00'}</p>
                   <p className="text-xs text-gray-500">
                     {connectionStatus.credits > 0 ? 'Credits available' : 'No credits available'}
                   </p>
@@ -306,8 +307,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               <div
                 key={product.id}
                 className={`bg-white dark:bg-gray-800 p-6 rounded-lg border transition-all ${selectedOptionId && product.options.some(o => o.id === selectedOptionId)
-                    ? 'border-blue-500 ring-1 ring-blue-500'
-                    : 'border-gray-200 dark:border-gray-700'
+                  ? 'border-blue-500 ring-1 ring-blue-500'
+                  : 'border-gray-200 dark:border-gray-700'
                   }`}
               >
                 <div className="flex justify-between items-start mb-4">
@@ -315,7 +316,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                     <div className="flex items-center gap-3 mb-1">
                       <h4 className="font-bold text-gray-900 dark:text-white text-lg">{product.name}</h4>
                       <span className={`text-xs uppercase px-2 py-0.5 rounded font-semibold ${product.type === 'Pro' ? 'bg-blue-100 text-blue-700' :
-                          product.type === 'Upgrade' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+                        product.type === 'Upgrade' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                         }`}>
                         {product.type}
                       </span>
@@ -341,8 +342,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                           key={option.id}
                           onClick={() => handleProductToggle(option.id)}
                           className={`flex items-center justify-between p-3 rounded border cursor-pointer transition-colors ${isSelected
-                              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400'
-                              : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400'
+                            : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600 hover:border-blue-300'
                             }`}
                         >
                           <span className={`text-sm font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -386,6 +387,64 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Step 4: Result View ---
+  if (result) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 text-center">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${result.success ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+          {result.success ? <Check className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {result.success ? 'Order Placed Successfully!' : 'Order Failed'}
+        </h2>
+        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+          {result.success
+            ? `Your EagleView order has been submitted. Report ID: ${result.orderId || 'Pending'}. You can track the status in your Order History.`
+            : result.message || 'An unexpected error occurred while processing your order. Please try again or contact support.'}
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {result.success ? (
+            <>
+              <button
+                onClick={() => onOrderComplete(result)}
+                className="px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition-colors"
+              >
+                Return to Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  setResult(null);
+                  setStep('payment-method');
+                  setAddress('');
+                  setSelectedOptionId(null);
+                }}
+                className="px-8 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              >
+                Place Another Order
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setResult(null)}
+                className="px-8 py-3 bg-gray-900 text-white rounded-lg font-bold hover:bg-gray-800 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={onBack}
+                className="px-8 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -635,25 +694,30 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                       reportAttributes: {},
                       changesInLast4Years: false
                     },
-                    placeOrderUser: 'BuilderLync User'
+                    placeOrderUser: 'BuilderLync User',
+                    paymentMethod: paymentMethod,
+                    credits: totalCredits
                   };
 
-                  const result = await eagleViewService.submitOrder(orderData as any);
-                  if (result.success) {
-                    onOrderComplete({
-                      ...result,
-                      address,
-                      addressComponents,
-                      paymentMethod,
-                      selectedOptionId,
-                      credits: totalCredits
+                  const submissionResult = await eagleViewService.submitOrder(orderData as any);
+                  if (submissionResult.success) {
+                    setResult({
+                      success: true,
+                      orderId: submissionResult.orderId || (submissionResult as any).id,
+                      message: 'Order submitted successfully'
                     });
                   } else {
-                    alert(`Order failed: ${result.error || result.message || 'Unknown error'}`);
+                    setResult({
+                      success: false,
+                      message: submissionResult.error || submissionResult.message || 'Unknown error'
+                    });
                   }
                 } catch (error) {
                   console.error('Order submission exception:', error);
-                  alert('An error occurred while placing the order. please try again.');
+                  setResult({
+                    success: false,
+                    message: error instanceof Error ? error.message : 'An error occurred while placing the order.'
+                  });
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -677,6 +741,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           isOpen={showBuyCredits}
           onClose={() => setShowBuyCredits(false)}
           currentBalance={connectionStatus.credits}
+          orgSlug={orgSlug || ''}
         />
       </div>
     );

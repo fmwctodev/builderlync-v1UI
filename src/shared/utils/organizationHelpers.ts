@@ -35,7 +35,7 @@ export function requireOrganizationId(
       ? `Organization context is required for ${context}`
       : 'Organization context is required';
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error(`[OrganizationContext] ${message}`, {
         context,
         stack: new Error().stack,
@@ -63,7 +63,7 @@ export function withOrgId<T extends Record<string, any>>(
   data: T,
   organizationId: string | null | undefined
 ): T & { organization_id: string } {
-  // requireOrganizationId(organizationId, 'withOrgId');
+  requireOrganizationId(organizationId, 'withOrgId');
 
   return {
     ...data,
@@ -101,7 +101,7 @@ export function validateOrgAccess<T extends { organization_id?: string | null }>
       ? `${recordType} does not belong to the current organization`
       : 'Record does not belong to the current organization';
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error(`[OrganizationContext] Access violation`, {
         recordType,
         recordOrgId: record.organization_id,
@@ -137,7 +137,7 @@ export function validateOrgAccessBulk<T extends { organization_id?: string | nul
         ? `One or more ${recordType} records do not belong to the current organization`
         : 'One or more records do not belong to the current organization';
 
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.error(`[OrganizationContext] Bulk access violation`, {
           recordType,
           violatingOrgId: record.organization_id,
@@ -172,7 +172,7 @@ export function hasOrganizationContext(
  * @param hasOrgFilter - Whether the query includes organization filtering
  */
 export function warnMissingOrgFilter(functionName: string, hasOrgFilter: boolean): void {
-  if (process.env.NODE_ENV === 'development' && !hasOrgFilter) {
+  if (import.meta.env.DEV && !hasOrgFilter) {
     console.warn(
       `[OrganizationContext] ${functionName} is executing without explicit organization filtering. ` +
       `This may cause data leakage or performance issues.`

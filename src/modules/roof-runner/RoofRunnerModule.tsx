@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import BlankPage from './pages/BlankPage';
 import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
+import { PaymentSuccess } from './components/measurements/PaymentSuccess';
+import { PaymentCancel } from './components/measurements/PaymentCancel';
 import Proposals from './pages/Proposals';
 import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import ProposalEditorPage from './pages/ProposalEditorPage';
@@ -68,14 +70,14 @@ const OrgSettingsRedirect = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const orgId = user?.organizationId || localStorage.getItem('organizationId');
-  
+
   useEffect(() => {
     if (orgId) {
       const path = window.location.pathname.replace('/org/settings', `/org/company-${orgId}/settings`);
       navigate(path + window.location.search, { replace: true });
     }
   }, [orgId, navigate]);
-  
+
   return null;
 };
 
@@ -83,65 +85,67 @@ export function RoofRunnerModule() {
   return (
     <Provider store={store}>
       <Routes>
-      <Route path="/" element={<ProtectedRoute><OrgProvider><RootRedirect /></OrgProvider></ProtectedRoute>} />
-      <Route path="outlook-callback" element={<OutlookCallback />} />
-      <Route path="org/settings/*" element={<ProtectedRoute><OrgProvider><OrgSettingsRedirect /></OrgProvider></ProtectedRoute>} />
-      <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
-      <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
-      <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
-      <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
-      <Route path="auth/set-password" element={<SetPassword />} />
-      <Route path="auth/google-analytics/callback" element={<GoogleAnalyticsCallback />} />
-      <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
-      <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
-      <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
-      <Route path="proposal/view" element={<PublicProposalView />} />
-      <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="/" element={<ProtectedRoute><OrgProvider><RootRedirect /></OrgProvider></ProtectedRoute>} />
+        <Route path="outlook-callback" element={<OutlookCallback />} />
+        <Route path="org/settings/*" element={<ProtectedRoute><OrgProvider><OrgSettingsRedirect /></OrgProvider></ProtectedRoute>} />
+        <Route path="auth/login" element={<AuthRoute><Login /></AuthRoute>} />
+        <Route path="auth/signup" element={<AuthRoute><Signup /></AuthRoute>} />
+        <Route path="auth/verify-otp" element={<AuthRoute><VerifyOtp /></AuthRoute>} />
+        <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="auth/set-password" element={<SetPassword />} />
+        <Route path="auth/google-analytics/callback" element={<GoogleAnalyticsCallback />} />
+        <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
+        <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
+        <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
+        <Route path="proposal/view" element={<PublicProposalView />} />
+        <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
 
-        <Route path="conversations" element={<ConversationsNew />} />
-        <Route path="calendars" element={<Calendars />} />
-        <Route path="contacts" element={<Contacts />} />
-        <Route path="contacts/:id" element={<ContactProfile />} />
-        <Route path="jobs" element={<Jobs />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="ai-agents/*" element={<SierraAiModule />} />
-        <Route path="create-agent" element={<CreateAgentWizard />} />
-        <Route path="job-cam" element={<JobCam />} />
-        <Route path="instant-estimator" element={<InstantEstimator />} />
-        <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
-        <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
-        <Route path="instant-estimator/:id/manage/materials/new" element={<NewMaterial />} />
-        <Route path="instant-estimator/:id/manage/materials/setup" element={<MaterialSetup />} />
-        <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
-        <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
-        <Route path="measurements" element={<Measurements />} />
-        <Route path="proposals" element={<Proposals />} />
-        <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
-        <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
-        <Route path="material-orders" element={<MaterialOrders />} />
-        <Route path="work-orders" element={<WorkOrders />} />
-        {/* <Route path="automation" element={<Automations />} /> */}
-        <Route path="opportunities" element={<Opportunities />} />
-        <Route path="marketing" element={<Marketing />} />
-        <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
-        <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
-        <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
-        <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
-        <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
-        <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
-        <Route path="file-manager" element={<FileManager />} />
-        {/* <Route path="reputation" element={<Reputation />} /> */}
-        <Route path="catalog" element={<Catalog />} />
-        {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
-        <Route path="support" element={<Support />} />
-        <Route path="settings/*" element={<Settings />} />
-        <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
-        <Route path="auth/google/callback" element={<OAuthCallback />} />
-        <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
-      </Route>
-      <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><OrgProvider><GoogleAnalyticsPage /></OrgProvider></ProtectedRoute>} />
+          <Route path="conversations" element={<ConversationsNew />} />
+          <Route path="calendars" element={<Calendars />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="contacts/:id" element={<ContactProfile />} />
+          <Route path="jobs" element={<Jobs />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="ai-agents/*" element={<SierraAiModule />} />
+          <Route path="create-agent" element={<CreateAgentWizard />} />
+          <Route path="job-cam" element={<JobCam />} />
+          <Route path="instant-estimator" element={<InstantEstimator />} />
+          <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
+          <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
+          <Route path="instant-estimator/:id/manage/materials/new" element={<NewMaterial />} />
+          <Route path="instant-estimator/:id/manage/materials/setup" element={<MaterialSetup />} />
+          <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
+          <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
+          <Route path="measurements" element={<Measurements />} />
+          <Route path="measurements/payment-success" element={<PaymentSuccess />} />
+          <Route path="measurements/payment-cancel" element={<PaymentCancel />} />
+          <Route path="proposals" element={<Proposals />} />
+          <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
+          <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
+          <Route path="material-orders" element={<MaterialOrders />} />
+          <Route path="work-orders" element={<WorkOrders />} />
+          {/* <Route path="automation" element={<Automations />} /> */}
+          <Route path="opportunities" element={<Opportunities />} />
+          <Route path="marketing" element={<Marketing />} />
+          <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
+          <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
+          <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
+          <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
+          <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
+          <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
+          <Route path="file-manager" element={<FileManager />} />
+          {/* <Route path="reputation" element={<Reputation />} /> */}
+          <Route path="catalog" element={<Catalog />} />
+          {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
+          <Route path="support" element={<Support />} />
+          <Route path="settings/*" element={<Settings />} />
+          <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
+          <Route path="auth/google/callback" element={<OAuthCallback />} />
+          <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
+        </Route>
+        <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><OrgProvider><GoogleAnalyticsPage /></OrgProvider></ProtectedRoute>} />
       </Routes>
     </Provider>
   );
