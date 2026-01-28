@@ -6,13 +6,14 @@ import OrderHistory from './OrderHistory';
 import OrderDetailsModal from './OrderDetailsModal';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { Product, Branch, ShipTo } from '../../abc-supply/types';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 const ABCSupplyView: React.FC = () => {
   const [currentView, setCurrentView] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('view') || 'dashboard';
   });
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState({
@@ -257,7 +258,7 @@ const ABCSupplyView: React.FC = () => {
                 <div className="flex items-center gap-2 text-red-400">
                   <Settings className="h-4 w-4" />
                   <span>No ABC Supply accounts configured</span>
-                  <a href="/settings/integrations" className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
+                  <a href={`/org/${orgSlug}/settings/integrations`} className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
                     Go to Settings <ArrowRight className="h-3 w-3" />
                   </a>
                 </div>
