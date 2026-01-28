@@ -30,11 +30,10 @@ export function AITopBar() {
             <NavLink
               key={tab.name}
               to={tab.href}
-              className={`px-6 py-3 font-medium transition-all ${
-                isActive
-                  ? 'bg-primary-600 text-white rounded-t-lg'
-                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-              }`}
+              className={`px-6 py-3 font-medium transition-all ${isActive
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
             >
               {tab.name}
             </NavLink>
