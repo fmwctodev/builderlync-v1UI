@@ -96,6 +96,7 @@ const Calendars: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('Latest push')
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowViewDropdown(false);
