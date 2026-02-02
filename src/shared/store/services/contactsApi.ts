@@ -10,8 +10,8 @@ export interface CreateContactRequest {
   phone: string;
   company: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Contact {
@@ -55,7 +55,7 @@ export interface ContactsListResponse {
 class ContactsApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
-    
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
@@ -66,7 +66,19 @@ class ContactsApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      // Try to parse error details from JSON response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // Response wasn't JSON
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+
+      // Throw an error that contains the API response data, so the caller can extract 'message'
+      const error = new Error(errorData.message || `API Error: ${response.status}`);
+      (error as any).response = { data: errorData };
+      throw error;
     }
 
     return response.json();
