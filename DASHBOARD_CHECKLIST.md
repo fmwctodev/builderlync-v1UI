@@ -14,7 +14,7 @@
 - [ ] `DASHBOARD_ARCHITECTURE.md`
 
 ### ✅ Files Modified
-- [ ] `src/modules/roof-runner/pages/Dashboard.tsx` (updated imports and refresh)
+- [ ] `src/modules/roof-runner/pages/Dashboard.tsx` (updated imports and refresha)
 
 ### ✅ Existing Files (Verify Present)
 - [ ] `src/modules/roof-runner/components/dashboard/DashboardWidgetSelector.tsx`
