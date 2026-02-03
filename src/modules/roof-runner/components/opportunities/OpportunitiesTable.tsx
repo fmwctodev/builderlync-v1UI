@@ -60,9 +60,11 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
       const filters: any = {};
       if (selectedPipelineId && selectedPipelineId !== 'default') {
         filters.pipeline_id = selectedPipelineId;
+        const data = await opportunitiesApi.getOpportunities(filters);
+        setOpportunities(data);
+      } else {
+        setOpportunities([]);
       }
-      const data = await opportunitiesApi.getOpportunities(filters);
-      setOpportunities(data);
     } catch (error) {
       console.error('Error loading opportunities:', error);
     } finally {
