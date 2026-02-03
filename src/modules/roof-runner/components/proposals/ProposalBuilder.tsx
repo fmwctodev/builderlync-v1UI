@@ -1801,7 +1801,7 @@ export default function ProposalBuilder({
                             className="text-sm text-gray-500 dark:text-gray-400 block"
                           />
                         </div>
-                        <div className="text-right text-sm">
+                        {/* <div className="text-right text-sm">
                           <EditableText
                             value={customerName}
                             onChange={setCustomerName}
@@ -1822,11 +1822,11 @@ export default function ProposalBuilder({
                             onChange={setCustomerEmail}
                             className="text-gray-600 dark:text-gray-400 block"
                           />
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Bottom 40% - Footer (Company Info) */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                      {/* <div className="border-t border-gray-200 dark:border-gray-700 p-6">
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -1872,7 +1872,7 @@ export default function ProposalBuilder({
                             </button>
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   )}
 
@@ -2253,7 +2253,7 @@ export default function ProposalBuilder({
                           </div>
                         </div>
 
-                        <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                        {/* <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -2306,7 +2306,7 @@ export default function ProposalBuilder({
                               />
                             </div>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Page 2: Summary */}
@@ -2409,7 +2409,7 @@ export default function ProposalBuilder({
                           </div>
                         </div>
 
-                        <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
+                        {/* <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -2455,7 +2455,7 @@ export default function ProposalBuilder({
                               </button>
                             </div>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                     </>
                   )}

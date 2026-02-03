@@ -29,6 +29,8 @@ interface JobDetailsModalProps {
   viewingJob?: Job | null;
   editingJob?: Job | null;
   readOnly?: boolean;
+  modalMessage?: {message: string, type: 'success' | 'error'} | null;
+  setModalMessage?: (message: {message: string, type: 'success' | 'error'} | null) => void;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
@@ -42,7 +44,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   loading,
   viewingJob,
   editingJob,
-  readOnly = false
+  readOnly = false,
+  modalMessage,
+  setModalMessage
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
@@ -195,6 +199,25 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
 
                   <form onSubmit={handleFormSubmit} className="space-y-6 pb-20">
+                    {/* Modal Message */}
+                    {modalMessage && (
+                      <div className={`p-4 rounded-lg border ${
+                        modalMessage.type === 'success' 
+                          ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                          : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
+                      }`}>
+                        <div className="flex justify-between items-center">
+                          <span>{modalMessage.message}</span>
+                          <button
+                            type="button"
+                            onClick={() => setModalMessage?.(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                 {/* Job Type Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
