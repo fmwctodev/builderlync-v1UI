@@ -191,7 +191,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
           )}
         </div>
       ) : (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-visible">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>

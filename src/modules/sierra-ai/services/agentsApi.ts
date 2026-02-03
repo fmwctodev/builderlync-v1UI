@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+
 
 export interface VoiceConfig {
   id: string;
@@ -165,23 +165,26 @@ export interface CreateAgentInput {
 
 export interface UpdateAgentInput extends Partial<CreateAgentInput> {
   id: string;
+  stats?: {
+    callsHandled?: number;
+    messagesHandled?: number;
+    appointmentsBooked?: number;
+    calls?: number;
+    messages?: number;
+    successRate?: number;
+    avgDuration?: number;
+  };
 }
 
 /**
  * Fetch all agents for the current organization
  */
+/**
+ * Fetch all agents for the current organization
+ */
 export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching agents:', error);
-    throw error;
-  }
-
+  const { elevenlabsApi } = await import('./elevenlabsApi');
+  const data = await elevenlabsApi.getAgents(organizationId);
   return data || [];
 }
 
@@ -191,7 +194,9 @@ export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
 export async function fetchAgentById(id: string): Promise<AIAgent | null> {
   const { elevenlabsApi } = await import('./elevenlabsApi');
   const response = await elevenlabsApi.getAgent(id);
-  return response.data;
+  // Backend returns wrapping object or direct? elevenlabsApi.getAgent returns response.data.
+  // Assuming response.data is the agent.
+  return response;
 }
 
 /**
@@ -254,17 +259,9 @@ export async function createAgent(
     updated_by: userId,
   };
 
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .insert(agentData)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating agent:', error);
-    throw error;
-  }
-
+  const { elevenlabsApi } = await import('./elevenlabsApi');
+  // Pass the full agentData. Backend needs to be able to handle it.
+  const data = await elevenlabsApi.createAgent(agentData as any);
   return data;
 }
 
@@ -277,20 +274,16 @@ export async function updateAgent(
 ): Promise<AIAgent> {
   const { id, ...updates } = input;
   const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.updateAgent(id, updates);
-  return response.data;
+  const data = await elevenlabsApi.updateAgent(id, updates);
+  return data;
 }
 
 /**
  * Delete an agent
  */
 export async function deleteAgent(id: string): Promise<void> {
-  const { error } = await supabase.from('ai_agents').delete().eq('id', id);
-
-  if (error) {
-    console.error('Error deleting agent:', error);
-    throw error;
-  }
+  const { elevenlabsApi } = await import('./elevenlabsApi');
+  await elevenlabsApi.deleteAgent(id);
 }
 
 /**
