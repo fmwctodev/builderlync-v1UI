@@ -62,8 +62,9 @@ import OutlookCallback from './pages/OutlookCallback';
 
 const RootRedirect = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
-  return <Navigate to={orgSlug ? `/org/${orgSlug}` : '/auth/login'} replace />;
+  const orgSlug =
+    user?.companySlug || localStorage.getItem("currentOrganizationSlug");
+  return <Navigate to={orgSlug ? `/org/${orgSlug}` : "/auth/login"} replace />;
 };
 
 const OrgSettingsRedirect = () => {
@@ -73,7 +74,10 @@ const OrgSettingsRedirect = () => {
 
   useEffect(() => {
     if (orgId) {
-      const path = window.location.pathname.replace('/org/settings', `/org/company-${orgId}/settings`);
+      const path = window.location.pathname.replace(
+        "/org/settings",
+        `/org/company-${orgId}/settings`,
+      );
       navigate(path + window.location.search, { replace: true });
     }
   }, [orgId, navigate]);

@@ -9,9 +9,18 @@ import { knowledgeBaseApi } from '../../services/knowledgeBaseApi';
 import { useAppSelector } from '../../../roof-runner/store/hooks';
 
 export function KnowledgeBaseTab() {
-  const [organizationId, setOrganizationId] = useState(() => {
-    return localStorage.getItem('currentOrganizationId') || '';
+  const { user } = useAppSelector((state) => state.auth);
+  const [organizationId, setOrganizationId] = useState<string>(() => {
+    const id = localStorage.getItem('currentOrganizationId') || user?.user_metadata?.organization_id || user?.organization_id || '';
+    return String(id);
   });
+
+  useEffect(() => {
+    if ((!organizationId || organizationId === '') && user) {
+      const orgId = user.user_metadata?.organization_id || user.organization_id;
+      if (orgId) setOrganizationId(String(orgId));
+    }
+  }, [user, organizationId]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showImportModal, setShowImportModal] = useState(false);
@@ -25,7 +34,7 @@ export function KnowledgeBaseTab() {
   const [scrapedWebsites, setScrapedWebsites] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
-  const { user } = useAppSelector((state) => state.auth);
+
   const orgSlug = localStorage.getItem('currentOrganizationSlug');
 
 

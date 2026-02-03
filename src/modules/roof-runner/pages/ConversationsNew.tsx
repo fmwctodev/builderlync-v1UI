@@ -63,10 +63,10 @@ const ConversationsNew: React.FC = () => {
   };
 
   // Team Messaging Functions
-  const loadTeamConversations = async () => {
+  const loadTeamConversations = async (sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count', sortOrder?: 'asc' | 'desc') => {
     try {
       setTeamMessagingLoading(true);
-      const conversations = await getTeamConversations();
+      const conversations = await getTeamConversations({ sortBy, sortOrder });
 
       const formattedConversations: TeamConversationListItem[] = conversations.map((conv) => {
         try {
@@ -327,6 +327,7 @@ const ConversationsNew: React.FC = () => {
               onNewMessage={() => setShowCreateTeamModal(true)}
               onDeleteTeam={handleDeleteTeam}
               onAddMember={handleAddMember}
+              onSortChange={loadTeamConversations}
               loading={teamMessagingLoading}
             />
             <MessageThread

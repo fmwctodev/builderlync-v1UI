@@ -18,7 +18,10 @@ interface ConversationsListProps {
 
 
 
-type FilterTab = 'unread' | 'recents' | 'starred' | 'all';
+type FilterTab = 'unread' | 'recents' | 'all';
+type SortOption = 'latest' | 'oldest' | 'name' | 'unread';
+type ChannelFilter = 'all' | 'sms' | 'email' | 'phone' | 'web';
+type StatusFilter = 'all' | 'open' | 'closed' | 'archived';
 
 export function ConversationsList({ selectedConversation, onSelectConversation }: ConversationsListProps) {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
@@ -27,6 +30,10 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('latest');
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [showFilters, setShowFilters] = useState(false);
    const [showDirectModal, setShowDirectModal] = useState(false);
 
   useEffect(() => {
@@ -71,7 +78,13 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
       setLoading(true);
       setError(null);
       console.log('Loading conversations...');
-      const data = await getConversations();
+      const filters = {
+        status: statusFilter,
+        channel: channelFilter,
+        sortBy,
+        search: searchQuery
+      };
+      const data = await getConversations(filters);
       console.log('Conversations loaded:', data);
       setConversations(data || []);
     } catch (err: any) {
@@ -223,16 +236,21 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <input
+            {/* <input
               type="checkbox"
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
+            /> */}
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {filteredConversations.length} RESULTS
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-1.5 rounded transition-colors ${
+                showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
               <Filter className="w-4 h-4" />
             </button>
             <button 
@@ -241,13 +259,79 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
             >
               <Edit className="w-4 h-4" />
             </button>
-            <button className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              <span>Latest-All</span>
+            <button 
+              onClick={() => {
+                const newSort = sortBy === 'latest' ? 'oldest' : 'latest';
+                setSortBy(newSort);
+                loadConversations();
+              }}
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            >
+              <span>{sortBy === 'latest' ? 'Latest' : 'Oldest'}</span>
               <ChevronDown className="w-3 h-3" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Advanced Filters */}
+      {/* {showFilters && (
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Channel</label>
+                <select
+                  value={channelFilter}
+                  onChange={(e) => {
+                    setChannelFilter(e.target.value as ChannelFilter);
+                    loadConversations();
+                  }}
+                  className="w-full text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="all">All Channels</option>
+                  <option value="sms">SMS</option>
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="web">Web</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as StatusFilter);
+                    loadConversations();
+                  }}
+                  className="w-full text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="all">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as SortOption);
+                  loadConversations();
+                }}
+                className="w-full text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="latest">Latest Messages</option>
+                <option value="oldest">Oldest Messages</option>
+                <option value="name">Contact Name</option>
+                <option value="unread">Unread Count</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )} */}
 
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">

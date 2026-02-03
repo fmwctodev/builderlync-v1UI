@@ -82,9 +82,14 @@ export interface SendInternalCommentRequest {
 }
 
 /**
- * Get all conversations for the current user
+ * Get all conversations for the current user with filters
  */
-export const getConversations = async (): Promise<Conversation[]> => {
+export const getConversations = async (filters?: {
+  status?: 'open' | 'closed' | 'archived' | 'all';
+  channel?: 'sms' | 'email' | 'phone' | 'web' | 'all';
+  sortBy?: 'latest' | 'oldest' | 'name' | 'unread';
+  search?: string;
+}): Promise<Conversation[]> => {
   const token = getAuthToken();
   if (!token) {
     console.error('No auth token found');
@@ -92,9 +97,19 @@ export const getConversations = async (): Promise<Conversation[]> => {
   }
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
-  console.log('Fetching conversations with token:', token.substring(0, 20) + '...');
   
-  const response = await fetch(`${API_BASE_URL}/conversations`, {
+  const params = new URLSearchParams();
+  if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+  if (filters?.channel && filters.channel !== 'all') params.append('channel', filters.channel);
+  if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters?.search) params.append('search', filters.search);
+  
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/conversations${queryString ? `?${queryString}` : ''}`;
+  
+  console.log('Fetching conversations with filters:', filters);
+  
+  const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',

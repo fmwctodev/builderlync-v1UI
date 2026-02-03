@@ -258,10 +258,10 @@ const Conversations: React.FC = () => {
     return colors[hash % colors.length];
   };
 
-  const loadTeamConversations = async () => {
+  const loadTeamConversations = async (sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count', sortOrder?: 'asc' | 'desc') => {
     try {
       setTeamMessagingLoading(true);
-      const conversations = await getTeamConversations();
+      const conversations = await getTeamConversations({ sortBy, sortOrder });
 
       const formattedConversations: TeamConversationListItem[] = conversations.map(conv => {
         const participantNames = conv.participants
@@ -928,10 +928,10 @@ const Conversations: React.FC = () => {
               <ConversationList
                 conversations={teamConversations}
                 selectedConversationId={selectedConversationId}
-                searchQuery={conversationSearchQuery}
-                onSearchChange={setConversationSearchQuery}
                 onConversationSelect={handleConversationSelect}
                 onNewMessage={() => setShowNewMessageModal(true)}
+                onSortChange={loadTeamConversations}
+                loading={teamMessagingLoading}
               />
             </div>
             <div className="flex-1">

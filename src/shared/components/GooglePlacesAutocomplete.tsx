@@ -115,6 +115,11 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
     );
   };
 
+  const handleSuggestionMouseDown = (suggestion: Suggestion) => {
+    // Use mousedown instead of click to prevent onBlur from hiding suggestions
+    handleSuggestionClick(suggestion);
+  };
+
   return (
     <div className="relative">
       <input
@@ -132,7 +137,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
             <button
               key={suggestion.place_id}
               type="button"
-              onClick={() => handleSuggestionClick(suggestion)}
+              onMouseDown={() => handleSuggestionMouseDown(suggestion)}
               className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white text-sm"
             >
               {suggestion.description}

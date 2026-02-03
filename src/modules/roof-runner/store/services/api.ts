@@ -191,5 +191,11 @@ export const apiService = {
   getStaff: async () => {
     const response = await apiClient.get('/staff?limit=100');
     return response.data;
+  },
+
+  // Proposal Templates
+  getProposalTemplates: async () => {
+    const response = await apiClient.get('/templates');
+    return response.data;
   }
 };
