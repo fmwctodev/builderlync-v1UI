@@ -7,6 +7,7 @@ export interface Job {
   name: string;
   location: string;
   customerId?: number | null;
+  customer_id?: number | null;
   assignees: number[];
   assigneeUsers?: Array<{
     id: number;
@@ -15,6 +16,7 @@ export interface Job {
     email: string;
   }>;
   jobOwner: number;
+  job_owner?: number | null;
   jobOwnerUser?: {
     id: number;
     first_name: string;
@@ -29,39 +31,70 @@ export interface Job {
     company: string;
   };
   workflowStages: string;
+  workflow_stages?: string;
   closeDate: string;
+  close_date?: string;
   jobValue: number;
+  job_value?: string;
   source: string;
   details: string;
   createdBy: number;
+  created_by?: number;
   insuranceEnabled: boolean;
+  insurance_enabled?: boolean;
   insuranceCompany: string;
+  insurance_company?: string;
   policyAccountNumber: string;
+  policy_account_number?: string;
   claimNumber: string;
+  claim_number?: string;
   dateOfLoss: string;
+  date_of_loss?: string | null;
   typeOfDamage: string;
+  type_of_damage?: string;
   claimAmount: number;
+  claim_amount?: string;
   deductible: number;
   claimDetails: string;
+  claim_details?: string;
   measurementsId: number | null;
+  measurements_id?: number | null;
   proposalsId: number | null;
+  proposals_id?: number | null;
   pdfSignerId: number | null;
+  pdf_signer_id?: number | null;
   materialOrdersId: number | null;
+  material_orders_id?: number | null;
   workOrdersId: number | null;
+  work_orders_id?: number | null;
   invoiceId: number | null;
+  invoice_id?: number | null;
   jobCostingsId: number | null;
+  job_costings_id?: number | null;
   attachmentsId: number | null;
+  attachments_id?: number | null;
   instantEstimateId: number | null;
+  instant_estimate_id?: number | null;
   integrationsId: number | null;
+  integrations_id?: number | null;
   createdAt: string;
+  created_at?: string;
   updatedAt: string;
+  updated_at?: string;
   createdByName: string;
   editedByName: string | null;
   editedBy: number | null;
+  edited_by?: number | null;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
+  contact_id?: number | null;
   contactName?: string | null;
   distance?: number | null;
+  latitude?: string;
+  longitude?: string;
+  is_deleted?: boolean;
+  deleted_by?: number | null;
+  deleted_at?: string | null;
 }
 
 export interface JobsResponse {
@@ -125,11 +158,53 @@ class JobsApiService {
     return response.json();
   }
 
-  async getJobs(page: number = 1, limit: number = 10): Promise<JobsResponse> {
+  async getJobs(page: number = 1, limit: number = 10, filters?: {
+    jobType?: string;
+    workflowStage?: string;
+    status?: string;
+    search?: string;
+    sortBy?: string;
+    assignees?: number[];
+    stages?: string[];
+    updatedDate?: string[];
+    closeDate?: string[];
+    leadSources?: string[];
+  }): Promise<JobsResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
+
+    if (filters?.jobType && filters.jobType !== 'all') {
+      params.append('jobType', filters.jobType);
+    }
+    if (filters?.workflowStage) {
+      params.append('workflowStage', filters.workflowStage);
+    }
+    if (filters?.status) {
+      params.append('status', filters.status);
+    }
+    if (filters?.search) {
+      params.append('search', filters.search);
+    }
+    if (filters?.sortBy) {
+      params.append('sortBy', filters.sortBy);
+    }
+    if (filters?.assignees && filters.assignees.length > 0) {
+      params.append('assignees', filters.assignees.join(','));
+    }
+    if (filters?.stages && filters.stages.length > 0) {
+      params.append('stages', filters.stages.join(','));
+    }
+    if (filters?.updatedDate && filters.updatedDate.length > 0) {
+      params.append('updatedDate', filters.updatedDate.join(','));
+    }
+    if (filters?.closeDate && filters.closeDate.length > 0) {
+      params.append('closeDate', filters.closeDate.join(','));
+    }
+    if (filters?.leadSources && filters.leadSources.length > 0) {
+      params.append('leadSources', filters.leadSources.join(','));
+    }
 
     return this.makeRequest(`/jobs?${params}`);
   }

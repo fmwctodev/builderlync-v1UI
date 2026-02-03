@@ -22,17 +22,16 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
 
   const getJobsByStage = (stage: string) => {
     if (stage === 'Inspection/Estimate Booked') {
-      // Include jobs that don't match any stage in the first stage
-      const matchedJobs = jobs.filter(job => stages.includes(job.workflowStages));
-      const unmatchedJobs = jobs.filter(job => !stages.includes(job.workflowStages));
-      const stageJobs = jobs.filter(job => job.workflowStages === stage);
+      const matchedJobs = jobs.filter(job => stages.includes(job.workflow_stages || job.workflowStages));
+      const unmatchedJobs = jobs.filter(job => !stages.includes(job.workflow_stages || job.workflowStages));
+      const stageJobs = jobs.filter(job => (job.workflow_stages || job.workflowStages) === stage);
       return [...stageJobs, ...unmatchedJobs];
     }
-    return jobs.filter(job => job.workflowStages === stage);
+    return jobs.filter(job => (job.workflow_stages || job.workflowStages) === stage);
   };
   const getStageValue = (stage: string) => {
     const stageJobs = getJobsByStage(stage);
-    return stageJobs.reduce((sum, job) => sum + job.jobValue, 0);
+    return stageJobs.reduce((sum, job) => sum + parseFloat(job.job_value || job.jobValue?.toString() || '0'), 0);
   };
 
   return (
@@ -60,17 +59,17 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
               <div
                 className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-[200px]"
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const cardData = e.dataTransfer.getData('text/plain');
-                  if (cardData) {
-                    const { jobId, sourceStage } = JSON.parse(cardData);
-                    if (sourceStage !== stage) {
-                      onUpdateJobStage(jobId, stage);
-                    }
-                    setDraggedCard(null);
-                  }
-                }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const cardData = e.dataTransfer.getData('text/plain');
+                        if (cardData) {
+                          const { jobId, sourceStage } = JSON.parse(cardData);
+                          if (sourceStage !== stage) {
+                            onUpdateJobStage(jobId, stage);
+                          }
+                          setDraggedCard(null);
+                        }
+                      }}
               >
                 {/* Job Cards */}
                 {getJobsByStage(stage).map((job) => {
@@ -97,7 +96,10 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                       }}
                       onDragStart={(e) => {
                         isDragging = true;
-                        const dragData = JSON.stringify({ jobId: job.id, sourceStage: job.workflowStages });
+                        const dragData = JSON.stringify({ 
+                          jobId: job.id, 
+                          sourceStage: job.workflow_stages || job.workflowStages 
+                        });
                         e.dataTransfer.setData('text/plain', dragData);
                         setDraggedCard(job.id.toString());
                       }}
@@ -109,13 +111,13 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white">#{job.id}</h4>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(job.createdAt).toLocaleDateString()}
+                          {new Date(job.created_at || job.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{job.location}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                          ${job.jobValue.toLocaleString()}
+                          ${parseFloat(job.job_value || job.jobValue?.toString() || '0').toLocaleString()}
                         </span>
                         <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
                           {job.assigneeUsers?.[0]?.first_name?.charAt(0) || job.assignees[0]?.toString().charAt(0) || 'U'}
