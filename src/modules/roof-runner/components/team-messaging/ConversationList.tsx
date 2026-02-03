@@ -9,10 +9,12 @@ interface ConversationListProps {
   onNewMessage: () => void;
   onDeleteTeam?: (teamId: string) => void;
   onAddMember?: (teamId: string) => void;
+  onSortChange?: (sortBy: 'name' | 'last_message' | 'created_at' | 'unread_count', sortOrder: 'asc' | 'desc') => void;
   loading?: boolean;
 }
 
 type FilterTab = 'unread' | 'recents' | 'starred' | 'all';
+type SortOption = 'latest' | 'oldest';
 
 const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
@@ -21,11 +23,13 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onNewMessage,
   onDeleteTeam,
   onAddMember,
+  onSortChange,
   loading = false,
 }) => {
   const [activeFilter, setActiveFilter] = React.useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [showDropdown, setShowDropdown] = React.useState<string | null>(null);
+  const [sortBy, setSortBy] = React.useState<SortOption>('latest');
 
   const filteredConversations = conversations.filter((conv) => {
     if (activeFilter === 'unread' && (conv.unread_count || 0) === 0) {
@@ -89,26 +93,36 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <input
+            {/* <input
               type="checkbox"
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
+            /> */}
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {filteredConversations.length} RESULTS
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            {/* <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
               <Filter className="w-4 h-4" />
-            </button>
+            </button> */}
             <button
               onClick={onNewMessage}
               className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             >
               <Edit className="w-4 h-4" />
             </button>
-            <button className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              <span>Latest-All</span>
+            <button 
+              onClick={() => {
+                const newSort: SortOption = sortBy === 'latest' ? 'oldest' : 'latest';
+                const apiSortBy = 'last_message';
+                const apiSortOrder = newSort === 'latest' ? 'desc' : 'asc';
+
+                setSortBy(newSort);
+                onSortChange?.(apiSortBy, apiSortOrder);
+              }}
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            >
+              <span>{sortBy === 'latest' ? 'Latest' : 'Oldest'}</span>
               <ChevronDown className="w-3 h-3" />
             </button>
           </div>

@@ -1,5 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
+interface GetConversationsOptions {
+  sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count';
+  sortOrder?: 'asc' | 'desc';
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -84,8 +89,19 @@ export const smtpApi = {
     return response.json();
   },
 
-  async getTeams() {
-    const response = await fetch(`${API_BASE_URL}/teams`, {
+  async getTeams(options?: GetConversationsOptions) {
+    let url = `${API_BASE_URL}/teams`;
+    
+    if (options?.sortBy) {
+      const params = new URLSearchParams();
+      params.append('sortBy', options.sortBy);
+      if (options.sortOrder) {
+        params.append('sortOrder', options.sortOrder);
+      }
+      url += `?${params.toString()}`;
+    }
+    
+    const response = await fetch(url, {
       headers: getAuthHeaders()
     });
     if (!response.ok) throw new Error('Failed to get teams');

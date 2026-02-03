@@ -56,13 +56,18 @@ export interface SendMessageRequest {
   content: string;
 }
 
+export interface GetConversationsOptions {
+  sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count';
+  sortOrder?: 'asc' | 'desc';
+}
+
 /**
  * Fetch all conversations for the current user with last message and unread count
  */
-export const getTeamConversations = async (): Promise<TeamConversation[]> => {
+export const getTeamConversations = async (options?: GetConversationsOptions): Promise<TeamConversation[]> => {
   try {
     const { smtpApi } = await import('../../services/smtpApi');
-    const teams = await smtpApi.getTeams();
+    const teams = await smtpApi.getTeams(options);
 
     // Convert teams to conversation format with last messages
     const teamConversations = await Promise.all(teams.map(async (team: any) => {
@@ -115,6 +120,43 @@ export const getTeamConversations = async (): Promise<TeamConversation[]> => {
         unread_count: 0
       };
     }));
+
+    // Apply sorting if options provided
+    if (options?.sortBy) {
+      teamConversations.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (options.sortBy) {
+          case 'name':
+            aValue = a.name?.toLowerCase() || '';
+            bValue = b.name?.toLowerCase() || '';
+            break;
+          case 'last_message':
+            aValue = a.last_message?.created_at ? new Date(a.last_message.created_at).getTime() : 0;
+            bValue = b.last_message?.created_at ? new Date(b.last_message.created_at).getTime() : 0;
+            break;
+          case 'created_at':
+            aValue = new Date(a.created_at).getTime();
+            bValue = new Date(b.created_at).getTime();
+            break;
+          case 'unread_count':
+            aValue = a.unread_count || 0;
+            bValue = b.unread_count || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) {
+          return options.sortOrder === 'desc' ? 1 : -1;
+        }
+        if (aValue > bValue) {
+          return options.sortOrder === 'desc' ? -1 : 1;
+        }
+        return 0;
+      });
+    }
 
     return teamConversations;
   } catch (error) {

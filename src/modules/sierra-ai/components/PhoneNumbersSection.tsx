@@ -23,7 +23,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
-  const [twilioConnected, setTwilioConnected] = useState(false);
+  const [twilioConnected, setTwilioConnected] = useState(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +112,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   return (
     <div className="space-y-6">
       {/* Connection Status */}
-      {!twilioConnected && (
+      {!twilioConnected && twilioConnected !== null && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
