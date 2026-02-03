@@ -43,6 +43,7 @@ const Jobs: React.FC = () => {
     closeDate: []
   });
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [modalMessage, setModalMessage] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
     name: '',
@@ -150,19 +151,19 @@ const Jobs: React.FC = () => {
           try {
             const createdTasks = await autoCreateTasksForStage(editingJob.id, newStage);
             if (createdTasks.length > 0) {
-              setToast({
+              setModalMessage({
                 message: `Job updated! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
                 type: 'success'
               });
             } else {
-              setToast({ message: 'Job updated successfully!', type: 'success' });
+              setModalMessage({ message: 'Job updated successfully!', type: 'success' });
             }
           } catch (taskError) {
             console.error('Error auto-creating tasks:', taskError);
-            setToast({ message: 'Job updated, but some tasks could not be created', type: 'success' });
+            setModalMessage({ message: 'Job updated, but some tasks could not be created', type: 'success' });
           }
         } else {
-          setToast({ message: 'Job updated successfully!', type: 'success' });
+          setModalMessage({ message: 'Job updated successfully!', type: 'success' });
         }
 
         // Refresh the viewing job data
@@ -181,23 +182,23 @@ const Jobs: React.FC = () => {
           try {
             const createdTasks = await autoCreateTasksForStage(newJobId, newStage);
             if (createdTasks.length > 0) {
-              setToast({
+              setModalMessage({
                 message: `Job created! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
                 type: 'success'
               });
             } else {
-              setToast({ message: 'Job created successfully!', type: 'success' });
+              setModalMessage({ message: 'Job created successfully!', type: 'success' });
             }
           } catch (taskError) {
             console.error('Error auto-creating tasks:', taskError);
-            setToast({ message: 'Job created successfully!', type: 'success' });
+            setModalMessage({ message: 'Job created successfully!', type: 'success' });
           }
 
           // Set the newly created job as viewingJob so tabs can access it
           setViewingJob(newJob);
           setEditingJob(newJob);
         } else {
-          setToast({ message: 'Job created successfully!', type: 'success' });
+          setModalMessage({ message: 'Job created successfully!', type: 'success' });
         }
       }
 
@@ -205,7 +206,7 @@ const Jobs: React.FC = () => {
       fetchJobs();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to save job';
-      setToast({ message: errorMessage, type: 'error' });
+      setModalMessage({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -450,6 +451,7 @@ const Jobs: React.FC = () => {
           resetForm();
           setJobAddress('');
           setJobCoordinates(null);
+          setModalMessage(null);
         }}
         onSubmit={handleSubmit}
         onDelete={viewingJob ? () => handleDelete(viewingJob.id!) : undefined}
@@ -459,6 +461,8 @@ const Jobs: React.FC = () => {
         loading={loading}
         viewingJob={viewingJob}
         editingJob={editingJob}
+        modalMessage={modalMessage}
+        setModalMessage={setModalMessage}
       />
 
     </div>
