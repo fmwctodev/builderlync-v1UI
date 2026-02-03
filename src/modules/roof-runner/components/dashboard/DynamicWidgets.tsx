@@ -18,13 +18,10 @@ const DynamicWidget: React.FC<DynamicWidgetProps> = ({ widgetKey, title, icon, d
 
   useEffect(() => {
     const fetchStat = async () => {
-      if (!user?.organization_id) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const data = await widgetStatsService.getWidgetStats(user.organization_id, widgetKey);
+        // Fallback to empty string if organization_id is missing, API will handle it via token
+        const orgId = user?.organization_id ? String(user.organization_id) : '';
+        const data = await widgetStatsService.getWidgetStats(orgId, widgetKey);
         setStat(data);
       } catch (error) {
         console.error(`Error fetching stat for ${widgetKey}:`, error);

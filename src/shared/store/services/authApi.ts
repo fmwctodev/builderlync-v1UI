@@ -58,6 +58,10 @@ export interface User {
   };
   createdAt: string;
   updatedAt: string;
+  user_metadata?: {
+    organization_id?: string | number;
+    [key: string]: any;
+  };
 }
 
 export interface RegisterResponse {

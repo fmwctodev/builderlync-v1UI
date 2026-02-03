@@ -45,12 +45,15 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
     const [defaultJobOwnerId, setDefaultJobOwnerId] = useState('');
     const [notificationEmail, setNotificationEmail] = useState('');
     const [financingLink, setFinancingLink] = useState('');
+    const [proposalTemplates, setProposalTemplates] = useState<any[]>([]);
+    const [selectedProposalTemplateId, setSelectedProposalTemplateId] = useState('');
 
     useEffect(() => {
         if (isOpen && estimatorId) {
             fetchEstimatorData();
             fetchPipelines();
             fetchMaterialTemplates();
+            fetchProposalTemplates();
             fetchStaff();
         }
     }, [isOpen, estimatorId]);
@@ -70,6 +73,15 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
             setMaterialTemplates(Array.isArray(response) ? response : response.data || []);
         } catch (error) {
             console.error('Failed to fetch material templates:', error);
+        }
+    };
+
+    const fetchProposalTemplates = async () => {
+        try {
+            const response = await apiService.getProposalTemplates();
+            setProposalTemplates(Array.isArray(response) ? response : response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch proposal templates:', error);
         }
     };
 
@@ -118,6 +130,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                 setShowProjectShowcase(additionalSettings.show_project_showcase || false);
                 setShowSocialMedia(additionalSettings.show_social_media || false);
                 setSelectedStageId(additionalSettings.stage_id || '');
+                setSelectedProposalTemplateId(additionalSettings.proposal_template_id || '');
                 setDefaultJobOwnerId(additionalSettings.default_job_owner_id || '');
                 setNotificationEmail(additionalSettings.notification_email || '');
             } else {
@@ -150,6 +163,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                 show_project_showcase: showProjectShowcase,
                 show_social_media: showSocialMedia,
                 stage_id: selectedStageId,
+                proposal_template_id: selectedProposalTemplateId,
                 default_job_owner_id: defaultJobOwnerId,
                 notification_email: notificationEmail
             });
@@ -618,6 +632,26 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Automatic Proposal Template
+                                            </label>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                Select a template to automatically generate a proposal when a lead is requested
+                                            </p>
+                                            <select
+                                                value={selectedProposalTemplateId}
+                                                onChange={(e) => setSelectedProposalTemplateId(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                            >
+                                                <option value="">No template selected</option>
+                                                {proposalTemplates.map((template: any) => (
+                                                    <option key={template.id} value={template.id}>
+                                                        {template.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Notification email
                                             </label>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -647,54 +681,237 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                     </div>
                 </div>
             </div>
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {
+                toast && (
+                    <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={() => setToast(null)}
+                    />
+                )
+            }
 
             {/* Add Material Modal */}
-            {showAddMaterialModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Add Material</h3>
-                                <button
-                                    onClick={() => setShowAddMaterialModal(false)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
+            {
+                showAddMaterialModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Add Material</h3>
+                                    <button
+                                        onClick={() => setShowAddMaterialModal(false)}
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
 
-                            <div className="space-y-4">
-                                {/* Template Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Select from Templates
-                                    </label>
-                                    <select
-                                        value={selectedTemplateId}
-                                        onChange={(e) => {
-                                            const tId = e.target.value;
-                                            setSelectedTemplateId(tId);
-                                            if (tId) {
-                                                const t = materialTemplates.find((mt: any) => mt.id === tId);
-                                                if (t) {
-                                                    setMaterialName(t.name);
-                                                    setMaterialType(t.material_type || 'Asphalt');
-                                                    setImageUrl(t.image_url || '');
-                                                    const p = t.pricing || {};
-                                                    setLowPitch(p.lowPitch || '');
-                                                    setModeratePitch(p.moderatePitch || '');
-                                                    setSteepPitch(p.steepPitch || '');
-                                                    setFlat(p.flat || '');
-                                                    setMultiStorySurcharge(p.multiStorySurcharge || '');
+                                <div className="space-y-4">
+                                    {/* Template Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Select from Templates
+                                        </label>
+                                        <select
+                                            value={selectedTemplateId}
+                                            onChange={(e) => {
+                                                const tId = e.target.value;
+                                                setSelectedTemplateId(tId);
+                                                if (tId) {
+                                                    const t = materialTemplates.find((mt: any) => mt.id === tId);
+                                                    if (t) {
+                                                        setMaterialName(t.name);
+                                                        setMaterialType(t.material_type || 'Asphalt');
+                                                        setImageUrl(t.image_url || '');
+                                                        const p = t.pricing || {};
+                                                        setLowPitch(p.lowPitch || '');
+                                                        setModeratePitch(p.moderatePitch || '');
+                                                        setSteepPitch(p.steepPitch || '');
+                                                        setFlat(p.flat || '');
+                                                        setMultiStorySurcharge(p.multiStorySurcharge || '');
+                                                    }
+                                                } else {
+                                                    setMaterialName('');
+                                                    setMaterialType('Asphalt');
+                                                    setImageUrl('');
+                                                    setLowPitch('');
+                                                    setModeratePitch('');
+                                                    setSteepPitch('');
+                                                    setFlat('');
+                                                    setMultiStorySurcharge('');
                                                 }
-                                            } else {
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        >
+                                            <option value="">-- Create Custom Material --</option>
+                                            {materialTemplates.map((t: any) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Material Name <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={materialName}
+                                                onChange={(e) => setMaterialName(e.target.value)}
+                                                placeholder="e.g., GAF Timberline HDZ"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Material Type
+                                            </label>
+                                            <select
+                                                value={materialType}
+                                                onChange={(e) => setMaterialType(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            >
+                                                <option>Asphalt</option>
+                                                <option>Metal</option>
+                                                <option>Tile</option>
+                                                <option>Slate</option>
+                                                <option>Wood Shake</option>
+                                                <option>Synthetic</option>
+                                                <option>Flat/TPO</option>
+                                                <option>EPDM</option>
+                                                <option>Modified Bitumen</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Image URL (optional)
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={imageUrl}
+                                                onChange={(e) => setImageUrl(e.target.value)}
+                                                placeholder="https://example.com/image.jpg"
+                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            />
+                                            <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Pricing (per sqft)
+                                        </label>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                            Enter prices for each roof pitch category. Leave blank to show "-" for that category.
+                                        </p>
+                                        <div className="grid grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Low Pitch</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                                    <input
+                                                        type="text"
+                                                        value={lowPitch}
+                                                        onChange={(e) => setLowPitch(e.target.value)}
+                                                        placeholder="-"
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Moderate Pitch</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                                    <input
+                                                        type="text"
+                                                        value={moderatePitch}
+                                                        onChange={(e) => setModeratePitch(e.target.value)}
+                                                        placeholder="-"
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Steep Pitch</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                                    <input
+                                                        type="text"
+                                                        value={steepPitch}
+                                                        onChange={(e) => setSteepPitch(e.target.value)}
+                                                        placeholder="-"
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Flat</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                                    <input
+                                                        type="text"
+                                                        value={flat}
+                                                        onChange={(e) => setFlat(e.target.value)}
+                                                        placeholder="-"
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Multi-story Surcharge</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                                    <input
+                                                        type="text"
+                                                        value={multiStorySurcharge}
+                                                        onChange={(e) => setMultiStorySurcharge(e.target.value)}
+                                                        placeholder="-"
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 mt-6">
+                                    <button
+                                        onClick={() => setShowAddMaterialModal(false)}
+                                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!materialName.trim()) {
+                                                setToast({ message: 'Material name is required', type: 'error' });
+                                                return;
+                                            }
+                                            try {
+                                                await apiService.addInstantEstimatorMaterial(estimatorId, {
+                                                    name: materialName,
+                                                    materialType,
+                                                    imageUrl,
+                                                    lowPitch,
+                                                    moderatePitch,
+                                                    steepPitch,
+                                                    flat,
+                                                    multiStorySurcharge
+                                                });
+                                                setShowAddMaterialModal(false);
                                                 setMaterialName('');
                                                 setMaterialType('Asphalt');
                                                 setImageUrl('');
@@ -703,204 +920,25 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                                 setSteepPitch('');
                                                 setFlat('');
                                                 setMultiStorySurcharge('');
+                                                await fetchEstimatorData();
+                                                setToast({ message: 'Material added successfully!', type: 'success' });
+                                            } catch (error) {
+                                                console.error('Error adding material:', error);
+                                                setToast({ message: 'Failed to add material', type: 'error' });
                                             }
                                         }}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        disabled={!materialName.trim()}
+                                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">-- Create Custom Material --</option>
-                                        {materialTemplates.map((t: any) => (
-                                            <option key={t.id} value={t.id}>
-                                                {t.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        Add Material
+                                    </button>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Material Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={materialName}
-                                            onChange={(e) => setMaterialName(e.target.value)}
-                                            placeholder="e.g., GAF Timberline HDZ"
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Material Type
-                                        </label>
-                                        <select
-                                            value={materialType}
-                                            onChange={(e) => setMaterialType(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        >
-                                            <option>Asphalt</option>
-                                            <option>Metal</option>
-                                            <option>Tile</option>
-                                            <option>Slate</option>
-                                            <option>Wood Shake</option>
-                                            <option>Synthetic</option>
-                                            <option>Flat/TPO</option>
-                                            <option>EPDM</option>
-                                            <option>Modified Bitumen</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Image URL (optional)
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={imageUrl}
-                                            onChange={(e) => setImageUrl(e.target.value)}
-                                            placeholder="https://example.com/image.jpg"
-                                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                        <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Pricing (per sqft)
-                                    </label>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                        Enter prices for each roof pitch category. Leave blank to show "-" for that category.
-                                    </p>
-                                    <div className="grid grid-cols-3 gap-4 mb-4">
-                                        <div>
-                                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Low Pitch</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                                <input
-                                                    type="text"
-                                                    value={lowPitch}
-                                                    onChange={(e) => setLowPitch(e.target.value)}
-                                                    placeholder="-"
-                                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Moderate Pitch</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                                <input
-                                                    type="text"
-                                                    value={moderatePitch}
-                                                    onChange={(e) => setModeratePitch(e.target.value)}
-                                                    placeholder="-"
-                                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Steep Pitch</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                                <input
-                                                    type="text"
-                                                    value={steepPitch}
-                                                    onChange={(e) => setSteepPitch(e.target.value)}
-                                                    placeholder="-"
-                                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Flat</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                                <input
-                                                    type="text"
-                                                    value={flat}
-                                                    onChange={(e) => setFlat(e.target.value)}
-                                                    placeholder="-"
-                                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Multi-story Surcharge</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                                <input
-                                                    type="text"
-                                                    value={multiStorySurcharge}
-                                                    onChange={(e) => setMultiStorySurcharge(e.target.value)}
-                                                    placeholder="-"
-                                                    className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 mt-6">
-                                <button
-                                    onClick={() => setShowAddMaterialModal(false)}
-                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        if (!materialName.trim()) {
-                                            setToast({ message: 'Material name is required', type: 'error' });
-                                            return;
-                                        }
-                                        try {
-                                            await apiService.addInstantEstimatorMaterial(estimatorId, {
-                                                name: materialName,
-                                                materialType,
-                                                imageUrl,
-                                                lowPitch,
-                                                moderatePitch,
-                                                steepPitch,
-                                                flat,
-                                                multiStorySurcharge
-                                            });
-                                            setShowAddMaterialModal(false);
-                                            setMaterialName('');
-                                            setMaterialType('Asphalt');
-                                            setImageUrl('');
-                                            setLowPitch('');
-                                            setModeratePitch('');
-                                            setSteepPitch('');
-                                            setFlat('');
-                                            setMultiStorySurcharge('');
-                                            await fetchEstimatorData();
-                                            setToast({ message: 'Material added successfully!', type: 'success' });
-                                        } catch (error) {
-                                            console.error('Error adding material:', error);
-                                            setToast({ message: 'Failed to add material', type: 'error' });
-                                        }
-                                    }}
-                                    disabled={!materialName.trim()}
-                                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Add Material
-                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

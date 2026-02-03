@@ -31,8 +31,12 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
       console.log('=== KANBAN BOARD LOAD DATA ==');
       console.log('Selected Pipeline ID:', selectedPipelineId);
 
-      // Fetch ALL opportunities (don't filter by pipeline_id)
-      const opportunities = await opportunitiesApi.getOpportunities({});
+      // Fetch opportunities filtered by pipeline if not default
+      const filters: any = {};
+      if (selectedPipelineId && selectedPipelineId !== 'default') {
+        filters.pipeline_id = selectedPipelineId;
+      }
+      const opportunities = await opportunitiesApi.getOpportunities(filters);
       console.log('KanbanBoard - Loaded opportunities:', opportunities);
       console.log('Total opportunities loaded:', opportunities.length);
 
@@ -113,10 +117,10 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
 
   const handleDrop = async (e: React.DragEvent, targetStageId: string) => {
     e.preventDefault();
-    
+
     if (draggedItem && draggedItem.stage_id !== targetStageId) {
       const previousStageId = draggedItem.stage_id;
-      
+
       // Optimistic update
       setOpportunitiesList(prev =>
         prev.map(opp =>
@@ -148,20 +152,20 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
   const getStageOpportunities = (stageId: string) => {
     // If this is the first stage, also include opportunities with no matching stage
     const isFirstStage = stages[0]?.id === stageId;
-    
+
     const filtered = opportunitiesList.filter(opp => {
       // Match exact stage_id
       if (opp.stage_id === stageId) return true;
-      
+
       // If first stage, include opportunities with stage_id that doesn't match any stage
       if (isFirstStage) {
         const hasMatchingStage = stages.some(s => s.id === opp.stage_id);
         if (!hasMatchingStage) return true;
       }
-      
+
       return false;
     });
-    
+
     console.log(`Stage ${stageId} opportunities:`, filtered);
     return filtered;
   };

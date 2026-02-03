@@ -25,7 +25,6 @@ export interface ContractorSignature {
 }
 
 export interface Proposal {
-  data: Proposal;
   id: number;
   type: string;
   title: string;
@@ -151,4 +150,75 @@ export const proposalsApi = {
       throw error;
     }
   },
+
+  async getProposalsByOpportunity(opportunityId: string): Promise<Proposal[]> {
+    try {
+      // 1. Get associations
+      const assocResponse = await axios.get(`${API_BASE_URL}/associated-objects?opportunity_id=${opportunityId}&object_type=proposal`, {
+        headers: getAuthHeaders(),
+      });
+      const associations = assocResponse.data;
+      console.log('Found proposal associations:', associations);
+
+      if (!associations || associations.length === 0) return [];
+
+      // 2. Get proposals for these IDs
+      const proposalIds = associations.map((a: any) => a.object_id);
+
+      // We can fetch all and filter or add an endpoint for bulk get.
+      // For now, let's fetch all and filter to be safe, or just loop if small number.
+      // But getProposals can take filters. Let's see if it supports multiple IDs.
+      // If not, we'll fetch them individually or use the getProposals with a filter if we add it.
+
+      const proposalsResults = await Promise.allSettled(
+        proposalIds.map((id: string) => this.getProposalById(parseInt(id)))
+      );
+
+      const proposals = proposalsResults
+        .filter((r): r is PromiseFulfilledResult<Proposal> => r.status === 'fulfilled')
+        .map(r => r.value);
+
+      console.log(`Loaded ${proposals.length} proposals for opportunity ${opportunityId}`);
+      return proposals;
+    } catch (error) {
+      console.error('Error fetching proposals by opportunity:', error);
+      return [];
+    }
+  },
+
+  async linkProposalToOpportunity(proposalId: string, opportunityId: string, proposalTitle: string): Promise<void> {
+    try {
+      await axios.post(`${API_BASE_URL}/opportunities/associated-objects`, {
+        opportunity_id: opportunityId,
+        object_type: 'proposal',
+        object_id: proposalId,
+        object_name: proposalTitle
+      }, {
+        headers: getAuthHeaders(),
+      });
+    } catch (error) {
+      console.error('Error linking proposal to opportunity:', error);
+      throw error;
+    }
+  },
+
+  async unlinkProposalFromOpportunity(proposalId: string): Promise<void> {
+    try {
+      // Find the association record first
+      // This is slightly inefficient but the current schema uses an association ID for deletion
+      const assocResponse = await axios.get(`${API_BASE_URL}/associated-objects?object_type=proposal&object_id=${proposalId}`, {
+        headers: getAuthHeaders(),
+      });
+      const associations = assocResponse.data;
+
+      if (associations && associations.length > 0) {
+        await axios.delete(`${API_BASE_URL}/opportunities/associated-objects/${associations[0].id}`, {
+          headers: getAuthHeaders(),
+        });
+      }
+    } catch (error) {
+      console.error('Error unlinking proposal from opportunity:', error);
+      throw error;
+    }
+  }
 };
