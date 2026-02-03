@@ -23,7 +23,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
-  const [twilioConnected, setTwilioConnected] = useState(null);
+  const [twilioConnected, setTwilioConnected] = useState<boolean | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +31,9 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
     loadPhoneNumbers();
     checkIntegration();
   }, [organizationId]);
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const orgSlug = user.companySlug || 'default';
 
   const loadPhoneNumbers = async () => {
     setLoading(true);
@@ -123,7 +126,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
               Connect your Twilio account to import and manage phone numbers for your AI agents.
             </p>
             <a
-              href="/settings/integrations"
+              href={`/org/${orgSlug}/settings/integrations`}
               className="text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:underline"
             >
               Connect Twilio →

@@ -182,8 +182,8 @@ class PipelinesApi {
 
   async createDefaultPipeline(jobType: JobType = 'Commercial'): Promise<PipelineWithStages> {
     const pipelineNames: Record<JobType, string> = {
-      Commercial: 'Commercial Leads',
-      Residential: 'Residential Leads',
+      Commercial: 'Default',
+      Residential: 'Default',
       Insurance: 'Insurance Leads',
     };
 

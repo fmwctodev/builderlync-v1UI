@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import ViewEditOpportunityModal from './ViewEditOpportunityModal';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
+import { pipelinesApi } from '../../services/pipelinesApi';
 import { getEmbeddedPipelineId } from '../../constants/embeddedPipelines';
 import type { PipelineStage, OpportunityWithDetails, JobType } from '../../types/opportunities';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -31,63 +32,46 @@ export default function KanbanBoard({ selectedPipelineId }: KanbanBoardProps) {
       console.log('=== KANBAN BOARD LOAD DATA ==');
       console.log('Selected Pipeline ID:', selectedPipelineId);
 
-      // Fetch opportunities filtered by pipeline if not default
-      const filters: any = {};
-      if (selectedPipelineId && selectedPipelineId !== 'default') {
-        filters.pipeline_id = selectedPipelineId;
-      }
-      const opportunities = await opportunitiesApi.getOpportunities(filters);
-      console.log('KanbanBoard - Loaded opportunities:', opportunities);
-      console.log('Total opportunities loaded:', opportunities.length);
+      let currentPipelineId = selectedPipelineId;
+      let pipelineStages: PipelineStage[] = [];
 
-      if (selectedPipelineId === 'default') {
-        // Show default stages
-        const now = new Date().toISOString();
-        const defaultStages = [
-          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-        ];
-        setStages(defaultStages);
-      } else if (selectedPipelineId) {
-        // Fetch selected pipeline's actual stages from API
-        try {
-          const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
-          const pipeline = await pipelinesApi.getPipelineById(selectedPipelineId);
-          if (pipeline && pipeline.stages) {
-            console.log('Loaded pipeline:', pipeline.name, 'with', pipeline.stages.length, 'stages');
-            setStages(pipeline.stages);
-          } else {
-            console.warn('Pipeline not found, showing default stages');
-            // Pipeline not found, show default stages
-            const now = new Date().toISOString();
-            const defaultStages = [
-              { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-              { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-              { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-              { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-              { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-              { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            ];
-            setStages(defaultStages);
+      // 1. Fetch Pipeline Setup
+      try {
+        if (!selectedPipelineId || selectedPipelineId === 'default') {
+          const pipeline = await pipelinesApi.getOrCreateDefaultPipeline();
+          if (pipeline) {
+            pipelineStages = pipeline.stages || [];
+            currentPipelineId = pipeline.id; // Use real ID for filtering
           }
-        } catch (error) {
-          console.error('Error loading pipeline, showing default stages:', error);
-          // Pipeline not found, show default stages
-          const now = new Date().toISOString();
-          const defaultStages = [
-            { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-            { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'default', created_at: now, updated_at: now },
-          ];
-          setStages(defaultStages);
+        } else {
+          const pipeline = await pipelinesApi.getPipelineById(selectedPipelineId);
+          if (pipeline) {
+            pipelineStages = pipeline.stages || [];
+          }
         }
+      } catch (err) {
+        console.error('Error fetching pipeline:', err);
+        // Fallback to empty or simple default if API fails, preventing crash
+        const now = new Date().toISOString();
+        pipelineStages = [
+          { id: 'start', name: 'Start', order_position: 0, color: '#dc2626', include_in_funnel: true, include_in_distribution: true, pipeline_id: 'temp', created_at: now, updated_at: now },
+        ];
+      }
+
+      setStages(pipelineStages);
+
+      // 2. Fetch Opportunities
+      let opportunities: OpportunityWithDetails[] = [];
+      const filters: any = {};
+
+      if (currentPipelineId && currentPipelineId !== 'default') {
+        filters.pipeline_id = currentPipelineId;
+        opportunities = await opportunitiesApi.getOpportunities(filters);
+        console.log('KanbanBoard - Loaded opportunities:', opportunities);
+        console.log('Total opportunities loaded:', opportunities.length);
+      } else {
+        console.warn('No valid pipeline ID determined, skipping opportunity fetch to prevent data leak');
+        opportunities = [];
       }
 
       setOpportunitiesList(opportunities);

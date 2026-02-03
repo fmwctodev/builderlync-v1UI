@@ -91,7 +91,7 @@ export const smtpApi = {
 
   async getTeams(options?: GetConversationsOptions) {
     let url = `${API_BASE_URL}/teams`;
-    
+
     if (options?.sortBy) {
       const params = new URLSearchParams();
       params.append('sortBy', options.sortBy);
@@ -100,7 +100,7 @@ export const smtpApi = {
       }
       url += `?${params.toString()}`;
     }
-    
+
     const response = await fetch(url, {
       headers: getAuthHeaders()
     });
@@ -124,7 +124,9 @@ export const smtpApi = {
       if (error.error && error.error.includes('Twilio account not configured')) {
         const shouldRedirect = confirm(`${error.error}\n\nWould you like to configure SMS service now?`);
         if (shouldRedirect) {
-          window.location.href = '/settings/integrations';
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const orgSlug = user.companySlug || 'default';
+          window.location.href = `/org/${orgSlug}/settings/integrations`;
         }
       }
       throw error;
