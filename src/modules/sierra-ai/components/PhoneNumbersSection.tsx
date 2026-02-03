@@ -188,7 +188,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
           )}
         </div>
       ) : (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
@@ -272,7 +272,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
                             className="fixed inset-0 z-10"
                             onClick={() => setOpenMenuId(null)}
                           />
-                          <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                          <div className="absolute right-0 top-8 z-[9999] w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
                             <button
                               onClick={() => handleEdit(number)}
                               className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"

@@ -191,7 +191,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                   <div className="p-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{coverSection.title || 'Proposal Cover'}</h2>
                   </div>
-                  <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                  {/* <div className="border-t border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -211,7 +211,7 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
                         </div>
                       )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               )}
 
