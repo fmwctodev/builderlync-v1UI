@@ -7,7 +7,7 @@ import JobsHeader from '../components/JobsHeader';
 import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
 import JobsSettings from '../components/JobsSettings';
-import FiltersSidebar from '../components/FiltersSidebar';
+import FiltersSidebar, { AdvancedFilters } from '../components/FiltersSidebar';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
 import Toast from '../components/Toast';
@@ -26,7 +26,7 @@ const Jobs: React.FC = () => {
   const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
 
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState('default');
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJobType, setSelectedJobType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
@@ -35,6 +35,13 @@ const Jobs: React.FC = () => {
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    sortBy: 'Last updated (newest)',
+    assignees: [],
+    stages: [],
+    updatedDate: [],
+    closeDate: []
+  });
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
@@ -66,21 +73,24 @@ const Jobs: React.FC = () => {
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
-      const response = await getJobs(page, 10);
+      
+      const filters = {
+        jobType: selectedJobType !== 'all' ? selectedJobType : undefined,
+        search: searchQuery || undefined,
+        sortBy: advancedFilters.sortBy,
+        assignees: advancedFilters.assignees.length > 0 ? advancedFilters.assignees : undefined,
+        stages: advancedFilters.stages.length > 0 ? advancedFilters.stages : undefined,
+        updatedDate: advancedFilters.updatedDate.length > 0 ? advancedFilters.updatedDate : undefined,
+        closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined
+      };
+      
+      const response = await getJobs(page, 100, filters);
       const fetchedJobs = response.data.data || [];
       setAllJobs(fetchedJobs);
-      filterJobsByType(fetchedJobs, selectedJobType);
+      setJobs(fetchedJobs);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
-      const errorMessage = error.message || 'Failed to load jobs';
-      if (errorMessage.includes('Supabase client not initialized')) {
-        setToast({
-          message: 'Database connection error. Please refresh the page or contact support.',
-          type: 'error'
-        });
-      } else {
-        setToast({ message: errorMessage, type: 'error' });
-      }
+      setToast({ message: 'Failed to load jobs', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -219,27 +229,27 @@ const Jobs: React.FC = () => {
     setFormData({
       name: job.name,
       location: job.location,
-      customerId: job.customerId || null,
+      customerId: job.customer_id || job.customerId || null,
       assignees: job.assignees,
-      jobOwner: job.jobOwner,
-      workflowStages: job.workflowStages,
-      closeDate: job.closeDate,
-      jobValue: job.jobValue,
+      jobOwner: job.job_owner || job.jobOwner,
+      workflowStages: job.workflow_stages || job.workflowStages,
+      closeDate: job.close_date || job.closeDate,
+      jobValue: parseFloat(job.job_value || job.jobValue?.toString() || '0'),
       source: job.source,
       details: job.details,
-      insuranceEnabled: job.insuranceEnabled || false,
-      insuranceCompany: job.insuranceCompany || '',
-      policyAccountNumber: job.policyAccountNumber || '',
-      claimNumber: job.claimNumber || '',
-      dateOfLoss: job.dateOfLoss || '',
-      typeOfDamage: job.typeOfDamage || '',
-      claimAmount: job.claimAmount || 0,
+      insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
+      insuranceCompany: job.insurance_company || job.insuranceCompany || '',
+      policyAccountNumber: job.policy_account_number || job.policyAccountNumber || '',
+      claimNumber: job.claim_number || job.claimNumber || '',
+      dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
+      typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
+      claimAmount: parseFloat(job.claim_amount || job.claimAmount?.toString() || '0'),
       deductible: job.deductible || 0,
-      claimDetails: job.claimDetails || '',
-      createdBy: job.createdBy,
-      editedBy: typeof job.editedBy === 'number' ? job.editedBy : 1,
+      claimDetails: job.claim_details || job.claimDetails || '',
+      createdBy: job.created_by || job.createdBy,
+      editedBy: job.edited_by || job.editedBy || 1,
       jobType: job.jobType || 'residential',
-      contactId: job.contactId || null
+      contactId: job.contact_id || job.contactId || null
     });
     setShowJobDetails(true);
   };
@@ -250,27 +260,27 @@ const Jobs: React.FC = () => {
     setFormData({
       name: job.name,
       location: job.location,
-      customerId: job.customerId || null,
+      customerId: job.customer_id || job.customerId || null,
       assignees: job.assignees,
-      jobOwner: job.jobOwner,
-      workflowStages: job.workflowStages,
-      closeDate: job.closeDate,
-      jobValue: job.jobValue,
+      jobOwner: job.job_owner || job.jobOwner,
+      workflowStages: job.workflow_stages || job.workflowStages,
+      closeDate: job.close_date || job.closeDate,
+      jobValue: parseFloat(job.job_value || job.jobValue?.toString() || '0'),
       source: job.source,
       details: job.details,
-      insuranceEnabled: job.insuranceEnabled || false,
-      insuranceCompany: job.insuranceCompany || '',
-      policyAccountNumber: job.policyAccountNumber || '',
-      claimNumber: job.claimNumber || '',
-      dateOfLoss: job.dateOfLoss || '',
-      typeOfDamage: job.typeOfDamage || '',
-      claimAmount: job.claimAmount || 0,
+      insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
+      insuranceCompany: job.insurance_company || job.insuranceCompany || '',
+      policyAccountNumber: job.policy_account_number || job.policyAccountNumber || '',
+      claimNumber: job.claim_number || job.claimNumber || '',
+      dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
+      typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
+      claimAmount: parseFloat(job.claim_amount || job.claimAmount?.toString() || '0'),
       deductible: job.deductible || 0,
-      claimDetails: job.claimDetails || '',
-      createdBy: job.createdBy,
-      editedBy: typeof job.editedBy === 'number' ? job.editedBy : 1,
+      claimDetails: job.claim_details || job.claimDetails || '',
+      createdBy: job.created_by || job.createdBy,
+      editedBy: job.edited_by || job.editedBy || 1,
       jobType: job.jobType || 'residential',
-      contactId: job.contactId || null
+      contactId: job.contact_id || job.contactId || null
     });
     setShowJobDetails(true);
   };
@@ -309,8 +319,8 @@ const Jobs: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    filterJobsByType(allJobs, selectedJobType);
-  }, [selectedJobType]);
+    fetchJobs();
+  }, [selectedJobType, selectedFilter, searchQuery, advancedFilters]);
 
   useEffect(() => {
     if (toast) {
@@ -345,6 +355,7 @@ const Jobs: React.FC = () => {
         onNewJob={() => setShowAddressModal(true)}
         onNewReport={handleNewReport}
         onNewCustomer={handleNewCustomer}
+        jobs={jobs}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -358,7 +369,12 @@ const Jobs: React.FC = () => {
                 try {
                   const job = jobs.find(j => j.id === jobId);
                   if (job) {
-                    await updateJob(jobId, { ...job, workflowStages: newStage, editedBy: 1 });
+                    await updateJob(jobId, { 
+                      ...job, 
+                      workflowStages: newStage, 
+                      workflow_stages: newStage,
+                      editedBy: 1 
+                    });
                     fetchJobs();
                   }
                 } catch (error) {
@@ -385,6 +401,8 @@ const Jobs: React.FC = () => {
         <FiltersSidebar
           isOpen={showFilters}
           onClose={() => setShowFilters(false)}
+          onFiltersChange={setAdvancedFilters}
+          currentFilters={advancedFilters}
         />
       </div>
 
