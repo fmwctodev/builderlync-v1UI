@@ -262,7 +262,7 @@ export function AIAgentsTab() {
 
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-visible">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ minHeight: '400px' }}>
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -291,7 +291,7 @@ export function AIAgentsTab() {
                 <tr
                   key={agent.id}
                   onClick={() => navigate(`/org/${orgSlug}/ai-agents/agent/${agent.id}`)}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-900/30 cursor-pointer"
+                  className="bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer"
                 >
                   <td className="px-6 py-4">
                     {editingNameId === agent.id ? (
@@ -362,7 +362,7 @@ export function AIAgentsTab() {
                         <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </button>
                       {openMenuId === agent.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[100]">
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[9999]">
                           <button
                             onClick={() => {
                               startEditingName(agent);

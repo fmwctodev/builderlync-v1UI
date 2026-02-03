@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Search, Filter, Grid, List, Settings, Building2 } from 'lucide-react';
 import NewButtonDropdown from './NewButtonDropdown';
 import { hasPermission } from '../../../shared/utils/permissions';
+import { Job } from '../../../shared/store/services/jobsApi';
 
 interface JobsHeaderProps {
   activeView: string;
@@ -17,6 +18,7 @@ interface JobsHeaderProps {
   onNewJob: () => void;
   onNewReport: () => void;
   onNewCustomer: () => void;
+  jobs?: Job[];
 }
 
 const JobsHeader: React.FC<JobsHeaderProps> = ({
@@ -32,8 +34,38 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
   setShowFilters,
   onNewJob,
   onNewReport,
-  onNewCustomer
+  onNewCustomer,
+  jobs = []
 }) => {
+  const dynamicFilters = useMemo(() => {
+    const stages = [
+      'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted', 
+      'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract', 
+      'Invoice Sent', 'Invoice Paid', 'Job Scheduled', 'Materials Ordered', 
+      'Job Started', 'Job Complete'
+    ];
+
+    const filters = [
+      { value: 'all', label: 'All Jobs', count: jobs.length },
+      { value: 'active', label: 'Active Jobs', count: jobs.filter(j => !['Job Lost', 'Job Complete'].includes(j.workflow_stages || j.workflowStages)).length },
+      { value: 'completed', label: 'Completed', count: jobs.filter(j => (j.workflow_stages || j.workflowStages) === 'Job Complete').length },
+      { value: 'lost', label: 'Lost Jobs', count: jobs.filter(j => (j.workflow_stages || j.workflowStages) === 'Job Lost').length },
+    ];
+
+    // Add stage-based filters with counts
+    stages.forEach(stage => {
+      const count = jobs.filter(j => (j.workflow_stages || j.workflowStages) === stage).length;
+      if (count > 0) {
+        filters.push({ 
+          value: stage.toLowerCase().replace(/[^a-z0-9]/g, '-'), 
+          label: stage, 
+          count 
+        });
+      }
+    });
+
+    return filters;
+  }, [jobs]);
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
@@ -118,8 +150,11 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
           onChange={(e) => setSelectedFilter(e.target.value)}
           className="input min-w-[200px]"
         >
-          <option value="default">Default</option>
-          <option value="awaiting">Awaiting Adjuster Inspection</option>
+          {dynamicFilters.map(filter => (
+            <option key={filter.value} value={filter.value}>
+              {filter.label} ({filter.count})
+            </option>
+          ))}
         </select>
         <button
           onClick={() => setShowFilters(!showFilters)}
