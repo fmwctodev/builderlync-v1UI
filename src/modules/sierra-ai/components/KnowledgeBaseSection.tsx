@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Globe, Search, Library, HelpCircle, Table, Trash2, File, Link } from 'lucide-react';
+import { useAppSelector } from '../../roof-runner/store/hooks';
 import { ImportFromUrlModal } from './ImportFromUrlModal';
 import { UploadFilesModal } from './UploadFilesModal';
 import { AddFAQModal } from './AddFAQModal';
@@ -25,7 +26,10 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
   const [scrapedWebsites, setScrapedWebsites] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const orgId = organizationId || localStorage.getItem('currentOrganizationId') || '';
+  const { user } = useAppSelector((state: any) => state.auth);
+  const orgId = organizationId && organizationId.includes('-') && organizationId.length > 20
+    ? (user?.companySlug || localStorage.getItem('currentOrganizationSlug') || organizationId)
+    : (organizationId || user?.companySlug || localStorage.getItem('currentOrganizationSlug') || localStorage.getItem('currentOrganizationId') || '');
 
   const fetchKnowledgeBaseData = async () => {
     if (!orgId) return;

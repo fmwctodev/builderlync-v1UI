@@ -51,6 +51,10 @@ export const cloudAuthService = {
     });
 
     const authUrl = `${config.authUrl}?${params.toString()}`;
+
+    // Save current path to return to after callback
+    localStorage.setItem('oauth_return_path', window.location.pathname + window.location.search);
+
     window.location.href = authUrl;
   },
 
@@ -80,17 +84,17 @@ export const cloudAuthService = {
       }
 
       const result = await response.json();
-      
+
       if (!result.success || !result.data) {
         throw new Error('Invalid OAuth response');
       }
-      
+
       const data = result.data;
-      
+
       // Create connection record
       const connection = await cloudDriveApi.createConnectionFromOAuth(
-        provider === 'google' ? 'google_drive' : 
-        provider === 'onedrive_personal' ? 'onedrive_personal' : 'onedrive_business',
+        provider === 'google' ? 'google_drive' :
+          provider === 'onedrive_personal' ? 'onedrive_personal' : 'onedrive_business',
         {
           access_token: data.access_token,
           refresh_token: data.refresh_token,
@@ -132,7 +136,7 @@ export const cloudAuthService = {
       }
 
       const data = await response.json();
-      
+
       // Update connection with new tokens
       const updatedConnection = await cloudDriveApi.updateConnection(connection.id, {
         access_token: data.access_token,

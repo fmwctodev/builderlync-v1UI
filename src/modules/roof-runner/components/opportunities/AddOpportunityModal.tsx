@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, User, Building2 } from 'lucide-react';
-import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
+import { X, User } from 'lucide-react';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import type { PipelineWithStages, OpportunityFormData, OpportunityStatus, JobType } from '../../types/opportunities';
 import { OPPORTUNITY_SOURCES, JOB_TYPES } from '../../types/opportunities';
-import { getEmbeddedPipelineId, EMBEDDED_PIPELINE_COLORS, EMBEDDED_PIPELINE_ICONS } from '../../constants/embeddedPipelines';
 import PropertyAddressInput from './PropertyAddressInput';
 
 import { getAllActiveStaff, StaffMember } from '../../../../shared/store/services/staffApi';
@@ -80,21 +78,38 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
           }));
         }
       } else {
-        // Default selected - set to first default stage
-        const defaultStages = [
-          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
-          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
-          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
-          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
-          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
-          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
-        ];
-        setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
-        setFormData(prev => ({
-          ...prev,
-          pipeline_id: '',
-          stage_id: 'default-1', // First default stage
-        }));
+        // Default selected - fetch actual default pipeline from API
+        const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
+        try {
+          const defaultPipeline = await pipelinesApi.getOrCreateDefaultPipeline();
+          if (defaultPipeline) {
+            setPipeline(defaultPipeline);
+            setFormData(prev => ({
+              ...prev,
+              pipeline_id: defaultPipeline.id,
+              stage_id: defaultPipeline.stages?.[0]?.id || '', // First stage
+            }));
+          } else {
+            throw new Error("No default pipeline returned");
+          }
+        } catch (err) {
+          console.error("Failed to fetch default pipeline, falling back to local default", err);
+          // Fallback (only if API fails completely)
+          const defaultStages = [
+            { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
+            { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
+            { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
+            { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
+            { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
+            { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
+          ];
+          setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
+          setFormData(prev => ({
+            ...prev,
+            pipeline_id: '', // Still no ID if API fails, but better than crashing
+            stage_id: 'default-1',
+          }));
+        }
       }
     } catch (error) {
       console.error('Error loading pipeline:', error);

@@ -30,13 +30,13 @@ export default function OpportunitiesHeader({
 
   useEffect(() => {
     loadPipelines();
-    
+
     // Listen for pipeline changes
     const handleReload = () => {
       loadPipelines();
     };
     window.addEventListener('reload-pipelines', handleReload);
-    
+
     return () => {
       window.removeEventListener('reload-pipelines', handleReload);
     };
@@ -44,10 +44,15 @@ export default function OpportunitiesHeader({
 
   const loadPipelines = async () => {
     try {
-      const data = await pipelinesApi.getPipelines();
+      let data = await pipelinesApi.getPipelines();
+      if (data.length === 0) {
+        console.log('No pipelines found, creating default...');
+        const defaultPipeline = await pipelinesApi.createDefaultPipeline();
+        data = [defaultPipeline];
+      }
       console.log('Loaded pipelines:', data);
       setPipelines(data);
-      
+
       // Auto-select 'default' if no pipeline is selected or if selected pipeline doesn't exist
       if (setSelectedPipelineId) {
         if (!selectedPipelineId) {
@@ -66,6 +71,19 @@ export default function OpportunitiesHeader({
     }
   };
 
+  useEffect(() => {
+    // If pipelines are loaded but no selection is made, or selection is 'default' (legacy/initial), 
+    // force selection of the real default pipeline ID.
+    if (pipelines.length > 0 && setSelectedPipelineId) {
+      if (!selectedPipelineId || selectedPipelineId === 'default') {
+        const defaultPipe = pipelines.find(p => p.is_default) || pipelines[0];
+        if (defaultPipe) {
+          setSelectedPipelineId(defaultPipe.id);
+        }
+      }
+    }
+  }, [pipelines, selectedPipelineId, setSelectedPipelineId]);
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
       <div className="max-w-full mx-auto px-6">
@@ -73,21 +91,19 @@ export default function OpportunitiesHeader({
           <div className="flex items-center gap-4 pt-3">
             <button
               onClick={() => onViewChange('opportunities')}
-              className={`px-6 py-3 font-medium transition-all ${
-                activeView === 'opportunities'
-                  ? 'bg-primary-600 text-white rounded-t-lg'
-                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-              }`}
+              className={`px-6 py-3 font-medium transition-all ${activeView === 'opportunities'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
             >
               Opportunities
             </button>
             <button
               onClick={() => onViewChange('pipelines')}
-              className={`px-6 py-3 font-medium transition-all ${
-                activeView === 'pipelines'
-                  ? 'bg-primary-600 text-white rounded-t-lg'
-                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-              }`}
+              className={`px-6 py-3 font-medium transition-all ${activeView === 'pipelines'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
             >
               Pipelines
             </button>
@@ -105,11 +121,10 @@ export default function OpportunitiesHeader({
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <select
-                      value={selectedPipelineId || 'default'}
-                      onChange={(e) => setSelectedPipelineId?.(e.target.value === 'default' ? 'default' : e.target.value)}
+                      value={selectedPipelineId || ''}
+                      onChange={(e) => setSelectedPipelineId?.(e.target.value)}
                       className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 cursor-pointer min-w-[200px]"
                     >
-                      <option value="default">Default</option>
                       {pipelines.map((pipeline) => (
                         <option key={pipeline.id} value={pipeline.id}>
                           {pipeline.name}
@@ -125,31 +140,28 @@ export default function OpportunitiesHeader({
                 <div className="border border-gray-300 dark:border-gray-600 rounded-md p-1 flex space-x-1">
                   <button
                     onClick={() => onInternalViewChange?.('board')}
-                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
-                      internalView === 'board'
-                        ? 'bg-[#dc2626] text-white shadow'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${internalView === 'board'
+                      ? 'bg-[#dc2626] text-white shadow'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                   >
                     <Grid3X3 className="h-4 w-4 mr-1" /> Board View
                   </button>
                   <button
                     onClick={() => onInternalViewChange?.('list')}
-                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
-                      internalView === 'list'
-                        ? 'bg-[#dc2626] text-white shadow'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${internalView === 'list'
+                      ? 'bg-[#dc2626] text-white shadow'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                   >
                     <List className="h-4 w-4 mr-1" /> List View
                   </button>
                   <button
                     onClick={() => onInternalViewChange?.('settings')}
-                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${
-                      internalView === 'settings'
-                        ? 'bg-[#dc2626] text-white shadow'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    className={`px-3 py-1 text-sm font-medium rounded-md flex items-center ${internalView === 'settings'
+                      ? 'bg-[#dc2626] text-white shadow'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                   >
                     <Settings className="h-4 w-4 mr-1" /> Settings
                   </button>
