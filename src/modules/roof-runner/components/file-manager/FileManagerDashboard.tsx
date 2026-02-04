@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
-import { 
-  Cloud, 
-  HardDrive, 
-  FileText, 
-  Folder, 
-  Upload, 
-  Download, 
-  Share2, 
-  Trash2,
-  Search,
+import {
+  Cloud,
+  HardDrive,
+  FileText,
+  Folder,
   RefreshCw,
   BarChart3,
-  Settings
+  Unplug
 } from 'lucide-react';
-import { fileManagerApi } from '../../../../shared/services/fileManagerApi';
 import { cloudDriveApi, CloudDriveConnection } from '../../../../shared/services/cloudDriveApi';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
@@ -40,13 +34,15 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
   const [stats, setStats] = useState<StorageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadStats = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch storage statistics
       const response = await fetch(`${API_BASE_URL}/file-manager/stats`, {
         headers: {
@@ -87,7 +83,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
       }
 
       const result = await response.json();
-      
+
       if (result.data.errors.length > 0) {
         setError(`Sync completed with ${result.data.errors.length} errors`);
       }
@@ -100,6 +96,27 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
       setError(err instanceof Error ? err.message : 'Failed to sync files');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      setDisconnecting(true);
+      setError(null);
+
+      await cloudDriveApi.disconnectCurrentUser();
+
+      // Close confirmation dialog
+      setShowDisconnectConfirm(false);
+
+      // Refresh to show the connect screen
+      onRefresh();
+    } catch (err) {
+      console.error('Error disconnecting:', err);
+      setError(err instanceof Error ? err.message : 'Failed to disconnect cloud drive');
+      setShowDisconnectConfirm(false);
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -162,7 +179,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={handleSync}
@@ -171,6 +188,15 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
           >
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
             {syncing ? 'Syncing...' : 'Sync Files'}
+          </button>
+
+          <button
+            onClick={() => setShowDisconnectConfirm(true)}
+            disabled={disconnecting}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Unplug className="h-4 w-4" />
+            Disconnect
           </button>
         </div>
       </div>
@@ -299,7 +325,7 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Last Sync</p>
             <p className="font-medium text-gray-900 dark:text-white">
-              {connection.last_synced_at 
+              {connection.last_synced_at
                 ? new Date(connection.last_synced_at).toLocaleDateString()
                 : 'Never'
               }
@@ -307,6 +333,54 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
           </div>
         </div>
       </div>
+
+      {/* Disconnect Confirmation Modal */}
+      {showDisconnectConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                <Unplug className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Disconnect Cloud Drive
+              </h3>
+            </div>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to disconnect your {getProviderName(connection.provider)} account?
+              You will need to reconnect to access your cloud files again.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDisconnectConfirm(false)}
+                disabled={disconnecting}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {disconnecting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Disconnecting...
+                  </>
+                ) : (
+                  <>
+                    <Unplug className="h-4 w-4" />
+                    Disconnect
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

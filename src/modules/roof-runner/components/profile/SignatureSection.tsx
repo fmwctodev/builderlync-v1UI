@@ -12,7 +12,7 @@ import {
   AlignJustify,
   Undo,
   Redo,
-  Link,
+  Link as LinkIcon,
   Smile,
   Plus,
   Quote,
@@ -23,6 +23,7 @@ import {
   ImageIcon
 } from 'lucide-react';
 import { getSignature, updateSignature } from '../../../../shared/store/services/profileApi';
+import './SignatureEditor.css';
 
 interface SignatureSectionProps {
   onUpdate?: () => void;
@@ -38,7 +39,9 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+    ],
     content: '',
     editorProps: {
       attributes: {
@@ -69,15 +72,48 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editor) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const url = event.target?.result as string;
-        editor.chain().focus().insertContent(`<img src="${url}" alt="signature" style="max-width: 200px; height: auto;" />`).run();
-      };
-      reader.readAsDataURL(file);
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+
+      try {
+        setError(null);
+        
+        // Use profile upload API
+        const formData = new FormData();
+        formData.append('profile', file);
+
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const result = await response.json();
+        const imageUrl = result.data.profile;
+
+        // Insert image with HTML
+        editor.chain().focus().insertContent(
+          `<img src="${imageUrl}" alt="signature image" style="max-width: 200px; height: auto; display: inline-block;" />`
+        ).run();
+        
+      } catch (error) {
+        console.error('Image upload error:', error);
+        setError('Failed to upload image');
+      }
     }
   };
 
@@ -148,45 +184,38 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
           </label>
         </div>
 
-        <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+        <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden signature-editor">
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-2">
             <div className="flex flex-wrap gap-2">
               <select 
                 onChange={(e) => {
                   const value = e.target.value;
-                  editor.chain().focus().setFontFamily(value).run();
+                  editor.chain().focus().insertContent(`<span style="font-family: ${value};">`);
                 }}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
               >
-                <option value="Inter">Inter</option>
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Courier">Courier</option>
+                <option value="">Font Family</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Verdana, sans-serif">Verdana</option>
               </select>
 
               <select 
                 onChange={(e) => {
                   const value = e.target.value;
-                  editor.chain().focus().setMark('textStyle', { fontSize: value }).run();
+                  editor.chain().focus().insertContent(`<span style="font-size: ${value};">`);
                 }}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
               >
-                <option value="14px">14px</option>
+                <option value="">Font Size</option>
                 <option value="12px">12px</option>
+                <option value="14px">14px</option>
                 <option value="16px">16px</option>
                 <option value="18px">18px</option>
-              </select>
-
-              <select 
-                onChange={(e) => {
-                  const value = e.target.value;
-                  editor.chain().focus().setMark('textStyle', { lineHeight: value }).run();
-                }}
-                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
-              >
-                <option value="1.5">1.5</option>
-                <option value="1.0">1.0</option>
-                <option value="2.0">2.0</option>
+                <option value="20px">20px</option>
+                <option value="24px">24px</option>
               </select>
 
               <select 
@@ -239,7 +268,12 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                onClick={() => {
+                  const selection = editor.state.selection;
+                  if (!selection.empty) {
+                    editor.chain().focus().insertContent('<div style="text-align: left;">').run();
+                  }
+                }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignLeft className="w-4 h-4" />
@@ -247,7 +281,12 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                onClick={() => {
+                  const selection = editor.state.selection;
+                  if (!selection.empty) {
+                    editor.chain().focus().insertContent('<div style="text-align: center;">').run();
+                  }
+                }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignCenter className="w-4 h-4" />
@@ -255,7 +294,12 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                onClick={() => {
+                  const selection = editor.state.selection;
+                  if (!selection.empty) {
+                    editor.chain().focus().insertContent('<div style="text-align: right;">').run();
+                  }
+                }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignRight className="w-4 h-4" />
@@ -263,7 +307,12 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                onClick={() => {
+                  const selection = editor.state.selection;
+                  if (!selection.empty) {
+                    editor.chain().focus().insertContent('<div style="text-align: justify;">').run();
+                  }
+                }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignJustify className="w-4 h-4" />
@@ -289,8 +338,17 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
 
-              <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
-                <Link className="w-4 h-4" />
+              <button type="button" 
+                onClick={() => {
+                  const url = window.prompt('Enter URL:');
+                  if (url) {
+                    const text = window.getSelection()?.toString() || 'Link';
+                    editor.chain().focus().insertContent(`<a href="${url}" style="color: #3b82f6; text-decoration: underline;">${text}</a>`).run();
+                  }
+                }}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                <LinkIcon className="w-4 h-4" />
               </button>
 
               <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -323,7 +381,10 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
             </div>
           </div>
 
-          <EditorContent editor={editor} className="bg-white dark:bg-gray-800" />
+          <EditorContent 
+            editor={editor} 
+            className="bg-white dark:bg-gray-800"
+          />
         </div>
 
         <div className="mt-4">

@@ -551,7 +551,7 @@ const PublicEstimator: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(7))}
+                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(6))}
                 className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
                   }`}
               >
@@ -571,43 +571,6 @@ const PublicEstimator: React.FC = () => {
 
   // Step 6: Desired Roof Material
   if (currentStep === 6) {
-    const materials = estimatorData?.materials || [];
-
-    // Calculate estimated price if data is available
-    const getEstimatedPrice = (material: any) => {
-      if (!propertyData || !formData.roofSteepness) return null;
-
-      const structure = propertyData?.structures?.[0];
-      const footprintValue = structure?.structure_footprint_sqft?.value;
-      const roofSquares = structure?.roof?.structure_roof_area_squares?.value || structure?.structure_roof_area_squares?.value;
-
-      let areaSqFt = 0;
-      if (footprintValue) {
-        areaSqFt = typeof footprintValue === 'string' ? parseFloat(footprintValue) : Number(footprintValue);
-      } else if (roofSquares) {
-        areaSqFt = (typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares)) * 100;
-      }
-
-      if (!areaSqFt || isNaN(areaSqFt)) return null;
-
-      const pricing = material.pricing || {};
-      // Map steepness to pricing key. 
-      // Steepness IDs: 'low', 'moderate', 'steep'
-      // Pricing keys: 'lowPitch', 'moderatePitch', 'steepPitch'
-      let pricePerSqFt = 0;
-      switch (formData.roofSteepness) {
-        case 'low': pricePerSqFt = parseFloat(pricing.lowPitch); break;
-        case 'moderate': pricePerSqFt = parseFloat(pricing.moderatePitch); break;
-        case 'steep': pricePerSqFt = parseFloat(pricing.steepPitch); break;
-        default: pricePerSqFt = parseFloat(pricing.moderatePitch);
-      }
-
-      if (!pricePerSqFt || isNaN(pricePerSqFt)) return null;
-
-      const price = areaSqFt * pricePerSqFt;
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
-    };
-
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
@@ -616,53 +579,25 @@ const PublicEstimator: React.FC = () => {
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of roof would you like?</h1>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {materials.length > 0 ? (
-              materials.map((material: any) => {
-                const estPrice = getEstimatedPrice(material);
-
-                return (
-                  <div
-                    key={material.id}
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        desiredRoof: material.materialType || 'Asphalt',
-                        selectedMaterialId: material.id
-                      });
-                      setCurrentStep(7);
-                    }}
-                    className={`h-72 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.selectedMaterialId === material.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
-                      } bg-white shadow-sm border border-gray-200`}
-                  >
-                    <div className="w-full h-40 bg-gray-200">
-                      {material.imageUrl ? (
-                        <img src={material.imageUrl} alt={material.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500">
-                          No Image
-                        </div>
-                      )}
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 flex flex-col justify-between h-32">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">{material.name}</h3>
-                        <p className="text-sm text-gray-500">{material.materialType}</p>
-                      </div>
-                      {estPrice && (
-                        <div className="mt-2 text-blue-600 font-bold text-lg">
-                          Est. {estPrice}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="col-span-full text-center text-gray-500">
-                No materials configured for this estimator.
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.webp' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({ ...formData, desiredRoof: option.id }), setCurrentStep(7))}
+                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.desiredRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
+              >
+                <div className={`w-full h-full`}>
+                  <img src={option.image} alt="" />
+                </div>
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="text-xl font-bold text-black">{option.title}</h3>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
