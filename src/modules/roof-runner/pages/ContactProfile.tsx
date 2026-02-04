@@ -4,23 +4,20 @@ import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { getContactByIdRequest } from '../../../shared/store/slices/contactsSlice';
-import { createTaskRequest } from '../../../shared/store/slices/tasksSlice';
-import { createNote, updateContact, CreateContactRequest } from '../../../shared/store/services/contactsApi';
+import { updateContact, CreateContactRequest } from '../../../shared/store/services/contactsApi';
 import { createJob, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
-import { CreateTaskData } from '../types';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
 import ContactHeader from '../components/ContactProfile/ContactHeader';
 import ContactDetailsPanel from '../components/ContactProfile/ContactDetailsPanel';
 import RightPanelTabs from '../components/ContactProfile/RightPanelTabs';
 import RightPanelContent from '../components/ContactProfile/RightPanelContent';
-import { AddTaskModal, AddNoteModal, AddDocumentModal, AddAppointmentModal, AddCompanyModal } from '../components/ContactProfile/Modals';
+import { AddCompanyModal } from '../components/ContactProfile/Modals';
 import ContactModal from '../components/ContactModal';
 import Toast from '../components/Toast';
 
 type RightPanelView = 'activity' | 'tasks' | 'notes' | 'appointments' | 'documents' | 'payments' | 'related';
-type DocumentsFilter = 'all' | 'internal' | 'sent' | 'received';
 
 const ContactProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,32 +25,24 @@ const ContactProfile: React.FC = () => {
   const { getOrgPath } = useOrgPath();
   const dispatch = useDispatch();
   const { currentContact, isLoadingContact, error } = useSelector((state: RootState) => state.contacts);
-  
-
 
   // State management
   const [activeTab, setActiveTab] = useState<'contact' | 'company'>('contact');
   const [rightPanelView, setRightPanelView] = useState<RightPanelView>('activity');
-  const [documentsFilter, setDocumentsFilter] = useState<DocumentsFilter>('all');
   const [showPaymentActions, setShowPaymentActions] = useState(false);
   const [companySearch, setCompanySearch] = useState('');
 
   // Modal states
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
-  const [showAddDocumentModal, setShowAddDocumentModal] = useState(false);
-  const [showAddAppointmentModal, setShowAddAppointmentModal] = useState(false);
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [jobAddress, setJobAddress] = useState('');
-  const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
 
   // Job creation state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Contact edit state
   const [contactFormData, setContactFormData] = useState({
@@ -81,7 +70,7 @@ const ContactProfile: React.FC = () => {
   });
   const [secondaryEmail, setSecondaryEmail] = useState('');
   const [showSecondaryEmail, setShowSecondaryEmail] = useState(false);
-  const [secondaryPhone, setSecondaryPhone] = useState({phone: '', extension: ''});
+  const [secondaryPhone, setSecondaryPhone] = useState({ phone: '', extension: '' });
   const [showSecondaryPhone, setShowSecondaryPhone] = useState(false);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
@@ -175,12 +164,12 @@ const ContactProfile: React.FC = () => {
 
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
-    setContactFormData({...contactFormData, phone: formatted});
+    setContactFormData({ ...contactFormData, phone: formatted });
   };
 
   const handleSecondaryPhoneChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
-    setSecondaryPhone({...secondaryPhone, phone: formatted});
+    setSecondaryPhone({ ...secondaryPhone, phone: formatted });
   };
 
   const handleAddressChange = (address: string, lat: number, lng: number) => {
@@ -207,7 +196,7 @@ const ContactProfile: React.FC = () => {
 
   const removeSecondaryPhone = () => {
     setShowSecondaryPhone(false);
-    setSecondaryPhone({phone: '', extension: ''});
+    setSecondaryPhone({ phone: '', extension: '' });
   };
 
   const handleEdit = () => {
@@ -265,12 +254,12 @@ const ContactProfile: React.FC = () => {
 
     try {
       await updateContact(currentContact.id, contactData);
-      setToast({message: 'Contact updated successfully!', type: 'success'});
+      setToast({ message: 'Contact updated successfully!', type: 'success' });
       setShowEditContactModal(false);
       dispatch(getContactByIdRequest(parseInt(id!)));
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Failed to update contact';
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -300,16 +289,6 @@ const ContactProfile: React.FC = () => {
     type: currentContact.type,
     labelOrRole: currentContact.labelOrRole
   } : null;
-
-  const notesData = [
-    {
-      id: '1',
-      content: 'Initial contact made. Customer interested in roofing services.',
-      author: 'Jane Smith',
-      date: '2024-01-15',
-      time: '10:30 AM'
-    }
-  ];
 
   if (isLoadingContact) {
     return (
@@ -364,13 +343,9 @@ const ContactProfile: React.FC = () => {
             <RightPanelContent
               activeTab={rightPanelView}
               contactId={parseInt(contact.id)}
-              documentsFilter={documentsFilter}
               showPaymentActions={showPaymentActions}
-              onAddTask={() => setShowAddTaskModal(true)}
-              onAddNote={() => setShowAddNoteModal(true)}
-              onAddAppointment={() => setShowAddAppointmentModal(true)}
-              onAddDocument={() => setShowAddDocumentModal(true)}
-              onDocumentsFilterChange={(filter: string) => setDocumentsFilter(filter as DocumentsFilter)}
+              onAddTask={() => { }} // Legacy, can be removed if tabs manage their own
+              onAddNote={() => { }} // Legacy
               onPaymentActionsToggle={() => setShowPaymentActions(!showPaymentActions)}
             />
           </div>
@@ -378,63 +353,6 @@ const ContactProfile: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <AddTaskModal
-        isOpen={showAddTaskModal}
-        onClose={() => setShowAddTaskModal(false)}
-        onSave={(taskData: CreateTaskData) => {
-          if (contact) {
-            dispatch(createTaskRequest({
-              text: taskData.title,
-              assignee: taskData.assignedTo || '',
-              blocking: false,
-              completed: false,
-              dueDate: taskData.dueDate || '',
-              createdBy: 1,
-              createdByName: 'Current User'
-            }));
-          }
-          setShowAddTaskModal(false);
-        }}
-      />
-
-      <AddNoteModal
-        isOpen={showAddNoteModal}
-        onClose={() => setShowAddNoteModal(false)}
-        onSave={async (noteData: { data: string }) => {
-          if (contact) {
-            try {
-              await createNote({
-                data: noteData.data,
-                contactId: parseInt(contact.id)
-              });
-              // Refresh notes after creation
-              window.location.reload();
-            } catch (error) {
-              console.error('Failed to create note:', error);
-            }
-          }
-          setShowAddNoteModal(false);
-        }}
-      />
-
-      <AddDocumentModal
-        isOpen={showAddDocumentModal}
-        onClose={() => setShowAddDocumentModal(false)}
-        onSave={(documentData: any) => {
-          console.log('Document saved:', documentData);
-          setShowAddDocumentModal(false);
-        }}
-      />
-
-      <AddAppointmentModal
-        isOpen={showAddAppointmentModal}
-        onClose={() => setShowAddAppointmentModal(false)}
-        onSave={(appointmentData: any) => {
-          console.log('Appointment saved:', appointmentData);
-          setShowAddAppointmentModal(false);
-        }}
-      />
-
       <AddCompanyModal
         isOpen={showAddCompanyModal}
         onClose={() => setShowAddCompanyModal(false)}
@@ -449,18 +367,14 @@ const ContactProfile: React.FC = () => {
         onClose={() => {
           setShowAddressModal(false);
           setJobAddress('');
-          setJobCoordinates(null);
         }}
         jobAddress={jobAddress}
-        setJobAddress={(address: string, lat?: number, lng?: number) => {
+        setJobAddress={(address: string) => {
           setJobAddress(address);
-          if (lat && lng) {
-            setJobCoordinates({lat, lng});
-          }
         }}
         onContinue={() => {
           if (jobAddress.trim()) {
-            setFormData({...formData, location: jobAddress, name: jobAddress});
+            setFormData({ ...formData, location: jobAddress, name: jobAddress });
             setShowAddressModal(false);
             setShowJobDetails(true);
           }
@@ -477,7 +391,6 @@ const ContactProfile: React.FC = () => {
           setShowJobDetails(false);
           resetJobForm();
           setJobAddress('');
-          setJobCoordinates(null);
         }}
         onSubmit={handleJobSubmit}
         formData={formData}
@@ -511,7 +424,7 @@ const ContactProfile: React.FC = () => {
         removeSecondaryPhone={removeSecondaryPhone}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

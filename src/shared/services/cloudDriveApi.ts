@@ -1,9 +1,11 @@
+import { getAuthToken } from '../utils/auth';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface CloudDriveConnection {
   id: string;
   user_id: string;
-  provider: 'google_drive' | 'onedrive_personal' | 'onedrive_business';
+  provider: 'google_drive' | 'onedrive_personal';
   access_token?: string;
   refresh_token?: string;
   provider_user_id?: string;
@@ -18,11 +20,11 @@ export interface CloudDriveConnection {
 }
 
 export const cloudDriveApi = {
-  async getConnection(userId: string): Promise<CloudDriveConnection | null> {
+  async getConnection(): Promise<CloudDriveConnection | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/file-manager/connection`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });
@@ -43,7 +45,7 @@ export const cloudDriveApi = {
   },
 
   async getCurrentUserConnection(): Promise<CloudDriveConnection | null> {
-    return this.getConnection('current');
+    return this.getConnection();
   },
 
   async createConnection(
@@ -57,8 +59,8 @@ export const cloudDriveApi = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
-        provider, 
+      body: JSON.stringify({
+        provider,
         access_token: connectionData.access_token,
         refresh_token: connectionData.refresh_token,
         token_expires_at: connectionData.token_expires_at,
@@ -80,7 +82,7 @@ export const cloudDriveApi = {
     provider: CloudDriveConnection['provider'],
     oauthData: { access_token: string; refresh_token: string; expires_at: string; metadata?: any }
   ): Promise<CloudDriveConnection> {
-    const payload = { 
+    const payload = {
       provider,
       access_token: oauthData.access_token,
       refresh_token: oauthData.refresh_token,
@@ -89,7 +91,7 @@ export const cloudDriveApi = {
       metadata: oauthData.metadata || {}
     };
     console.log('OAuth payload:', payload);
-    
+
     const response = await fetch(`${API_BASE_URL}/file-manager/connection`, {
       method: 'POST',
       headers: {
@@ -164,8 +166,8 @@ export const cloudDriveApi = {
   getProviderName(provider: CloudDriveConnection['provider']): string {
     const names = {
       google_drive: 'Google Drive',
-      onedrive_personal: 'OneDrive Personal',
-      onedrive_business: 'OneDrive Business',
+      onedrive_personal: 'OneDrive',
+      // onedrive_business: 'OneDrive Business',
     };
     return names[provider];
   },
@@ -184,7 +186,7 @@ export const cloudDriveApi = {
       const response = await fetch(`${API_BASE_URL}/file-manager/sync`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       });

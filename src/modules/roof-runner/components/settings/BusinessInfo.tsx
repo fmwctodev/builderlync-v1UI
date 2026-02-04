@@ -109,10 +109,10 @@ const BusinessInfo: React.FC = () => {
 
   const handleSave = async () => {
     if (!businessInfo) return;
-    
+
     try {
       setSaving(true);
-      
+
       const response = await updateBusinessInfo(businessInfo);
       if (response.success) {
         alert('Business information saved successfully!');
@@ -134,21 +134,21 @@ const BusinessInfo: React.FC = () => {
         setError('Logo file size must be less than 2.5MB');
         return;
       }
-      
+
       setLogoFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setLogoPreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
-      
+
       // Upload logo immediately
       try {
         const response = await uploadBusinessLogo(file);
         if (response.success && businessInfo) {
           const updatedInfo = { ...businessInfo, business_logo: response.data.logoUrl };
           setBusinessInfo(updatedInfo);
-          
+
           // If no existing record (id is missing), create one with logo
           if (!businessInfo.id) {
             await updateBusinessInfo({ business_logo: response.data.logoUrl });
@@ -208,7 +208,7 @@ const BusinessInfo: React.FC = () => {
           <p className="text-yellow-800 text-sm">{error}</p>
         </div>
       )}
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Information</h2>
@@ -228,7 +228,7 @@ const BusinessInfo: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">General Information</h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            {/* <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>Location ID</span>
               <Info className="w-4 h-4" />
               <span className="font-mono">{businessInfo.location_id || 'Not generated'}</span>
@@ -238,7 +238,7 @@ const BusinessInfo: React.FC = () => {
               >
                 <Copy className="w-4 h-4" />
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-start space-x-6">
@@ -271,7 +271,7 @@ const BusinessInfo: React.FC = () => {
                     />
                   </label>
                   {logoPreview && (
-                    <button 
+                    <button
                       onClick={() => {
                         setLogoPreview(null);
                         setLogoFile(null);
@@ -292,7 +292,7 @@ const BusinessInfo: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Friendly Business Name
             </label>
-            <input  
+            <input
               type="text"
               value={businessInfo.friendly_business_name}
               onChange={(e) => updateField('friendly_business_name', e.target.value)}
@@ -375,7 +375,7 @@ const BusinessInfo: React.FC = () => {
                 Business Niche
               </label>
               <div className="relative">
-                <select 
+                <select
                   value={businessInfo.business_niche}
                   onChange={(e) => updateField('business_niche', e.target.value)}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -393,7 +393,7 @@ const BusinessInfo: React.FC = () => {
                 <Info className="w-4 h-4" />
               </label>
               <div className="relative">
-                <select 
+                <select
                   value={businessInfo.business_currency}
                   onChange={(e) => updateField('business_currency', e.target.value)}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -407,7 +407,7 @@ const BusinessInfo: React.FC = () => {
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>API Key</span>
               <Info className="w-4 h-4" />
@@ -418,14 +418,14 @@ const BusinessInfo: React.FC = () => {
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 onClick={handleGenerateApiKey}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-6">
@@ -477,7 +477,7 @@ const BusinessInfo: React.FC = () => {
               State / Prov / Region
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.state}
                 onChange={(e) => updateField('state', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -543,7 +543,7 @@ const BusinessInfo: React.FC = () => {
               Country
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.country}
                 onChange={(e) => updateField('country', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -561,7 +561,7 @@ const BusinessInfo: React.FC = () => {
               Time Zone <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.time_zone}
                 onChange={(e) => updateField('time_zone', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -583,7 +583,7 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.platform_language}
                 onChange={(e) => updateField('platform_language', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -602,7 +602,7 @@ const BusinessInfo: React.FC = () => {
               <Info className="w-4 h-4" />
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.outbound_language || ''}
                 onChange={(e) => updateField('outbound_language', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -616,7 +616,7 @@ const BusinessInfo: React.FC = () => {
           </div>
 
           <div className="flex justify-end">
-            <button 
+            <button
               onClick={handleSave}
               disabled={saving}
               className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
@@ -636,7 +636,7 @@ const BusinessInfo: React.FC = () => {
               Business Type
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.business_type}
                 onChange={(e) => updateField('business_type', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -654,7 +654,7 @@ const BusinessInfo: React.FC = () => {
               Business Industry
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.business_industry}
                 onChange={(e) => updateField('business_industry', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -672,7 +672,7 @@ const BusinessInfo: React.FC = () => {
               Business Registration ID Type
             </label>
             <div className="relative">
-              <select 
+              <select
                 value={businessInfo.business_registration_id_type}
                 onChange={(e) => updateField('business_registration_id_type', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -740,7 +740,7 @@ const BusinessInfo: React.FC = () => {
         </div>
 
         <div className="flex justify-end">
-          <button 
+          <button
             onClick={handleSave}
             disabled={saving}
             className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
@@ -796,7 +796,7 @@ const BusinessInfo: React.FC = () => {
             Job Position
           </label>
           <div className="relative">
-            <select 
+            <select
               value={businessInfo.representative_job_position}
               onChange={(e) => updateField('representative_job_position', e.target.value)}
               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -823,7 +823,7 @@ const BusinessInfo: React.FC = () => {
         </div>
 
         <div className="flex justify-end">
-          <button 
+          <button
             onClick={handleSave}
             disabled={saving}
             className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
@@ -839,14 +839,12 @@ const BusinessInfo: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => updateField('allow_duplicate_contact', !businessInfo.allow_duplicate_contact)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-              businessInfo.allow_duplicate_contact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
-            }`}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${businessInfo.allow_duplicate_contact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                businessInfo.allow_duplicate_contact ? 'translate-x-5' : 'translate-x-0'
-              }`}
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${businessInfo.allow_duplicate_contact ? 'translate-x-5' : 'translate-x-0'
+                }`}
             />
           </button>
           <span className="text-base text-gray-900 dark:text-white">Allow Duplicate Contact</span>
@@ -857,7 +855,7 @@ const BusinessInfo: React.FC = () => {
             Find existing contacts based on
           </label>
           <div className="relative">
-            <select 
+            <select
               value={businessInfo.primary_search_field}
               onChange={(e) => updateField('primary_search_field', e.target.value)}
               className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
@@ -875,7 +873,7 @@ const BusinessInfo: React.FC = () => {
             Second preference for search (Optional)
           </label>
           <div className="relative">
-            <select 
+            <select
               value={businessInfo.secondary_search_field || ''}
               onChange={(e) => updateField('secondary_search_field', e.target.value)}
               className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
@@ -889,7 +887,7 @@ const BusinessInfo: React.FC = () => {
         </div>
 
         <div className="flex justify-end">
-          <button 
+          <button
             onClick={handleSave}
             disabled={saving}
             className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"

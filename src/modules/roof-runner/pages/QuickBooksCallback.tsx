@@ -1,16 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const QuickBooksCallback: React.FC = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const isSuccess = urlParams.get('success') === 'true';
   const isError = urlParams.get('error') === 'true';
 
+
   useEffect(() => {
 
     // Redirect to settings after 3 seconds
     const timer = setTimeout(() => {
-      window.location.href = '/settings/integrations';
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgSlug = user.companySlug || 'default';
+      if (orgSlug) {
+        window.location.href = `/org/${orgSlug}/settings/integrations`;
+      } else {
+        window.location.href = '/settings/integrations';
+      }
     }, 3000);
 
     return () => clearTimeout(timer);

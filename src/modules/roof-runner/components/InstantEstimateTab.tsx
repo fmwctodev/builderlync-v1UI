@@ -5,7 +5,12 @@ import { apiService } from '../store/services/api';
 import type { InstantEstimator } from '../types';
 import Toast from '../../../shared/components/Toast';
 
-const InstantEstimator: React.FC = () => {
+interface InstantEstimateTabProps {
+  jobId: number;
+  jobAddress: string;
+}
+
+const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddress }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const [activeTab, setActiveTab] = useState('all');
@@ -36,6 +41,11 @@ const InstantEstimator: React.FC = () => {
     flat: '',
     multiStorySurcharge: ''
   });
+
+  // TODO: Use jobId and jobAddress for instant estimate functionality
+  useEffect(() => {
+    console.log('InstantEstimateTab loaded for job:', jobId, jobAddress);
+  }, [jobId, jobAddress]);
 
   useEffect(() => {
     fetchEstimators();
@@ -815,4 +825,4 @@ const InstantEstimator: React.FC = () => {
   );
 };
 
-export default InstantEstimator;
+export default InstantEstimateTab;

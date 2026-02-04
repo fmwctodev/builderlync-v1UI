@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, HardDrive, AlertCircle, ArrowLeft, Home } from 'lucide-react';
-import MyCloudTab from '../components/file-manager/MyCloudTab';
 import LocalFilesTab from '../components/file-manager/LocalFilesTab';
-import FileManagerHeader from '../components/file-manager/FileManagerHeader';
 import SearchAndFilterBar from '../components/file-manager/SearchAndFilterBar';
 import FolderNavigation from '../components/file-manager/FolderNavigation';
 import FileGrid from '../components/file-manager/FileGrid';
@@ -12,7 +10,7 @@ import ConnectCloudDriveModal from '../components/file-manager/ConnectCloudDrive
 import UploadProgressModal from '../components/file-manager/UploadProgressModal';
 import FileManagerDashboard from '../components/file-manager/FileManagerDashboard';
 import { backendFilesApi, FileRecord, FolderRecord } from '../../../shared/services/backendFilesApi';
-import { FileItem, FolderItem, UploadProgress } from '../../../shared/services/fileManagerApi';
+import { UploadProgress } from '../../../shared/services/fileManagerApi';
 import { cloudDriveApi, CloudDriveConnection } from '../../../shared/services/cloudDriveApi';
 
 export default function FileManager() {
@@ -25,14 +23,17 @@ export default function FileManager() {
   const [connection, setConnection] = useState<CloudDriveConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentFolderId, setCurrentFolderId] = useState<number | undefined>();
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 });
   const [uploadStatus, setUploadStatus] = useState<'uploading' | 'success' | 'error' | null>(null);
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState<{ pdf: boolean; image: boolean }>({ pdf: false, image: false });
+  const [sortBy, setSortBy] = useState('uploadDateNewest');
   const [showDashboard, setShowDashboard] = useState(true);
   const [targetFolderId, setTargetFolderId] = useState<number | undefined>();
-  const [folderPath, setFolderPath] = useState<Array<{id: number, name: string}>>([]);
+  const [folderPath, setFolderPath] = useState<Array<{ id: number, name: string }>>([]);
 
   const tabs = [
     { id: 'my-cloud' as const, label: 'My Cloud', icon: Cloud },
@@ -70,7 +71,7 @@ export default function FileManager() {
       const newPath = [...folderPath];
       newPath.pop();
       setFolderPath(newPath);
-      const parentId = newPath.length > 0 ? newPath[newPath.length - 1].id : undefined;
+      const parentId = newPath.length > 0 ? newPath[newPath.length - 1].id : null;
       setCurrentFolderId(parentId);
     }
   };
@@ -78,13 +79,13 @@ export default function FileManager() {
   const handleBreadcrumbClick = (index: number) => {
     const newPath = folderPath.slice(0, index + 1);
     setFolderPath(newPath);
-    const folderId = newPath.length > 0 ? newPath[newPath.length - 1].id : undefined;
+    const folderId = newPath.length > 0 ? newPath[newPath.length - 1].id : null;
     setCurrentFolderId(folderId);
   };
 
   const handleHomeClick = () => {
     setFolderPath([]);
-    setCurrentFolderId(undefined);
+    setCurrentFolderId(null);
   };
 
   const handleCreateSubfolder = (parentId: string) => {
@@ -113,7 +114,7 @@ export default function FileManager() {
       setUploadFileName(file.name);
       setUploadStatus('uploading');
       setUploadError(null);
-      
+
       const uploadedFile = await backendFilesApi.uploadFile(
         file,
         folderId,
@@ -121,10 +122,10 @@ export default function FileManager() {
           setUploadProgress({ loaded: 0, total: 0, percentage: progress });
         }
       );
-      
+
       setFiles([...files, uploadedFile]);
       setUploadStatus('success');
-      
+
       setTimeout(() => {
         setUploadStatus(null);
       }, 2000);
@@ -135,10 +136,64 @@ export default function FileManager() {
     }
   };
 
-  const handleApplyFilters = (filters: any) => {
-    console.log('Applied filters:', filters);
+  const handleApplyFilters = (newFilters: any) => {
+    if (newFilters.sortBy) setSortBy(newFilters.sortBy);
+    if (newFilters.fileTypes) setFilters(newFilters.fileTypes);
     setIsFilterSortDrawerOpen(false);
   };
+
+  const getFilteredAndSortedFiles = () => {
+    let result = [...files];
+
+    // Search
+    if (searchTerm) {
+      result = result.filter(file =>
+        file.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        file.original_filename?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by type
+    if (filters.pdf || filters.image) {
+      result = result.filter(file => {
+        if (filters.pdf && file.mime_type?.includes('pdf')) return true;
+        if (filters.image && file.mime_type?.includes('image')) return true;
+        return false;
+      });
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'fileSizeLargest':
+          return (b.file_size || 0) - (a.file_size || 0);
+        case 'fileSizeSmallest':
+          return (a.file_size || 0) - (b.file_size || 0);
+        case 'uploadDateNewest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'uploadDateOldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'fileNameAZ':
+          return a.filename.localeCompare(b.filename);
+        case 'fileNameZA':
+          return b.filename.localeCompare(a.filename);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  };
+
+  const getFilteredFolders = () => {
+    if (searchTerm) {
+      return folders.filter(folder => folder.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    return folders;
+  };
+
+  const displayedFiles = getFilteredAndSortedFiles();
+  const displayedFolders = getFilteredFolders();
 
   const loadData = async () => {
     try {
@@ -152,7 +207,7 @@ export default function FileManager() {
       if (conn) {
         // Load folders and files
         const { folders: foldersData, files: filesData } = await backendFilesApi.getFolderContents(currentFolderId);
-        
+
         setFolders(foldersData);
         setFiles(filesData);
       }
@@ -169,7 +224,7 @@ export default function FileManager() {
       setUploadFileName(file.name);
       setUploadStatus('uploading');
       setUploadError(null);
-      
+
       const uploadedFile = await backendFilesApi.uploadFile(
         file,
         currentFolderId,
@@ -177,10 +232,10 @@ export default function FileManager() {
           setUploadProgress({ loaded: 0, total: 0, percentage: progress });
         }
       );
-      
+
       setFiles([...files, uploadedFile]);
       setUploadStatus('success');
-      
+
       setTimeout(() => {
         setUploadStatus(null);
       }, 2000);
@@ -240,11 +295,10 @@ export default function FileManager() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-primary-600 text-white rounded-t-lg'
-                      : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                  }`}
+                  className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${activeTab === tab.id
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                    }`}
                 >
                   <Icon size={16} />
                   <span>{tab.label}</span>
@@ -253,7 +307,7 @@ export default function FileManager() {
             })}
           </div>
         </div>
-        
+
         <main className="flex-grow flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <Cloud className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -271,7 +325,7 @@ export default function FileManager() {
             </button>
           </div>
         </main>
-        
+
         <ConnectCloudDriveModal
           isOpen={isCloudDriveModalOpen}
           onClose={() => setIsCloudDriveModalOpen(false)}
@@ -295,11 +349,10 @@ export default function FileManager() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-primary-600 text-white rounded-t-lg'
-                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                }`}
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${activeTab === tab.id
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                  }`}
               >
                 <Icon size={16} />
                 <span>{tab.label}</span>
@@ -326,14 +379,17 @@ export default function FileManager() {
         {activeTab === 'my-cloud' && connection && (
           <div className="p-6">
             {showDashboard ? (
-              <FileManagerDashboard 
-                connection={connection} 
+              <FileManagerDashboard
+                connection={connection}
                 onRefresh={loadData}
               />
             ) : (
               <>
-                <SearchAndFilterBar onFilterSortClick={() => setIsFilterSortDrawerOpen(true)} />
-                
+                <SearchAndFilterBar
+                  onSearch={setSearchTerm}
+                  onFilterSortClick={() => setIsFilterSortDrawerOpen(true)}
+                />
+
                 {/* Breadcrumb Navigation */}
                 <div className="mb-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <button
@@ -365,15 +421,15 @@ export default function FileManager() {
                   )}
                 </div>
 
-                <FolderNavigation 
-                  folders={folders.map(f => ({ id: f.id.toString(), name: f.name }))}
+                <FolderNavigation
+                  folders={displayedFolders.map(f => ({ id: f.id.toString(), name: f.name }))}
                   onFolderClick={handleFolderClick}
                   onDeleteFolder={handleDeleteFolder}
                   onCreateSubfolder={handleCreateSubfolder}
                   onUploadToFolder={handleUploadToFolder}
                 />
-                <FileGrid 
-                  files={files.map(f => ({
+                <FileGrid
+                  files={displayedFiles.map(f => ({
                     id: f.id,
                     name: f.filename,
                     type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
@@ -391,7 +447,7 @@ export default function FileManager() {
             )}
           </div>
         )}
-        {activeTab === 'local-files' && <LocalFilesTab />}
+        {activeTab === 'local-files' && <LocalFilesTab isCloudConnected={!!connection} />}
       </div>
 
       <CreateFolderModal
@@ -414,7 +470,7 @@ export default function FileManager() {
         }}
         provider={null}
       />
-      
+
       <UploadProgressModal
         isOpen={uploadStatus !== null}
         onClose={() => setUploadStatus(null)}

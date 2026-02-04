@@ -102,6 +102,7 @@ export function RoofRunnerModule() {
         <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
         <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
         <Route path="proposal/view" element={<PublicProposalView />} />
+        <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
         <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -145,7 +146,6 @@ export function RoofRunnerModule() {
           {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
           <Route path="support" element={<Support />} />
           <Route path="settings/*" element={<Settings />} />
-          <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
           <Route path="auth/google/callback" element={<OAuthCallback />} />
           <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
         </Route>

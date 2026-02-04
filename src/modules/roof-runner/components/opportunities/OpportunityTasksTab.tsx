@@ -16,7 +16,7 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateOpportunityTaskRequest>({
-    opportunity_id: opportunityId,
+    opportunity_id: Number(opportunityId),
     title: '',
     description: '',
     status: 'todo',
@@ -68,7 +68,7 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
   const handleEdit = (task: OpportunityTask) => {
     setEditingId(task.id);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       title: task.title,
       description: task.description || '',
       status: task.status,
@@ -93,7 +93,7 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
     setShowForm(false);
     setEditingId(null);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       title: '',
       description: '',
       status: 'todo',
@@ -267,11 +267,10 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     <h4
-                      className={`text-base font-medium ${
-                        task.status === 'completed'
+                      className={`text-base font-medium ${task.status === 'completed'
                           ? 'line-through text-gray-500 dark:text-gray-500'
                           : 'text-gray-900 dark:text-white'
-                      }`}
+                        }`}
                     >
                       {task.title}
                     </h4>
