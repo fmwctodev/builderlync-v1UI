@@ -12,20 +12,14 @@ type TabId = 'calendars' | 'video';
 
 const CalendarSettingsSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('calendars');
-  const [calendars, setCalendars] = useState<CalendarConnection[]>([
-    { id: '1', provider: 'google', email: 'seanscottrichardllc@gmail.com', status: 'connected' },
-    { id: '2', provider: 'google', email: 'sean@autom8ionlab.com', status: 'connected' },
-    { id: '3', provider: 'google', email: 'sean@tarrytownroofing.com', status: 'connected' },
-  ]);
+  const [calendars, setCalendars] = useState<CalendarConnection[]>([]);
 
-  const [linkedCalendar] = useState({
-    email: 'sean@autom8ionlab.com',
-    calendarEmail: 'sean@autom8ionlab.com',
-  });
+  const [linkedCalendar] = useState<{
+    email: string;
+    calendarEmail: string;
+  } | null>(null);
 
-  const [conflictCalendars] = useState([
-    'seanscottrichardllc@gmail.com',
-  ]);
+  const [conflictCalendars] = useState<string[]>([]);
 
   const [hideEventDetails, setHideEventDetails] = useState(true);
   const [timezone, setTimezone] = useState('America/New_York');
@@ -86,104 +80,45 @@ const CalendarSettingsSection: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {calendars.map((calendar) => (
-                    <div
-                      key={calendar.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-white rounded flex items-center justify-center shadow-sm">
-                          <Calendar className="w-6 h-6 text-red-600" />
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              Google Calendar
-                            </span>
-                            <Check className="w-4 h-4 text-green-600" />
-                          </div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {calendar.email}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteCalendar(calendar.id)}
-                        className="text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                  {calendars.length === 0 ? (
+                    <div className="p-4 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                      No calendars connected yet.
+                    </div>
+                  ) : (
+                    calendars.map((calendar) => (
+                      <div
+                        key={calendar.id}
+                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                       >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-white rounded flex items-center justify-center shadow-sm">
+                            <Calendar className="w-6 h-6 text-red-600" />
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                Google Calendar
+                              </span>
+                              <Check className="w-4 h-4 text-green-600" />
+                            </div>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {calendar.email}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteCalendar(calendar.id)}
+                          className="text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-                  Calendar Configuration
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <Calendar className="w-10 h-10 text-red-600 mt-1" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                            Linked Calendar
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            Sync bookings with your linked calendar
-                          </p>
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Calendar className="w-4 h-4 text-red-600" />
-                            <span className="text-gray-900 dark:text-white">{linkedCalendar.email}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm mt-1">
-                            <Calendar className="w-4 h-4 text-gray-600" />
-                            <span className="text-gray-600 dark:text-gray-400">{linkedCalendar.calendarEmail}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button className="text-red-600 hover:text-red-700 dark:text-red-400 text-sm font-medium">
-                        Edit
-                      </button>
-                    </div>
-                    <button className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 text-sm mt-4">
-                      <Settings className="w-4 h-4" />
-                      <span>Advanced Settings</span>
-                    </button>
-                  </div>
-
-                  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <Calendar className="w-10 h-10 text-red-600 mt-1" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                            Conflict Calendars
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            Add additional calendars to be checked to prevent double bookings
-                          </p>
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Calendar className="w-4 h-4 text-red-600" />
-                            <span className="text-gray-900 dark:text-white">{conflictCalendars[0]}</span>
-                          </div>
-                          <ul className="list-disc list-inside mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            {conflictCalendars.map((email, index) => (
-                              <li key={index}>{email}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                      <button className="text-red-600 hover:text-red-700 dark:text-red-400 text-sm font-medium">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Calendar Configuration (removed for now) */}
             </div>
           )}
 

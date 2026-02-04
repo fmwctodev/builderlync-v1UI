@@ -1,0 +1,48 @@
+/* Signature Editor Styles */
+.signature-editor img {
+  max-width: 200px !important;
+  height: auto !important;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.signature-editor .ProseMirror {
+  outline: none;
+  padding: 16px;
+  min-height: 300px;
+}
+
+.signature-editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.signature-editor .ProseMirror img {
+  max-width: 200px !important;
+  height: auto !important;
+  cursor: pointer;
+}
+
+.signature-editor .ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.signature-editor .ProseMirror strong {
+  font-weight: bold;
+}
+
+.signature-editor .ProseMirror em {
+  font-style: italic;
+}
+
+.signature-editor .ProseMirror h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.5em 0;
+}
+
+.signature-editor .ProseMirror h2 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin: 0.5em 0;
+}

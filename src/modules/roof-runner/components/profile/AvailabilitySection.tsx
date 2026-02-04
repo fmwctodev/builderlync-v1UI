@@ -20,7 +20,7 @@ const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const AvailabilitySection: React.FC = () => {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -28,9 +28,9 @@ const AvailabilitySection: React.FC = () => {
   const [customLocation, setCustomLocation] = useState('');
   const [timezone, setTimezone] = useState('America/New_York');
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // useEffect(() => {
+  //   loadData();
+  // }, []);
 
   const loadData = async () => {
     try {
