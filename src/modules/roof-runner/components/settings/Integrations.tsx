@@ -2,12 +2,13 @@ import React from 'react';
 import { Check, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
-import { connectTwilio, getTwilioStatus, disconnectTwilio, TwilioStatus } from '../../../../shared/store/services/twilioApi';
+import { getTwilioStatus, TwilioStatus } from '../../../../shared/store/services/twilioApi';
 import TwilioManagementModal from './TwilioManagementModal';
 import EagleViewConnectionModal from './EagleViewConnectionModal';
 import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
 import { srsService } from '../../services/srsService';
 import SRSConnection from '../catalog/SRSConnection';
+import { cloudDriveApi } from '../../../../shared/services/cloudDriveApi';
 
 
 interface Integration {
@@ -30,6 +31,7 @@ const Integrations: React.FC = () => {
   const [srsStatus, setSrsStatus] = React.useState({ connected: false });
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
+  const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
   const [showSrsModal, setShowSrsModal] = React.useState(false);
@@ -43,6 +45,7 @@ const Integrations: React.FC = () => {
     handleABCSupplyCallback();
     fetchSrsStatus();
     fetchEagleViewStatus();
+    fetchGoogleDriveStatus();
   }, []);
 
   const fetchQuickBooksStatus = async () => {
@@ -164,6 +167,23 @@ const Integrations: React.FC = () => {
     }
   };
 
+  const fetchGoogleDriveStatus = async () => {
+    try {
+      const connection = await cloudDriveApi.getCurrentUserConnection();
+      if (connection && connection.provider === 'google_drive') {
+        setGoogleDriveStatus({
+          connected: true,
+          email: connection.provider_email
+        });
+      } else {
+        setGoogleDriveStatus({ connected: false });
+      }
+    } catch (error) {
+      console.error('Error fetching Google Drive status:', error);
+      setGoogleDriveStatus({ connected: false });
+    }
+  };
+
   const handleQuickBooksConnect = async () => {
     try {
       setLoading('quickbooks');
@@ -211,6 +231,9 @@ const Integrations: React.FC = () => {
       handleABCSupplyConnect();
     } else if (integrationId === 'eagleview') {
       setShowEagleViewModal(true);
+    } else if (integrationId === 'google-drive') {
+      // Redirect to File Manager to connect
+      window.location.href = '/file-manager';
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -236,6 +259,16 @@ const Integrations: React.FC = () => {
         await fetchEagleViewStatus();
       } catch (error) {
         console.error('Error disconnecting EagleView:', error);
+      } finally {
+        setLoading(null);
+      }
+    } else if (integrationId === 'google-drive') {
+      try {
+        setLoading('google-drive');
+        await cloudDriveApi.disconnectCurrentUser();
+        setGoogleDriveStatus({ connected: false });
+      } catch (error) {
+        console.error('Error disconnecting Google Drive:', error);
       } finally {
         setLoading(null);
       }
@@ -354,7 +387,8 @@ const Integrations: React.FC = () => {
       name: 'Google Drive',
       description: 'Cloud storage and file management for documents and media',
       category: 'Productivity',
-      connected: false,
+      connected: googleDriveStatus.connected,
+      companyInfo: googleDriveStatus.email ? { Email: googleDriveStatus.email } : null,
     },
   ];
 
@@ -418,6 +452,12 @@ const Integrations: React.FC = () => {
                   <p>Phone Numbers: {twilioStatus.phoneNumbers.length}</p>
                 )}
               </div>
+            )}
+
+            {integration.id === 'google-drive' && integration.connected && integration.companyInfo && (
+              <p className="text-xs text-green-600 dark:text-green-400 mb-4">
+                Connected to: {integration.companyInfo.Email}
+              </p>
             )}
 
             <div className="flex flex-col space-y-2">

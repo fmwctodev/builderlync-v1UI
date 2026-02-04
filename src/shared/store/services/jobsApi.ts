@@ -117,7 +117,7 @@ export interface CreateJobRequest {
   longitude?: number;
   customerId?: number | null;
   assignees: number[];
-  jobOwner: number;
+  jobOwner: number | null;
   workflowStages: string;
   closeDate?: string;
   jobValue: number;
@@ -132,10 +132,11 @@ export interface CreateJobRequest {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: number;
-  editedBy?: number;
+  createdBy: number | null;
+  editedBy?: number | null;
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
+  contactName?: string | null;
 }
 
 class JobsApiService {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Upload, Folder as FolderIcon, Search, Filter, CloudOff } from 'lucide-react';
 import { backendFilesApi, FileRecord, FolderRecord } from '../../../../shared/services/backendFilesApi';
+import { cloudDriveApi } from '../../../../shared/services/cloudDriveApi';
 import FolderNavigation from './FolderNavigation';
 import FileGrid from './FileGrid';
 import CreateFolderModal from './CreateFolderModal';
@@ -8,17 +9,41 @@ import FileUploadZone from './FileUploadZone';
 import SearchAndFilterBar from './SearchAndFilterBar';
 import FilterSortDrawer from './FilterSortDrawer';
 
-export default function LocalFilesTab() {
+interface LocalFilesTabProps {
+  isCloudConnected?: boolean;
+}
+
+export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }: LocalFilesTabProps) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [folders, setFolders] = useState<FolderRecord[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<Array<{id: number, name: string}>>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id: number, name: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState<{ pdf: boolean; image: boolean }>({ pdf: false, image: false });
+  const [sortBy, setSortBy] = useState('uploadDateNewest');
   const [showUploadZone, setShowUploadZone] = useState(false);
-  const [isCloudConnected, setIsCloudConnected] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(propIsCloudConnected || false);
+
+  useEffect(() => {
+    if (propIsCloudConnected !== undefined) {
+      setIsCloudConnected(propIsCloudConnected);
+      return;
+    }
+
+    const checkConnection = async () => {
+      try {
+        const conn = await cloudDriveApi.getCurrentUserConnection();
+        setIsCloudConnected(!!conn);
+      } catch (error) {
+        console.error('Error checking cloud connection:', error);
+        setIsCloudConnected(false);
+      }
+    };
+    checkConnection();
+  }, [propIsCloudConnected]);
 
   useEffect(() => {
     loadFolderContents();
@@ -86,25 +111,68 @@ export default function LocalFilesTab() {
     setShowUploadZone(false);
   };
 
-  const handleSearch = async (term: string) => {
+  const handleSearch = (term: string) => {
     setSearchTerm(term);
-    if (term.trim()) {
-      try {
-        const results = await backendFilesApi.searchFiles(term);
-        setFiles(results);
-        setFolders([]);
-      } catch (error) {
-        console.error('Error searching files:', error);
-      }
-    } else {
-      loadFolderContents();
-    }
   };
 
-  const handleApplyFilters = (filters: any) => {
-    console.log('Applying filters:', filters);
+  const handleApplyFilters = (newFilters: any) => {
+    if (newFilters.sortBy) setSortBy(newFilters.sortBy);
+    if (newFilters.fileTypes) setFilters(newFilters.fileTypes);
     setIsFilterDrawerOpen(false);
   };
+
+  const filteredAndSortedFiles = useCallback(() => {
+    let result = [...files];
+
+    // Search
+    if (searchTerm) {
+      result = result.filter(file =>
+        file.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        file.original_filename?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by type
+    if (filters.pdf || filters.image) {
+      result = result.filter(file => {
+        if (filters.pdf && file.mime_type?.includes('pdf')) return true;
+        if (filters.image && file.mime_type?.includes('image')) return true;
+        return false;
+      });
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'fileSizeLargest':
+          return (b.file_size || 0) - (a.file_size || 0);
+        case 'fileSizeSmallest':
+          return (a.file_size || 0) - (b.file_size || 0);
+        case 'uploadDateNewest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'uploadDateOldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'fileNameAZ':
+          return a.filename.localeCompare(b.filename);
+        case 'fileNameZA':
+          return b.filename.localeCompare(a.filename);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [files, searchTerm, filters, sortBy]);
+
+  const filteredFolders = useCallback(() => {
+    if (searchTerm) {
+      return folders.filter(folder => folder.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    return folders;
+  }, [folders, searchTerm]);
+
+  const displayedFiles = filteredAndSortedFiles();
+  const displayedFolders = filteredFolders();
 
   if (isLoading && folders.length === 0 && files.length === 0) {
     return (
@@ -161,16 +229,15 @@ export default function LocalFilesTab() {
               <span className="mx-2">/</span>
               <button
                 onClick={() => setCurrentFolderId(crumb.id)}
-                className={`hover:text-gray-900 dark:hover:text-white hover:underline ${
-                  index === breadcrumbs.length - 1 ? 'font-medium text-gray-900 dark:text-white' : ''
-                }`}
+                className={`hover:text-gray-900 dark:hover:text-white hover:underline ${index === breadcrumbs.length - 1 ? 'font-medium text-gray-900 dark:text-white' : ''
+                  }`}
               >
                 {crumb.name}
               </button>
             </span>
           ))}
         </nav>
-        
+
         {currentFolderId && (
           <button
             onClick={() => {
@@ -184,12 +251,12 @@ export default function LocalFilesTab() {
         )}
       </div>
 
-      {folders.length > 0 && (
+      {displayedFolders.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Folders</h3>
           <FolderNavigation
-            folders={folders.map(f => ({ id: f.id.toString(), name: f.name }))}
-            onFolderClick={(id) => handleFolderClick(parseInt(id))}
+            folders={displayedFolders.map(f => ({ id: f.id.toString(), name: f.name }))}
+            onFolderClick={handleFolderClick}
             onDeleteFolder={async (id) => {
               try {
                 await backendFilesApi.deleteFolder(parseInt(id));
@@ -225,11 +292,11 @@ export default function LocalFilesTab() {
         </div>
       )}
 
-      {files.length > 0 ? (
+      {displayedFiles.length > 0 ? (
         <div>
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Files</h3>
           <FileGrid
-            files={files.map(f => ({
+            files={displayedFiles.map(f => ({
               id: f.id,
               name: f.filename,
               type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
@@ -283,7 +350,7 @@ export default function LocalFilesTab() {
           )}
         </div>
       )}
-
+      {/* 
       {isCloudConnected && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-center justify-between">
@@ -298,7 +365,7 @@ export default function LocalFilesTab() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {isCloudConnected && (
         <>

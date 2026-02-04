@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Mail, Phone, Search, Book, HelpCircle, ExternalLink, Send } from 'lucide-react';
+import { MessageCircle, Mail, HelpCircle } from 'lucide-react';
 import { SupportTicketModal } from '../components/SupportTicketModal';
 import { supportApi } from '../services/supportApi';
 
 const Support: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
   const [showTicketModal, setShowTicketModal] = useState(false);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     (window as any).chattermateId = 'f638c1bb-753c-476d-bee1-1ded1ee2e39d';
-    
+
     const script = document.createElement('script');
     script.src = 'https://app.chattermate.chat/webclient/chattermate.min.js';
     script.async = true;
@@ -19,7 +18,7 @@ const Support: React.FC = () => {
       console.log('ChatterMate widget failed to load - using proxy fallback');
     };
     document.body.appendChild(script);
-    
+
     return () => {
       const existingScript = document.getElementById('chattermate-script');
       if (existingScript) {
@@ -28,9 +27,9 @@ const Support: React.FC = () => {
     };
   }, []);
 
-  const handleSubmitTicket = async (data: { subject: string; message: string; priority: string }) => {
+  const handleSubmitTicket = async (data: { subject: string; message: string; priority: string; image?: File | null }) => {
     try {
-      await supportApi.submitTicket(data);
+      await supportApi.submitTicket(data as any);
       setToast({ message: 'Support ticket submitted successfully! We\'ll get back to you within 24 hours.', type: 'success' });
     } catch (error) {
       setToast({ message: 'Failed to submit ticket. Please try again.', type: 'error' });
@@ -38,44 +37,7 @@ const Support: React.FC = () => {
     }
   };
 
-  const knowledgeBaseArticles = [
-    {
-      title: 'Getting Started with BuilderLync',
-      category: 'Basics',
-      description: 'Learn the fundamentals of using BuilderLync for your roofing business',
-      readTime: '5 min read'
-    },
-    {
-      title: 'Setting Up Your First Job Pipeline',
-      category: 'Jobs',
-      description: 'Step-by-step guide to creating and managing job opportunities',
-      readTime: '8 min read'
-    },
-    {
-      title: 'Integrating with QuickBooks',
-      category: 'Integrations',
-      description: 'How to connect and sync your QuickBooks data with BuilderLync',
-      readTime: '10 min read'
-    },
-    {
-      title: 'Creating Automated Workflows',
-      category: 'Automation',
-      description: 'Build powerful automations to streamline your business processes',
-      readTime: '12 min read'
-    },
-    {
-      title: 'Managing Team Permissions',
-      category: 'Settings',
-      description: 'Configure user roles and permissions for your team members',
-      readTime: '6 min read'
-    },
-    {
-      title: 'Using AI Agents for Lead Qualification',
-      category: 'AI Agents',
-      description: 'Deploy AI agents to handle incoming leads and book appointments',
-      readTime: '15 min read'
-    }
-  ];
+
 
   const faqs = [
     {
@@ -214,9 +176,8 @@ const Support: React.FC = () => {
       </div>
 
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}>
           {toast.message}
         </div>
       )}

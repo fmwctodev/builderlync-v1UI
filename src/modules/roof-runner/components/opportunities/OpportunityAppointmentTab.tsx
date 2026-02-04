@@ -5,6 +5,7 @@ import {
   OpportunityAppointment,
   CreateOpportunityAppointmentRequest,
 } from '../../services/opportunityAppointmentsApi';
+import GooglePlacesAutocomplete from '../../../../shared/components/GooglePlacesAutocomplete';
 
 interface OpportunityAppointmentTabProps {
   opportunityId: string;
@@ -25,11 +26,11 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateOpportunityAppointmentRequest>({
-    opportunity_id: opportunityId,
+    opportunity_id: Number(opportunityId),
     appointment_type: 'Inspection',
     appointment_date: '',
     status: 'scheduled',
-    assigned_to: '',
+    assigned_to: null,
     location: '',
     notes: '',
     reminder_enabled: true,
@@ -71,11 +72,11 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
   const handleEdit = (appointment: OpportunityAppointment) => {
     setEditingId(appointment.id);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       appointment_type: appointment.appointment_type,
       appointment_date: appointment.appointment_date,
       status: appointment.status,
-      assigned_to: appointment.assigned_to || '',
+      assigned_to: appointment.assigned_to || null,
       location: appointment.location || '',
       notes: appointment.notes || '',
       reminder_enabled: appointment.reminder_enabled,
@@ -99,11 +100,11 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
     setShowForm(false);
     setEditingId(null);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       appointment_type: 'Inspection',
       appointment_date: '',
       status: 'scheduled',
-      assigned_to: '',
+      assigned_to: null,
       location: '',
       notes: '',
       reminder_enabled: true,
@@ -209,11 +210,10 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Location
               </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter location"
+              <GooglePlacesAutocomplete
+                value={formData.location || ''}
+                onChange={(address) => setFormData({ ...formData, location: address })}
+                placeholder="Search location..."
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
             </div>

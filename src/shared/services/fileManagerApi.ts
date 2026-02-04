@@ -1,22 +1,23 @@
 import { cloudDriveApi } from './cloudDriveApi';
 import { cloudAuthService } from './cloudAuthService';
+import { getAuthToken } from '../utils/auth';
 
 export interface FileItem {
   id: number;
-  user_id: number;
-  folder_id: number;
+  user_id?: number;
+  folder_id?: number;
   filename: string;
-  original_filename: string;
+  original_filename?: string;
   file_path: string;
   file_size: number;
   mime_type: string;
-  cloud_provider: 'google' | 'onedrive';
-  cloud_file_id: string;
+  cloud_provider?: 'google' | 'onedrive';
+  cloud_file_id?: string;
   description?: string;
-  created_by: number;
+  created_by?: number;
   created_at: string;
-  updated_at: string;
-  is_deleted: boolean;
+  updated_at?: string;
+  is_deleted?: boolean;
   deleted_at?: string;
   deleted_by?: number;
 }
@@ -25,10 +26,10 @@ export interface FolderItem {
   id: string;
   name: string;
   parentId?: string;
-  provider: 'google' | 'onedrive';
-  cloudFolderId: string;
-  createdAt: string;
-  createdBy: string;
+  provider?: 'google' | 'onedrive';
+  cloudFolderId?: string;
+  createdAt?: string;
+  createdBy?: string;
 }
 
 export interface UploadProgress {
@@ -44,7 +45,7 @@ export const fileManagerApi = {
    * Get user's folders
    */
   async getFolders(parentId?: string): Promise<FolderItem[]> {
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     const url = new URL(`${API_BASE_URL}/oauth/documents/folders`);
     if (parentId) {
       url.searchParams.set('parentId', parentId);
@@ -75,7 +76,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/folders`, {
       method: 'POST',
@@ -103,9 +104,9 @@ export const fileManagerApi = {
    * Get files in a folder
    */
   async getFiles(folderId?: string, page = 1, limit = 20): Promise<{ files: FileItem[], pagination: any }> {
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     const url = new URL(`${API_BASE_URL}/oauth/documents`);
-    
+
     if (folderId) url.searchParams.set('folderId', folderId);
     url.searchParams.set('page', page.toString());
     url.searchParams.set('limit', limit.toString());
@@ -132,8 +133,8 @@ export const fileManagerApi = {
    * Upload a file
    */
   async uploadFile(
-    file: File, 
-    folderId?: string, 
+    file: File,
+    folderId?: string,
     description?: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<FileItem> {
@@ -143,7 +144,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const formData = new FormData();
     formData.append('file', file);
@@ -195,7 +196,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}/download?accessToken=${encodeURIComponent(accessToken)}`, {
       headers: {
@@ -220,7 +221,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}?accessToken=${encodeURIComponent(accessToken)}`, {
       method: 'DELETE',
@@ -244,7 +245,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/folders/${folderId}?accessToken=${encodeURIComponent(accessToken)}`, {
       method: 'DELETE',
@@ -268,7 +269,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}/share`, {
       method: 'POST',
@@ -288,7 +289,7 @@ export const fileManagerApi = {
    * Get file details
    */
   async getFileDetails(fileId: string): Promise<FileItem> {
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}`, {
       headers: {
@@ -315,7 +316,7 @@ export const fileManagerApi = {
     }
 
     const accessToken = await cloudAuthService.getValidAccessToken(connection);
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}/thumbnail?accessToken=${encodeURIComponent(accessToken)}`, {
       headers: {
