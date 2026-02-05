@@ -56,6 +56,21 @@ const PRODUCTS = [
   { id: 'solar_truedesign_planning', name: 'TrueDesign for Planning', type: 'Basic', desc: 'Export PV design for install planning', price: 'Price TBD', credits: 0, badge: 'coming-soon', comingSoon: true, note: 'This product will be available in V1', options: [] },
 ];
 
+const DELIVERY_PRODUCTS = [
+  { id: 8, name: 'Regular Delivery' },
+  { id: 4, name: 'Express Delivery' },
+  { id: 7, name: 'Three Hour Delivery' },
+  { id: 45, name: 'Quick Delivery' },
+];
+
+const MEASUREMENT_INSTRUCTIONS = [
+  { id: 1, name: 'Primary Plus Detached Garage' },
+  { id: 2, name: 'Primary Structure Only' },
+  { id: 3, name: 'All Structures On Parcel' },
+  { id: 4, name: 'Commercial Complex' },
+  { id: 5, name: 'Other' },
+];
+
 const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams();
@@ -74,6 +89,11 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const [addressComponents, setAddressComponents] = useState<any>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'credits' | 'account' | null>(null);
+
+  // New Params
+  const [deliveryProductId, setDeliveryProductId] = useState<number>(8); // Default to Regular
+  const [measurementInstructionType, setMeasurementInstructionType] = useState<number>(1); // Default to Primary+Garage
+  const [changesInLast4Years, setChangesInLast4Years] = useState<boolean>(false);
 
   useEffect(() => {
     loadConnectionStatus();
@@ -297,6 +317,60 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           )}
         </div>
 
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase tracking-wide">Order Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Delivery Product
+                </label>
+                <select
+                  value={deliveryProductId}
+                  onChange={(e) => setDeliveryProductId(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm"
+                >
+                  {DELIVERY_PRODUCTS.map((dp) => (
+                    <option key={dp.id} value={dp.id}>
+                      {dp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Measurement Instruction Type
+                </label>
+                <select
+                  value={measurementInstructionType}
+                  onChange={(e) => setMeasurementInstructionType(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm"
+                >
+                  {MEASUREMENT_INSTRUCTIONS.map((mi) => (
+                    <option key={mi.id} value={mi.id}>
+                      {mi.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="changesInLast4Years"
+                checked={changesInLast4Years}
+                onChange={(e) => setChangesInLast4Years(e.target.checked)}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="changesInLast4Years" className="text-sm text-gray-700 dark:text-gray-300">
+                Any changes to the structure in the last 4 years?
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5" /> Measurement Reports
@@ -518,6 +592,43 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               </div>
             )}
 
+            <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-1 bg-gray-100 text-gray-600 rounded">
+                  <Download className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {DELIVERY_PRODUCTS.find(p => p.id === deliveryProductId)?.name}
+                  </p>
+                  <p className="text-xs text-gray-500">Delivery</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-1 bg-gray-100 text-gray-600 rounded">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {MEASUREMENT_INSTRUCTIONS.find(i => i.id === measurementInstructionType)?.name}
+                  </p>
+                  <p className="text-xs text-gray-500">Instructions</p>
+                </div>
+              </div>
+            </div>
+
+            {changesInLast4Years && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-sm">
+                <div className="flex items-center gap-3 text-amber-600 font-medium">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Recent changes in last 4 years recorded</span>
+                </div>
+              </div>
+            )}
+
             {paymentMethod === 'credits' ? (
               <>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100 mt-2 text-sm text-gray-500">
@@ -688,11 +799,11 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                       },
                       buildingId: buildingId || address,
                       primaryProductId: primaryProductId,
-                      deliveryProductId: 5,
+                      deliveryProductId: deliveryProductId,
                       addOnProductIds: [],
-                      measurementInstructionType: 1,
+                      measurementInstructionType: measurementInstructionType,
                       reportAttributes: {},
-                      changesInLast4Years: false
+                      changesInLast4Years: changesInLast4Years
                     },
                     placeOrderUser: 'BuilderLync User',
                     paymentMethod: paymentMethod,
