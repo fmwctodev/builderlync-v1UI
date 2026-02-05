@@ -1,4 +1,3 @@
-import { supabase } from '../../lib/supabase';
 import { getAuthToken } from '../../utils/auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
@@ -178,73 +177,38 @@ export const fetchEstimates = async (filters?: {
   endDate?: string;
   search?: string;
 }): Promise<Estimate[]> => {
-  let query = supabase
-    .from('estimates')
-    .select('*')
-    .order('issue_date', { ascending: false });
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.isTemplate !== undefined) params.append('isTemplate', String(filters.isTemplate));
+  if (filters?.isRecurring !== undefined) params.append('isRecurring', String(filters.isRecurring));
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.search) params.append('search', filters.search);
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-
-  if (filters?.isTemplate !== undefined) {
-    query = query.eq('is_template', filters.isTemplate);
-  }
-
-  if (filters?.isRecurring !== undefined) {
-    query = query.eq('is_recurring', filters.isRecurring);
-  }
-
-  if (filters?.startDate) {
-    query = query.gte('issue_date', filters.startDate);
-  }
-
-  if (filters?.endDate) {
-    query = query.lte('issue_date', filters.endDate);
-  }
-
-  if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,estimate_number.ilike.%${filters.search}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data || [];
+  const response = await makeRequest(`/estimates?${params}`);
+  return response.data;
 };
 
 export const createEstimate = async (estimate: Partial<Estimate>): Promise<Estimate> => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data, error } = await supabase
-    .from('estimates')
-    .insert([{ ...estimate, created_by: user?.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest('/estimates', {
+    method: 'POST',
+    body: JSON.stringify(estimate),
+  });
+  return response.data;
 };
 
 export const updateEstimate = async (id: string, updates: Partial<Estimate>): Promise<Estimate> => {
-  const { data, error } = await supabase
-    .from('estimates')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest(`/estimates/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return response.data;
 };
 
 export const deleteEstimate = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('estimates')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await makeRequest(`/estimates/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 export const fetchDocuments = async (filters?: {
@@ -254,69 +218,37 @@ export const fetchDocuments = async (filters?: {
   endDate?: string;
   search?: string;
 }): Promise<Document[]> => {
-  let query = supabase
-    .from('documents_contracts')
-    .select('*')
-    .order('date_modified', { ascending: false });
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.type) params.append('type', filters.type);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.search) params.append('search', filters.search);
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-
-  if (filters?.type) {
-    query = query.eq('type', filters.type);
-  }
-
-  if (filters?.startDate) {
-    query = query.gte('date_modified', filters.startDate);
-  }
-
-  if (filters?.endDate) {
-    query = query.lte('date_modified', filters.endDate);
-  }
-
-  if (filters?.search) {
-    query = query.ilike('title', `%${filters.search}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data || [];
+  const response = await makeRequest(`/contracts?${params}`);
+  return response.data;
 };
 
 export const createDocument = async (document: Partial<Document>): Promise<Document> => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data, error } = await supabase
-    .from('documents_contracts')
-    .insert([{ ...document, created_by: user?.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest('/contracts', {
+    method: 'POST',
+    body: JSON.stringify(document),
+  });
+  return response.data;
 };
 
 export const updateDocument = async (id: string, updates: Partial<Document>): Promise<Document> => {
-  const { data, error } = await supabase
-    .from('documents_contracts')
-    .update({ ...updates, date_modified: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest(`/contracts/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return response.data;
 };
 
 export const deleteDocument = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('documents_contracts')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await makeRequest(`/contracts/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 export const fetchTransactions = async (filters?: {
@@ -327,178 +259,83 @@ export const fetchTransactions = async (filters?: {
   endDate?: string;
   search?: string;
 }): Promise<Transaction[]> => {
-  let query = supabase
-    .from('transactions')
-    .select('*')
-    .order('transaction_date', { ascending: false });
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.provider) params.append('provider', filters.provider);
+  if (filters?.search) params.append('search', filters.search);
 
-  if (filters?.paymentStatus) {
-    query = query.eq('payment_status', filters.paymentStatus);
-  }
+  // Note: paymentStatus and fundingStatus filters are not fully implemented in backend yet as per previous code analysis
+  // but we can pass them if backend supported them later.
 
-  if (filters?.fundingStatus) {
-    query = query.eq('funding_status', filters.fundingStatus);
-  }
-
-  if (filters?.provider) {
-    query = query.eq('provider', filters.provider);
-  }
-
-  if (filters?.startDate) {
-    query = query.gte('transaction_date', filters.startDate);
-  }
-
-  if (filters?.endDate) {
-    query = query.lte('transaction_date', filters.endDate);
-  }
-
-  if (filters?.search) {
-    query = query.or(`customer_name.ilike.%${filters.search}%,transaction_id.ilike.%${filters.search}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data || [];
+  const response = await makeRequest(`/transactions?${params}`);
+  return response.data;
 };
 
 export const createTransaction = async (transaction: Partial<Transaction>): Promise<Transaction> => {
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert([transaction])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest('/transactions', {
+    method: 'POST',
+    body: JSON.stringify(transaction),
+  });
+  return response.data;
 };
 
 export const fetchCoupons = async (filters?: {
   status?: string;
   search?: string;
 }): Promise<Coupon[]> => {
-  let query = supabase
-    .from('coupons')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.search) params.append('search', filters.search);
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-
-  if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data || [];
+  const response = await makeRequest(`/coupons?${params}`);
+  return response.data;
 };
 
 export const createCoupon = async (coupon: Partial<Coupon>): Promise<Coupon> => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data, error } = await supabase
-    .from('coupons')
-    .insert([{ ...coupon, created_by: user?.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest('/coupons', {
+    method: 'POST',
+    body: JSON.stringify(coupon),
+  });
+  return response.data;
 };
 
 export const updateCoupon = async (id: string, updates: Partial<Coupon>): Promise<Coupon> => {
-  const { data, error } = await supabase
-    .from('coupons')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest(`/coupons/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return response.data;
 };
 
 export const deleteCoupon = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('coupons')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await makeRequest(`/coupons/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 export const fetchPaymentIntegrations = async (): Promise<PaymentIntegration[]> => {
-  const { data, error } = await supabase
-    .from('payment_integrations')
-    .select('*')
-    .order('provider');
-
-  if (error) throw error;
-  return data || [];
+  const response = await makeRequest('/payments/integrations');
+  return response.data;
 };
 
 export const updatePaymentIntegration = async (
   provider: string,
   updates: Partial<PaymentIntegration>
 ): Promise<PaymentIntegration> => {
-  const { data, error } = await supabase
-    .from('payment_integrations')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('provider', provider)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const response = await makeRequest(`/payments/integrations/${provider}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return response.data;
 };
 
 export const getInvoiceStats = async () => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select('status, amount');
-
-  if (error) throw error;
-
-  const stats = {
-    draft: { count: 0, total: 0 },
-    due: { count: 0, total: 0 },
-    received: { count: 0, total: 0 },
-    overdue: { count: 0, total: 0 },
-  };
-
-  data?.forEach((invoice) => {
-    if (stats[invoice.status as keyof typeof stats]) {
-      stats[invoice.status as keyof typeof stats].count += 1;
-      stats[invoice.status as keyof typeof stats].total += Number(invoice.amount);
-    }
-  });
-
-  return stats;
+  const response = await makeRequest('/invoices/stats');
+  return response.data;
 };
 
 export const getDocumentStats = async () => {
-  const { data, error } = await supabase
-    .from('documents_contracts')
-    .select('status');
-
-  if (error) throw error;
-
-  const stats = {
-    draft: 0,
-    waiting: 0,
-    completed: 0,
-    payments: 0,
-    archived: 0,
-  };
-
-  data?.forEach((doc) => {
-    if (stats[doc.status as keyof typeof stats] !== undefined) {
-      stats[doc.status as keyof typeof stats] += 1;
-    }
-  });
-
-  return stats;
+  const response = await makeRequest('/contracts/stats');
+  return response.data;
 };

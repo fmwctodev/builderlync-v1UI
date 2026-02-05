@@ -54,40 +54,87 @@ const DynamicWidget: React.FC<DynamicWidgetProps> = ({ widgetKey, title, icon, d
 };
 
 export const WidgetComponents: Record<string, React.FC> = {
-  // Jobs widgets
+  // --- JOBS ---
   'jobs-total': () => <DynamicWidget widgetKey="jobs-total" title="Total Jobs" icon="Briefcase" />,
   'jobs-created': () => <DynamicWidget widgetKey="jobs-created" title="Jobs Created" icon="Plus" />,
-  'jobs-completed': () => <DynamicWidget widgetKey="jobs-completed" title="Completed Jobs" icon="CheckCircle" />,
-  'jobs-in-progress': () => <DynamicWidget widgetKey="jobs-in-progress" title="Active Jobs" icon="Briefcase" />,
-  'jobs_count': () => <DynamicWidget widgetKey="jobs-total" title="Jobs" icon="Briefcase" defaultSubtitle="Active jobs" />,
-  'completed_jobs': () => <DynamicWidget widgetKey="jobs-completed" title="Completed Jobs" icon="CheckCircle" />,
-  'active_jobs': () => <DynamicWidget widgetKey="jobs-in-progress" title="Active Jobs" icon="Briefcase" />,
+  'jobs-completed': () => <DynamicWidget widgetKey="jobs-completed" title="Jobs Completed" icon="CheckCircle" />,
+  'jobs-in-progress': () => <DynamicWidget widgetKey="jobs-in-progress" title="Jobs In Progress" icon="Loader" />,
+  'jobs-scheduled': () => <DynamicWidget widgetKey="jobs-scheduled" title="Jobs Scheduled" icon="Calendar" />,
+  'jobs-lost': () => <DynamicWidget widgetKey="jobs-lost" title="Jobs Lost" icon="XCircle" />,
+  'jobs-won': () => <DynamicWidget widgetKey="jobs-won" title="Jobs Won" icon="Award" />,
+  'jobs-cancelled': () => <DynamicWidget widgetKey="jobs-cancelled" title="Jobs Cancelled" icon="XOctagon" />,
+  'jobs-total-value': () => <DynamicWidget widgetKey="jobs-total-value" title="Total Job Value" icon="DollarSign" />,
+  'jobs-avg-value': () => <DynamicWidget widgetKey="jobs-avg-value" title="Avg Job Value" icon="Percent" />,
 
-  // Opportunities widgets
-  'opportunities-total': () => <DynamicWidget widgetKey="opportunities-total" title="Opportunities" icon="Target" />,
+  // --- OPPORTUNITIES ---
+  'opportunities-total': () => <DynamicWidget widgetKey="opportunities-total" title="Total Opportunities" icon="Target" />,
   'opportunities-new': () => <DynamicWidget widgetKey="opportunities-new" title="New Opportunities" icon="TrendingUp" />,
   'opportunities-closed-won': () => <DynamicWidget widgetKey="opportunities-closed-won" title="Closed Won" icon="Award" />,
-  'opportunities_pipeline': () => <DynamicWidget widgetKey="opportunities-total" title="Opportunities" icon="Target" defaultSubtitle="Pipeline value" />,
+  'opportunities-closed-lost': () => <DynamicWidget widgetKey="opportunities-closed-lost" title="Closed Lost" icon="XCircle" />,
+  'opportunities-pipeline-value': () => <DynamicWidget widgetKey="opportunities-pipeline-value" title="Pipeline Value" icon="DollarSign" />,
+  'opportunities-avg-deal-size': () => <DynamicWidget widgetKey="opportunities-avg-deal-size" title="Avg Deal Size" icon="Percent" />,
+  'opportunities-conversion-rate': () => <DynamicWidget widgetKey="opportunities-conversion-rate" title="Conversion Rate" icon="Activity" />,
 
-  // Contacts widgets
+  // --- CONTACTS ---
   'general-total-contacts': () => <DynamicWidget widgetKey="general-total-contacts" title="Total Contacts" icon="Users" />,
   'general-new-contacts': () => <DynamicWidget widgetKey="general-new-contacts" title="New Contacts" icon="UserPlus" />,
-  'contacts_total': () => <DynamicWidget widgetKey="general-total-contacts" title="Contacts" icon="Users" defaultSubtitle="Total contacts" />,
+  'general-new-leads': () => <DynamicWidget widgetKey="general-new-leads" title="New Leads" icon="Star" />,
 
-  // Payments widgets
-  'payments-total-collected': () => <DynamicWidget widgetKey="payments-total-collected" title="Revenue" icon="DollarSign" />,
+  // --- PAYMENTS ---
+  'payments-total-collected': () => <DynamicWidget widgetKey="payments-total-collected" title="Total Collected" icon="DollarSign" />,
   'payments-pending': () => <DynamicWidget widgetKey="payments-pending" title="Pending Payments" icon="Clock" />,
   'payments-overdue': () => <DynamicWidget widgetKey="payments-overdue" title="Overdue Payments" icon="AlertCircle" />,
-  'revenue_total': () => <DynamicWidget widgetKey="payments-total-collected" title="Revenue" icon="DollarSign" defaultSubtitle="This month" />,
-  'pending_payments': () => <DynamicWidget widgetKey="payments-pending" title="Pending Payments" icon="Clock" />,
+  'payments-total-invoiced': () => <DynamicWidget widgetKey="payments-total-invoiced" title="Total Invoiced" icon="FileText" />,
+  'payments-outstanding-invoice': () => <DynamicWidget widgetKey="payments-outstanding-invoice" title="Outstanding Invoices" icon="FileMinus" />,
 
-  // Appointments widgets
-  'appointments-total': () => <DynamicWidget widgetKey="appointments-total" title="Upcoming Appointments" icon="Calendar" />,
+  // --- APPOINTMENTS ---
+  'appointments-total': () => <DynamicWidget widgetKey="appointments-total" title="Total Appointments" icon="Calendar" />,
   'appointments-booked': () => <DynamicWidget widgetKey="appointments-booked" title="Appointments Booked" icon="CalendarCheck" />,
-  'today_appointments': () => <DynamicWidget widgetKey="today_appointments" title="Today's Appointments" icon="CalendarDays" />,
-  'upcoming_appointments': () => <DynamicWidget widgetKey="appointments-total" title="Upcoming Appointments" icon="Calendar" defaultSubtitle="Next 7 days" />,
+  'appointments-completed': () => <DynamicWidget widgetKey="appointments-completed" title="Appointments Completed" icon="CheckSquare" />,
+  'appointments-no-show': () => <DynamicWidget widgetKey="appointments-no-show" title="No-Show" icon="UserX" />,
+  'appointments-cancellations': () => <DynamicWidget widgetKey="appointments-cancellations" title="Cancellations" icon="X" />,
 
-  // Static/Complex widgets
+  // --- MARKETING (Visitor Data) ---
+  'visitor-total': () => <DynamicWidget widgetKey="visitor-total" title="Total Visitors" icon="Globe" />,
+  'visitor-unique': () => <DynamicWidget widgetKey="visitor-unique" title="Unique Visitors" icon="Users" />,
+  'visitor-lead-conversion-rate': () => <DynamicWidget widgetKey="visitor-lead-conversion-rate" title="Lead Conversion" icon="TrendingUp" />,
+  'visitor-form-submissions': () => <DynamicWidget widgetKey="visitor-form-submissions" title="Form Submissions" icon="FileText" />,
+
+  // --- MARKETING (Emails) ---
+  'emails-sent': () => <DynamicWidget widgetKey="emails-sent" title="Emails Sent" icon="Mail" />,
+  'emails-opens': () => <DynamicWidget widgetKey="emails-opens" title="Email Opens" icon="MailOpen" />,
+  'emails-open-rate': () => <DynamicWidget widgetKey="emails-open-rate" title="Open Rate" icon="Percent" />,
+  'emails-click-rate': () => <DynamicWidget widgetKey="emails-click-rate" title="Click Rate" icon="MousePointer" />,
+
+  // --- MARKETING (Meta Ads) ---
+  'meta-ads-total-spend': () => <DynamicWidget widgetKey="meta-ads-total-spend" title="Ad Spend" icon="DollarSign" />,
+  'meta-ads-impressions': () => <DynamicWidget widgetKey="meta-ads-impressions" title="Impressions" icon="Eye" />,
+  'meta-ads-clicks': () => <DynamicWidget widgetKey="meta-ads-clicks" title="Clicks" icon="MousePointer" />,
+  'meta-ads-ctr': () => <DynamicWidget widgetKey="meta-ads-ctr" title="CTR" icon="Percent" />,
+  'meta-ads-leads-generated': () => <DynamicWidget widgetKey="meta-ads-leads-generated" title="Ad Leads" icon="UserPlus" />,
+  'meta-ads-cost-per-lead': () => <DynamicWidget widgetKey="meta-ads-cost-per-lead" title="Cost per Lead" icon="DollarSign" />,
+
+  // --- REPORTING (Calls) ---
+  'calls-total': () => <DynamicWidget widgetKey="calls-total" title="Total Calls" icon="Phone" />,
+  'calls-missed': () => <DynamicWidget widgetKey="calls-missed" title="Missed Calls" icon="PhoneMissed" />,
+  'calls-duration-avg': () => <DynamicWidget widgetKey="calls-duration-avg" title="Avg Duration" icon="Clock" />,
+
+  // --- REPORTING (Conversations) ---
+  'conversations-total': () => <DynamicWidget widgetKey="conversations-total" title="Total Conversations" icon="MessageSquare" />,
+  'conversations-new': () => <DynamicWidget widgetKey="conversations-new" title="New Conversations" icon="MessageCircle" />,
+  'conversations-open': () => <DynamicWidget widgetKey="conversations-open" title="Open Conversations" icon="MessageSquare" />,
+  'conversations-response-time-avg': () => <DynamicWidget widgetKey="conversations-response-time-avg" title="Avg Response Time" icon="Clock" />,
+
+  // --- ANALYTICS ---
+  'analytics-global-funnel-conversion': () => <DynamicWidget widgetKey="analytics-global-funnel-conversion" title="Funnel Conversion" icon="Filter" />,
+  'analytics-acquisition-cost': () => <DynamicWidget widgetKey="analytics-acquisition-cost" title="Acquisition Cost" icon="DollarSign" />,
+  'analytics-revenue-forecast': () => <DynamicWidget widgetKey="analytics-revenue-forecast" title="Revenue Forecast" icon="TrendingUp" />,
+  'analytics-revenue-per-lead': () => <DynamicWidget widgetKey="analytics-revenue-per-lead" title="Rev per Lead" icon="DollarSign" />,
+  'analytics-revenue-per-job': () => <DynamicWidget widgetKey="analytics-revenue-per-job" title="Rev per Job" icon="DollarSign" />,
+  'analytics-customer-lifetime-value': () => <DynamicWidget widgetKey="analytics-customer-lifetime-value" title="Lifetime Value" icon="UserCheck" />,
+  'analytics-cost-per-acquisition': () => <DynamicWidget widgetKey="analytics-cost-per-acquisition" title="CPA" icon="DollarSign" />,
+
+  // --- STATIC / COMPLEX WIDGETS ---
   recent_activity: () => (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -133,25 +180,12 @@ export const WidgetComponents: Record<string, React.FC> = {
       </div>
       <div className="p-6">
         <div className="space-y-4">
+          {/* Mock content preserverd */}
           <div className="flex items-center space-x-3">
             <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">Follow up with ABC Roofing</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Due today</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Send proposal to Johnson</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Due tomorrow</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700" />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Schedule site visit</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Due in 2 days</p>
             </div>
           </div>
         </div>

@@ -30,8 +30,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   }, [elevenlabsAgentId]);
 
   const loadAgentData = async () => {
-    if (!agentId) return;
-    
+    if (!agentId || agentId === 'undefined') return;
+
     try {
       const { elevenlabsApi } = await import('../services/elevenlabsApi');
       const response = await elevenlabsApi.getAgent(agentId);
@@ -46,7 +46,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
 
   const loadWidgetFromElevenLabs = async () => {
     if (!elevenlabsAgentId) return;
-    
+
     try {
       setLoading(true);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ai-agents/${agentId}/widget`, {
@@ -54,7 +54,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.widget_config) {
@@ -76,12 +76,12 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
 
   const handleImageUpload = async (file: File) => {
     if (!elevenlabsAgentId) return;
-    
+
     try {
       setUploading(true);
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ai-agents/${agentId}/widget/upload-avatar`, {
         method: 'POST',
         headers: {
@@ -89,7 +89,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
         },
         body: formData
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const newConfig = { ...config, avatarType: 'image' as const, avatarUrl: data.avatar_url, avatarImage: file };
@@ -113,15 +113,15 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   const handleConfigChange = async (key: keyof typeof config, value: any) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
-    
+
     const widgetConfigForContext = {
       avatarUrl: newConfig.avatarType === 'orb' ? '' : newConfig.avatarUrl,
       color: newConfig.color,
       position: newConfig.position
     };
     setWidgetConfig(widgetConfigForContext);
-    
-    if (agentId && widgetEnabled) {
+
+    if (agentId && agentId !== 'undefined' && widgetEnabled) {
       try {
         await fetch(`${import.meta.env.VITE_API_URL}/ai-agents/${agentId}/widget`, {
           method: 'PATCH',
@@ -129,7 +129,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             widget_config: {
               avatar_type: newConfig.avatarType,
               avatar_url: newConfig.avatarUrl,
@@ -147,7 +147,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   const generateEmbedCode = () => {
     const agentIdToUse = elevenlabsAgentId || 'your-agent-id';
     let code = `<elevenlabs-convai agent-id="${agentIdToUse}"`;
-    
+
     if (config.avatarType !== 'orb' && config.avatarUrl) {
       code += ` avatar-url="${config.avatarUrl}"`;
     }
@@ -157,7 +157,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
     if (config.position) {
       code += ` position="${config.position}"`;
     }
-    
+
     code += `></elevenlabs-convai>\n<script src="https://unpkg.com/@elevenlabs/convai-widget-embed@beta" async type="text/javascript"></script>`;
     return code;
   };
@@ -213,7 +213,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Configuration</h3>
@@ -368,7 +368,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
