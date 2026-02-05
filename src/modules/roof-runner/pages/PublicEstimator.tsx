@@ -353,6 +353,7 @@ const PublicEstimator: React.FC = () => {
         estimateData={estimateData}
         propertyImage={propertyImage}
         leadId={leadId}
+        financingUrl={estimateData?.estimator?.pricing_settings?.financing_link}
         onBack={() => {
           if (estimateId) {
             navigate(`/estimator/${publicUrl}`);
@@ -769,7 +770,7 @@ const PublicEstimator: React.FC = () => {
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
-                  To ensure you're getting the best offers and pricing, ROOFING LLC may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
+                  To ensure you're getting the best offers and pricing, {estimatorData?.friendly_business_name} may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
                 </span>
               </label>
             </div>

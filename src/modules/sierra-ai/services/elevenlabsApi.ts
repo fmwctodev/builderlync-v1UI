@@ -145,6 +145,19 @@ export const elevenlabsApi = {
     return response.data;
   },
 
+  async addKnowledgeBaseUrl(agentId: string, url: string, name: string) {
+    const response = await api.post(`/${agentId}/knowledge-base/url`, { url, name });
+    return response.data;
+  },
+
+  async addKnowledgeBaseFile(agentId: string, file: File, name: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    const response = await api.post(`/${agentId}/knowledge-base/file`, formData);
+    return response.data;
+  },
+
   // Conversations
   async getConversations(agentId?: string) {
     const response = await api.get('/conversations', {

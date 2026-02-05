@@ -53,7 +53,7 @@ const Jobs: React.FC = () => {
     jobOwner: null,
     workflowStages: 'New lead',
     closeDate: '',
-    jobValue: 0,
+    jobValue: '',
     source: '',
     details: '',
     insuranceEnabled: false,
@@ -136,7 +136,7 @@ const Jobs: React.FC = () => {
         customerId: formData.contactId || null,
         customer_id: formData.contactId || null,
         // Ensure numeric fields are properly handled
-        jobValue: Number(formData.jobValue) || 0,
+        jobValue: formData.jobValue || '',
         claimAmount: Number(formData.claimAmount) || 0,
         deductible: Number(formData.deductible) || 0,
         // Ensure assignees is an array of numbers
@@ -236,7 +236,7 @@ const Jobs: React.FC = () => {
       jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
       closeDate: job.close_date || job.closeDate,
-      jobValue: Number(job.job_value || job.jobValue || 0),
+      jobValue: String(job.job_value || job.jobValue || ''),
       source: job.source,
       details: job.details,
       insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
@@ -268,7 +268,7 @@ const Jobs: React.FC = () => {
       jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
       closeDate: job.close_date || job.closeDate,
-      jobValue: Number(job.job_value || job.jobValue || 0),
+      jobValue: String(job.job_value || job.jobValue || ''),
       source: job.source,
       details: job.details,
       insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
@@ -298,7 +298,7 @@ const Jobs: React.FC = () => {
       jobOwner: null,
       workflowStages: 'New lead',
       closeDate: '',
-      jobValue: 0,
+      jobValue: '',
       source: '',
       details: '',
       insuranceEnabled: false,
@@ -378,7 +378,9 @@ const Jobs: React.FC = () => {
                     await updateJob(jobId, {
                       ...jobUpdateData,
                       workflowStages: newStage,
-                      editedBy: 1
+                      editedBy: 1,
+                      // Ensure jobValue is a string to match CreateJobRequest type
+                      jobValue: String(job.jobValue || job.job_value || '')
                     } as CreateJobRequest);
                     fetchJobs();
                   }

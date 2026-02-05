@@ -67,6 +67,16 @@ export function ImportFromUrlModal({
         agent_id: agentId
       });
 
+      if (agentId) {
+        try {
+          const { elevenlabsApi } = await import('../services/elevenlabsApi');
+          await elevenlabsApi.addKnowledgeBaseUrl(agentId, url, "Scraped: " + (new URL(url).hostname));
+        } catch (elevenLabsError) {
+          console.error("Failed to add to ElevenLabs KB:", elevenLabsError);
+          // Don't fail the whole operation if just EL fails, but maybe notify user?
+        }
+      }
+
       setSuccess(true);
       onSuccess({ webSource: result, articles: [] }); // Adapt to expected format
 

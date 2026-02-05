@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100
 export interface CloudDriveConnection {
   id: string;
   user_id: string;
-  provider: 'google_drive' | 'onedrive_personal';
+  provider: 'google_drive' | 'onedrive_personal' | 'onedrive_business';
   access_token?: string;
   refresh_token?: string;
   provider_user_id?: string;
@@ -167,7 +167,7 @@ export const cloudDriveApi = {
     const names = {
       google_drive: 'Google Drive',
       onedrive_personal: 'OneDrive',
-      // onedrive_business: 'OneDrive Business',
+      onedrive_business: 'OneDrive Business',
     };
     return names[provider];
   },

@@ -66,7 +66,7 @@ export const DEFAULT_WEBHOOK_CONFIG: WebhookConfig = {
 };
 
 export interface AIAgent {
-  id: string;
+  agent_id: string;
   organization_id: string;
   name: string;
   description: string;
@@ -118,10 +118,13 @@ export interface AIAgent {
     successRate?: number;
     avgDuration?: number;
   };
+  id: string;
+  elevenlabs_data?: any;
   created_at: string;
   updated_at: string;
   created_by?: string;
   updated_by?: string;
+  data?: any;
 }
 
 export interface CreateAgentInput {
@@ -176,37 +179,26 @@ export interface UpdateAgentInput extends Partial<CreateAgentInput> {
   };
 }
 
-/**
- * Fetch all agents for the current organization
- */
-/**
- * Fetch all agents for the current organization
- */
+import { elevenlabsApi } from './elevenlabsApi';
+
 export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const data = await elevenlabsApi.getAgents(organizationId);
-  return data || [];
+  const response = await elevenlabsApi.getAgents(organizationId);
+  return response.data || [];
 }
 
-/**
- * Fetch a single agent by ID
- */
 export async function fetchAgentById(id: string): Promise<AIAgent | null> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
+  console.log('fetchAgentById called with id:', id);
   const response = await elevenlabsApi.getAgent(id);
-  // Backend returns wrapping object or direct? elevenlabsApi.getAgent returns response.data.
-  // Assuming response.data is the agent.
-  return response;
+  console.log('fetchAgentById response:', response);
+  return response.data || response;
 }
 
-/**
- * Create a new agent
- */
 export async function createAgent(
   organizationId: string,
   input: CreateAgentInput,
   userId?: string
 ): Promise<AIAgent> {
+  // ... (keeping the same logic for defaultChannels and defaultStats)
   const defaultChannels = {
     voice: { enabled: false, configured: false },
     sms: { enabled: false, configured: false },
@@ -259,30 +251,21 @@ export async function createAgent(
     updated_by: userId,
   };
 
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  // Pass the full agentData. Backend needs to be able to handle it.
-  const data = await elevenlabsApi.createAgent(agentData as any);
-  return data;
+  const response = await elevenlabsApi.createAgent(agentData as any);
+  return response.data || response;
 }
 
-/**
- * Update an existing agent
- */
 export async function updateAgent(
   input: UpdateAgentInput,
   userId?: string
 ): Promise<AIAgent> {
   const { id, ...updates } = input;
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const data = await elevenlabsApi.updateAgent(id, updates);
-  return data;
+  console.log("input", input);
+  const response = await elevenlabsApi.updateAgent(id, updates);
+  return response.data || response;
 }
 
-/**
- * Delete an agent
- */
 export async function deleteAgent(id: string): Promise<void> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
   await elevenlabsApi.deleteAgent(id);
 }
 

@@ -15,7 +15,7 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
   }, [agentId]);
 
   const loadKnowledgeBase = async () => {
-    if (!agentId) return;
+    if (!agentId || agentId === 'undefined') return;
     try {
       setLoading(true);
       const response = await elevenlabsApi.getAgentKnowledgeBase(agentId);
@@ -57,16 +57,23 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
       </div>
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {items.map((item: any) => (
-          <div key={item.document_id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <div key={item.id || item.document_id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
             <div className="flex items-start gap-3">
               <FileText className="w-4 h-4 text-gray-400 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {item.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(item.created_at).toLocaleDateString()}
-                </p>
+                {item.created_at && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </p>
+                )}
+                {item.type && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">
+                    {item.type}
+                  </p>
+                )}
               </div>
             </div>
           </div>

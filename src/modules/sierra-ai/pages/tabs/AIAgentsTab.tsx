@@ -58,7 +58,7 @@ export function AIAgentsTab() {
 
     try {
       setLoading(true);
-      const response = await elevenlabsApi.getAgents(user.id);
+      const response = await elevenlabsApi.getAgents(String(user.id));
       setAgents(response.data || []);
     } catch (error) {
       console.error('Error loading agents:', error);
@@ -212,220 +212,220 @@ export function AIAgentsTab() {
 
     return (
       <div className="p-6">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI Agents</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {filteredAgents.length} {filteredAgents.length === 1 ? 'agent' : 'agents'}
-          </p>
+        {/* Header */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI Agents</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {filteredAgents.length} {filteredAgents.length === 1 ? 'agent' : 'agents'}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              // console.log('Create Agent clicked, currentOrganization:', currentOrganization);
+              // if (!currentOrganization) {
+              //   alert('Please wait for organization to load or select an organization');
+              //   return;
+              // }
+              navigate(`/org/${orgSlug}/create-agent`);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create Agent
+          </button>
         </div>
-        <button
-          onClick={() => {
-            // console.log('Create Agent clicked, currentOrganization:', currentOrganization);
-            // if (!currentOrganization) {
-            //   alert('Please wait for organization to load or select an organization');
-            //   return;
-            // }
-            navigate(`/org/${orgSlug}/create-agent`);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Create Agent
-        </button>
-      </div>
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search agents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-          />
+        {/* Filters */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search agents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="draft">Draft</option>
+          </select>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
-          <option value="draft">Draft</option>
-        </select>
-      </div>
 
-      {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-visible">
-        <div className="overflow-x-auto" style={{ minHeight: '400px' }}>
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Channels
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Stats
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 ">
-              {filteredAgents.map((agent) => (
-                <tr
-                  key={agent.id}
-                  onClick={() => navigate(`/org/${orgSlug}/ai-agents/agent/${agent.id}`)}
-                  className="bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer"
-                >
-                  <td className="px-6 py-4">
-                    {editingNameId === agent.id ? (
-                      <input
-                        type="text"
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onBlur={() => saveAgentName(agent.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveAgentName(agent.id);
-                          if (e.key === 'Escape') setEditingNameId(null);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
-                        className="px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none"
-                      />
-                    ) : (
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{agent.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {agent.description}
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      {getTypeIcon(agent.agent_type)}
-                      <span className="capitalize">{agent.agent_type}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">{getStatusBadge(agent.status)}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1">
-                      {agent.channels?.voice?.enabled && (
-                        <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
-                          <Phone className="w-3 h-3 text-red-700 dark:text-red-400" />
-                        </div>
-                      )}
-                      {agent.channels?.sms?.enabled && (
-                        <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded">
-                          <MessageSquare className="w-3 h-3 text-green-700 dark:text-green-400" />
-                        </div>
-                      )}
-                      {agent.channels?.webchat?.enabled && (
-                        <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
-                          <Bot className="w-3 h-3 text-red-700 dark:text-red-400" />
-                        </div>
-                      )}
-                      {agent.channels?.email?.enabled && (
-                        <div className="p-1 bg-orange-50 dark:bg-orange-900/20 rounded">
-                          <Mail className="w-3 h-3 text-orange-700 dark:text-orange-400" />
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {((agent.stats?.callsHandled || 0) + (agent.stats?.messagesHandled || 0))} interactions
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="relative" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => setOpenMenuId(openMenuId === agent.id ? null : agent.id)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      {openMenuId === agent.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[9999]">
-                          <button
-                            onClick={() => {
-                              startEditingName(agent);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            Rename
-                          </button>
-                          {agent.status === 'active' ? (
-                            <button
-                              onClick={() => {
-                                handleStatusChange(agent.id, 'paused');
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                              <PauseCircle className="w-4 h-4" />
-                              Pause
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                handleStatusChange(agent.id, 'active');
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                              <PlayCircle className="w-4 h-4" />
-                              Activate
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              handleDuplicate(agent.id);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                          >
-                            <Copy className="w-4 h-4" />
-                            Duplicate
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleDelete(agent.id);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
+        {/* Table */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-visible">
+          <div className="overflow-x-auto" style={{ minHeight: '400px' }}>
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Channels
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Stats
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700 ">
+                {filteredAgents.map((agent) => (
+                  <tr
+                    key={agent.id}
+                    onClick={() => navigate(`/org/${orgSlug}/ai-agents/agent/${agent.id}`)}
+                    className="bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer"
+                  >
+                    <td className="px-6 py-4">
+                      {editingNameId === agent.id ? (
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={() => saveAgentName(agent.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveAgentName(agent.id);
+                            if (e.key === 'Escape') setEditingNameId(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                          className="px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none"
+                        />
+                      ) : (
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">{agent.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                            {agent.description}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        {getTypeIcon(agent.agent_type)}
+                        <span className="capitalize">{agent.agent_type}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">{getStatusBadge(agent.status)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1">
+                        {agent.channels?.voice?.enabled && (
+                          <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
+                            <Phone className="w-3 h-3 text-red-700 dark:text-red-400" />
+                          </div>
+                        )}
+                        {agent.channels?.sms?.enabled && (
+                          <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded">
+                            <MessageSquare className="w-3 h-3 text-green-700 dark:text-green-400" />
+                          </div>
+                        )}
+                        {agent.channels?.webchat?.enabled && (
+                          <div className="p-1 bg-red-50 dark:bg-red-900/20 rounded">
+                            <Bot className="w-3 h-3 text-red-700 dark:text-red-400" />
+                          </div>
+                        )}
+                        {agent.channels?.email?.enabled && (
+                          <div className="p-1 bg-orange-50 dark:bg-orange-900/20 rounded">
+                            <Mail className="w-3 h-3 text-orange-700 dark:text-orange-400" />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {((agent.stats?.callsHandled || 0) + (agent.stats?.messagesHandled || 0))} interactions
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === agent.id ? null : agent.id)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </button>
+                        {openMenuId === agent.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[9999]">
+                            <button
+                              onClick={() => {
+                                startEditingName(agent);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              Rename
+                            </button>
+                            {agent.status === 'active' ? (
+                              <button
+                                onClick={() => {
+                                  handleStatusChange(agent.id, 'paused');
+                                  setOpenMenuId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                <PauseCircle className="w-4 h-4" />
+                                Pause
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  handleStatusChange(agent.id, 'active');
+                                  setOpenMenuId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                <PlayCircle className="w-4 h-4" />
+                                Activate
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                handleDuplicate(agent.id);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <Copy className="w-4 h-4" />
+                              Duplicate
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDelete(agent.id);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
         {filteredAgents.length === 0 && (searchTerm !== '' || statusFilter !== 'all') && (
           <div className="text-center py-12">

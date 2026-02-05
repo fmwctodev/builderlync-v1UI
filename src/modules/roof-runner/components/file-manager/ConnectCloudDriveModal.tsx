@@ -22,19 +22,19 @@ const PROVIDERS = [
   {
     id: 'onedrive_personal' as CloudProvider,
     dbId: 'onedrive_personal' as const,
-    name: 'OneDrive Personal',
+    name: 'OneDrive',
     description: 'Connect your personal OneDrive account',
     icon: '🔵',
     color: 'sky',
   },
-  {
-    id: 'onedrive_business' as CloudProvider,
-    dbId: 'onedrive_business' as const,
-    name: 'OneDrive Business',
-    description: 'Connect your OneDrive for Business account',
-    icon: '💼',
-    color: 'indigo',
-  },
+  // {
+  //   id: 'onedrive_business' as CloudProvider,
+  //   dbId: 'onedrive_business' as const,
+  //   name: 'OneDrive Business',
+  //   description: 'Connect your OneDrive for Business account',
+  //   icon: '💼',
+  //   color: 'indigo',
+  // },
 ];
 
 export default function ConnectCloudDriveModal({ isOpen, onClose, provider, onConnected }: ConnectCloudDriveModalProps) {
@@ -182,7 +182,7 @@ export default function ConnectCloudDriveModal({ isOpen, onClose, provider, onCo
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     You will be redirected to {getProviderName()} to authorize the connection. After authorization, you'll be able to access and sync your files.
                   </p>
-                  
+
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={onClose}

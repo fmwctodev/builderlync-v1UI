@@ -224,7 +224,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                       {order.order_data?.placeOrderUser && (
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          <span>Ordered by: {order.order_data.placeOrderUser}</span>
+                          <span>Ordered by: {order?.users?.first_name + " " + order?.users?.last_name}</span>
                         </div>
                       )}
                     </div>
