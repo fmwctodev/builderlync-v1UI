@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import ContactSearchDropdown from './ContactSearchDropdown';
@@ -48,6 +49,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   modalMessage,
   setModalMessage
 }) => {
+  const { orgSlug } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
@@ -551,13 +554,25 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               {activeTab === 'Measurements' && <MeasurementsTab />}
 
               {activeTab === 'Proposals' && (
-                <ProposalsTab
-                  jobId={viewingJob?.id}
-                  onOpenProposalEditor={(templateId) => {
-                    setSelectedTemplateId(templateId);
-                    setShowProposalEditor(true);
-                  }}
-                />
+                <div>
+                  {viewingJob?.id && (
+                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-end">
+                      <button
+                        onClick={() => navigate(`/org/${orgSlug}/proposals`)}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                      >
+                        Create Proposal
+                      </button>
+                    </div>
+                  )}
+                  <ProposalsTab
+                    jobId={viewingJob?.id}
+                    onOpenProposalEditor={(templateId) => {
+                      setSelectedTemplateId(templateId);
+                      setShowProposalEditor(true);
+                    }}
+                  />
+                </div>
               )}
 
               {activeTab === 'Material orders' && viewingJob && viewingJob.id ? (

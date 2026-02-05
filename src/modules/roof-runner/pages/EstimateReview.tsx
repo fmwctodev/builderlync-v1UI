@@ -1,6 +1,7 @@
 import React from 'react';
-import { Share, Mail, Phone, Check } from 'lucide-react';
+import { Share, Mail, Phone, Check, ExternalLink } from 'lucide-react';
 import { apiService } from '../store/services/api';
+import { getBusinessInfo, BusinessInfo } from '../../../shared/store/services/businessInfoApi';
 
 interface EstimateReviewProps {
   estimateData: {
@@ -19,6 +20,7 @@ interface EstimateReviewProps {
         timeline: string;
         financing: string;
         projectDetails: string;
+        financing_link?: string;
       };
       calculations: {
         roofArea: number;
@@ -41,12 +43,29 @@ interface EstimateReviewProps {
   };
   propertyImage?: string | null;
   leadId?: string | null;
+  financingUrl?: string;
   onBack?: () => void;
 }
 
-const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyImage, leadId, onBack }) => {
+const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyImage, leadId, financingUrl, onBack }) => {
   const [requestedMaterials, setRequestedMaterials] = React.useState<string[]>([]);
+  const [businessInfo, setBusinessInfo] = React.useState<BusinessInfo | null>(null);
   console.log('[EstimateReview] Rendering with data:', estimateData);
+
+  React.useEffect(() => {
+    const loadBusinessInfo = async () => {
+      try {
+        const response = await getBusinessInfo();
+        if (response.success) {
+          setBusinessInfo(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to load business info:', error);
+      }
+    };
+    loadBusinessInfo();
+  }, []);
+
 
   if (!estimateData || !estimateData.estimate) {
     console.error('[EstimateReview] Missing estimate data:', estimateData);
@@ -130,7 +149,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
           <div className="flex items-center gap-4">
             <div className="w-24 h-10 bg-black rounded flex items-center justify-center">
               <div className="text-white font-bold text-xs">
-                <div className="text-xs">{business?.name}</div>
+                <div className="text-xs">{businessInfo?.friendly_business_name || 'Business'}</div>
               </div>
             </div>
           </div>
@@ -295,16 +314,16 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
               {/* Company Logo */}
               <div className="text-center mb-6">
                 <div className="w-24 h-16 mx-auto rounded flex items-center justify-center mb-4">
-                  {business?.logo && (
+                  {businessInfo?.business_logo && (
                     <img
-                      src={business.logo}
+                      src={businessInfo.business_logo}
                       alt="Business Logo"
                       className="w-full h-full object-contain"
                     />
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900">{business.name || 'Tarrytown Roofing'}</h3>
+                <h3 className="text-xl font-bold text-gray-900">{businessInfo?.friendly_business_name || 'Business Name'}</h3>
                 {/* <p className="text-xl font-bold text-gray-900">LLC</p> */}
               </div>
 
@@ -320,7 +339,14 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
                   <span className="font-medium">Call</span>
                 </button>
               </div>
+              
             </div>
+           {financingUrl && <div className='mt-4'>
+                <a href={financingUrl} target="_blank" className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="font-medium">View Financing Options</span>
+                </a>
+              </div>}
           </div>
         </div>
       </div>

@@ -68,3 +68,23 @@ export const uploadAttachment = async (formData: FormData): Promise<{ success: b
 
   return response.data;
 };
+
+export const createJobAttachment = async (
+  jobId: number,
+  attachmentData: Partial<Attachment>
+): Promise<{ success: boolean; message: string; data: Attachment }> => {
+  const token = localStorage.getItem('token');
+
+  const response = await axios.post(
+    `${API_BASE_URL}/jobs/${jobId}/attachments`,
+    attachmentData,
+    {
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+
+  return response.data;
+};

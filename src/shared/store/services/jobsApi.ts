@@ -71,8 +71,8 @@ export interface Job {
   invoice_id?: number | null;
   jobCostingsId: number | null;
   job_costings_id?: number | null;
-  attachmentsId: number | null;
-  attachments_id?: number | null;
+  attachmentsId: number[] | null;
+  attachments_id?: number[] | null;
   instantEstimateId: number | null;
   instant_estimate_id?: number | null;
   integrationsId: number | null;
@@ -243,6 +243,13 @@ class JobsApiService {
   async getJobById(id: number) {
     return this.makeRequest(`/jobs/${id}`);
   }
+
+  async updateJobAttachmentsIds(id: number, attachmentIds: number[]) {
+    return this.makeRequest(`/jobs/${id}/attachments-ids`, {
+      method: 'PUT',
+      body: JSON.stringify({ attachmentIds }),
+    });
+  }
 }
 
 const jobsApiService = new JobsApiService();
@@ -253,3 +260,4 @@ export const createJob = jobsApiService.createJob.bind(jobsApiService);
 export const updateJob = jobsApiService.updateJob.bind(jobsApiService);
 export const deleteJob = jobsApiService.deleteJob.bind(jobsApiService);
 export const getJobById = jobsApiService.getJobById.bind(jobsApiService);
+export const updateJobAttachmentsIds = jobsApiService.updateJobAttachmentsIds.bind(jobsApiService);
