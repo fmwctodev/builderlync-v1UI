@@ -120,7 +120,7 @@ export interface CreateJobRequest {
   jobOwner: number | null;
   workflowStages: string;
   closeDate?: string;
-  jobValue: number;
+  jobValue: string;
   source: string;
   details: string;
   insuranceEnabled: boolean;

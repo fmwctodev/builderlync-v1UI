@@ -38,7 +38,7 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (response.ok) {
           const result = await response.json();
           setWidgets(result.data || []);
@@ -55,15 +55,17 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
 
   const categorizedWidgets = useMemo(() => {
     const categories: Record<string, { label: string; widgets: Widget[] }> = {};
-    
+
     widgets.forEach(widget => {
       if (!categories[widget.category]) {
         const categoryLabels: Record<string, string> = {
           jobs: 'Jobs',
           opportunities: 'Opportunities',
-          reporting: 'Contacts & General',
+          reporting: 'Reporting & Analytics',
           payments: 'Payments',
-          appointments: 'Appointments'
+          appointments: 'Appointments',
+          marketing: 'Marketing',
+          analytics: 'Detailed Analytics'
         };
         categories[widget.category] = {
           label: categoryLabels[widget.category] || widget.category,
@@ -204,21 +206,18 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
                     key={category.id}
                     className={index !== filteredCategories.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''}
                   >
-                    <div className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectionState === 'all' ? 'bg-primary-50 dark:bg-primary-900/20' :
-                      selectionState === 'partial' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
-                    }`}>
+                    <div className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectionState === 'all' ? 'bg-primary-50 dark:bg-primary-900/20' :
+                        selectionState === 'partial' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
+                      }`}>
                       <div className="flex items-center space-x-3 flex-1">
                         <button onClick={() => toggleCategory(category.id)} className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors">
-                          <ChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''} ${
-                            selectionState !== 'none' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'
-                          }`} />
+                          <ChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''} ${selectionState !== 'none' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'
+                            }`} />
                         </button>
-                        <button onClick={() => toggleCategorySelection(category.widgets)} className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          selectionState === 'all' ? 'bg-primary-600 border-primary-600' :
-                          selectionState === 'partial' ? 'bg-blue-600 border-blue-600' :
-                          'border-gray-300 dark:border-gray-600 hover:border-primary-500'
-                        }`}>
+                        <button onClick={() => toggleCategorySelection(category.widgets)} className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${selectionState === 'all' ? 'bg-primary-600 border-primary-600' :
+                            selectionState === 'partial' ? 'bg-blue-600 border-blue-600' :
+                              'border-gray-300 dark:border-gray-600 hover:border-primary-500'
+                          }`}>
                           {selectionState === 'all' && <Check className="w-3 h-3 text-white" />}
                           {selectionState === 'partial' && <Minus className="w-3 h-3 text-white" />}
                         </button>
@@ -243,15 +242,13 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
                         {category.widgets.map((widget, widgetIndex) => (
                           <div
                             key={widget.widget_key}
-                            className={`flex items-start space-x-3 px-4 py-3 pl-16 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
-                              widgetIndex !== category.widgets.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''
-                            }`}
+                            className={`flex items-start space-x-3 px-4 py-3 pl-16 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer ${widgetIndex !== category.widgets.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''
+                              }`}
                             onClick={() => toggleWidget(widget.widget_key)}
                           >
                             <button
-                              className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                                selectedWidgets.has(widget.widget_key) ? 'bg-primary-600 border-primary-600' : 'border-gray-300 dark:border-gray-600 hover:border-primary-500'
-                              }`}
+                              className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${selectedWidgets.has(widget.widget_key) ? 'bg-primary-600 border-primary-600' : 'border-gray-300 dark:border-gray-600 hover:border-primary-500'
+                                }`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleWidget(widget.widget_key);

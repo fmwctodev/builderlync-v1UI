@@ -372,7 +372,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         <input
                           type="number"
                           value={formData.jobValue}
-                          onChange={(e) => setFormData({ ...formData, jobValue: Number(e.target.value) })}
+                          onChange={(e) => setFormData({ ...formData, jobValue: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                       </div>

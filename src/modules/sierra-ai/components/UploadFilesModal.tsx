@@ -109,6 +109,15 @@ export function UploadFilesModal({
           // Upload document using the document API
           await knowledgeBaseApi.uploadDocument(formData);
 
+          if (agentId) {
+            try {
+              const { elevenlabsApi } = await import('../services/elevenlabsApi');
+              await elevenlabsApi.addKnowledgeBaseFile(agentId, file, file.name);
+            } catch (elevenLabsError) {
+              console.error("Failed to upload to ElevenLabs KB:", elevenLabsError);
+            }
+          }
+
           setUploadingFiles(prev =>
             prev.map((uf, idx) =>
               idx === i ? { ...uf, progress: 100, status: 'completed' } : uf
@@ -198,11 +207,10 @@ export function UploadFilesModal({
               {selectedFiles.length === 0 && uploadingFiles.length === 0 ? (
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                    isDragActive
+                  className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-300 dark:border-gray-600 hover:border-red-400 dark:hover:border-red-500'
-                  }`}
+                    }`}
                 >
                   <input {...getInputProps()} />
                   <div className="flex flex-col items-center">

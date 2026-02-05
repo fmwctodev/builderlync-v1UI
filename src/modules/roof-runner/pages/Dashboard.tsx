@@ -5,21 +5,21 @@ import { RootState } from '../../../shared/store';
 import { useGetWidgetsQuery, useGetUserPreferencesQuery, useSavePreferencesMutation } from '../../../shared/store/services/dashboardApi';
 import DashboardWidgetSelector from '../components/dashboard/DashboardWidgetSelector';
 import { WidgetComponents } from '../components/dashboard/DynamicWidgets';
-import type { WidgetWithPreference } from '../types/dashboard';
+import type { WidgetWithPreference, DashboardWidget } from '../types/dashboard';
 
 export default function Dashboard() {
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const user = useSelector((state: RootState) => state.auth.user);
-  
+
   const { data: widgets = [], isLoading, refetch } = useGetWidgetsQuery(undefined);
-  const { data: preferences = [] } = useGetUserPreferencesQuery(user?.id || '', {
+  const { data: preferences = [] } = useGetUserPreferencesQuery(user?.id ? String(user.id) : '', {
     skip: !user?.id
   });
   const [savePreferences, { isLoading: isSaving }] = useSavePreferencesMutation();
 
-  const widgetsWithPrefs: WidgetWithPreference[] = widgets.map(widget => {
-    const pref = preferences.find(p => p.widget_key === widget.widget_key);
+  const widgetsWithPrefs: WidgetWithPreference[] = widgets.map((widget: DashboardWidget) => {
+    const pref = preferences.find((p: any) => p.widget_key === widget.widget_key);
     return {
       ...widget,
       is_visible: pref ? pref.is_visible : widget.default_visible,
@@ -78,9 +78,8 @@ export default function Dashboard() {
 
         <div className="flex gap-2 relative">
           <button
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 ${
-              isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
@@ -137,19 +136,21 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-6">
           {/* Group widgets by category */}
-          {['jobs', 'opportunities', 'reporting', 'payments', 'appointments'].map(category => {
+          {['jobs', 'opportunities', 'reporting', 'payments', 'appointments', 'marketing', 'analytics'].map(category => {
             const categoryWidgets = visibleWidgets.filter(
               w => w.category === category && w.widget_key !== 'recent_activity' && w.widget_key !== 'upcoming_tasks'
             );
-            
+
             if (categoryWidgets.length === 0) return null;
 
             const categoryNames: Record<string, string> = {
               jobs: 'Jobs',
               opportunities: 'Opportunities',
-              reporting: 'Contacts & General',
+              reporting: 'Reporting & Analytics',
               payments: 'Payments',
-              appointments: 'Appointments'
+              appointments: 'Appointments',
+              marketing: 'Marketing',
+              analytics: 'Detailed Analytics'
             };
 
             return (

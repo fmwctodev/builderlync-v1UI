@@ -162,22 +162,20 @@ export function KnowledgeBaseVoices() {
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('knowledge')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'knowledge'
-                  ? 'border-red-500 text-red-600 dark:text-red-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'knowledge'
+                ? 'border-red-500 text-red-600 dark:text-red-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                }`}
             >
               <FileText className="w-4 h-4 inline mr-2" />
               Knowledge Base
             </button>
             <button
               onClick={() => setActiveTab('voices')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'voices'
-                  ? 'border-red-500 text-red-600 dark:text-red-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'voices'
+                ? 'border-red-500 text-red-600 dark:text-red-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                }`}
             >
               <Volume2 className="w-4 h-4 inline mr-2" />
               Voices
@@ -247,14 +245,13 @@ export function KnowledgeBaseVoices() {
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Available Voices</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {voices.map((voice) => (
-                <div 
-                  key={voice.voice_id} 
+                <div
+                  key={voice.voice_id}
                   onClick={() => handleSelectVoice(voice.voice_id)}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedVoice === voice.voice_id
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
-                  }`}
+                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedVoice === voice.voice_id
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-gray-900 dark:text-white">{voice.name}</h4>

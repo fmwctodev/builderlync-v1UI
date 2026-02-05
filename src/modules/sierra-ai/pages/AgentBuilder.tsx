@@ -58,7 +58,12 @@ export function AgentBuilder() {
   const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   useEffect(() => {
-    loadAgent();
+    console.log('AgentBuilder mounted, agentId:', agentId);
+    if (agentId) {
+      loadAgent();
+    } else {
+      setLoading(false);
+    }
   }, [agentId]);
 
   useEffect(() => {
@@ -82,11 +87,17 @@ export function AgentBuilder() {
   }, [agent]);
 
   const loadAgent = async () => {
-    if (!agentId) return;
+    console.log('loadAgent called with agentId:', agentId);
+    if (!agentId || agentId === 'undefined') {
+      console.warn('Invalid agentId, skipping load');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const data = await fetchAgentById(agentId);
+      console.log('Agent loaded:', data);
       setAgent(data);
     } catch (error) {
       console.error('Error loading agent:', error);
@@ -97,7 +108,6 @@ export function AgentBuilder() {
 
   const handleSaveChanges = async () => {
     if (!agent) return;
-
     try {
       setSaving(true);
       const updated = await updateAgent({
@@ -211,8 +221,8 @@ export function AgentBuilder() {
               <button
                 onClick={handleStatusToggle}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${agent.status === 'active'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                   }`}
               >
                 {agent.status === 'active' ? (
@@ -261,10 +271,10 @@ export function AgentBuilder() {
                   onClick={() => !isDisabled && setActiveTab(tab.id as BuilderTab)}
                   disabled={isDisabled}
                   className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap ${isActive
-                      ? 'border-red-600 text-red-600 dark:border-red-500 dark:text-red-500'
-                      : isDisabled
-                        ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? 'border-red-600 text-red-600 dark:border-red-500 dark:text-red-500'
+                    : isDisabled
+                      ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                      : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -389,15 +399,15 @@ export function AgentBuilder() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
                   className={`p-4 border-2 rounded-lg ${agent.channels?.voice?.enabled
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <Phone
                       className={`w-6 h-6 ${agent.channels?.voice?.enabled
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-400'
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-400'
                         }`}
                     />
                     <div>
@@ -411,15 +421,15 @@ export function AgentBuilder() {
 
                 <div
                   className={`p-4 border-2 rounded-lg ${agent.channels?.sms?.enabled
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <MessageSquare
                       className={`w-6 h-6 ${agent.channels?.sms?.enabled
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-400'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-400'
                         }`}
                     />
                     <div>
@@ -433,15 +443,15 @@ export function AgentBuilder() {
 
                 <div
                   className={`p-4 border-2 rounded-lg ${agent.channels?.webchat?.enabled
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                     }`}
                 >
                   <div className="flex items-center gap-3">
                     <Globe
                       className={`w-6 h-6 ${agent.channels?.webchat?.enabled
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-400'
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-400'
                         }`}
                     />
                     <div>
@@ -459,7 +469,7 @@ export function AgentBuilder() {
 
         {activeTab === 'voice-sms' && user?.id && (
           <div className="max-w-7xl">
-            <PhoneNumbersSection organizationId={user.id} />
+            <PhoneNumbersSection organizationId={String(user.id)} />
           </div>
         )}
 
