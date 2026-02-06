@@ -22,8 +22,7 @@ const PlatformAnalyticsDetail: React.FC = () => {
   const platformName = analyticsExportService.formatPlatformName(platform);
 
   useEffect(() => {
-    const mockData = analyticsExportService.generateMockData(platform, dateRange);
-    setAnalyticsData(mockData);
+    setAnalyticsData([]);
   }, [platform, dateRange]);
 
   const handleExport = async (format: 'csv' | 'pdf') => {
@@ -137,8 +136,8 @@ const PlatformAnalyticsDetail: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metricCards.map((metric) => {
           const value = aggregatedMetrics[metric.key] || 0;
-          const growth = analyticsExportService.calculateGrowth(value, value * 0.9);
-          const isPositive = growth >= 0;
+          const growth = 0;
+          const isPositive = true;
 
           return (
             <div
@@ -195,17 +194,25 @@ const PlatformAnalyticsDetail: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-              {analyticsData.slice(0, 10).map((item, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{item.date}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {item.metricLabel || item.metricType}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {item.metricValue.toLocaleString()}
+              {analyticsData.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No analytics data yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                analyticsData.slice(0, 10).map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{item.date}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {item.metricLabel || item.metricType}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                      {item.metricValue.toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

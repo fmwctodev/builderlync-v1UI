@@ -50,6 +50,8 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSmtpError, setShowSmtpError] = useState(false);
+  const [smsErrorMessage, setSmsErrorMessage] = useState<string | null>(null);
+  const [smsRedirectUrl, setSmsRedirectUrl] = useState<string | null>(null);
   const [messageContent, setMessageContent] = useState('');
   const [subject, setSubject] = useState('');
   const [showSnippetSelector, setShowSnippetSelector] = useState(false);
@@ -173,10 +175,21 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
       setMessages(prev => [...prev, newMessage]);
       setMessageContent('');
       setShowSmtpError(false);
+      setSmsErrorMessage(null);
+      setSmsRedirectUrl(null);
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      setError(error.message || 'Failed to send message');
-      setShowSmtpError(true);
+      const errorData = error;
+      const message =
+        errorData?.error ||
+        errorData?.message ||
+        error?.message ||
+        'Failed to send message';
+      const redirectUrl = errorData?.redirectUrl || null;
+      console.log(redirectUrl)
+      setSmsErrorMessage(message);
+      setSmsRedirectUrl(redirectUrl);
+      setShowSmtpError(Boolean(redirectUrl));
     } finally {
       setSending(false);
     }
@@ -375,24 +388,32 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
               />
             ) : (
               <div>
-                {showSmtpError && error && (
+                {smsErrorMessage && (
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-3">
                     <div className="flex items-start space-x-3">
                       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-red-800 dark:text-red-200">SMS Twilio Service Not Configured</h4>
-                        <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
-                        <button
-                          onClick={() => {
-                            const user = JSON.parse(localStorage.getItem('user') || '{}');
-                            const orgSlug = user.companySlug || 'default';
-                            navigate(`/org/${orgSlug}/settings/integrations`);
-                          }}
-                          className="mt-2 inline-flex items-center space-x-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>Configure SMS Service</span>
-                        </button>
+                        <h4 className="text-sm font-medium text-red-800 dark:text-red-200">
+                          {smsRedirectUrl ? 'SMS Service Not Configured' : 'SMS Send Failed'}
+                        </h4>
+                        <p className="text-sm text-red-700 dark:text-red-300 mt-1">{smsErrorMessage}</p>
+                        {smsRedirectUrl && (
+                          <button
+                            onClick={() => {
+                              const user = JSON.parse(localStorage.getItem('user') || '{}');
+                              const orgSlug = user.companySlug || 'default';
+                              if (smsRedirectUrl.startsWith('/org/')) {
+                                navigate(smsRedirectUrl);
+                              } else {
+                                navigate(`/org/${orgSlug}${smsRedirectUrl}`);
+                              }
+                            }}
+                            className="mt-2 inline-flex items-center space-x-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                          >
+                            <Settings className="w-4 h-4" />
+                            <span>Configure SMS Service</span>
+                          </button>
+                        )}
                       </div>
                       <button
                         onClick={() => setShowSmtpError(false)}

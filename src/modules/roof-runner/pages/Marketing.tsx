@@ -108,26 +108,26 @@ const AnalyticsTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Leads</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">247</p>
-          <p className="text-sm text-green-600 dark:text-green-400 mt-1">+12% from last month</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">0</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Marketing Spend</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$5,000</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$0</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">This month</p>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">True Acquisition Cost</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$333</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">$5,000 ÷ 15 closed jobs</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$0</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Jobs Closed</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">15</p>
-          <p className="text-sm text-green-600 dark:text-green-400 mt-1">From 247 leads</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">0</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
         </div>
       </div>
 
@@ -137,23 +137,23 @@ const AnalyticsTab: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Website Visitors</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">2,450</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">0</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Leads Generated</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">247 (10.1%)</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">0 (0%)</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Appointments Booked</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">89 (36.0%)</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">0 (0%)</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Inspections Completed</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">67 (75.3%)</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">0 (0%)</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600 dark:text-gray-400">Jobs Closed</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">15 (22.4%)</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">0 (0%)</span>
           </div>
         </div>
       </div>
