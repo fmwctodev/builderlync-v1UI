@@ -27,7 +27,7 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
     console.log('Fetching companies...');
     setLoading(true);
     try {
-      const response = await getCompanies();
+      const response = await getCompanies(contact?.id);
       console.log('Companies response:', response);
       setCompanies(response.data || []);
       setFilteredCompanies(response.data || []);

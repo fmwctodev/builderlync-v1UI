@@ -72,6 +72,30 @@ const Jobs: React.FC = () => {
     contactName: null
   });
 
+  const resolveContactId = (job: Job): number | null => {
+    const id =
+      job.contact_id ??
+      job.contactId ??
+      job.customer?.id ??
+      job.customer_id ??
+      job.customerId ??
+      null;
+    return id ? Number(id) : null;
+  };
+
+  const resolveContactName = (job: Job): string | null => {
+    return (
+      job.contactName ||
+      job.customer?.full_name ||
+      job.customer?.fullName ||
+      job.customer?.name ||
+      job.customer?.company ||
+      job.customer?.email ||
+      job.customer?.phone ||
+      null
+    );
+  };
+
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
@@ -136,7 +160,7 @@ const Jobs: React.FC = () => {
         customerId: formData.contactId || null,
         customer_id: formData.contactId || null,
         // Ensure numeric fields are properly handled
-        jobValue: formData.jobValue || '',
+        jobValue: formData.jobValue || NaN,
         claimAmount: Number(formData.claimAmount) || 0,
         deductible: Number(formData.deductible) || 0,
         // Ensure assignees is an array of numbers
@@ -226,6 +250,8 @@ const Jobs: React.FC = () => {
   };
 
   const handleEdit = (job: Job) => {
+    const contactId = resolveContactId(job);
+    const contactName = resolveContactName(job);
     setViewingJob(job);
     setEditingJob(job);
     setFormData({
@@ -251,13 +277,15 @@ const Jobs: React.FC = () => {
       createdBy: job.created_by || job.createdBy || null,
       editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
-      contactId: job.contact_id || job.contactId || null,
-      contactName: job.contactName || (job.customer ? `${job.customer.full_name}` : null)
+      contactId,
+      contactName
     });
     setShowJobDetails(true);
   };
 
   const handleView = (job: Job) => {
+    const contactId = resolveContactId(job);
+    const contactName = resolveContactName(job);
     setViewingJob(job);
     setEditingJob(job);
     setFormData({
@@ -283,8 +311,8 @@ const Jobs: React.FC = () => {
       createdBy: job.created_by || job.createdBy || null,
       editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
-      contactId: job.contact_id || job.contactId || null,
-      contactName: job.contactName || (job.customer ? `${job.customer.full_name}` : null)
+      contactId,
+      contactName
     });
     setShowJobDetails(true);
   };

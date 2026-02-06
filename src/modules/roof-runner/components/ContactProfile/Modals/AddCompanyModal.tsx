@@ -12,9 +12,11 @@ interface CompanyFormData {
   state: string;
   zip: string;
   country: string;
+  contact_id:number;
 }
 
 interface AddCompanyModalProps {
+  id :  number,
   isOpen: boolean;
   onClose: () => void;
   onSave?: (data: CompanyFormData) => void;
@@ -41,7 +43,7 @@ const createCompany = async (companyData: CompanyFormData) => {
   return response.json();
 };
 
-export const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSave }) => {
+export const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ id , isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState<CompanyFormData>({
     name: '',
     phone: '',
@@ -61,7 +63,7 @@ export const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClos
     setLoading(true);
 
     try {
-      await createCompany(formData);
+      await createCompany({...formData, contact_id : id});
       if (onSave) {
         onSave(formData);
       }
