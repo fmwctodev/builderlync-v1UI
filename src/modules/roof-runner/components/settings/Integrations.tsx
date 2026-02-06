@@ -9,6 +9,7 @@ import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi
 import { srsService } from '../../services/srsService';
 import SRSConnection from '../catalog/SRSConnection';
 import { cloudDriveApi } from '../../../../shared/services/cloudDriveApi';
+import { useNavigate, useParams } from 'react-router-dom';
 
 
 interface Integration {
@@ -26,6 +27,8 @@ interface Integration {
 }
 
 const Integrations: React.FC = () => {
+  const {orgSlug} = useParams();
+  const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
   const [srsStatus, setSrsStatus] = React.useState({ connected: false });
@@ -233,7 +236,7 @@ const Integrations: React.FC = () => {
       setShowEagleViewModal(true);
     } else if (integrationId === 'google-drive') {
       // Redirect to File Manager to connect
-      window.location.href = '/file-manager';
+      navigate(`/org/${orgSlug}/file-manager`);
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
