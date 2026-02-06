@@ -55,10 +55,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
         // ABC API usually returns { orders: [], total: N } or similar
         // SRS might be different. 
         // Adjust based on observation: User previously saw "data.items" in SRS or ABC.
-        const items = responseData.orders || responseData.items || (responseData.data && responseData.data.items) || [];
+        const items = responseData.orders ||
+          responseData.items ||
+          (responseData.data && (responseData.data.items || responseData.data.orders)) ||
+          [];
         setOrders(items);
 
-        const total = responseData.total || (responseData.pagination ? responseData.pagination.totalItems : 0) || (responseData.data && responseData.data.total) || items.length;
+        const total = responseData.total ||
+          (responseData.pagination ? responseData.pagination.totalItems : 0) ||
+          (responseData.data && responseData.data.total) ||
+          (responseData.data && responseData.data.pagination ? responseData.data.pagination.totalItems : 0) ||
+          items.length;
         setTotalOrders(total);
       } else {
         setOrders([]);
@@ -202,10 +209,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
 
                       <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Date:</span> {new Date(order.invoiceDate || (order as any).orderDate || (order as any).createdAt).toLocaleDateString()}
+                          {/* <span className="font-medium">Date:</span> {new Date(order.invoiceDate || (order as any).orderDate || (order as any).createdAt).toLocaleDateString()} */}
+                          <span className="font-medium">Order Type:</span> {order.orderType || (order as any).orderType || 'Unknown'}
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Total:</span> ${(order.totalAmount || (order as any).total || 0).toFixed(2)}
+                          <span className="font-medium">Total:</span> ${((order as any).totalAmount || (order as any).total || 0).toFixed(2)}
                         </div>
                       </div>
 

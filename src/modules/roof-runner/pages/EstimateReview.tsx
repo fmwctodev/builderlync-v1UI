@@ -1,7 +1,6 @@
 import React from 'react';
 import { Share, Mail, Phone, Check, ExternalLink } from 'lucide-react';
 import { apiService } from '../store/services/api';
-import { getBusinessInfo, BusinessInfo } from '../../../shared/store/services/businessInfoApi';
 
 interface EstimateReviewProps {
   estimateData: {
@@ -39,6 +38,12 @@ interface EstimateReviewProps {
     business: {
       name: string;
       logo: string | null;
+      email?: string | null;
+      phone?: string | null;
+      business_email?: string | null;
+      business_phone?: string | null;
+      representative_email?: string | null;
+      representative_phone?: string | null;
     };
   };
   propertyImage?: string | null;
@@ -49,22 +54,7 @@ interface EstimateReviewProps {
 
 const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyImage, leadId, financingUrl, onBack }) => {
   const [requestedMaterials, setRequestedMaterials] = React.useState<string[]>([]);
-  const [businessInfo, setBusinessInfo] = React.useState<BusinessInfo | null>(null);
   console.log('[EstimateReview] Rendering with data:', estimateData);
-
-  React.useEffect(() => {
-    const loadBusinessInfo = async () => {
-      try {
-        const response = await getBusinessInfo();
-        if (response.success) {
-          setBusinessInfo(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to load business info:', error);
-      }
-    };
-    loadBusinessInfo();
-  }, []);
 
 
   if (!estimateData || !estimateData.estimate) {
@@ -149,7 +139,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
           <div className="flex items-center gap-4">
             <div className="w-24 h-10 bg-black rounded flex items-center justify-center">
               <div className="text-white font-bold text-xs">
-                <div className="text-xs">{businessInfo?.friendly_business_name || 'Business'}</div>
+                <div className="text-xs">{business?.name || 'Business'}</div>
               </div>
             </div>
           </div>
@@ -314,39 +304,48 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
               {/* Company Logo */}
               <div className="text-center mb-6">
                 <div className="w-24 h-16 mx-auto rounded flex items-center justify-center mb-4">
-                  {businessInfo?.business_logo && (
+                  {business.logo && (
                     <img
-                      src={businessInfo.business_logo}
+                      src={business.logo}
                       alt="Business Logo"
                       className="w-full h-full object-contain"
                     />
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900">{businessInfo?.friendly_business_name || 'Business Name'}</h3>
-                {/* <p className="text-xl font-bold text-gray-900">LLC</p> */}
+                <h3 className="text-xl font-bold text-gray-900">{business.name || 'Business Name'}</h3>
               </div>
 
               {/* Contact Info */}
-              <div className="space-y-4">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Mail className="w-4 h-4" />
-                  <span className="font-medium">Email</span>
-                </button>
+              <div className="space-y-3">
+                {(business.email || business.business_email || business.representative_email) && (
+                  <a
+                    href={`mailto:${business.email || business.business_email || business.representative_email}`}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span className="font-medium">Email</span>
+                  </a>
+                )}
 
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Phone className="w-4 h-4" />
-                  <span className="font-medium">Call</span>
-                </button>
+                {(business.phone || business.business_phone || business.representative_phone) && (
+                  <a
+                    href={`tel:${business.phone || business.business_phone || business.representative_phone}`}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span className="font-medium">Call</span>
+                  </a>
+                )}
               </div>
-              
+
             </div>
-           {financingUrl && <div className='mt-4'>
-                <a href={financingUrl} target="_blank" className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <ExternalLink className="w-4 h-4" />
-                  <span className="font-medium">View Financing Options</span>
-                </a>
-              </div>}
+            {financingUrl && <div className='mt-4'>
+              <a href={financingUrl} target="_blank" className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <ExternalLink className="w-4 h-4" />
+                <span className="font-medium">View Financing Options</span>
+              </a>
+            </div>}
           </div>
         </div>
       </div>

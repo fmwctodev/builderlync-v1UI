@@ -7,6 +7,7 @@ const getHeaders = () => {
     const token = getAuthToken();
     return {
         'accept': 'application/json',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
     };
 };
@@ -99,6 +100,7 @@ export const contactModulesApi = {
         return response.data;
     },
     createTask: async (contactId: number, taskData: Partial<ContactTask>) => {
+        console.log('Creating task:', { contactId, taskData });
         const response = await axios.post(`${API_BASE_URL}/contacts/${contactId}/tasks`, taskData, {
             headers: getHeaders()
         });

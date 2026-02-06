@@ -4,6 +4,8 @@ import { opportunitiesApi } from '../../services/opportunitiesApi';
 import type { PipelineWithStages, OpportunityFormData, OpportunityStatus, JobType } from '../../types/opportunities';
 import { OPPORTUNITY_SOURCES, JOB_TYPES } from '../../types/opportunities';
 import PropertyAddressInput from './PropertyAddressInput';
+import Toast from '../../../../shared/components/Toast';
+import { getErrorMessage } from '../../../../shared/utils/errorHandler';
 
 import { getAllActiveStaff, StaffMember } from '../../../../shared/store/services/staffApi';
 
@@ -40,11 +42,12 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
     property_city: '',
     property_state: '',
     property_zip: '',
-    property_country: 'United States',
+    property_country: '',
     property_latitude: undefined,
     property_longitude: undefined,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -131,10 +134,6 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
       newErrors.opportunity_name = 'Opportunity name is required';
     }
 
-    // if (!formData.pipeline_id) {
-    //   newErrors.pipeline_id = 'Pipeline is required';
-    // }
-
     if (!formData.stage_id) {
       newErrors.stage_id = 'Stage is required';
     }
@@ -144,22 +143,39 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      // If there are errors in opportunity specific fields, tell the user
+      if (newErrors.opportunity_name || newErrors.stage_id) {
+        setToast({ message: 'Please complete the Opportunity Details section.', type: 'error' });
+        // Optionally switch to the opportunity tab to show the errors
+        setActiveTab('opportunity');
+      } else if (newErrors.contact_email) {
+        setToast({ message: 'Please fix the errors in Contact details.', type: 'error' });
+        setActiveTab('contact');
+      }
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async () => {
-    // console.log("Submitting form data:", formData);
-    // if (!validateForm()) return;
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      // console.log("Creating opportunity with data:", formData);
       await opportunitiesApi.createOpportunity(formData);
-      onSuccess();
-      handleClose();
+      setToast({ message: 'Opportunity created successfully!', type: 'success' });
+
+      // Delay closing to show toast
+      setTimeout(() => {
+        onSuccess();
+        handleClose();
+      }, 1500);
     } catch (error) {
       console.error('Error creating opportunity:', error);
-      alert('Failed to create opportunity. Please try again.');
+      setToast({ message: getErrorMessage(error), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -293,7 +309,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                   propertyCity={formData.property_city || ''}
                   propertyState={formData.property_state || ''}
                   propertyZip={formData.property_zip || ''}
-                  propertyCountry={formData.property_country || 'United States'}
+                  propertyCountry={formData.property_country || ''}
                   onAddressChange={(field, value) => {
                     setFormData({ ...formData, [field]: value });
                   }}
@@ -529,6 +545,13 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
           </button>
         </div>
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -137,7 +137,7 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ contactId, showActions, onAct
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900 dark:text-white">
-                    ${item.total.toFixed(2)}
+                    ${item?.total?.toFixed(2)}
                   </p>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getStatusColor(item.status)}`}>
                     {item.status}

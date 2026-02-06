@@ -55,19 +55,7 @@ const EmailSyncSection: React.FC = () => {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
       const token = localStorage.getItem('token');
 
-      // Use Outlook API for outlook provider
-      if (selectedProvider === 'outlook') {
-        const response = await fetch(`${API_BASE_URL}/outlook/auth`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (data.authUrl) {
-          window.location.href = data.authUrl;
-        }
-        return;
-      }
-
-      // Get OAuth URL from backend for Gmail
+      // Get OAuth URL from backend for selected provider
       const response = await fetch(`${API_BASE_URL}/profile/email-connections/oauth-url?provider=${selectedProvider}`, {
         headers: {
           'Authorization': `Bearer ${token}`

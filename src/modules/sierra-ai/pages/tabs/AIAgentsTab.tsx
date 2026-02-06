@@ -396,7 +396,7 @@ export function AIAgentsTab() {
                                 Activate
                               </button>
                             )}
-                            <button
+                            {/* <button
                               onClick={() => {
                                 handleDuplicate(agent.id);
                                 setOpenMenuId(null);
@@ -405,7 +405,7 @@ export function AIAgentsTab() {
                             >
                               <Copy className="w-4 h-4" />
                               Duplicate
-                            </button>
+                            </button> */}
                             <button
                               onClick={() => {
                                 handleDelete(agent.id);
