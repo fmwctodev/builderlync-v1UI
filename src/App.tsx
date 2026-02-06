@@ -20,6 +20,7 @@ import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
 import { SierraAiModule } from './modules/sierra-ai/SierraAiModule';
 import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
+import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 
 function App() {
   return (
@@ -32,6 +33,8 @@ function App() {
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
               <Route path="/auth/google/callback" element={<OAuthCallback />} />
+              <Route path="/auth/gmail/callback" element={<OAuthOutlookCallback />} />
+              <Route path="/outlook-callback" element={<OAuthOutlookCallback />} />
               <Route path="/integrations/abc-supply/callback" element={<ABCSupplyCallback />} />
               <Route path="/*" element={<RoofRunnerModule />} />
               {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
