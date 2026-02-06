@@ -173,7 +173,7 @@ export default function Dashboard() {
           })}
 
           {/* Special widgets (Activity & Tasks) */}
-          {hasLargeWidgets && (
+          {/* {hasLargeWidgets && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Activity & Tasks
@@ -189,7 +189,7 @@ export default function Dashboard() {
                 })}
               </div>
             </div>
-          )}
+          )} */}
         </div>
       )}
     </div>

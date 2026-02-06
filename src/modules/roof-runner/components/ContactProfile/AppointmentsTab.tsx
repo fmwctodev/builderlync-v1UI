@@ -20,7 +20,7 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({ contactId }) => {
     setLoading(true);
     try {
       const response = await contactModulesApi.getAppointments(contactId);
-      setAppointments(response.data || []);
+      setAppointments(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
     } finally {

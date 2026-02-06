@@ -64,7 +64,7 @@ class ContactsApiService {
         ...options.headers,
       },
     });
-
+    console.log("api response", response);
     if (!response.ok) {
       // Try to parse error details from JSON response
       let errorData;
@@ -75,8 +75,8 @@ class ContactsApiService {
         throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
-      // Throw an error that contains the API response data, so the caller can extract 'message'
-      const error = new Error(errorData.message || `API Error: ${response.status}`);
+      // Throw an error that contains the API response data, so the caller can extract 'message' or 'error'
+      const error = new Error(errorData.message || errorData.error || `API Error: ${response.status}`);
       (error as any).response = { data: errorData };
       throw error;
     }

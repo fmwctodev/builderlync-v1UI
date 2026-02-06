@@ -11,8 +11,6 @@ interface RightPanelContentProps {
   activeTab: string;
   contactId: number;
   showPaymentActions: boolean;
-  onAddTask: () => void;
-  onAddNote: () => void;
   onPaymentActionsToggle: () => void;
 }
 
@@ -20,17 +18,15 @@ const RightPanelContent: React.FC<RightPanelContentProps> = ({
   activeTab,
   contactId,
   showPaymentActions,
-  onAddTask,
-  onAddNote,
   onPaymentActionsToggle
 }) => {
   switch (activeTab) {
     case 'activity':
       return <ActivityTab contactId={contactId} />;
     case 'tasks':
-      return <TasksTab contactId={contactId} onAddTask={onAddTask} />;
+      return <TasksTab contactId={contactId} />;
     case 'notes':
-      return <NotesTab contactId={contactId} onAddNote={onAddNote} />;
+      return <NotesTab contactId={contactId} />;
     case 'appointments':
       return <AppointmentsTab contactId={contactId} />;
     case 'documents':

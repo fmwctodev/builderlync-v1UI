@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { contactModulesApi, ContactTask } from '../../../../shared/store/services/contactModulesApi';
 import { getStaff, StaffMember } from '../../../../shared/store/services/staffApi';
+import Toast from "../../../../shared/components/Toast";
+import { getErrorMessage } from "../../../../shared/utils/errorHandler";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -12,16 +14,17 @@ interface TaskModalProps {
 }
 
 export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }: TaskModalProps) {
-  const [formData, setFormData] = useState<Partial<ContactTask>>({
+  const [formData, setFormData] = useState({
     title: '',
-    assignedTo: 0,
+    assignedTo: '' as string | number,
     dueDate: '',
-    status: 'pending',
+    status: 'pending' as 'pending' | 'in_progress' | 'completed' | 'cancelled',
     description: '',
     isRecurring: false
   });
   const [loading, setLoading] = useState(false);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchStaff = async () => {
     try {
@@ -47,7 +50,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
       } else {
         setFormData({
           title: '',
-          assignedTo: 0,
+          assignedTo: '',
           dueDate: '',
           status: 'pending',
           description: '',
@@ -61,16 +64,37 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
     e.preventDefault();
     setLoading(true);
 
+    const payload = {
+      title: formData.title.trim(),
+      assignedTo: Number(formData.assignedTo),
+      dueDate: formData.dueDate,
+      status: formData.status,
+      description: formData.description.trim(),
+      isRecurring: formData.isRecurring,
+      contactId: contactId
+    };
+
+    if (!payload.title) {
+      setToast({ message: 'Task title is required', type: 'error' });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (editingTask) {
-        await contactModulesApi.updateTask(editingTask.id!, formData);
+        await contactModulesApi.updateTask(editingTask.id!, payload as any);
+        setToast({ message: 'Task updated successfully', type: 'success' });
       } else {
-        await contactModulesApi.createTask(contactId, formData);
+        await contactModulesApi.createTask(contactId, payload as any);
+        setToast({ message: 'Task created successfully', type: 'success' });
       }
-      onSuccess();
-      onClose();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
     } catch (error) {
-      console.error('Failed to save task:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to save task');
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -90,7 +114,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Task Title</label>
+            <label className="block text-sm font-medium mb-1">Task Title <span className="text-red-500">*</span></label>
             <input
               type="text"
               required
@@ -102,14 +126,14 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Assignee</label>
+            <label className="block text-sm font-medium mb-1">Assignee <span className="text-red-500">*</span></label>
             <select
               required
               value={formData.assignedTo}
-              onChange={(e) => setFormData({ ...formData, assignedTo: parseInt(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value ? parseInt(e.target.value) : '' })}
               className="w-full px-3 py-2 border rounded-md"
             >
-              <option value="0">Select assignee</option>
+              <option value="">Select assignee</option>
               {staff.map(member => (
                 <option key={member.id} value={member.id}>
                   {member.first_name} {member.last_name}
@@ -119,7 +143,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Due Date</label>
+            <label className="block text-sm font-medium mb-1">Due Date <span className="text-red-500">*</span></label>
             <input
               type="date"
               required
@@ -159,6 +183,13 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
           </div>
         </form>
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

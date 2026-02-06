@@ -191,7 +191,7 @@ export function AgentBuilder() {
     { id: 'knowledge-base', label: 'Knowledge Base', icon: MessageSquare },
     { id: 'voices', label: 'Voices', icon: Phone },
     { id: 'tools', label: 'Tools', icon: Zap },
-    { id: 'security', label: 'Security', icon: Shield },
+    // { id: 'security', label: 'Security', icon: Shield },
     { id: 'widget', label: 'Widget', icon: Code2 },
   ];
 
@@ -326,7 +326,7 @@ export function AgentBuilder() {
             {/* Main Configuration Grid - System Prompt on left, Voices & Languages on right */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - System Prompt (takes up 2 columns) */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-3">
                 <SystemPromptSection
                   value={systemPrompt}
                   onChange={setSystemPrompt}
@@ -335,10 +335,10 @@ export function AgentBuilder() {
               </div>
 
               {/* Right Column - Voices & Languages (takes up 1 column) */}
-              <div className="space-y-6">
+              {/* <div className="space-y-6">
                 <VoicesSection voices={voices} onChange={setVoices} />
                 <LanguageSection languages={languages} onChange={setLanguages} />
-              </div>
+              </div> */}
             </div>
 
             {/* First Message Section (full width) */}

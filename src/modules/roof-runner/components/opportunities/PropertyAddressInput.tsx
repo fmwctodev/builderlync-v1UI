@@ -24,7 +24,6 @@ export default function PropertyAddressInput({
 
   const handleGoogleAddressSelect = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
     onAddressChange('property_address', address);
-
     if (isFromAutocomplete && lat && lng) {
       onAddressChange('property_latitude', lat);
       onAddressChange('property_longitude', lng);

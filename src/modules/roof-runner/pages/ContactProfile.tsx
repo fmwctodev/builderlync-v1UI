@@ -77,10 +77,10 @@ const ContactProfile: React.FC = () => {
     name: '',
     location: '',
     assignees: [],
-    jobOwner: '',
+    jobOwner: null,
     workflowStages: 'New lead',
     closeDate: '',
-    jobValue: 0,
+    jobValue: '0',
     source: '',
     details: '',
     insuranceEnabled: false,
@@ -92,10 +92,7 @@ const ContactProfile: React.FC = () => {
     claimAmount: 0,
     deductible: 0,
     claimDetails: '',
-    createdBy: 1,
-    createdByName: 'Current User',
-    editedBy: 1,
-    editedByName: 'Current User'
+    createdBy: 1
   });
 
   const fetchStaff = async () => {
@@ -130,10 +127,10 @@ const ContactProfile: React.FC = () => {
       name: '',
       location: '',
       assignees: [],
-      jobOwner: '',
+      jobOwner: null,
       workflowStages: 'New lead',
       closeDate: '',
-      jobValue: 0,
+      jobValue: '0',
       source: '',
       details: '',
       insuranceEnabled: false,
@@ -145,10 +142,7 @@ const ContactProfile: React.FC = () => {
       claimAmount: 0,
       deductible: 0,
       claimDetails: '',
-      createdBy: 1,
-      createdByName: 'Current User',
-      editedBy: 1,
-      editedByName: 'Current User'
+      createdBy: 1
     });
   };
 
@@ -172,12 +166,12 @@ const ContactProfile: React.FC = () => {
     setSecondaryPhone({ ...secondaryPhone, phone: formatted });
   };
 
-  const handleAddressChange = (address: string, lat: number, lng: number) => {
+  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
     setContactFormData(prev => ({
       ...prev,
       address,
-      latitude: lat,
-      longitude: lng
+      latitude: lat || 0,
+      longitude: lng || 0
     }));
   };
 
@@ -344,8 +338,6 @@ const ContactProfile: React.FC = () => {
               activeTab={rightPanelView}
               contactId={parseInt(contact.id)}
               showPaymentActions={showPaymentActions}
-              onAddTask={() => { }} // Legacy, can be removed if tabs manage their own
-              onAddNote={() => { }} // Legacy
               onPaymentActionsToggle={() => setShowPaymentActions(!showPaymentActions)}
             />
           </div>
