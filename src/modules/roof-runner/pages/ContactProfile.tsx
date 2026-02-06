@@ -1,98 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useOrgPath } from '../../../shared/hooks/useOrgPath';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { getContactByIdRequest } from '../../../shared/store/slices/contactsSlice';
-import { updateContact, CreateContactRequest } from '../../../shared/store/services/contactsApi';
-import { createJob, CreateJobRequest } from '../../../shared/store/services/jobsApi';
-import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
-import AddressModal from '../components/AddressModal';
-import JobDetailsModal from '../components/JobDetailsModal';
-import ContactHeader from '../components/ContactProfile/ContactHeader';
-import ContactDetailsPanel from '../components/ContactProfile/ContactDetailsPanel';
-import RightPanelTabs from '../components/ContactProfile/RightPanelTabs';
-import RightPanelContent from '../components/ContactProfile/RightPanelContent';
-import { AddCompanyModal } from '../components/ContactProfile/Modals';
-import ContactModal from '../components/ContactModal';
-import Toast from '../components/Toast';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useOrgPath } from "../../../shared/hooks/useOrgPath";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../store";
+import { getContactByIdRequest } from "../../../shared/store/slices/contactsSlice";
+import {
+  updateContact,
+  CreateContactRequest,
+} from "../../../shared/store/services/contactsApi";
+import {
+  createJob,
+  CreateJobRequest,
+} from "../../../shared/store/services/jobsApi";
+import { getStaff, StaffMember } from "../../../shared/store/services/staffApi";
+import AddressModal from "../components/AddressModal";
+import JobDetailsModal from "../components/JobDetailsModal";
+import ContactHeader from "../components/ContactProfile/ContactHeader";
+import ContactDetailsPanel from "../components/ContactProfile/ContactDetailsPanel";
+import RightPanelTabs from "../components/ContactProfile/RightPanelTabs";
+import RightPanelContent from "../components/ContactProfile/RightPanelContent";
+import { AddCompanyModal } from "../components/ContactProfile/Modals";
+import ContactModal from "../components/ContactModal";
+import Toast from "../components/Toast";
 
-type RightPanelView = 'activity' | 'tasks' | 'notes' | 'appointments' | 'documents' | 'payments' | 'related';
+type RightPanelView =
+  | "activity"
+  | "tasks"
+  | "notes"
+  | "appointments"
+  | "documents"
+  | "payments"
+  | "related";
 
 const ContactProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getOrgPath } = useOrgPath();
   const dispatch = useDispatch();
-  const { currentContact, isLoadingContact, error } = useSelector((state: RootState) => state.contacts);
+  const { currentContact, isLoadingContact, error } = useSelector(
+    (state: RootState) => state.contacts,
+  );
 
   // State management
-  const [activeTab, setActiveTab] = useState<'contact' | 'company'>('contact');
-  const [rightPanelView, setRightPanelView] = useState<RightPanelView>('activity');
+  const [activeTab, setActiveTab] = useState<"contact" | "company">("contact");
+  const [rightPanelView, setRightPanelView] =
+    useState<RightPanelView>("activity");
   const [showPaymentActions, setShowPaymentActions] = useState(false);
-  const [companySearch, setCompanySearch] = useState('');
+  const [companySearch, setCompanySearch] = useState("");
 
   // Modal states
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [showEditContactModal, setShowEditContactModal] = useState(false);
-  const [jobAddress, setJobAddress] = useState('');
+  const [jobAddress, setJobAddress] = useState("");
 
   // Job creation state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Contact edit state
   const [contactFormData, setContactFormData] = useState({
-    firstName: '',
-    lastName: '',
-    type: 'customer',
-    labelRole: '',
-    email: '',
-    phone: '',
-    phoneType: 'mobile',
-    extension: '',
-    company: '',
-    address: '',
+    firstName: "",
+    lastName: "",
+    type: "customer",
+    labelRole: "",
+    email: "",
+    phone: "",
+    phoneType: "mobile",
+    extension: "",
+    company: "",
+    address: "",
     latitude: 0,
     longitude: 0,
-    timezone: '',
+    timezone: "",
     dndAllChannels: false,
     dndChannels: {
       email: false,
       textMessages: false,
       callsVoicemail: false,
-      inboundCallsSms: false
+      inboundCallsSms: false,
     },
-    secondaryPhoneType: 'mobile'
+    secondaryPhoneType: "mobile",
   });
-  const [secondaryEmail, setSecondaryEmail] = useState('');
+  const [secondaryEmail, setSecondaryEmail] = useState("");
   const [showSecondaryEmail, setShowSecondaryEmail] = useState(false);
-  const [secondaryPhone, setSecondaryPhone] = useState({ phone: '', extension: '' });
+  const [secondaryPhone, setSecondaryPhone] = useState({
+    phone: "",
+    extension: "",
+  });
   const [showSecondaryPhone, setShowSecondaryPhone] = useState(false);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
-    name: '',
-    location: '',
+    name: "",
+    location: "",
     assignees: [],
     jobOwner: null,
-    workflowStages: 'New lead',
-    closeDate: '',
-    jobValue: '0',
-    source: '',
-    details: '',
+    workflowStages: "New lead",
+    closeDate: "",
+    jobValue: "0",
+    source: "",
+    details: "",
     insuranceEnabled: false,
-    insuranceCompany: '',
-    policyAccountNumber: '',
-    claimNumber: '',
-    dateOfLoss: '',
-    typeOfDamage: '',
+    insuranceCompany: "",
+    policyAccountNumber: "",
+    claimNumber: "",
+    dateOfLoss: "",
+    typeOfDamage: "",
     claimAmount: 0,
     deductible: 0,
-    claimDetails: '',
-    createdBy: 1
+    claimDetails: "",
+    createdBy: 1,
   });
 
   const fetchStaff = async () => {
@@ -100,7 +122,7 @@ const ContactProfile: React.FC = () => {
       const response = await getStaff(1, 100);
       setStaff(response.data || []);
     } catch (error: any) {
-      console.error('Error fetching staff:', error);
+      console.error("Error fetching staff:", error);
       setStaff([]);
     }
   };
@@ -110,13 +132,14 @@ const ContactProfile: React.FC = () => {
     try {
       setLoading(true);
       await createJob(formData);
-      setToast({ message: 'Job created successfully!', type: 'success' });
+      setToast({ message: "Job created successfully!", type: "success" });
       setShowJobDetails(false);
       resetJobForm();
-      setJobAddress('');
+      setJobAddress("");
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to create job';
-      setToast({ message: errorMessage, type: 'error' });
+      const errorMessage =
+        error.response?.data?.message || "Failed to create job";
+      setToast({ message: errorMessage, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -124,30 +147,30 @@ const ContactProfile: React.FC = () => {
 
   const resetJobForm = () => {
     setFormData({
-      name: '',
-      location: '',
+      name: "",
+      location: "",
       assignees: [],
       jobOwner: null,
-      workflowStages: 'New lead',
-      closeDate: '',
-      jobValue: '0',
-      source: '',
-      details: '',
+      workflowStages: "New lead",
+      closeDate: "",
+      jobValue: "0",
+      source: "",
+      details: "",
       insuranceEnabled: false,
-      insuranceCompany: '',
-      policyAccountNumber: '',
-      claimNumber: '',
-      dateOfLoss: '',
-      typeOfDamage: '',
+      insuranceCompany: "",
+      policyAccountNumber: "",
+      claimNumber: "",
+      dateOfLoss: "",
+      typeOfDamage: "",
       claimAmount: 0,
       deductible: 0,
-      claimDetails: '',
-      createdBy: 1
+      claimDetails: "",
+      createdBy: 1,
     });
   };
 
   const formatPhoneNumber = (value: string) => {
-    const phoneNumber = value.replace(/[^\d]/g, '');
+    const phoneNumber = value.replace(/[^\d]/g, "");
     const phoneNumberLength = phoneNumber.length;
     if (phoneNumberLength < 4) return phoneNumber;
     if (phoneNumberLength < 7) {
@@ -166,12 +189,17 @@ const ContactProfile: React.FC = () => {
     setSecondaryPhone({ ...secondaryPhone, phone: formatted });
   };
 
-  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
-    setContactFormData(prev => ({
+  const handleAddressChange = (
+    address: string,
+    isFromAutocomplete: boolean,
+    lat?: number,
+    lng?: number,
+  ) => {
+    setContactFormData((prev) => ({
       ...prev,
       address,
       latitude: lat || 0,
-      longitude: lng || 0
+      longitude: lng || 0,
     }));
   };
 
@@ -181,7 +209,7 @@ const ContactProfile: React.FC = () => {
 
   const removeSecondaryEmail = () => {
     setShowSecondaryEmail(false);
-    setSecondaryEmail('');
+    setSecondaryEmail("");
   };
 
   const addSecondaryPhone = () => {
@@ -190,38 +218,38 @@ const ContactProfile: React.FC = () => {
 
   const removeSecondaryPhone = () => {
     setShowSecondaryPhone(false);
-    setSecondaryPhone({ phone: '', extension: '' });
+    setSecondaryPhone({ phone: "", extension: "" });
   };
 
   const handleEdit = () => {
     if (!currentContact) return;
 
-    const nameParts = (currentContact.fullName || '').split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    const nameParts = (currentContact.fullName || "").split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
     setContactFormData({
       firstName: firstName,
       lastName: lastName,
-      type: currentContact.type || 'customer',
-      labelRole: currentContact.labelOrRole || '',
-      email: currentContact.email || '',
-      phone: currentContact.phone || '',
-      phoneType: 'mobile',
-      extension: '',
-      company: currentContact.company || '',
-      address: currentContact.address || '',
+      type: currentContact.type || "customer",
+      labelRole: currentContact.labelOrRole || "",
+      email: currentContact.email || "",
+      phone: currentContact.phone || "",
+      phoneType: "mobile",
+      extension: "",
+      company: currentContact.company || "",
+      address: currentContact.address || "",
       latitude: currentContact.latitude || 0,
       longitude: currentContact.longitude || 0,
-      timezone: '',
+      timezone: "",
       dndAllChannels: false,
       dndChannels: {
         email: false,
         textMessages: false,
         callsVoicemail: false,
-        inboundCallsSms: false
+        inboundCallsSms: false,
       },
-      secondaryPhoneType: 'mobile'
+      secondaryPhoneType: "mobile",
     });
     setShowEditContactModal(true);
   };
@@ -232,7 +260,8 @@ const ContactProfile: React.FC = () => {
 
     setLoading(true);
 
-    const fullName = `${contactFormData.firstName} ${contactFormData.lastName}`.trim();
+    const fullName =
+      `${contactFormData.firstName} ${contactFormData.lastName}`.trim();
 
     const contactData: CreateContactRequest = {
       fullName: fullName,
@@ -248,12 +277,15 @@ const ContactProfile: React.FC = () => {
 
     try {
       await updateContact(currentContact.id, contactData);
-      setToast({ message: 'Contact updated successfully!', type: 'success' });
+      setToast({ message: "Contact updated successfully!", type: "success" });
       setShowEditContactModal(false);
       dispatch(getContactByIdRequest(parseInt(id!)));
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to update contact';
-      setToast({ message: errorMessage, type: 'error' });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to update contact";
+      setToast({ message: errorMessage, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -273,16 +305,18 @@ const ContactProfile: React.FC = () => {
     }
   }, [toast]);
 
-  const contact = currentContact ? {
-    id: currentContact.id.toString(),
-    fullName: currentContact.fullName,
-    email: currentContact.email,
-    phone: currentContact.phone,
-    address: currentContact.address,
-    company: currentContact.company,
-    type: currentContact.type,
-    labelOrRole: currentContact.labelOrRole
-  } : null;
+  const contact = currentContact
+    ? {
+        id: currentContact.id.toString(),
+        fullName: currentContact.fullName,
+        email: currentContact.email,
+        phone: currentContact.phone,
+        address: currentContact.address,
+        company: currentContact.company,
+        type: currentContact.type,
+        labelOrRole: currentContact.labelOrRole,
+      }
+    : null;
 
   if (isLoadingContact) {
     return (
@@ -312,7 +346,7 @@ const ContactProfile: React.FC = () => {
     <div className="min-h-screen bg-white dark:bg-gray-800">
       <ContactHeader
         contactName={contact.fullName}
-        onBack={() => navigate(getOrgPath('contacts'))}
+        onBack={() => navigate(getOrgPath("contacts"))}
         onCreateJob={() => setShowAddressModal(true)}
         onEdit={handleEdit}
       />
@@ -331,14 +365,18 @@ const ContactProfile: React.FC = () => {
           <div className="p-6">
             <RightPanelTabs
               activeTab={rightPanelView}
-              onTabChange={(tab: string) => setRightPanelView(tab as RightPanelView)}
+              onTabChange={(tab: string) =>
+                setRightPanelView(tab as RightPanelView)
+              }
             />
 
             <RightPanelContent
               activeTab={rightPanelView}
               contactId={parseInt(contact.id)}
               showPaymentActions={showPaymentActions}
-              onPaymentActionsToggle={() => setShowPaymentActions(!showPaymentActions)}
+              onPaymentActionsToggle={() =>
+                setShowPaymentActions(!showPaymentActions)
+              }
             />
           </div>
         </div>
@@ -349,16 +387,20 @@ const ContactProfile: React.FC = () => {
         isOpen={showAddCompanyModal}
         onClose={() => setShowAddCompanyModal(false)}
         onSave={(companyData: any) => {
-          console.log('Company saved:', companyData);
+          console.log("Company saved:", companyData);
           setShowAddCompanyModal(false);
+          if (id) {
+            dispatch(getContactByIdRequest(parseInt(id)));
+          }
         }}
+        id={currentContact.id}
       />
 
       <AddressModal
         isOpen={showAddressModal}
         onClose={() => {
           setShowAddressModal(false);
-          setJobAddress('');
+          setJobAddress("");
         }}
         jobAddress={jobAddress}
         setJobAddress={(address: string) => {
@@ -366,7 +408,11 @@ const ContactProfile: React.FC = () => {
         }}
         onContinue={() => {
           if (jobAddress.trim()) {
-            setFormData({ ...formData, location: jobAddress, name: jobAddress });
+            setFormData({
+              ...formData,
+              location: jobAddress,
+              name: jobAddress,
+            });
             setShowAddressModal(false);
             setShowJobDetails(true);
           }
@@ -382,7 +428,7 @@ const ContactProfile: React.FC = () => {
         onClose={() => {
           setShowJobDetails(false);
           resetJobForm();
-          setJobAddress('');
+          setJobAddress("");
         }}
         onSubmit={handleJobSubmit}
         formData={formData}
@@ -416,7 +462,13 @@ const ContactProfile: React.FC = () => {
         removeSecondaryPhone={removeSecondaryPhone}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

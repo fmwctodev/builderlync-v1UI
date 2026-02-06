@@ -12,6 +12,7 @@ export interface CreateContactRequest {
   address: string;
   latitude?: number;
   longitude?: number;
+  conatct_id?: number;
 }
 
 export interface Contact {

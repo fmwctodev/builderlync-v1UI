@@ -280,7 +280,7 @@ export default function FileManager() {
     );
   }
 
-  if (!connection && activeTab === 'my-cloud') {
+  if (!connection && (activeTab === 'my-cloud' || activeTab === 'local-files')) {
     return (
       <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
