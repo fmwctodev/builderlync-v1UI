@@ -250,6 +250,7 @@ const Calendars: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log(1)
     e.preventDefault();
     setLoading(true);
     
@@ -279,6 +280,64 @@ const Calendars: React.FC = () => {
         setToast({ message: 'Event updated successfully!', type: 'success' });
       } else {
         await createJobEvent(jobId, eventData);
+        console.log('Event saved to database successfully');
+
+        // Create Google Calendar event if connected
+        const refreshToken = localStorage.getItem('google_refresh_token');
+        const isConnected = localStorage.getItem('google_calendar_status') === 'connected';
+        const googleEmail = localStorage.getItem('google_email');
+
+        console.log('Google Calendar check:', { refreshToken: !!refreshToken, isConnected, googleEmail });
+
+        if (refreshToken && isConnected && googleEmail) {
+          try {
+            const startDateTime = `${formData.startDate}T${formData.allDay ? '00:00' : formData.startTime}:00`;
+            const endDateTime = `${formData.endDate}T${formData.allDay ? '23:59' : formData.endTime}:00`;
+
+            const token = localStorage.getItem('token');
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+
+            console.log('Sending Google Calendar event request...');
+
+            const response = await fetch(`${API_BASE_URL}/profile/calendar/create/event`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                type: formData.type,
+                title: formData.title,
+                contactId: formData.contactId,
+                contactName: formData.contactName,
+                startDate: startDateTime,
+                endDate: endDateTime,
+                allDay: formData.allDay,
+                location: formData.location,
+                attendees: formData.invitees,
+                description: formData.description,
+                teamMember: formData.teamMember,
+                refreshToken,
+                googleEmail
+              })
+            });
+
+            console.log('Response status:', response.status);
+            const result = await response.json();
+            console.log('Result from Google Calendar event creation:', result);
+            
+            if (result.success) {
+              console.log('Google Calendar event created:', result.eventId);
+            } else {
+              console.error('Failed to create Google Calendar event:', result.error);
+            }
+          } catch (error) {
+            console.error('Failed to create Google Calendar event:', error);
+          }
+        } else {
+          console.log('Google Calendar not connected or missing credentials');
+        }
+
         setToast({ message: 'Event created successfully!', type: 'success' });
       }
       
