@@ -81,12 +81,18 @@ export const createJobEvent = async (jobId: number, eventData: CreateEventReques
   return response.data;
 };
 
-export const updateJobEvent = async (jobId: number, eventId: number, eventData: CreateEventRequest): Promise<{ success: boolean; message: string }> => {
+export const updateJobEvent = async (jobId: number, eventId: number, eventData: any): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
+  const refreshToken = localStorage.getItem('google_refresh_token');
+  const googleEmail = localStorage.getItem('google_email');
 
   const response = await axios.put(
     `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`,
-    eventData,
+    {
+      ...eventData,
+      refreshToken,
+      googleEmail
+    },
     {
       headers: {
         'accept': 'application/json',
@@ -99,15 +105,20 @@ export const updateJobEvent = async (jobId: number, eventId: number, eventData: 
   return response.data;
 };
 
-export const deleteJobEvent = async (jobId: number, eventId: number): Promise<{ success: boolean; message: string }> => {
+export const deleteJobEvent = async (jobId: number, eventId: number, googleEventId?: string): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
+  const refreshToken = localStorage.getItem('google_refresh_token');
 
   const response = await axios.delete(
     `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`,
     {
       headers: {
         'accept': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        refreshToken
       }
     }
   );
