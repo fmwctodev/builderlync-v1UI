@@ -10,71 +10,18 @@ interface PlaceOrderPageProps {
   onBack: () => void;
 }
 
-const PRODUCTS = [
-  {
-    id: 'bidPerfect',
-    name: 'BidPerfect',
-    type: 'Pro',
-    desc: 'Quick and accurate measurements for bidding',
-    price: 'Price TBD',
-    credits: 2,
-    badge: 'basic',
-    options: [
-      { id: 'bidPerfect_standard', name: 'BidPerfect', evId: 84 },
-      { id: 'bidPerfect_commercial', name: 'Bid Perfect - Commercial', evId: 102 }
-    ]
-  },
-  {
-    id: 'fullHouse',
-    name: 'Full House',
-    type: 'Pro',
-    desc: 'Complete measurements for the entire house',
-    price: 'Price TBD',
-    credits: 3,
-    badge: 'pro',
-    options: [
-      { id: 'fullHouse_standard', name: 'Full House', evId: 99 }
-    ]
-  },
-  {
-    id: 'gutter',
-    name: 'Gutter',
-    type: 'Basic',
-    desc: 'Roof diagram with gutters highlighted',
-    price: 'Price TBD',
-    credits: 1,
-    badge: 'basic',
-    options: [
-      { id: 'gutter_residential', name: 'Gutter - Residential', evId: 46 },
-      { id: 'gutter_commercial', name: 'Gutter - Commercial', evId: 47 }
-    ]
-  },
-  { id: 'premium', name: 'Premium', type: 'Upgrade', desc: 'Premium roof measurement report', price: 'Price TBD', credits: 0, badge: 'upgrade', upgradeOnly: true, note: 'Available only after BidPerfect is delivered.', options: [] },
-  { id: 'solar_inform_essentials', name: 'Inform Essentials+', type: 'Basic', desc: 'Basic solar installation data', price: 'Price TBD', credits: 0, badge: 'coming-soon', comingSoon: true, note: 'This product will be available in V1', options: [] },
-  { id: 'solar_inform_advanced', name: 'Inform Advanced', type: 'Basic', desc: 'Advanced solar data with SAV and TSRF', price: 'Price TBD', credits: 0, badge: 'coming-soon', comingSoon: true, note: 'This product will be available in V1', options: [] },
-  { id: 'solar_truedesign_sales', name: 'TrueDesign for Sales', type: 'Basic', desc: 'Design residential PV layout for sales', price: 'Price TBD', credits: 0, badge: 'coming-soon', comingSoon: true, note: 'This product will be available in V1', options: [] },
-  { id: 'solar_truedesign_planning', name: 'TrueDesign for Planning', type: 'Basic', desc: 'Export PV design for install planning', price: 'Price TBD', credits: 0, badge: 'coming-soon', comingSoon: true, note: 'This product will be available in V1', options: [] },
-];
-
-const DELIVERY_PRODUCTS = [
-  { id: 8, name: 'Regular Delivery' },
-  { id: 4, name: 'Express Delivery' },
-  { id: 7, name: 'Three Hour Delivery' },
-  { id: 45, name: 'Quick Delivery' },
-];
-
-const MEASUREMENT_INSTRUCTIONS = [
-  { id: 1, name: 'Primary Plus Detached Garage' },
-  { id: 2, name: 'Primary Structure Only' },
-  { id: 3, name: 'All Structures On Parcel' },
-  { id: 4, name: 'Commercial Complex' },
-  { id: 5, name: 'Other' },
-];
+const MEASUREMENT_INSTRUCTIONS_MAP: Record<number, string> = {
+  1: 'Primary Plus Detached Garage',
+  2: 'Primary Structure Only',
+  3: 'All Structures On Parcel',
+  4: 'Commercial Complex',
+  5: 'Other',
+};
 
 const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams();
-  const [step, setStep] = useState<'payment-method' | 'product-selection' | 'breakdown'>('payment-method');
+  const [step, setStep] = useState<'payment-method' | 'product-selection' | 'options-selection' | 'breakdown'>('payment-method');
   const [connectionStatus, setConnectionStatus] = useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({
     connected: false, usingOwnAccount: false, credits: 0
   });
@@ -82,6 +29,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [result, setResult] = useState<{ success: boolean; orderId?: string; message?: string } | null>(null);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
 
   // Order Data State
   const [address, setAddress] = useState('');
@@ -97,7 +46,20 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
 
   useEffect(() => {
     loadConnectionStatus();
+    loadAvailableProducts();
   }, []);
+
+  const loadAvailableProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const products = await eagleViewService.getAvailableProducts();
+      setAvailableProducts(products);
+    } catch (error) {
+      console.error('Failed to load available products', error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
 
   const loadConnectionStatus = async () => {
     try {
@@ -122,15 +84,41 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
     setAddressComponents(components);
   };
 
-  const handleProductToggle = (optionId: string) => {
-    setSelectedOptionId(optionId);
-  };
-
   const calculateTotalCredits = () => {
     if (!selectedOptionId) return 0;
-    const product = PRODUCTS.find(p => p.options.some(o => o.id === selectedOptionId));
-    return product?.credits || 0;
+    // Map product IDs to credits if needed, or use a default
+    const creditMap: Record<number, number> = {
+      84: 2, // BidPerfect
+      102: 2, // Bid Perfect - Commercial
+      99: 3, // Full House
+      46: 1, // Gutter - Residential
+      47: 1, // Gutter - Commercial
+    };
+    return creditMap[Number(selectedOptionId)] || 2; // Default to 2 credits
   };
+
+  const selectedProduct = availableProducts.find(p => p.productID === Number(selectedOptionId));
+  const dynamicDeliveryProducts = selectedProduct?.deliveryProducts || [];
+  const dynamicMeasurementInstructions = (selectedProduct?.measurementInstructionTypes || []).map((id: number) => ({
+    id,
+    name: MEASUREMENT_INSTRUCTIONS_MAP[id] || `Instruction Type ${id}`
+  }));
+
+  const totalCredits = calculateTotalCredits();
+  const missingCredits = Math.max(0, totalCredits - connectionStatus.credits);
+  const hasSufficient = missingCredits === 0;
+
+  // Update default selections when product changes
+  useEffect(() => {
+    if (selectedProduct) {
+      if (dynamicDeliveryProducts.length > 0 && !dynamicDeliveryProducts.find((p: any) => p.productID === deliveryProductId)) {
+        setDeliveryProductId(dynamicDeliveryProducts[0].productID);
+      }
+      if (dynamicMeasurementInstructions.length > 0 && !dynamicMeasurementInstructions.find((i: any) => i.id === measurementInstructionType)) {
+        setMeasurementInstructionType(dynamicMeasurementInstructions[0].id);
+      }
+    }
+  }, [selectedOptionId, dynamicDeliveryProducts, dynamicMeasurementInstructions]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
@@ -265,7 +253,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           </div>
           <button
             disabled={!canContinue}
-            onClick={() => setStep('breakdown')}
+            onClick={() => setStep('options-selection')}
             className={`px-6 py-2 rounded font-medium transition-colors ${canContinue
               ? 'bg-gray-900 text-white hover:bg-gray-800'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -317,150 +305,211 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase tracking-wide">Order Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Delivery Product
-                </label>
-                <select
-                  value={deliveryProductId}
-                  onChange={(e) => setDeliveryProductId(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm"
-                >
-                  {DELIVERY_PRODUCTS.map((dp) => (
-                    <option key={dp.id} value={dp.id}>
-                      {dp.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Measurement Instruction Type
-                </label>
-                <select
-                  value={measurementInstructionType}
-                  onChange={(e) => setMeasurementInstructionType(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm"
-                >
-                  {MEASUREMENT_INSTRUCTIONS.map((mi) => (
-                    <option key={mi.id} value={mi.id}>
-                      {mi.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="changesInLast4Years"
-                checked={changesInLast4Years}
-                onChange={(e) => setChangesInLast4Years(e.target.checked)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="changesInLast4Years" className="text-sm text-gray-700 dark:text-gray-300">
-                Any changes to the structure in the last 4 years?
-              </label>
-            </div>
-          </div>
-        </div>
-
         <div>
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5" /> Measurement Reports
           </h3>
 
           <div className="space-y-4">
-            {PRODUCTS.map(product => !product.comingSoon && (
-              <div
-                key={product.id}
-                className={`bg-white dark:bg-gray-800 p-6 rounded-lg border transition-all ${selectedOptionId && product.options.some(o => o.id === selectedOptionId)
-                  ? 'border-blue-500 ring-1 ring-blue-500'
-                  : 'border-gray-200 dark:border-gray-700'
-                  }`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h4 className="font-bold text-gray-900 dark:text-white text-lg">{product.name}</h4>
-                      <span className={`text-xs uppercase px-2 py-0.5 rounded font-semibold ${product.type === 'Pro' ? 'bg-blue-100 text-blue-700' :
-                        product.type === 'Upgrade' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                        {product.type}
-                      </span>
+            {productsLoading ? (
+              <div className="text-center py-8 text-gray-500">Loading products...</div>
+            ) : availableProducts.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No products available. Please check your EagleView connection.</div>
+            ) : (
+              availableProducts.map(product => (
+                <div
+                  key={product.productID}
+                  onClick={() => setSelectedOptionId(product.productID.toString())}
+                  className={`bg-white dark:bg-gray-800 p-6 rounded-lg border transition-all cursor-pointer ${selectedOptionId === product.productID.toString()
+                    ? 'border-blue-500 ring-1 ring-blue-500'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                    }`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h4 className="font-bold text-gray-900 dark:text-white text-lg">{product.name}</h4>
+                        {product.isRoofProduct && (
+                          <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-blue-100 text-blue-700">
+                            Roof
+                          </span>
+                        )}
+                        {product.isTemporarilyUnavailable && (
+                          <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-red-100 text-red-700">
+                            Unavailable
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-500">{product.description}</p>
+                      {product.DetailedDescription && (
+                        <div className="text-xs text-gray-400 mt-2 whitespace-pre-line">
+                          {product.DetailedDescription}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-gray-500">{product.desc}</p>
-                    {product.upgradeOnly && (
-                      <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {product.note}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">{product.price}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                          {product.priceMin === 0 && product.priceMax === 0 ? 'Price TBD' : `$${product.priceMin} - $${product.priceMax}`}
+                        </span>
+                        <div className="text-xs text-gray-500">
+                          {calculateTotalCredits()} Credits
+                        </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${selectedOptionId === product.productID.toString() ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                        }`}>
+                        {selectedOptionId === product.productID.toString() && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {product.options.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                    {product.options.map(option => {
-                      const isSelected = selectedOptionId === option.id;
-                      return (
-                        <div
-                          key={option.id}
-                          onClick={() => handleProductToggle(option.id)}
-                          className={`flex items-center justify-between p-3 rounded border cursor-pointer transition-colors ${isSelected
-                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400'
-                            : 'bg-gray-50 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600 hover:border-blue-300'
-                            }`}
-                        >
-                          <span className={`text-sm font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                            {option.name}
-                          </span>
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                            }`}>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        <div className="space-y-4 pt-6">
-          <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 opacity-50">
-            Solar <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Coming Soon - V1</span>
-          </h3>
-          {PRODUCTS.map(product => product.comingSoon && (
-            <div key={product.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-between items-center opacity-50">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-gray-900 dark:text-white">{product.name}</h4>
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600">
-                    {product.type}
-                  </span>
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded font-medium bg-yellow-100 text-yellow-700">
-                    Coming Soon - V1
-                  </span>
+        {availableProducts.length > 0 && availableProducts.some(p => p.comingSoon) && (
+          <div className="space-y-4 pt-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 opacity-50">
+              Solar <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Coming Soon - V1</span>
+            </h3>
+            {availableProducts.map(product => product.comingSoon && (
+              <div key={product.productID} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-between items-center opacity-50">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-gray-900 dark:text-white">{product.name}</h4>
+                    <span className="text-[10px] uppercase px-1.5 py-0.5 rounded font-medium bg-yellow-100 text-yellow-700">
+                      Coming Soon - V1
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-2">{product.description}</p>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">{product.desc}</p>
-                <p className="text-xs text-gray-400">{product.note}</p>
+                <div className="flex items-center gap-6">
+                  <span className="text-sm text-gray-500">Price TBD</span>
+                </div>
               </div>
-              <div className="flex items-center gap-6">
-                <span className="text-sm text-gray-500">{product.price}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // --- Step 3: Options Selection ---
+  if (step === 'options-selection') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <button
+            onClick={() => setStep('product-selection')}
+            className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-4 text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to product selection
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+              <Download className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Options</h1>
+              <p className="text-gray-500">Customize delivery and reporting instructions for {selectedProduct?.name}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Delivery Product
+              </label>
+              <div className="space-y-3">
+                {dynamicDeliveryProducts.map((dp: any) => (
+                  <label
+                    key={dp.productID}
+                    className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${deliveryProductId === dp.productID
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-blue-200'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="delivery"
+                      value={dp.productID}
+                      checked={deliveryProductId === dp.productID}
+                      onChange={() => setDeliveryProductId(dp.productID)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="ml-4 flex-1">
+                      <p className="font-bold text-gray-900 dark:text-white">{dp.name}</p>
+                      {dp.priceMax > 0 && <p className="text-sm text-gray-500">Estimated cost: ${dp.priceMax}</p>}
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
-          ))}
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                Measurement Instruction Type
+              </label>
+              <div className="space-y-3">
+                {dynamicMeasurementInstructions.map((mi: any) => (
+                  <label
+                    key={mi.id}
+                    className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${measurementInstructionType === mi.id
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-blue-200'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="instruction"
+                      value={mi.id}
+                      checked={measurementInstructionType === mi.id}
+                      onChange={() => setMeasurementInstructionType(mi.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="ml-4 flex-1 text-sm font-bold text-gray-900 dark:text-white">
+                      {mi.name}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Additional Information</h4>
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg flex items-start gap-4 cursor-pointer" onClick={() => setChangesInLast4Years(!changesInLast4Years)}>
+              <div className="mt-1">
+                <input
+                  type="checkbox"
+                  checked={changesInLast4Years}
+                  onChange={(e) => setChangesInLast4Years(e.target.checked)}
+                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Recent Structure Changes</p>
+                <p className="text-sm text-gray-500">Check this if there have been any changes to the building structure in the last 4 years (e.g., additions, renovations).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex items-center gap-4 text-gray-500 italic text-sm">
+            <AlertCircle className="w-5 h-5 text-blue-400" />
+            Review your order details carefully before proceeding to payment.
+          </div>
+          <button
+            onClick={() => setStep('breakdown')}
+            className="px-10 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+          >
+            Continue to Summary <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
     );
@@ -470,20 +519,20 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   if (result) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${result.success ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-          {result.success ? <Check className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${result?.success ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+          {result?.success ? <Check className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
         </div>
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {result.success ? 'Order Placed Successfully!' : 'Order Failed'}
+          {result?.success ? 'Order Placed Successfully!' : 'Order Failed'}
         </h2>
         <p className="text-gray-500 mb-8 max-w-md mx-auto">
-          {result.success
-            ? `Your EagleView order has been submitted. Report ID: ${result.orderId || 'Pending'}. You can track the status in your Order History.`
-            : result.message || 'An unexpected error occurred while processing your order. Please try again or contact support.'}
+          {result?.success
+            ? `Your EagleView order has been submitted. Report ID: ${result?.orderId || 'Pending'}. You can track the status in your Order History.`
+            : result?.message || 'An unexpected error occurred while processing your order. Please try again or contact support.'}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          {result.success ? (
+          {result?.success ? (
             <>
               <button
                 onClick={() => onOrderComplete(result)}
@@ -524,14 +573,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
     );
   }
 
-  // --- Step 3: Breakdown ---
+  // --- Step 5: Breakdown ---
   if (step === 'breakdown') {
-    const totalCredits = calculateTotalCredits();
-    const missingCredits = Math.max(0, totalCredits - connectionStatus.credits);
-    const hasSufficient = missingCredits === 0;
-
-    const selectedOption = PRODUCTS.flatMap(p => p.options).find(o => o.id === selectedOptionId);
-    const selectedProduct = PRODUCTS.find(p => p.options.some(o => o.id === selectedOptionId));
 
     return (
       <div className="space-y-6 pb-24">
@@ -575,19 +618,19 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Order Summary</h3>
           </div>
           <div className="p-4">
-            {selectedOption && (
+            {selectedProduct && (
               <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 text-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-1 bg-blue-100 text-blue-600 rounded">
                     <FileText className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{selectedOption.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedProduct.name}</p>
                     <p className="text-xs text-gray-500">Product</p>
                   </div>
                 </div>
                 <span className="font-medium">
-                  {paymentMethod === 'credits' ? `${selectedProduct?.credits} Credits` : 'Bill to Account'}
+                  {paymentMethod === 'credits' ? `${calculateTotalCredits()} Credits` : 'Bill to Account'}
                 </span>
               </div>
             )}
@@ -599,7 +642,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                 </div>
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {DELIVERY_PRODUCTS.find(p => p.id === deliveryProductId)?.name}
+                    {dynamicDeliveryProducts.find((p: any) => p.productID === deliveryProductId)?.name || 'Standard Delivery'}
                   </p>
                   <p className="text-xs text-gray-500">Delivery</p>
                 </div>
@@ -613,7 +656,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                 </div>
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {MEASUREMENT_INSTRUCTIONS.find(i => i.id === measurementInstructionType)?.name}
+                    {dynamicMeasurementInstructions.find((i: any) => i.id === measurementInstructionType)?.name || 'Default Instructions'}
                   </p>
                   <p className="text-xs text-gray-500">Instructions</p>
                 </div>
@@ -768,13 +811,13 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 flex justify-between items-center px-8">
-          <button onClick={() => setStep('product-selection')} className="text-gray-600 font-medium hover:text-gray-900">
+          <button onClick={() => setStep('options-selection')} className="text-gray-600 font-medium hover:text-gray-900">
             Back
           </button>
           <button
             onClick={async () => {
               const canSubmit = paymentMethod === 'account' || hasSufficient;
-              if (canSubmit && selectedOption) {
+              if (canSubmit && selectedProduct) {
                 setIsSubmitting(true);
                 try {
                   const getAddressComponent = (type: string) => {
@@ -783,7 +826,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                     return comp ? comp.short_name : '';
                   };
 
-                  const primaryProductId = selectedOption.evId;
+                  const primaryProductId = Number(selectedOptionId);
 
                   const orderData = {
                     orderReports: {

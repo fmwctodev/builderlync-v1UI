@@ -234,6 +234,28 @@ class EagleViewService {
     }
   }
 
+  async getAvailableProducts(): Promise<any[]> {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const response = await fetch(`${API_BASE_URL}/eagleview/available-products`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      console.error('Failed to fetch available products:', error);
+      return [];
+    }
+  }
+
   // ... other methods ...
 
   async getConnectionStatus(): Promise<{ connected: boolean; usingOwnAccount: boolean; credits: number }> {

@@ -34,15 +34,17 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
 
   useEffect(() => {
     const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
+      if (window.google?.maps?.places) {
         setIsLoaded(true);
         serviceRef.current = new window.google.maps.places.AutocompleteService();
         return;
       }
 
       window.initGooglePlaces = () => {
-        setIsLoaded(true);
-        serviceRef.current = new window.google.maps.places.AutocompleteService();
+        if (window.google?.maps?.places) {
+          setIsLoaded(true);
+          serviceRef.current = new window.google.maps.places.AutocompleteService();
+        }
       };
 
       const script = document.createElement('script');
@@ -57,10 +59,10 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
 
   const handleInputChange = (inputValue: string) => {
     onChange(inputValue, false);
-    
+
     if (inputValue.length > 2 && isLoaded && serviceRef.current) {
       const allSuggestions: Suggestion[] = [];
-      
+
       // Get city predictions
       serviceRef.current.getPlacePredictions(
         {
@@ -71,7 +73,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
           if (cityPredictions) {
             allSuggestions.push(...cityPredictions);
           }
-          
+
           // Get address predictions
           serviceRef.current.getPlacePredictions(
             {
@@ -82,7 +84,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
               if (addressPredictions) {
                 allSuggestions.push(...addressPredictions);
               }
-              
+
               setSuggestions(allSuggestions);
               setShowSuggestions(true);
             }

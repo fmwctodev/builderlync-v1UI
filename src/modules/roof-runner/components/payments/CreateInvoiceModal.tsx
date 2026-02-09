@@ -155,7 +155,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
     const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
     const tax = lineItems.reduce((sum, item) => sum + (item.total * item.tax / 100), 0);
     let coupon_discount = 0;
-    
+
     if (appliedCoupon) {
       if (appliedCoupon.discount_type === 'percentage') {
         coupon_discount = subtotal * (appliedCoupon.discount_value / 100);
@@ -163,7 +163,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         coupon_discount = appliedCoupon.discount_value;
       }
     }
-    
+
     const total = subtotal + tax + formData.shipping - formData.discount - coupon_discount;
     setFormData(prev => ({ ...prev, subtotal, tax, total, coupon_discount }));
   };
@@ -177,7 +177,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
-    
+
     try {
       const coupon = await validateCoupon(couponCode);
       setAppliedCoupon(coupon);
@@ -235,14 +235,14 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         coupon_id: appliedCoupon?.id,
         status: isDraft ? 'draft' : 'sent'
       };
-      
+
       let response;
       if (editInvoice) {
         response = await updateInvoice(editInvoice.id, invoiceData);
       } else {
         response = await createInvoice(invoiceData);
       }
-      
+
       onSuccess(response);
       onClose();
     } catch (err: any) {
@@ -268,11 +268,20 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
         <form onSubmit={handleSubmit} className="p-6">
           {error && (
-            <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 flex items-start gap-2">
-              <span className="text-yellow-600 dark:text-yellow-400 text-sm">{error}</span>
-              <button type="button" className="ml-auto px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded">
-                Connect QuickBooks
-              </button>
+            <div className={`mb-4 rounded-lg p-3 flex items-start gap-2 ${error.toLowerCase().includes('quickbooks') ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' : 'bg-red-50 dark:bg-red-900/20 border-red-200'
+              } border`}>
+              <span className={`${error.toLowerCase().includes('quickbooks') ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
+                } text-sm flex-1`}>
+                {error}
+                {!error.toLowerCase().includes('quickbooks') && error.includes('Failed to create') && (
+                  <p className="mt-1 text-xs opacity-80">This might be due to a database error or missing permissions. Please contact support if this persists.</p>
+                )}
+              </span>
+              {error.toLowerCase().includes('quickbooks') && (
+                <button type="button" className="ml-auto px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded whitespace-nowrap">
+                  Connect QuickBooks
+                </button>
+              )}
             </div>
           )}
 
@@ -302,7 +311,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 onFocus={() => setShowCustomerList(true)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
               />
-              
+
               {showCustomerList && customers.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {customers
@@ -414,7 +423,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   <span className="inline-block w-4 h-4 border border-current rounded"></span> Show Template
                 </button>
               </div>
-              
+
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
                   <div className="col-span-4">Description</div>
@@ -425,7 +434,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   <div className="col-span-2">Total</div>
                   <div className="col-span-1">Action</div>
                 </div>
-                
+
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {lineItems.map((item, index) => (
                     <div key={index} className="px-3 py-2 grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-900">
@@ -468,7 +477,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   ))}
                 </div>
               </div>
-              
+
               <button type="button" onClick={addLineItem} className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add Line Item
               </button>
@@ -477,18 +486,18 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
             {/* Apply Coupon Code */}
             <div>
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={showCouponInput}
                   onChange={(e) => {
                     console.log('Coupon checkbox clicked:', e.target.checked);
                     setShowCouponInput(e.target.checked);
                   }}
-                  className="rounded" 
+                  className="rounded"
                 />
                 Apply Coupon Code
               </label>
-              
+
               {showCouponInput && (
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -511,7 +520,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                       Apply
                     </button>
                   </div>
-                  
+
                   {appliedCoupon && (
                     <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -529,7 +538,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                       </button>
                     </div>
                   )}
-                  
+
                   {showCouponList && availableCoupons.length > 0 && !appliedCoupon && (
                     <div className="border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto">
                       {availableCoupons
@@ -642,8 +651,8 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
           {/* Footer Actions */}
           <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={(e: any) => handleSubmit(e, true)}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
             >

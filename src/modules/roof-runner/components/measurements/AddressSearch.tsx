@@ -26,11 +26,11 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
 
   useEffect(() => {
     const loadGoogleMaps = () => {
-      if (window.google) {
+      if (window.google?.maps) {
         initializeMap();
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
@@ -39,7 +39,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
     };
 
     const initializeMap = () => {
-      if (mapRef.current && window.google && !map) {
+      if (mapRef.current && window.google?.maps && !map) {
         const newMap = new window.google.maps.Map(mapRef.current, {
           center: { lat: 37.0902, lng: -95.7129 },
           zoom: 4,
@@ -50,13 +50,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
           zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_TOP }
         });
         setMap(newMap);
-        
+
         if (autocompleteInputRef.current) {
           const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
             types: ['address'],
             componentRestrictions: { country: country === 'United States' ? 'us' : 'ca' }
           });
-          
+
           autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
             if (!place.geometry?.location) return;
@@ -67,7 +67,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
               lng: place.geometry.location.lng(),
               components: place.address_components
             };
-            
+
             setAddress(selectedAddress);
             onAddressSelect(selectedAddress, addressComponents);
             setBuildingId(selectedAddress);
