@@ -43,6 +43,8 @@ export default function Measurements() {
     balance: 0
   });
 
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+
   useEffect(() => {
     loadBusinessInfo();
     fetchEagleViewStats();
@@ -60,6 +62,11 @@ export default function Measurements() {
         ? ordersResponse
         : (ordersResponse as any).data || (ordersResponse as any).items || [];
 
+      // Sort by date desc if not already
+      orders.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setRecentOrders(orders.slice(0, 5));
+
       // Process orders for stats
       const currentYear = new Date().getFullYear();
       let pending = 0;
@@ -67,12 +74,13 @@ export default function Measurements() {
 
       orders.forEach((order: any) => {
         // Status check
-        if (order.status !== 'completed' && order.status !== 'delivered' && order.status !== 'failed') {
+        // Status IDs: 1=Created, 2=InProcess, 3=Pending, 4=Closed, 5=Completed
+        if (order.status_id >= 1 && order.status_id <= 3) {
           pending++;
         }
 
         // Year check
-        if ((order.status === 'completed' || order.status === 'delivered')) {
+        if (order.status_id === 4 || order.status_id === 5) {
           if (order.created_at) {
             const orderYear = new Date(order.created_at).getFullYear();
             if (orderYear === currentYear) {
@@ -184,6 +192,17 @@ export default function Measurements() {
       zip_code: ''
     });
     setIsEditing(true);
+  };
+
+  const getStatusLabel = (statusId: number) => {
+    switch (statusId) {
+      case 1: return { label: 'CREATED', color: 'bg-blue-100 text-blue-800' };
+      case 2: return { label: 'IN PROCESS', color: 'bg-purple-100 text-purple-800' };
+      case 3: return { label: 'PENDING', color: 'bg-orange-100 text-orange-800' };
+      case 4: return { label: 'CLOSED', color: 'bg-gray-100 text-gray-800' };
+      case 5: return { label: 'COMPLETED', color: 'bg-green-100 text-green-800' };
+      default: return { label: 'UNKNOWN', color: 'bg-gray-100 text-gray-800' };
+    }
   };
 
   const renderDashboard = () => (
@@ -341,7 +360,32 @@ export default function Measurements() {
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">You have {stats.totalOrders} order(s) placed.</p>
+
+            {recentOrders && recentOrders.length > 0 ? (
+              <div className="space-y-4 mb-4">
+                {recentOrders.map((order) => {
+                  const statusInfo = getStatusLabel(order.status_id);
+                  return (
+                    <div key={order.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[150px]">
+                          {order.address}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">You have {stats.totalOrders} order(s) placed.</p>
+            )}
+
             <button
               onClick={() => setActiveTab('Order')}
               className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -349,6 +393,14 @@ export default function Measurements() {
               <Plus size={16} className="inline mr-2" />
               Start New Order
             </button>
+            {recentOrders.length > 0 && (
+              <button
+                onClick={() => setActiveTab('Order History')}
+                className="w-full mt-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/10 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/20"
+              >
+                View All Orders
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -17,7 +17,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch })
   const markersRef = React.useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google?.maps) return;
 
     const map = new google.maps.Map(mapRef.current, {
       zoom: 4,
