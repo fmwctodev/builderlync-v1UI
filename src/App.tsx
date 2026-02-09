@@ -15,6 +15,7 @@ import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 // import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 
 import { ReportingModule } from './modules/reporting/ReportingModule';
+import { SuperAdminModule } from './modules/super-admin/SuperAdminModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
 import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
 import { SierraAiModule } from './modules/sierra-ai/SierraAiModule';
@@ -36,6 +37,7 @@ function App() {
               <Route path="/auth/gmail/callback" element={<OAuthOutlookCallback />} />
               <Route path="/outlook-callback" element={<OAuthOutlookCallback />} />
               <Route path="/integrations/abc-supply/callback" element={<ABCSupplyCallback />} />
+              <Route path="/super-admin/*" element={<SuperAdminModule />} />
               <Route path="/*" element={<RoofRunnerModule />} />
               {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
               <Route path="/crm/*" element={<CRMModule />} />

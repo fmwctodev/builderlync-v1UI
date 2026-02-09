@@ -235,25 +235,68 @@ const CalendarSettingsSection: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const token = localStorage.getItem("token");
 
-  // Check localStorage on mount
+  // Check connection status on mount
   useEffect(() => {
-    const accessToken = localStorage.getItem("google_access_token");
-    const refreshToken = localStorage.getItem("google_refresh_token");
-    const email = localStorage.getItem("google_email");
-    const status = localStorage.getItem("google_calendar_status");
-
-    if (accessToken && refreshToken && email && status === "connected") {
-      setUserEmail(email);
-      setIsConnected(true);
-    }
+    checkConnectionStatus();
   }, []);
 
-  const handleDeleteCalendar = (id: string) => {
-    if (confirm("Are you sure you want to disconnect this calendar?")) {
-      setCalendars(calendars.filter((c) => c.id !== id));
+  const checkConnectionStatus = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/profile/auth/google/status`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await res.json();
+      if (result.success && result.data.connected) {
+        setIsConnected(true);
+        setUserEmail(result.data.email);
+      }
+    } catch (error) {
+      console.error("Failed to check connection status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Are you sure you want to disconnect Google Calendar?")) {
+      return;
+    }
+
+    setDisconnecting(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/profile/auth/google`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await res.json();
+      if (result.success) {
+        setIsConnected(false);
+        setUserEmail(null);
+      } else {
+        alert("Failed to disconnect: " + result.message);
+      }
+    } catch (error) {
+      console.error("Failed to disconnect:", error);
+      alert("Failed to disconnect Google Calendar");
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -270,7 +313,8 @@ const CalendarSettingsSection: React.FC = () => {
     }
 
     const client = window.google.accounts.oauth2.initCodeClient({
-      client_id: import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID,
+      // client_id: import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID,
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
       scope:
         "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email",
       ux_mode: "popup",
@@ -280,7 +324,7 @@ const CalendarSettingsSection: React.FC = () => {
 
         console.log("Received auth code:", response.code);
         const res = await fetch(
-          "http://localhost:3200/api/profile/auth/google",
+          `${import.meta.env.VITE_API_BASE_URL}/profile/auth/google`,
           {
             method: "POST",
             headers: {
@@ -300,13 +344,6 @@ const CalendarSettingsSection: React.FC = () => {
 
         const { access_token, refresh_token, email, status } = result.data;
 
-        // Store all fields in localStorage
-        localStorage.setItem("google_access_token", access_token);
-        localStorage.setItem("google_refresh_token", refresh_token);
-        localStorage.setItem("google_email", email);
-        localStorage.setItem("google_calendar_status", status);
-
-        // Only set connected if all fields are present
         if (access_token && refresh_token && email && status === "connected") {
           setUserEmail(email);
           setIsConnected(true);
@@ -357,7 +394,11 @@ const CalendarSettingsSection: React.FC = () => {
                   appointments.
                 </p>
 
-                {!isConnected ? (
+                {loading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : !isConnected ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center space-x-3">
@@ -436,23 +477,18 @@ const CalendarSettingsSection: React.FC = () => {
                           </td>
                           <td className="py-4 px-4">
                             <button
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    "Are you sure you want to disconnect Google Calendar?",
-                                  )
-                                ) {
-                                  setIsConnected(false);
-                                  setUserEmail(null);
-                                  localStorage.removeItem("google_access_token");
-                                  localStorage.removeItem("google_refresh_token");
-                                  localStorage.removeItem("google_email");
-                                  localStorage.removeItem("google_calendar_status");
-                                }
-                              }}
-                              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                              onClick={handleDisconnect}
+                              disabled={disconnecting}
+                              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                              Disconnect
+                              {disconnecting ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Disconnecting...
+                                </>
+                              ) : (
+                                "Disconnect"
+                              )}
                             </button>
                           </td>
                         </tr>

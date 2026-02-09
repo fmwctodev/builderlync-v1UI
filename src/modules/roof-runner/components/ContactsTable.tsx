@@ -4,6 +4,7 @@ import { hasPermission } from '../../../shared/utils/permissions';
 
 interface Contact {
   id: string;
+  fullName: string;
   createdByName: string;
   type: string;
   labelOrRole?: string;
