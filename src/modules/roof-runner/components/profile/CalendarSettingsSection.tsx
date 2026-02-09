@@ -307,14 +307,20 @@ const CalendarSettingsSection: React.FC = () => {
   };
 
   const handleConnectCalendar = (): void => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      alert("Google Client ID is not configured");
+      return;
+    }
+
     if (!window.google) {
       alert("Google SDK not loaded yet");
       return;
     }
 
     const client = window.google.accounts.oauth2.initCodeClient({
-      // client_id: import.meta.env.VITE_GOOGLE_CALENDAR_CLIENT_ID,
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      client_id: clientId,
       scope:
         "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email",
       ux_mode: "popup",
