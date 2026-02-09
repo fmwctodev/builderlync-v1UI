@@ -82,6 +82,7 @@ export const apiService = {
 
   getInstantEstimator: async (id: number) => {
     const response = await apiClient.get(`/instant-estimators/${id}`);
+    console.log("get instant estimator ", response.data);
     return response.data;
   },
 
@@ -135,6 +136,16 @@ export const apiService = {
     return response.data;
   },
 
+  getGeneratedEstimate: async (leadId: string) => {
+    const response = await apiClient.get(`/instant-estimators/public/estimate/${leadId}`);
+    return response.data;
+  },
+
+  requestProposal: async (leadId: string, materialId: string) => {
+    const response = await apiClient.post(`/instant-estimators/public/estimate/${leadId}/request-proposal`, { materialId });
+    return response.data;
+  },
+
   requestPropertyData: async (publicUrl: string, address: string) => {
     const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/property-data`, { address });
     return response.data;
@@ -179,6 +190,12 @@ export const apiService = {
   // Staff
   getStaff: async () => {
     const response = await apiClient.get('/staff?limit=100');
+    return response.data;
+  },
+
+  // Proposal Templates
+  getProposalTemplates: async () => {
+    const response = await apiClient.get('/templates');
     return response.data;
   }
 };

@@ -1,24 +1,35 @@
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import AddCardModal from './AddCardModal';
-import ChargeNowModal from './ChargeNowModal';
-import CreateSubscriptionModal from './CreateSubscriptionModal';
-import CreateInvoiceModal from './CreateInvoiceModal';
-import ManageCardsModal from './ManageCardsModal';
-import CreateEstimateModal from './CreateEstimateModal';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, CreditCard, Receipt, Repeat } from 'lucide-react';
+import { contactModulesApi, Invoice } from '../../../../shared/store/services/contactModulesApi';
 
 interface PaymentsTabProps {
+  contactId: number;
   showActions: boolean;
   onActionsToggle: () => void;
 }
 
-const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle }) => {
-  const [showAddCardModal, setShowAddCardModal] = useState(false);
-  const [showChargeNowModal, setShowChargeNowModal] = useState(false);
-  const [showCreateSubscriptionModal, setShowCreateSubscriptionModal] = useState(false);
-  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
-  const [showManageCardsModal, setShowManageCardsModal] = useState(false);
-  const [showCreateEstimateModal, setShowCreateEstimateModal] = useState(false);
+const PaymentsTab: React.FC<PaymentsTabProps> = ({ contactId, showActions, onActionsToggle }) => {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'transactions' | 'subscriptions' | 'invoices'>('invoices');
+
+  const fetchInvoices = async () => {
+    if (!contactId) return;
+    setLoading(true);
+    try {
+      const response = await contactModulesApi.getInvoices(contactId);
+      setInvoices(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [contactId]);
+
   const paymentActions = [
     'Add Card on File',
     'Charge Now',
@@ -28,72 +39,70 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle 
     'Create Estimate'
   ];
 
-  const PaymentSection = ({ title }: { title: string }) => (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="font-medium text-gray-900 dark:text-white">{title}</h4>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </button>
-      </div>
-      <div className="grid grid-cols-3 gap-4 text-sm text-gray-500 dark:text-gray-400 mb-3">
-        <div>Date</div>
-        <div>Amount</div>
-        <div>Status</div>
-      </div>
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        No {title.toLowerCase()} found
-      </div>
-    </div>
-  );
+  const filteredData = () => {
+    switch (activeSubTab) {
+      case 'transactions':
+        return invoices.filter(inv => inv.status === 'paid');
+      case 'subscriptions':
+        return [];
+      case 'invoices':
+        return invoices;
+      default:
+        return invoices;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
     <>
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            No transactions yet! Create a new payment now
-          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveSubTab('invoices')}
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeSubTab === 'invoices' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              Invoices ({invoices.length})
+            </button>
+            <button
+              onClick={() => setActiveSubTab('transactions')}
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeSubTab === 'transactions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              Transactions ({invoices.filter(i => i.status === 'paid').length})
+            </button>
+            <button
+              onClick={() => setActiveSubTab('subscriptions')}
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeSubTab === 'subscriptions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              Subscriptions (0)
+            </button>
+          </div>
+
           <div className="relative">
-            <button 
+            <button
               onClick={onActionsToggle}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center gap-2 text-sm font-medium"
             >
               Actions
               <ChevronDown className="w-4 h-4" />
             </button>
-            
+
             {showActions && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 overflow-hidden">
                 <div className="py-1">
                   {paymentActions.map((action) => (
-                    <button 
+                    <button
                       key={action}
-                      onClick={() => {
-                        onActionsToggle();
-                        switch (action) {
-                          case 'Add Card on File':
-                            setShowAddCardModal(true);
-                            break;
-                          case 'Charge Now':
-                            setShowChargeNowModal(true);
-                            break;
-                          case 'Create Subscription':
-                            setShowCreateSubscriptionModal(true);
-                            break;
-                          case 'Create Invoice':
-                            setShowCreateInvoiceModal(true);
-                            break;
-                          case 'Manage Cards':
-                            setShowManageCardsModal(true);
-                            break;
-                          case 'Create Estimate':
-                            setShowCreateEstimateModal(true);
-                            break;
-                        }
-                      }}
+                      onClick={onActionsToggle}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       {action}
@@ -105,46 +114,53 @@ const PaymentsTab: React.FC<PaymentsTabProps> = ({ showActions, onActionsToggle 
           </div>
         </div>
 
-        <PaymentSection title="Transactions" />
-        <PaymentSection title="Subscriptions" />
-        <PaymentSection title="Invoices" />
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+          </div>
+        ) : filteredData().length > 0 ? (
+          <div className="space-y-3">
+            {filteredData().map((item) => (
+              <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full">
+                    <Receipt className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      {item.invoice_number || `INV-${item.id}`}
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      {item.issue_date ? new Date(item.issue_date).toLocaleDateString() : 'No date'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    ${item.total.toFixed(2)}
+                  </p>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getStatusColor(item.status)}`}>
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-400">
+              {activeSubTab === 'transactions' ? <CreditCard size={32} /> :
+                activeSubTab === 'subscriptions' ? <Repeat size={32} /> : <Receipt size={32} />}
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 mb-1">
+              No {activeSubTab} found for this contact
+            </p>
+            <p className="text-sm text-gray-400">
+              Use the actions menu to create one
+            </p>
+          </div>
+        )}
       </div>
-
-      <AddCardModal
-        isOpen={showAddCardModal}
-        onClose={() => setShowAddCardModal(false)}
-        onSave={() => setShowAddCardModal(false)}
-      />
-      
-      <ChargeNowModal
-        isOpen={showChargeNowModal}
-        onClose={() => setShowChargeNowModal(false)}
-        onSave={() => setShowChargeNowModal(false)}
-      />
-      
-      <CreateSubscriptionModal
-        isOpen={showCreateSubscriptionModal}
-        onClose={() => setShowCreateSubscriptionModal(false)}
-        onSave={() => setShowCreateSubscriptionModal(false)}
-      />
-      
-      <CreateInvoiceModal
-        isOpen={showCreateInvoiceModal}
-        onClose={() => setShowCreateInvoiceModal(false)}
-        onSave={() => setShowCreateInvoiceModal(false)}
-      />
-      
-      <ManageCardsModal
-        isOpen={showManageCardsModal}
-        onClose={() => setShowManageCardsModal(false)}
-        onSave={() => setShowManageCardsModal(false)}
-      />
-      
-      <CreateEstimateModal
-        isOpen={showCreateEstimateModal}
-        onClose={() => setShowCreateEstimateModal(false)}
-        onSave={() => setShowCreateEstimateModal(false)}
-      />
     </>
   );
 };

@@ -23,7 +23,7 @@ const Jobs: React.FC = () => {
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [jobAddress, setJobAddress] = useState('');
-  const [jobCoordinates, setJobCoordinates] = useState<{lat: number; lng: number} | null>(null);
+  const [jobCoordinates, setJobCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -42,14 +42,15 @@ const Jobs: React.FC = () => {
     updatedDate: [],
     closeDate: []
   });
-  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [modalMessage, setModalMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   const [formData, setFormData] = useState<CreateJobRequest>({
     name: '',
     location: '',
     customerId: null,
     assignees: [],
-    jobOwner: '',
+    jobOwner: null,
     workflowStages: 'New lead',
     closeDate: '',
     jobValue: 0,
@@ -64,16 +65,17 @@ const Jobs: React.FC = () => {
     claimAmount: 0,
     deductible: 0,
     claimDetails: '',
-    createdBy: '',
-    editedBy: '',
+    createdBy: null,
+    editedBy: null,
     jobType: 'residential',
-    contactId: null
+    contactId: null,
+    contactName: null
   });
 
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
-      
+
       const filters = {
         jobType: selectedJobType !== 'all' ? selectedJobType : undefined,
         search: searchQuery || undefined,
@@ -83,7 +85,7 @@ const Jobs: React.FC = () => {
         updatedDate: advancedFilters.updatedDate.length > 0 ? advancedFilters.updatedDate : undefined,
         closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined
       };
-      
+
       const response = await getJobs(page, 100, filters);
       const fetchedJobs = response.data.data || [];
       setAllJobs(fetchedJobs);
@@ -150,19 +152,19 @@ const Jobs: React.FC = () => {
           try {
             const createdTasks = await autoCreateTasksForStage(editingJob.id, newStage);
             if (createdTasks.length > 0) {
-              setToast({
+              setModalMessage({
                 message: `Job updated! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
                 type: 'success'
               });
             } else {
-              setToast({ message: 'Job updated successfully!', type: 'success' });
+              setModalMessage({ message: 'Job updated successfully!', type: 'success' });
             }
           } catch (taskError) {
             console.error('Error auto-creating tasks:', taskError);
-            setToast({ message: 'Job updated, but some tasks could not be created', type: 'success' });
+            setModalMessage({ message: 'Job updated, but some tasks could not be created', type: 'success' });
           }
         } else {
-          setToast({ message: 'Job updated successfully!', type: 'success' });
+          setModalMessage({ message: 'Job updated successfully!', type: 'success' });
         }
 
         // Refresh the viewing job data
@@ -181,23 +183,23 @@ const Jobs: React.FC = () => {
           try {
             const createdTasks = await autoCreateTasksForStage(newJobId, newStage);
             if (createdTasks.length > 0) {
-              setToast({
+              setModalMessage({
                 message: `Job created! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
                 type: 'success'
               });
             } else {
-              setToast({ message: 'Job created successfully!', type: 'success' });
+              setModalMessage({ message: 'Job created successfully!', type: 'success' });
             }
           } catch (taskError) {
             console.error('Error auto-creating tasks:', taskError);
-            setToast({ message: 'Job created successfully!', type: 'success' });
+            setModalMessage({ message: 'Job created successfully!', type: 'success' });
           }
 
           // Set the newly created job as viewingJob so tabs can access it
           setViewingJob(newJob);
           setEditingJob(newJob);
         } else {
-          setToast({ message: 'Job created successfully!', type: 'success' });
+          setModalMessage({ message: 'Job created successfully!', type: 'success' });
         }
       }
 
@@ -205,7 +207,7 @@ const Jobs: React.FC = () => {
       fetchJobs();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to save job';
-      setToast({ message: errorMessage, type: 'error' });
+      setModalMessage({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -231,10 +233,10 @@ const Jobs: React.FC = () => {
       location: job.location,
       customerId: job.customer_id || job.customerId || null,
       assignees: job.assignees,
-      jobOwner: job.job_owner || job.jobOwner,
+      jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
       closeDate: job.close_date || job.closeDate,
-      jobValue: parseFloat(job.job_value || job.jobValue?.toString() || '0'),
+      jobValue: Number(job.job_value || job.jobValue || 0),
       source: job.source,
       details: job.details,
       insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
@@ -243,13 +245,14 @@ const Jobs: React.FC = () => {
       claimNumber: job.claim_number || job.claimNumber || '',
       dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
       typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
-      claimAmount: parseFloat(job.claim_amount || job.claimAmount?.toString() || '0'),
+      claimAmount: Number(job.claim_amount || job.claimAmount || 0),
       deductible: job.deductible || 0,
       claimDetails: job.claim_details || job.claimDetails || '',
-      createdBy: job.created_by || job.createdBy,
-      editedBy: job.edited_by || job.editedBy || 1,
+      createdBy: job.created_by || job.createdBy || null,
+      editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
-      contactId: job.contact_id || job.contactId || null
+      contactId: job.contact_id || job.contactId || null,
+      contactName: job.contactName || (job.customer ? `${job.customer.full_name}` : null)
     });
     setShowJobDetails(true);
   };
@@ -262,10 +265,10 @@ const Jobs: React.FC = () => {
       location: job.location,
       customerId: job.customer_id || job.customerId || null,
       assignees: job.assignees,
-      jobOwner: job.job_owner || job.jobOwner,
+      jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
       closeDate: job.close_date || job.closeDate,
-      jobValue: parseFloat(job.job_value || job.jobValue?.toString() || '0'),
+      jobValue: Number(job.job_value || job.jobValue || 0),
       source: job.source,
       details: job.details,
       insuranceEnabled: job.insurance_enabled || job.insuranceEnabled || false,
@@ -274,13 +277,14 @@ const Jobs: React.FC = () => {
       claimNumber: job.claim_number || job.claimNumber || '',
       dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
       typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
-      claimAmount: parseFloat(job.claim_amount || job.claimAmount?.toString() || '0'),
+      claimAmount: Number(job.claim_amount || job.claimAmount || 0),
       deductible: job.deductible || 0,
       claimDetails: job.claim_details || job.claimDetails || '',
-      createdBy: job.created_by || job.createdBy,
-      editedBy: job.edited_by || job.editedBy || 1,
+      createdBy: job.created_by || job.createdBy || null,
+      editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
-      contactId: job.contact_id || job.contactId || null
+      contactId: job.contact_id || job.contactId || null,
+      contactName: job.contactName || (job.customer ? `${job.customer.full_name}` : null)
     });
     setShowJobDetails(true);
   };
@@ -291,7 +295,7 @@ const Jobs: React.FC = () => {
       location: '',
       customerId: null,
       assignees: [],
-      jobOwner: '',
+      jobOwner: null,
       workflowStages: 'New lead',
       closeDate: '',
       jobValue: 0,
@@ -306,10 +310,11 @@ const Jobs: React.FC = () => {
       claimAmount: 0,
       deductible: 0,
       claimDetails: '',
-      createdBy: '',
-      editedBy: '',
+      createdBy: null,
+      editedBy: null,
       jobType: 'residential',
-      contactId: null
+      contactId: null,
+      contactName: null
     });
   };
 
@@ -369,12 +374,12 @@ const Jobs: React.FC = () => {
                 try {
                   const job = jobs.find(j => j.id === jobId);
                   if (job) {
-                    await updateJob(jobId, { 
-                      ...job, 
-                      workflowStages: newStage, 
-                      workflow_stages: newStage,
-                      editedBy: 1 
-                    });
+                    const { id, ...jobUpdateData } = job;
+                    await updateJob(jobId, {
+                      ...jobUpdateData,
+                      workflowStages: newStage,
+                      editedBy: 1
+                    } as CreateJobRequest);
                     fetchJobs();
                   }
                 } catch (error) {
@@ -406,7 +411,7 @@ const Jobs: React.FC = () => {
         />
       </div>
 
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <AddressModal
         isOpen={showAddressModal}
@@ -419,14 +424,14 @@ const Jobs: React.FC = () => {
         setJobAddress={(address: string, lat?: number, lng?: number) => {
           setJobAddress(address);
           if (lat && lng) {
-            setJobCoordinates({lat, lng});
+            setJobCoordinates({ lat, lng });
           }
         }}
         onContinue={() => {
           if (jobAddress.trim()) {
             setFormData({
-              ...formData, 
-              location: jobAddress, 
+              ...formData,
+              location: jobAddress,
               name: jobAddress,
               latitude: jobCoordinates?.lat,
               longitude: jobCoordinates?.lng
@@ -450,6 +455,7 @@ const Jobs: React.FC = () => {
           resetForm();
           setJobAddress('');
           setJobCoordinates(null);
+          setModalMessage(null);
         }}
         onSubmit={handleSubmit}
         onDelete={viewingJob ? () => handleDelete(viewingJob.id!) : undefined}
@@ -459,6 +465,8 @@ const Jobs: React.FC = () => {
         loading={loading}
         viewingJob={viewingJob}
         editingJob={editingJob}
+        modalMessage={modalMessage}
+        setModalMessage={setModalMessage}
       />
 
     </div>

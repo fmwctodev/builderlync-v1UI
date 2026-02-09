@@ -286,6 +286,55 @@ export default function ProposalBuilder({
     },
   ]);
 
+  const ensureDefaultSections = (
+    loadedSections: Section[] | undefined,
+    optionTitleValue: string
+  ) => {
+    const baseSections = Array.isArray(loadedSections) ? loadedSections : [];
+    const hasCover = baseSections.some((section) => section.id === "cover");
+    const hasEstimate = baseSections.some((section) => section.id === "estimate");
+    const withDefaults = [...baseSections];
+
+    if (!hasCover) {
+      withDefaults.unshift({
+        id: "cover",
+        name: "Cover",
+        active: true,
+        order: 0,
+      });
+    }
+
+    if (!hasEstimate) {
+      const estimateOrder = withDefaults.length;
+      withDefaults.push({
+        id: "estimate",
+        name: "Estimate",
+        active: true,
+        order: estimateOrder,
+        subsections: [optionTitleValue, "Summary"],
+        type: "estimate",
+      });
+    } else {
+      // Keep subsections in sync with the current option title.
+      const estimateIndex = withDefaults.findIndex(
+        (section) => section.id === "estimate"
+      );
+      if (estimateIndex !== -1) {
+        const estimateSection = withDefaults[estimateIndex];
+        withDefaults[estimateIndex] = {
+          ...estimateSection,
+          subsections: [optionTitleValue, "Summary"],
+          type: estimateSection.type || "estimate",
+        };
+      }
+    }
+
+    return withDefaults.map((section, index) => ({
+      ...section,
+      order: index,
+    }));
+  };
+
   const handleViewJobDetails = async () => {
     if (!proposalData?.job_id) return;
 
@@ -407,6 +456,7 @@ export default function ProposalBuilder({
         if (!content) return;
 
         // Load settings
+        const optionTitleFromContent = content.settings?.optionTitle || optionTitle;
         if (content.settings) {
           const s = content.settings;
           if (s.coverImage) setCoverImage(s.coverImage);
@@ -430,10 +480,8 @@ export default function ProposalBuilder({
           }
         }
 
-        // Load sections
-        if (content.sections) {
-          setSections(content.sections);
-        }
+        // Load sections (ensure defaults are always present)
+        setSections(ensureDefaultSections(content.sections, optionTitleFromContent));
 
         // Load items
         if (content.items) {

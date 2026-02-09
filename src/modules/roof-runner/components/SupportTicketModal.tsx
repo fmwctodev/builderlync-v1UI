@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Paperclip } from 'lucide-react';
 
 interface SupportTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { subject: string; message: string; priority: string }) => Promise<void>;
+  onSubmit: (data: { subject: string; message: string; priority: string; image: File | null }) => Promise<void>;
 }
 
 export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -13,19 +13,27 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ isOpen, 
     message: '',
     priority: 'medium'
   });
+  const [image, setImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit(formData);
+      await onSubmit({ ...formData, image });
       setFormData({ subject: '', message: '', priority: 'medium' });
+      setImage(null);
       onClose();
     } catch (error) {
       console.error('Error submitting ticket:', error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
     }
   };
 
@@ -84,6 +92,32 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({ isOpen, 
               rows={6}
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Attachment (Image)
+            </label>
+            <div className="flex items-center space-x-2">
+              <label className="cursor-pointer flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <Paperclip size={16} />
+                <span>{image ? 'Change Image' : 'Attach Image'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              {image && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>{image.name}</span>
+                  <button type="button" onClick={() => setImage(null)} className="text-red-500 hover:text-red-700">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

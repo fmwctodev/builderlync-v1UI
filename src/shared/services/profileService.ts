@@ -18,12 +18,13 @@ export const profileService = {
     return data.data;
   },
 
-  async updateUserProfile(updates: { firstName?: string; lastName?: string; phone?: string }): Promise<any> {
+  async updateUserProfile(updates: { firstName?: string; lastName?: string; phone?: string; email?: string; avatar_url?: string | null }): Promise<any> {
     const formData = new FormData();
     
     if (updates.firstName) formData.append('firstName', updates.firstName);
     if (updates.lastName) formData.append('lastName', updates.lastName);
     if (updates.phone) formData.append('phone', updates.phone);
+    if (updates.avatar_url !== undefined) formData.append('avatar_url', updates.avatar_url || '');
 
     const token = localStorage.getItem('token');
     const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {

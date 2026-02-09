@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100
 
 const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -143,7 +143,7 @@ export const fetchInvoices = async (filters?: {
   if (filters?.startDate) params.append('startDate', filters.startDate);
   if (filters?.endDate) params.append('endDate', filters.endDate);
   if (filters?.search) params.append('search', filters.search);
-  
+
   const response = await makeRequest(`/invoices?${params}`);
   return response.data;
 };

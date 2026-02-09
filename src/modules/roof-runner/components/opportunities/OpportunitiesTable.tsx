@@ -4,6 +4,7 @@ import type { OpportunityWithDetails } from '../../types/opportunities';
 
 interface OpportunitiesTableProps {
   onRowClick?: (opportunityId: string) => void;
+  selectedPipelineId?: string | null;
 }
 
 const DUMMY_TABLE_OPPORTUNITIES = [
@@ -45,19 +46,25 @@ const DUMMY_TABLE_OPPORTUNITIES = [
   }
 ];
 
-export default function OpportunitiesTable({ onRowClick }: OpportunitiesTableProps) {
+export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: OpportunitiesTableProps) {
   const [opportunities, setOpportunities] = useState<OpportunityWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOpportunities();
-  }, []);
+  }, [selectedPipelineId]);
 
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const data = await opportunitiesApi.getOpportunities();
-      setOpportunities(data);
+      const filters: any = {};
+      if (selectedPipelineId && selectedPipelineId !== 'default') {
+        filters.pipeline_id = selectedPipelineId;
+        const data = await opportunitiesApi.getOpportunities(filters);
+        setOpportunities(data);
+      } else {
+        setOpportunities([]);
+      }
     } catch (error) {
       console.error('Error loading opportunities:', error);
     } finally {
@@ -150,15 +157,14 @@ export default function OpportunitiesTable({ onRowClick }: OpportunitiesTablePro
                     ${(opportunity.value || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      opportunity.status === 'open'
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        : opportunity.status === 'won'
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${opportunity.status === 'open'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      : opportunity.status === 'won'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                         : opportunity.status === 'lost'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                    }`}>
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                      }`}>
                       {opportunity.status}
                     </span>
                   </td>

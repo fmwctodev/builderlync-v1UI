@@ -29,6 +29,8 @@ interface JobDetailsModalProps {
   viewingJob?: Job | null;
   editingJob?: Job | null;
   readOnly?: boolean;
+  modalMessage?: { message: string, type: 'success' | 'error' } | null;
+  setModalMessage?: (message: { message: string, type: 'success' | 'error' } | null) => void;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
@@ -42,7 +44,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   loading,
   viewingJob,
   editingJob,
-  readOnly = false
+  readOnly = false,
+  modalMessage,
+  setModalMessage
 }) => {
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
@@ -51,10 +55,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [showViewContactModal, setShowViewContactModal] = useState(false);
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [contactError, setContactError] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const validateForm = () => {
-    const errors: {[key: string]: string} = {};
+    const errors: { [key: string]: string } = {};
 
     if (!formData.contactId) {
       errors.contactId = 'Customer/Lead is required';
@@ -151,13 +155,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 <button
                   key={item}
                   onClick={() => setActiveTab(item)}
-                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors relative ${
-                    activeTab === item
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                      : item === 'Instant Estimate'
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors relative ${activeTab === item
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                    : item === 'Instant Estimate'
                       ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border border-primary-200 dark:border-primary-700'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{item}</span>
@@ -195,312 +198,327 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
 
                   <form onSubmit={handleFormSubmit} className="space-y-6 pb-20">
-                {/* Job Type Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Job Type <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="residential"
-                        checked={formData.jobType === 'residential'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="commercial"
-                        checked={formData.jobType === 'commercial'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="insurance"
-                        checked={formData.jobType === 'insurance'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
-                    </label>
-                  </div>
-                  {validationErrors.jobType && (
-                    <p className="mt-1 text-xs text-red-500">{validationErrors.jobType}</p>
-                  )}
-                </div>
-
-                {/* Customer/Lead Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Customer/Lead <span className="text-red-500">*</span>
-                  </label>
-                  <ContactSearchDropdown
-                    selectedContact={formData.contactId && formData.contactName ? {
-                      id: formData.contactId.toString(),
-                      name: formData.contactName
-                    } : null}
-                    onSelectContact={(contact) => {
-                      setFormData({
-                        ...formData,
-                        contactId: contact ? Number(contact.id) : null,
-                        contactName: contact ? contact.name : null
-                      });
-                      setContactError(false);
-                    }}
-                    required
-                    hasError={contactError}
-                    onCreateNew={() => setShowCreateContactModal(true)}
-                    onViewProfile={(contactId) => setShowViewContactModal(true)}
-                    onEditContact={(contactId) => setShowEditContactModal(true)}
-                  />
-                  {contactError && (
-                    <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
-                    <select
-                      value={formData.assignees[0] || ''}
-                      onChange={(e) => setFormData({...formData, assignees: e.target.value ? [Number(e.target.value)] : []})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option value="">Unassigned</option>
-                      {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={member.id}>
-                          {member.first_name} {member.last_name}
-                        </option>
-                      )) : (
-                        <option disabled>Loading staff...</option>
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
-                    <select
-                      value={formData.jobOwner}
-                      onChange={(e) => setFormData({...formData, jobOwner: e.target.value ? Number(e.target.value) : ''})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option value="">Select Job Owner</option>
-                      {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={member.id}>
-                          {member.first_name} {member.last_name}
-                        </option>
-                      )) : (
-                        <option disabled>Loading staff...</option>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Job Stage <span className="text-red-500">*</span>
-                    </label>
-                    <div className="space-y-2">
-                      <select
-                        value={formData.workflowStages}
-                        onChange={(e) => setFormData({...formData, workflowStages: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        {stages.map(stage => (
-                          <option key={stage} value={stage}>{stage}</option>
-                        ))}
-                      </select>
-                      {validationErrors.workflowStages && (
-                        <p className="mt-1 text-xs text-red-500">{validationErrors.workflowStages}</p>
+                    {/* Modal Message */}
+                    {modalMessage && (
+                      <div className={`p-4 rounded-lg border ${modalMessage.type === 'success'
+                        ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                        : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
+                        }`}>
+                        <div className="flex justify-between items-center">
+                          <span>{modalMessage.message}</span>
+                          <button
+                            type="button"
+                            onClick={() => setModalMessage?.(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Job Type Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Job Type <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="residential"
+                            checked={formData.jobType === 'residential'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="commercial"
+                            checked={formData.jobType === 'commercial'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="insurance"
+                            checked={formData.jobType === 'insurance'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
+                        </label>
+                      </div>
+                      {validationErrors.jobType && (
+                        <p className="mt-1 text-xs text-red-500">{validationErrors.jobType}</p>
                       )}
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.closeDate}
-                      onChange={(e) => setFormData({...formData, closeDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Select"
-                    />
-                    {validationErrors.closeDate && (
-                      <p className="mt-1 text-xs text-red-500">{validationErrors.closeDate}</p>
-                    )}
-                  </div>
-                </div>
+                    {/* Customer/Lead Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Customer/Lead <span className="text-red-500">*</span>
+                      </label>
+                      <ContactSearchDropdown
+                        selectedContact={formData.contactId && formData.contactName ? {
+                          id: formData.contactId.toString(),
+                          name: formData.contactName
+                        } : null}
+                        onSelectContact={(contact) => {
+                          setFormData({
+                            ...formData,
+                            contactId: contact ? Number(contact.id) : null,
+                            contactName: contact ? contact.name : null
+                          });
+                          setContactError(false);
+                        }}
+                        required
+                        hasError={contactError}
+                        onCreateNew={() => setShowCreateContactModal(true)}
+                        onViewProfile={(contactId) => setShowViewContactModal(true)}
+                        onEditContact={(contactId) => setShowEditContactModal(true)}
+                      />
+                      {contactError && (
+                        <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job value</label>
-                    <input
-                      type="number"
-                      value={formData.jobValue}
-                      onChange={(e) => setFormData({...formData, jobValue: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source</label>
-                    <input
-                      type="text"
-                      value={formData.source}
-                      onChange={(e) => setFormData({...formData, source: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Start typing to add new or select..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
-                  <textarea
-                    value={formData.details}
-                    onChange={(e) => setFormData({...formData, details: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      checked={formData.insuranceEnabled}
-                      onChange={(e) => setFormData({...formData, insuranceEnabled: e.target.checked})}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Insurance</span>
-                  </label>
-
-                  {formData.insuranceEnabled && (
-                    <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Insurance Company <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.insuranceCompany}
-                            onChange={(e) => setFormData({...formData, insuranceCompany: e.target.value})}
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                              validationErrors.insuranceCompany ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          />
-                          {validationErrors.insuranceCompany && (
-                            <p className="mt-1 text-xs text-red-500">{validationErrors.insuranceCompany}</p>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
+                        <select
+                          value={formData.assignees[0] || ''}
+                          onChange={(e) => setFormData({ ...formData, assignees: e.target.value ? [Number(e.target.value)] : [] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value="">Unassigned</option>
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            <option key={member.id} value={member.id}>
+                              {member.first_name} {member.last_name}
+                            </option>
+                          )) : (
+                            <option disabled>Loading staff...</option>
                           )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
-                          <input
-                            type="text"
-                            value={formData.policyAccountNumber}
-                            onChange={(e) => setFormData({...formData, policyAccountNumber: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
+                        </select>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Claim Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.claimNumber}
-                            onChange={(e) => setFormData({...formData, claimNumber: e.target.value})}
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                              validationErrors.claimNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          />
-                          {validationErrors.claimNumber && (
-                            <p className="mt-1 text-xs text-red-500">{validationErrors.claimNumber}</p>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
+                        <select
+                          value={formData.jobOwner || ''}
+                          onChange={(e) => setFormData({ ...formData, jobOwner: e.target.value ? Number(e.target.value) : null })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value="">Select Job Owner</option>
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            <option key={member.id} value={member.id}>
+                              {member.first_name} {member.last_name}
+                            </option>
+                          )) : (
+                            <option disabled>Loading staff...</option>
                           )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Date of Loss <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={formData.dateOfLoss}
-                            onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                              validationErrors.dateOfLoss ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                            }`}
-                          />
-                          {validationErrors.dateOfLoss && (
-                            <p className="mt-1 text-xs text-red-500">{validationErrors.dateOfLoss}</p>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Job Stage <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                          <select
+                            value={formData.workflowStages}
+                            onChange={(e) => setFormData({ ...formData, workflowStages: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          >
+                            {stages.map(stage => (
+                              <option key={stage} value={stage}>{stage}</option>
+                            ))}
+                          </select>
+                          {validationErrors.workflowStages && (
+                            <p className="mt-1 text-xs text-red-500">{validationErrors.workflowStages}</p>
                           )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type of Damage</label>
-                          <input
-                            type="text"
-                            value={formData.typeOfDamage}
-                            onChange={(e) => setFormData({...formData, typeOfDamage: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Amount</label>
-                          <input
-                            type="number"
-                            value={formData.claimAmount}
-                            onChange={(e) => setFormData({...formData, claimAmount: Number(e.target.value)})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deductible</label>
-                          <input
-                            type="number"
-                            value={formData.deductible}
-                            onChange={(e) => setFormData({...formData, deductible: Number(e.target.value)})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Details</label>
-                        <textarea
-                          value={formData.claimDetails}
-                          onChange={(e) => setFormData({...formData, claimDetails: e.target.value})}
-                          rows={3}
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.closeDate}
+                          onChange={(e) => setFormData({ ...formData, closeDate: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          placeholder="Additional claim information..."
+                          placeholder="Select"
+                        />
+                        {validationErrors.closeDate && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.closeDate}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job value</label>
+                        <input
+                          type="number"
+                          value={formData.jobValue}
+                          onChange={(e) => setFormData({ ...formData, jobValue: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source</label>
+                        <input
+                          type="text"
+                          value={formData.source}
+                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Start typing to add new or select..."
                         />
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
+                      <textarea
+                        value={formData.details}
+                        onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="flex items-center mb-4">
+                        <input
+                          type="checkbox"
+                          checked={formData.insuranceEnabled}
+                          onChange={(e) => setFormData({ ...formData, insuranceEnabled: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Insurance</span>
+                      </label>
+
+                      {formData.insuranceEnabled && (
+                        <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Insurance Company <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.insuranceCompany}
+                                onChange={(e) => setFormData({ ...formData, insuranceCompany: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.insuranceCompany ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.insuranceCompany && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.insuranceCompany}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
+                              <input
+                                type="text"
+                                value={formData.policyAccountNumber}
+                                onChange={(e) => setFormData({ ...formData, policyAccountNumber: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Claim Number <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.claimNumber}
+                                onChange={(e) => setFormData({ ...formData, claimNumber: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.claimNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.claimNumber && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.claimNumber}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Date of Loss <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                value={formData.dateOfLoss}
+                                onChange={(e) => setFormData({ ...formData, dateOfLoss: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.dateOfLoss ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.dateOfLoss && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.dateOfLoss}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type of Damage</label>
+                              <input
+                                type="text"
+                                value={formData.typeOfDamage}
+                                onChange={(e) => setFormData({ ...formData, typeOfDamage: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Amount</label>
+                              <input
+                                type="number"
+                                value={formData.claimAmount}
+                                onChange={(e) => setFormData({ ...formData, claimAmount: Number(e.target.value) })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deductible</label>
+                              <input
+                                type="number"
+                                value={formData.deductible}
+                                onChange={(e) => setFormData({ ...formData, deductible: Number(e.target.value) })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Details</label>
+                            <textarea
+                              value={formData.claimDetails}
+                              onChange={(e) => setFormData({ ...formData, claimDetails: e.target.value })}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              placeholder="Additional claim information..."
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
 
                   </form>

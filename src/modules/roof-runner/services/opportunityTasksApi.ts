@@ -2,14 +2,14 @@ import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityTask {
   id: string;
-  opportunity_id: string;
-  user_id: string;
+  opportunity_id: number;
+  user_id: number;
   organization_id?: string;
   title: string;
   description?: string;
   status: 'todo' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
   completed_at?: string;
   created_at: string;
@@ -17,12 +17,12 @@ export interface OpportunityTask {
 }
 
 export interface CreateOpportunityTaskRequest {
-  opportunity_id: string;
+  opportunity_id: number;
   title: string;
   description?: string;
   status?: 'todo' | 'in_progress' | 'completed';
   priority?: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
 }
 
@@ -31,7 +31,7 @@ export interface UpdateOpportunityTaskRequest {
   description?: string;
   status?: 'todo' | 'in_progress' | 'completed';
   priority?: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
   completed_at?: string;
 }

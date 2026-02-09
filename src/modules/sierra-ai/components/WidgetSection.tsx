@@ -35,7 +35,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
 
   const loadAgentData = async () => {
     if (!agentId) return;
-    
+
     try {
       const { elevenlabsApi } = await import('../services/elevenlabsApi');
       const response = await elevenlabsApi.getAgent(agentId);
@@ -52,7 +52,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
 
   const loadWidgetConfig = async () => {
     if (!agentId) return;
-    
+
     try {
       setLoading(true);
       const data = await widgetApi.getWidgetConfig(agentId);
@@ -66,7 +66,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
 
   const handleSyncFromElevenLabs = async () => {
     if (!agentId) return;
-    
+
     try {
       setSyncing(true);
       const data = await widgetApi.syncFromElevenLabs(agentId);
@@ -83,7 +83,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   const handleConfigChange = async (key: keyof WidgetConfig, value: any) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
-    
+
     if (agentId) {
       try {
         setSaving(true);
@@ -166,7 +166,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               <Palette className="w-5 h-5" />
               Appearance
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -242,7 +242,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               <Settings className="w-5 h-5" />
               Behavior
             </h3>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -256,8 +256,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.showAvatar}
-                    onChange={(e) => handleConfigChange('showAvatar', e.target.checked)}
+                    checked={config.show_avatar}
+                    onChange={(e) => handleConfigChange('show_avatar', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -276,8 +276,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={config.showTypingIndicator}
-                    onChange={(e) => handleConfigChange('showTypingIndicator', e.target.checked)}
+                    checked={config.show_typing_indicator}
+                    onChange={(e) => handleConfigChange('show_typing_indicator', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -289,8 +289,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
                   Welcome Message
                 </label>
                 <textarea
-                  value={config.welcomeMessage}
-                  onChange={(e) => handleConfigChange('welcomeMessage', e.target.value)}
+                  value={config.welcome_message}
+                  onChange={(e) => handleConfigChange('welcome_message', e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   placeholder="Hi! How can I help you today?"
@@ -316,8 +316,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
                 </label>
                 <input
                   type="text"
-                  value={config.buttonText}
-                  onChange={(e) => handleConfigChange('buttonText', e.target.value)}
+                  value={config.button_text}
+                  onChange={(e) => handleConfigChange('button_text', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Chat with us"
                 />
@@ -337,31 +337,28 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setActivePreview('desktop')}
-                  className={`p-2 rounded-md transition-colors ${
-                    activePreview === 'desktop'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`p-2 rounded-md transition-colors ${activePreview === 'desktop'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   <Monitor className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setActivePreview('tablet')}
-                  className={`p-2 rounded-md transition-colors ${
-                    activePreview === 'tablet'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`p-2 rounded-md transition-colors ${activePreview === 'tablet'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   <Tablet className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setActivePreview('mobile')}
-                  className={`p-2 rounded-md transition-colors ${
-                    activePreview === 'mobile'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`p-2 rounded-md transition-colors ${activePreview === 'mobile'
+                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                 >
                   <Smartphone className="w-4 h-4" />
                 </button>
@@ -375,7 +372,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
                 {activePreview === 'tablet' && 'Tablet Preview (768px - 1199px)'}
                 {activePreview === 'mobile' && 'Mobile Preview (< 768px)'}
               </div>
-              
+
               {/* Mock Website Content */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-4">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
@@ -386,11 +383,9 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
               {/* Chat Widget Preview */}
               {showWidgetPreview && (
                 <div
-                  className={`absolute ${
-                    config.position.includes('bottom') ? 'bottom-4' : 'top-4'
-                  } ${
-                    config.position.includes('right') ? 'right-4' : 'left-4'
-                  }`}
+                  className={`absolute ${config.position.includes('bottom') ? 'bottom-4' : 'top-4'
+                    } ${config.position.includes('right') ? 'right-4' : 'left-4'
+                    }`}
                 >
                   {/* Chat Button */}
                   <div

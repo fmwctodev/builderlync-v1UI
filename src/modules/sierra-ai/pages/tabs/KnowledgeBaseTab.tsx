@@ -9,9 +9,19 @@ import { knowledgeBaseApi } from '../../services/knowledgeBaseApi';
 import { useAppSelector } from '../../../roof-runner/store/hooks';
 
 export function KnowledgeBaseTab() {
-  const [organizationId, setOrganizationId] = useState(() => {
-    return localStorage.getItem('currentOrganizationId') || '';
+  const { user } = useAppSelector((state) => state.auth);
+  const [organizationId, setOrganizationId] = useState<string>(() => {
+    const userLocal = localStorage.getItem('user');
+    const companySlug = userLocal ? JSON.parse(userLocal).companySlug : '';
+    return companySlug || user?.companySlug || user?.organizationId || String(localStorage.getItem('currentOrganizationId') || '');
   });
+
+  useEffect(() => {
+    if (!organizationId && user) {
+      const companySlug = user.companySlug || user.organizationId;
+      if (companySlug) setOrganizationId(String(companySlug));
+    }
+  }, [user, organizationId]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showImportModal, setShowImportModal] = useState(false);
@@ -25,13 +35,13 @@ export function KnowledgeBaseTab() {
   const [scrapedWebsites, setScrapedWebsites] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
-  const { user } = useAppSelector((state) => state.auth);
+
   const orgSlug = localStorage.getItem('currentOrganizationSlug');
 
 
 
   const fetchKnowledgeBaseData = async () => {
-    if (!orgSlug) return;
+    if (!organizationId) return;
     setLoading(true);
     try {
       const [qaData, articlesData, tablesData, documentsData, scrapedWebsitesData] = await Promise.all([

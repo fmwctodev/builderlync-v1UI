@@ -34,6 +34,7 @@ export default function Catalog() {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   
@@ -53,6 +54,20 @@ export default function Catalog() {
 
   const [sortOption, setSortOption] = useState<'name-asc' | 'name-desc' | 'date-new' | 'date-old'>('name-asc');
   const [tempSortOption, setTempSortOption] = useState<'name-asc' | 'name-desc' | 'date-new' | 'date-old'>('name-asc');
+
+  const newItemDefaults = {
+    itemType: 'Material' as const,
+    name: 'New Item',
+    description: '',
+    measurements: '',
+    coverage: 0,
+    supplier: '',
+    preTaxCost: 0,
+    waste: 0,
+    unit: 'square',
+    salesTax: 0,
+    materialPurchaseTax: 0,
+  };
 
   useEffect(() => {
     loadItems();
@@ -101,30 +116,14 @@ export default function Catalog() {
   };
 
   const addItem = async () => {
-    try {
-      const response = await createCatalogItem({
-        itemType: 'Material',
-        name: 'New Item',
-        description: '',
-        measurements: '',
-        coverage: 0,
-        supplier: '',
-        preTaxCost: 0,
-        waste: 0,
-        unit: 'square',
-        salesTax: 0,
-        materialPurchaseTax: 0,
-      });
-      
-      if (response.success) {
-        setToast({ message: 'Item created successfully', type: 'success' });
-        loadItems();
-      } else {
-        setToast({ message: response.message || 'Failed to create item', type: 'error' });
-      }
-    } catch (error) {
-      setToast({ message: 'Failed to create item', type: 'error' });
-    }
+    setSelectedItem({
+      id: 'new-item',
+      createdAt: '',
+      updatedAt: '',
+      ...newItemDefaults,
+    });
+    setIsCreatingNew(true);
+    setSidebarOpen(true);
   };
 
   const updateItemType = async (id: string, newType: 'Material' | 'Labor' | 'Other') => {
@@ -159,6 +158,7 @@ export default function Catalog() {
 
   const openEditSidebar = (item: CatalogItem) => {
     setSelectedItem(item);
+    setIsCreatingNew(false);
     setSidebarOpen(true);
   };
 
@@ -166,24 +166,40 @@ export default function Catalog() {
     if (!selectedItem) return;
     
     try {
-      const response = await updateCatalogItem(selectedItem.id, {
-        itemType: updatedData.itemType!,
-        name: updatedData.name!,
-        description: updatedData.description,
-        measurements: updatedData.measurements,
-        coverage: updatedData.coverage!,
-        supplier: updatedData.supplier,
-        preTaxCost: updatedData.preTaxCost!,
-        waste: updatedData.waste!,
-        unit: updatedData.unit!,
-        salesTax: updatedData.salesTax!,
-        materialPurchaseTax: updatedData.materialPurchaseTax!,
-      });
-      
-      if (response.success) {
-        setItems(items.map(item => item.id === selectedItem.id ? { ...item, ...updatedData } : item));
+      const mergedData = {
+        itemType: updatedData.itemType ?? selectedItem.itemType ?? newItemDefaults.itemType,
+        name: updatedData.name ?? selectedItem.name ?? newItemDefaults.name,
+        description: updatedData.description ?? selectedItem.description ?? newItemDefaults.description,
+        measurements: updatedData.measurements ?? selectedItem.measurements ?? newItemDefaults.measurements,
+        coverage: updatedData.coverage ?? selectedItem.coverage ?? newItemDefaults.coverage,
+        supplier: updatedData.supplier ?? selectedItem.supplier ?? newItemDefaults.supplier,
+        preTaxCost: updatedData.preTaxCost ?? selectedItem.preTaxCost ?? newItemDefaults.preTaxCost,
+        waste: updatedData.waste ?? selectedItem.waste ?? newItemDefaults.waste,
+        unit: updatedData.unit ?? selectedItem.unit ?? newItemDefaults.unit,
+        salesTax: updatedData.salesTax ?? selectedItem.salesTax ?? newItemDefaults.salesTax,
+        materialPurchaseTax: updatedData.materialPurchaseTax ?? selectedItem.materialPurchaseTax ?? newItemDefaults.materialPurchaseTax,
+      };
+
+      if (isCreatingNew) {
+        const response = await createCatalogItem(mergedData);
+
+        if (response.success && response.data) {
+          setToast({ message: 'Item created successfully', type: 'success' });
+          setSelectedItem(response.data);
+          setIsCreatingNew(false);
+          loadItems();
+        } else {
+          setToast({ message: response.message || 'Failed to create item', type: 'error' });
+        }
       } else {
-        setToast({ message: response.message || 'Failed to update item', type: 'error' });
+        const response = await updateCatalogItem(selectedItem.id, mergedData);
+
+        if (response.success) {
+          setItems(items.map(item => item.id === selectedItem.id ? { ...item, ...mergedData } : item));
+          setSelectedItem({ ...selectedItem, ...mergedData });
+        } else {
+          setToast({ message: response.message || 'Failed to update item', type: 'error' });
+        }
       }
     } catch (error) {
       setToast({ message: 'Failed to update item', type: 'error' });
@@ -644,9 +660,11 @@ export default function Catalog() {
         onClose={() => {
           setSidebarOpen(false);
           setSelectedItem(null);
+          setIsCreatingNew(false);
         }}
         item={selectedItem}
         onSave={handleSaveItem}
+        isCreating={isCreatingNew}
       />
 
       {toast && (

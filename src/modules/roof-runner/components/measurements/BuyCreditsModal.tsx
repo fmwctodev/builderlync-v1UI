@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { X, Check, Wallet, ArrowRight } from 'lucide-react';
+import { paymentService } from '../../services/paymentService';
 
 interface BuyCreditsModalProps {
     isOpen: boolean;
     onClose: () => void;
     currentBalance: number;
+    orgSlug: string;
 }
 
 const CREDIT_PACKS = [
@@ -14,7 +16,7 @@ const CREDIT_PACKS = [
     { id: 'enterprise', name: 'Enterprise Pack', credits: 100, price: 299, desc: '100 credits for high-volume users', perCredit: 2.99 },
 ];
 
-export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, currentBalance }) => {
+export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, currentBalance, orgSlug }) => {
     const [selectedPackId, setSelectedPackId] = useState<string>('standard');
 
     if (!isOpen) return null;
@@ -64,8 +66,8 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClos
                                     key={pack.id}
                                     onClick={() => setSelectedPackId(pack.id)}
                                     className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer bg-white dark:bg-gray-800 ${selectedPackId === pack.id
-                                            ? pack.popular ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-900 dark:border-white ring-1 ring-gray-900'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                        ? pack.popular ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-900 dark:border-white ring-1 ring-gray-900'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {pack.popular && (
@@ -101,10 +103,17 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClos
                             <button
                                 type="button"
                                 className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm items-center gap-2"
-                                onClick={() => {
-                                    // Handle checkout
-                                    console.log('Checkout with', selectedPack);
-                                    onClose();
+                                onClick={async () => {
+                                    try {
+                                        console.log('Initiating checkout with', selectedPack);
+                                        const session = await paymentService.createCheckoutSession(selectedPack, orgSlug);
+                                        if (session.url) {
+                                            window.location.href = session.url;
+                                        }
+                                    } catch (error) {
+                                        console.error('Checkout failed:', error);
+                                        alert('Failed to initiate checkout. Please try again.');
+                                    }
                                 }}
                             >
                                 <ArrowRight className="w-4 h-4" />

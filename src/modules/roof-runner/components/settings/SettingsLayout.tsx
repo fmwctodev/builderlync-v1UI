@@ -26,7 +26,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
     { id: 'integrations', label: 'Integrations', icon: Zap, path: `${orgPrefix}/settings/integrations`, permission: () => canAccess('integrations') },
     { id: 'custom-fields', label: 'Custom Fields', icon: Database, path: `${orgPrefix}/settings/custom-fields` },
     { id: 'permissions', label: 'Permissions', icon: Shield, path: `${orgPrefix}/settings/permissions`, permission: () => can('staff', 'assign_roles') },
-    { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs`, permission: () => can('system', 'view_audit_logs') },
+    // { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs`, permission: () => can('system', 'view_audit_logs') },
     { id: 'brand-board', label: 'Brand Board', icon: Palette, path: `${orgPrefix}/settings/brand-board`, permission: () => can('system', 'manage_brand') },
     { id: 'email-service', label: 'Email Service', icon: Mail, path: `${orgPrefix}/settings/email-service`, permission: () => canAccess('communications') },
   ];

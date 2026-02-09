@@ -100,7 +100,11 @@ export default function Opportunities() {
             {internalView === 'list' && (
               <>
                 <FiltersAndSort />
-                <OpportunitiesTable key={refreshKey} onRowClick={handleRowClick} />
+                <OpportunitiesTable
+                  key={refreshKey}
+                  onRowClick={handleRowClick}
+                  selectedPipelineId={selectedPipelineId}
+                />
               </>
             )}
             {internalView === 'settings' && (

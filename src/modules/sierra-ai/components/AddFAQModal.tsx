@@ -16,7 +16,7 @@ export function AddFAQModal({
   onClose,
   collections,
   onSuccess,
-  organizationId,
+  // organizationId,
   agentId,
 }: AddFAQModalProps) {
   const [question, setQuestion] = useState('');
@@ -56,6 +56,9 @@ export function AddFAQModal({
     }
 
     setLoading(true);
+
+    const user = localStorage.getItem('user');
+    const organizationId = user ? JSON.parse(user).companySlug : '';
 
     try {
       await knowledgeBaseApi.createQAPair({

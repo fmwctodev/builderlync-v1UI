@@ -7,13 +7,15 @@ interface CatalogItemSidebarProps {
   onClose: () => void;
   item: CatalogItem | null;
   onSave: (item: Partial<CatalogItem>) => void;
+  isCreating?: boolean;
 }
 
 const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   isOpen,
   onClose,
   item,
-  onSave
+  onSave,
+  isCreating = false
 }) => {
   const [formData, setFormData] = useState<Partial<CatalogItem>>({});
   const [affectedTemplates] = useState(['New template', 'New template', 'New template']);
@@ -62,13 +64,17 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   };
 
   const handleBlur = (field: keyof CatalogItem) => {
-    onSave(formData);
+    if (!isCreating) {
+      onSave(formData);
+    }
   };
 
   const handleImmediateSave = (field: keyof CatalogItem, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
-    onSave(updatedData);
+    if (!isCreating) {
+      onSave(updatedData);
+    }
   };
 
   const addSupplier = (supplierName: string) => {
@@ -107,7 +113,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
 
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-gray-800 shadow-xl z-50 overflow-y-auto">
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Item</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {isCreating ? 'New Item' : 'Edit Item'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -274,7 +282,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
             </div>
           </div>
 
-          {formData.itemType === 'Material' && (
+          {!isCreating && formData.itemType === 'Material' && (
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -414,22 +422,33 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
             </div>
           )}
 
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Affected templates
-            </h3>
-            <div className="space-y-2">
-              {affectedTemplates.map((template, index) => (
-                <a
-                  key={index}
-                  href="#"
-                  className="block px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  {template}
-                </a>
-              ))}
+          {!isCreating && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Affected templates
+              </h3>
+              <div className="space-y-2">
+                {affectedTemplates.map((template, index) => (
+                  <a
+                    key={index}
+                    href="#"
+                    className="block px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    {template}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {isCreating && (
+            <button
+              onClick={() => onSave(formData)}
+              className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Create Item
+            </button>
+          )}
         </div>
 
 

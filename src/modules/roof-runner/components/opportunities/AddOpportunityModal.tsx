@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, User, Building2 } from 'lucide-react';
-import { embeddedPipelinesService } from '../../services/embeddedPipelinesService';
+import { X, User } from 'lucide-react';
 import { opportunitiesApi } from '../../services/opportunitiesApi';
 import type { PipelineWithStages, OpportunityFormData, OpportunityStatus, JobType } from '../../types/opportunities';
 import { OPPORTUNITY_SOURCES, JOB_TYPES } from '../../types/opportunities';
-import { getEmbeddedPipelineId, EMBEDDED_PIPELINE_COLORS, EMBEDDED_PIPELINE_ICONS } from '../../constants/embeddedPipelines';
 import PropertyAddressInput from './PropertyAddressInput';
+
+import { getAllActiveStaff, StaffMember } from '../../../../shared/store/services/staffApi';
 
 interface AddOpportunityModalProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
   const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
   const [selectedJobType, setSelectedJobType] = useState<JobType>(defaultJobType);
   const [pipeline, setPipeline] = useState<PipelineWithStages | null>(null);
+  const [users, setUsers] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OpportunityFormData>({
     opportunity_name: '',
@@ -48,8 +49,18 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
   useEffect(() => {
     if (isOpen) {
       loadPipelineFromSelection();
+      loadUsers();
     }
   }, [isOpen, selectedPipelineId]);
+
+  const loadUsers = async () => {
+    try {
+      const staffList = await getAllActiveStaff();
+      setUsers(staffList);
+    } catch (error) {
+      console.error('Error loading staff:', error);
+    }
+  };
 
   const loadPipelineFromSelection = async () => {
     try {
@@ -57,7 +68,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
         // Load the selected pipeline
         const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
         const pipelineData = await pipelinesApi.getPipelineById(selectedPipelineId);
-        
+
         if (pipelineData) {
           setPipeline(pipelineData);
           setFormData(prev => ({
@@ -67,21 +78,38 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
           }));
         }
       } else {
-        // Default selected - set to first default stage
-        const defaultStages = [
-          { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
-          { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
-          { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
-          { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
-          { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
-          { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
-        ];
-        setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
-        setFormData(prev => ({
-          ...prev,
-          pipeline_id: '',
-          stage_id: 'default-1', // First default stage
-        }));
+        // Default selected - fetch actual default pipeline from API
+        const pipelinesApi = (await import('../../services/pipelinesApi')).pipelinesApi;
+        try {
+          const defaultPipeline = await pipelinesApi.getOrCreateDefaultPipeline();
+          if (defaultPipeline) {
+            setPipeline(defaultPipeline);
+            setFormData(prev => ({
+              ...prev,
+              pipeline_id: defaultPipeline.id,
+              stage_id: defaultPipeline.stages?.[0]?.id || '', // First stage
+            }));
+          } else {
+            throw new Error("No default pipeline returned");
+          }
+        } catch (err) {
+          console.error("Failed to fetch default pipeline, falling back to local default", err);
+          // Fallback (only if API fails completely)
+          const defaultStages = [
+            { id: 'default-1', name: 'New Lead', order_position: 0, color: '#dc2626' },
+            { id: 'default-2', name: 'Follow-Up 1', order_position: 1, color: '#2563eb' },
+            { id: 'default-3', name: 'Follow-Up 2', order_position: 2, color: '#eab308' },
+            { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
+            { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
+            { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
+          ];
+          setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
+          setFormData(prev => ({
+            ...prev,
+            pipeline_id: '', // Still no ID if API fails, but better than crashing
+            stage_id: 'default-1',
+          }));
+        }
       }
     } catch (error) {
       console.error('Error loading pipeline:', error);
@@ -190,21 +218,19 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
           <div className="flex px-6">
             <button
               onClick={() => setActiveTab('contact')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'contact'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contact'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
             >
               Contact details
             </button>
             <button
               onClick={() => setActiveTab('opportunity')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'opportunity'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'opportunity'
+                ? 'border-primary-600 text-primary-600'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
             >
               Opportunity Details
             </button>
@@ -318,7 +344,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                   value={formData.stage_id}
                   onChange={(e) => setFormData({ ...formData, stage_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  disabled={!formData.pipeline_id}
+                  disabled={!pipeline || stages.length === 0} // Enable if pipeline is loaded and has stages
                 >
                   <option value="">Choose stage</option>
                   {stages.map((stage) => (
@@ -374,6 +400,11 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">Unassigned</option>
+                    {users.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.first_name} {member.last_name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -381,11 +412,56 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Followers
                   </label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">Add Followers</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      onChange={(e) => {
+                        const userId = e.target.value;
+                        if (userId && !formData.follower_ids?.includes(userId)) {
+                          setFormData(prev => ({
+                            ...prev,
+                            follower_ids: [...(prev.follower_ids || []), userId]
+                          }));
+                        }
+                        e.target.value = ''; // Reset select after selection
+                      }}
+                    >
+                      <option value="">Add Follower</option>
+                      {users.map((member) => (
+                        <option
+                          key={member.id}
+                          value={member.id}
+                          disabled={formData.follower_ids?.includes(String(member.id))}
+                        >
+                          {member.first_name} {member.last_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Display selected followers as tags */}
+                    {formData.follower_ids && formData.follower_ids.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {formData.follower_ids.map(id => {
+                          const user = users.find(u => String(u.id) === String(id));
+                          return user ? (
+                            <span key={id} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {user.first_name} {user.last_name}
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  follower_ids: prev.follower_ids?.filter(fid => fid !== id)
+                                }))}
+                                className="ml-1 text-blue-500 hover:text-blue-700 focus:outline-none"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

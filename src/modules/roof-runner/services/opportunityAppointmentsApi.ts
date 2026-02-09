@@ -2,13 +2,13 @@ import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityAppointment {
   id: string;
-  opportunity_id: string;
-  user_id: string;
+  opportunity_id: number;
+  user_id: number;
   organization_id?: string;
   appointment_type: string;
   appointment_date: string;
   status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
-  assigned_to?: string;
+  assigned_to?: number | null;
   location?: string;
   notes?: string;
   reminder_enabled: boolean;
@@ -18,11 +18,11 @@ export interface OpportunityAppointment {
 }
 
 export interface CreateOpportunityAppointmentRequest {
-  opportunity_id: string;
+  opportunity_id: number;
   appointment_type: string;
   appointment_date: string;
   status?: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
-  assigned_to?: string;
+  assigned_to?: number | null;
   location?: string;
   notes?: string;
   reminder_enabled?: boolean;
@@ -33,7 +33,7 @@ export interface UpdateOpportunityAppointmentRequest {
   appointment_type?: string;
   appointment_date?: string;
   status?: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
-  assigned_to?: string;
+  assigned_to?: number | null;
   location?: string;
   notes?: string;
   reminder_enabled?: boolean;

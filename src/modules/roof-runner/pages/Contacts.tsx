@@ -40,7 +40,7 @@ const Contacts: React.FC = () => {
     secondaryPhoneType: 'mobile'
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -53,7 +53,7 @@ const Contacts: React.FC = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [secondaryEmail, setSecondaryEmail] = useState('');
   const [showSecondaryEmail, setShowSecondaryEmail] = useState(false);
-  const [secondaryPhone, setSecondaryPhone] = useState({phone: '', extension: ''});
+  const [secondaryPhone, setSecondaryPhone] = useState({ phone: '', extension: '' });
   const [showSecondaryPhone, setShowSecondaryPhone] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -78,7 +78,7 @@ const Contacts: React.FC = () => {
 
   const removeSecondaryPhone = () => {
     setShowSecondaryPhone(false);
-    setSecondaryPhone({phone: '', extension: ''});
+    setSecondaryPhone({ phone: '', extension: '' });
   };
 
   const formatPhoneNumber = (value: string) => {
@@ -93,12 +93,12 @@ const Contacts: React.FC = () => {
 
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
-    setFormData({...formData, phone: formatted});
+    setFormData({ ...formData, phone: formatted });
   };
 
   const handleSecondaryPhoneChange = (value: string) => {
     const formatted = formatPhoneNumber(value);
-    setSecondaryPhone({...secondaryPhone, phone: formatted});
+    setSecondaryPhone({ ...secondaryPhone, phone: formatted });
   };
 
   const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
@@ -157,11 +157,11 @@ const Contacts: React.FC = () => {
         secondaryPhoneType: 'mobile'
       });
       setShowContactModal(false);
-      setToast({message: 'Contact created successfully!', type: 'success'});
+      setToast({ message: 'Contact created successfully!', type: 'success' });
       fetchContacts();
     } catch (error: any) {
       const errorMessage = getErrorMessage(error, 'Failed to create contact');
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -217,11 +217,11 @@ const Contacts: React.FC = () => {
       });
       setShowEditModal(false);
       setEditingContact(null);
-      setToast({message: 'Contact updated successfully!', type: 'success'});
+      setToast({ message: 'Contact updated successfully!', type: 'success' });
       fetchContacts();
     } catch (error: any) {
       const errorMessage = getErrorMessage(error, 'Failed to update contact');
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -236,7 +236,7 @@ const Contacts: React.FC = () => {
       setTotalContacts(response.data.pagination.total);
     } catch (error: any) {
       const errorMessage = getErrorMessage(error, 'Failed to load contacts');
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoadingContacts(false);
     }
@@ -321,13 +321,13 @@ const Contacts: React.FC = () => {
     if (file && file.type === 'text/csv') {
       setSelectedFile(file);
     } else {
-      setToast({message: 'Please select a valid CSV file', type: 'error'});
+      setToast({ message: 'Please select a valid CSV file', type: 'error' });
     }
   };
 
   const handleCsvUpload = async () => {
     if (!selectedFile) {
-      setToast({message: 'Please select a file', type: 'error'});
+      setToast({ message: 'Please select a file', type: 'error' });
       return;
     }
 
@@ -335,13 +335,13 @@ const Contacts: React.FC = () => {
 
     try {
       await uploadContactsCsv(selectedFile);
-      setToast({message: 'CSV uploaded successfully!', type: 'success'});
+      setToast({ message: 'CSV uploaded successfully!', type: 'success' });
       setShowCsvModal(false);
       setSelectedFile(null);
       fetchContacts();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Upload failed. Please try again.';
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setUploadLoading(false);
     }
@@ -388,7 +388,7 @@ const Contacts: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!contactToDelete) return;
-    
+
     setIsLoading(true);
     try {
       await deleteContact(contactToDelete.id);
@@ -429,7 +429,7 @@ const Contacts: React.FC = () => {
       const message = response?.data?.message || 'Export request submitted successfully!';
       setToast({ message, type: 'success' });
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to export contacts';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to export contacts';
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setExportLoading(false);
@@ -464,7 +464,7 @@ const Contacts: React.FC = () => {
               <button
                 onClick={() => setShowContactModal(true)}
                 className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 <Plus className="w-4 h-4" />
                 New contact
@@ -483,7 +483,7 @@ const Contacts: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white"
-              style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
+              style={{ '--tw-ring-color': '#dc2626' } as React.CSSProperties}
               onFocus={(e) => e.target.style.borderColor = '#dc2626'}
               onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
             />
@@ -491,9 +491,8 @@ const Contacts: React.FC = () => {
           <div className="relative type-filter-container">
             <button
               onClick={() => setShowTypeFilter(!showTypeFilter)}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${
-                typeFilter ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${typeFilter ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
+                }`}
             >
               <Filter className="w-4 h-4" />
               {typeFilter ? typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1) : 'Type'}

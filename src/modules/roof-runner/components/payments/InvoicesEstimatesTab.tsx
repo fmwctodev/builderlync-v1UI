@@ -85,7 +85,7 @@ const InvoicesEstimatesTab: React.FC = () => {
     let filtered = [...invoices];
 
     if (searchQuery) {
-      filtered = filtered.filter(inv => 
+      filtered = filtered.filter(inv =>
         inv.doc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.private_note?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -131,28 +131,28 @@ const InvoicesEstimatesTab: React.FC = () => {
     const draft = invoices.filter(inv => inv.status.toLowerCase() === 'draft');
     const due = invoices.filter(inv => inv.balance > 0 && inv.status.toLowerCase() === 'open');
     const paid = invoices.filter(inv => inv.balance === 0);
-    const overdue = invoices.filter(inv => 
-      inv.balance > 0 && 
-      new Date(inv.due_date) < new Date() && 
+    const overdue = invoices.filter(inv =>
+      inv.balance > 0 &&
+      new Date(inv.due_date) < new Date() &&
       inv.status.toLowerCase() === 'open'
     );
 
     return {
-      draft: { 
-        count: draft.length, 
-        total: draft.reduce((sum, inv) => sum + inv.total_amount, 0) 
+      draft: {
+        count: draft.length,
+        total: draft.reduce((sum, inv) => sum + inv.total_amount, 0)
       },
-      due: { 
-        count: due.length, 
-        total: due.reduce((sum, inv) => sum + inv.balance, 0) 
+      due: {
+        count: due.length,
+        total: due.reduce((sum, inv) => sum + inv.balance, 0)
       },
-      received: { 
-        count: paid.length, 
-        total: paid.reduce((sum, inv) => sum + inv.total_amount, 0) 
+      received: {
+        count: paid.length,
+        total: paid.reduce((sum, inv) => sum + inv.total_amount, 0)
       },
-      overdue: { 
-        count: overdue.length, 
-        total: overdue.reduce((sum, inv) => sum + inv.balance, 0) 
+      overdue: {
+        count: overdue.length,
+        total: overdue.reduce((sum, inv) => sum + inv.balance, 0)
       },
     };
   }, [invoices]);
@@ -203,9 +203,8 @@ const InvoicesEstimatesTab: React.FC = () => {
                           setSubView(option.value as SubView);
                           setShowDropdown(false);
                         }}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${
-                          subView === option.value ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'
-                        } ${option.value === 'all_invoices' ? 'rounded-t-lg' : ''} ${option.value === 'estimates' ? 'rounded-b-lg' : ''}`}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${subView === option.value ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'
+                          } ${option.value === 'all_invoices' ? 'rounded-t-lg' : ''} ${option.value === 'estimates' ? 'rounded-b-lg' : ''}`}
                       >
                         <span>{option.label}</span>
                         {option.badge && (
@@ -237,7 +236,7 @@ const InvoicesEstimatesTab: React.FC = () => {
               <span>Settings</span>
             </button> */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowNewDropdown(!showNewDropdown)}
                 className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg"
               >
@@ -286,7 +285,7 @@ const InvoicesEstimatesTab: React.FC = () => {
             </div>
           </div>
         )} */}
-{/* 
+        {/* 
         {subView === 'all_invoices' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -325,7 +324,7 @@ const InvoicesEstimatesTab: React.FC = () => {
         )} */}
 
         <div className="flex items-center space-x-4">
-          <PaymentDateRangeFilter 
+          <PaymentDateRangeFilter
             onDateChange={(start, end) => setDateRange({ start, end })}
           />
           <PaymentSearchBar
@@ -360,16 +359,16 @@ const InvoicesEstimatesTab: React.FC = () => {
             </button>
           )}
         </div>
-      
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent p-6">
-          {/* <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent p-6">
+            {/* <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm">Debug: Total invoices: {invoices.length}, Filtered: {filteredAndSortedInvoices.length}, Loading: {loading.toString()}</p>
             <p className="text-sm">Search: '{searchQuery}', Status filter: [{statusFilter.join(', ')}]</p>
           </div>
            */}
-          {/* {!loading && filteredAndSortedInvoices.length > 0 && (
+            {/* {!loading && filteredAndSortedInvoices.length > 0 && (
             <div className="mb-4 flex items-center justify-between bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
               <div className="flex items-center space-x-6">
                 <div>
@@ -406,225 +405,225 @@ const InvoicesEstimatesTab: React.FC = () => {
               )}
             </div>
           )} */}
-          
-          {loading ? (
-            <>            
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-            </>
-          ) : filteredAndSortedInvoices.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title={searchQuery || statusFilter.length > 0 ? 'No invoices match your filters' : 'No invoices to show yet'}
-              description={searchQuery || statusFilter.length > 0 ? 'Try adjusting your search or filters' : 'Invoices from QuickBooks will appear here'}
-            />
-          ) : (
-            <div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Invoice Number
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Customer
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Invoice Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Due Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Total Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Balance
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredAndSortedInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((invoice) => (
-                        <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400">
-                            {invoice.doc_number}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                            <div>
-                              <div className="font-medium">{invoice.customer_name}</div>
-                              {invoice.contacts?.email && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">{invoice.contacts.email}</div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                            {new Date(invoice.invoice_date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                            {new Date(invoice.due_date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            {invoice.currency_code} ${invoice.total_amount.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            <span className={invoice.balance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}>
-                              ${invoice.balance.toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <StatusBadge
-                              status={invoice.status}
-                              type="invoice"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => {
-                                const invoiceData = invoice.rawData;
-                                setEditInvoice({
-                                  id: invoiceData.id.toString(),
-                                  invoice_number: invoiceData.invoice_number,
-                                  name: invoiceData.invoice_number,
-                                  customer_id: invoiceData.customer_id,
-                                  customer_name: invoiceData.customer_name,
-                                  amount: invoiceData.total,
-                                  status: invoiceData.status,
-                                  issue_date: invoiceData.issue_date,
-                                  due_date: invoiceData.due_date,
-                                  po_number: invoiceData.po_number,
-                                  payment_terms: invoiceData.payment_terms,
-                                  line_items: invoiceData.line_items || [],
-                                  subtotal: invoiceData.subtotal,
-                                  discount: invoiceData.discount,
-                                  tax: invoiceData.tax,
-                                  shipping: invoiceData.shipping,
-                                  total: invoiceData.total,
-                                  coupon_id: invoiceData.coupon_id,
-                                  coupon_discount: invoiceData.coupon_discount,
-                                  notes: invoiceData.notes,
-                                  message_to_customer: invoiceData.message_to_customer,
-                                  is_estimate: invoiceData.is_estimate,
-                                  job_id: invoiceData.job_id,
-                                  created_at: invoiceData.created_at,
-                                  updated_at: invoiceData.updated_at
-                                } as any);
-                                setShowInvoiceModal(true);
-                              }}
-                              className="text-primary-600 hover:text-primary-700 text-sm"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+            {loading ? (
+              <>
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 </div>
-              </div>
-              
-              {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage) > 1 && (
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedInvoices.length)} of {filteredAndSortedInvoices.length} results
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                      {currentPage} of {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)))}
-                      disabled={currentPage === Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
-                      className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+              </>
+            ) : filteredAndSortedInvoices.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title={searchQuery || statusFilter.length > 0 ? 'No invoices match your filters' : 'No invoices to show yet'}
+                description={searchQuery || statusFilter.length > 0 ? 'Try adjusting your search or filters' : 'Invoices from QuickBooks will appear here'}
+              />
+            ) : (
+              <div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Invoice Number
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Customer
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Invoice Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Due Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Total Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Balance
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {filteredAndSortedInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((invoice) => (
+                          <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                            <td className="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400">
+                              {invoice.doc_number}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                              <div>
+                                <div className="font-medium">{invoice.customer_name}</div>
+                                {invoice.contacts?.email && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">{invoice.contacts.email}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                              {new Date(invoice.invoice_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                              {new Date(invoice.due_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                              {invoice.currency_code} ${invoice.total_amount.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              <span className={invoice.balance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}>
+                                ${invoice.balance.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <StatusBadge
+                                status={invoice.status}
+                                type="invoice"
+                              />
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => {
+                                  const invoiceData = invoice.rawData;
+                                  setEditInvoice({
+                                    id: invoiceData.id.toString(),
+                                    invoice_number: invoiceData.invoice_number,
+                                    name: invoiceData.invoice_number,
+                                    customer_id: invoiceData.customer_id,
+                                    customer_name: invoiceData.customer_name,
+                                    amount: invoiceData.total,
+                                    status: invoiceData.status,
+                                    issue_date: invoiceData.issue_date,
+                                    due_date: invoiceData.due_date,
+                                    po_number: invoiceData.po_number,
+                                    payment_terms: invoiceData.payment_terms,
+                                    line_items: invoiceData.line_items || [],
+                                    subtotal: invoiceData.subtotal,
+                                    discount: invoiceData.discount,
+                                    tax: invoiceData.tax,
+                                    shipping: invoiceData.shipping,
+                                    total: invoiceData.total,
+                                    coupon_id: invoiceData.coupon_id,
+                                    coupon_discount: invoiceData.coupon_discount,
+                                    notes: invoiceData.notes,
+                                    message_to_customer: invoiceData.message_to_customer,
+                                    is_estimate: invoiceData.is_estimate,
+                                    job_id: invoiceData.job_id,
+                                    created_at: invoiceData.created_at,
+                                    updated_at: invoiceData.updated_at
+                                  } as any);
+                                  setShowInvoiceModal(true);
+                                }}
+                                className="text-primary-600 hover:text-primary-700 text-sm"
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              )}
-            </div>
+
+                {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage) > 1 && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedInvoices.length)} of {filteredAndSortedInvoices.length} results
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+                        {currentPage} of {Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)))}
+                        disabled={currentPage === Math.ceil(filteredAndSortedInvoices.length / itemsPerPage)}
+                        className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {showFilters && (
+            <PaymentFiltersSidebar
+              isOpen={showFilters}
+              onClose={() => setShowFilters(false)}
+              sections={[
+                {
+                  title: 'Sort',
+                  type: 'radio',
+                  options: [
+                    { label: 'Invoice date (latest)', value: 'date_desc' },
+                    { label: 'Invoice date (oldest)', value: 'date_asc' },
+                    { label: 'Amount (lowest)', value: 'amount_asc' },
+                    { label: 'Amount (highest)', value: 'amount_desc' },
+                  ],
+                  selectedValues: [sortBy],
+                },
+                {
+                  title: 'Status',
+                  type: 'checkbox',
+                  options: [
+                    { label: 'Draft', value: 'draft' },
+                    { label: 'Paid', value: 'paid' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'Overdue', value: 'overdue' },
+                  ],
+                  selectedValues: statusFilter,
+                },
+              ]}
+              onApply={(filters) => {
+                const sortSection = filters.find(f => f.title === 'Sort');
+                const statusSection = filters.find(f => f.title === 'Status');
+
+                if (sortSection?.selectedValues[0]) {
+                  setSortBy(sortSection.selectedValues[0]);
+                }
+                if (statusSection) {
+                  setStatusFilter(statusSection.selectedValues);
+                }
+                setShowFilters(false);
+              }}
+              onReset={() => {
+                setSortBy('date_desc');
+                setStatusFilter([]);
+                setShowFilters(false);
+              }}
+            />
           )}
         </div>
 
-        {showFilters && (
-          <PaymentFiltersSidebar
-            isOpen={showFilters}
-            onClose={() => setShowFilters(false)}
-            sections={[
-              {
-                title: 'Sort',
-                type: 'radio',
-                options: [
-                  { label: 'Invoice date (latest)', value: 'date_desc' },
-                  { label: 'Invoice date (oldest)', value: 'date_asc' },
-                  { label: 'Amount (lowest)', value: 'amount_asc' },
-                  { label: 'Amount (highest)', value: 'amount_desc' },
-                ],
-                selectedValues: [sortBy],
-              },
-              {
-                title: 'Status',
-                type: 'checkbox',
-                options: [
-                  { label: 'Draft', value: 'draft' },
-                  { label: 'Paid', value: 'paid' },
-                  { label: 'Pending', value: 'pending' },
-                  { label: 'Overdue', value: 'overdue' },
-                ],
-                selectedValues: statusFilter,
-              },
-            ]}
-            onApply={(filters) => {
-              const sortSection = filters.find(f => f.title === 'Sort');
-              const statusSection = filters.find(f => f.title === 'Status');
-              
-              if (sortSection?.selectedValues[0]) {
-                setSortBy(sortSection.selectedValues[0]);
-              }
-              if (statusSection) {
-                setStatusFilter(statusSection.selectedValues);
-              }
-              setShowFilters(false);
-            }}
-            onReset={() => {
-              setSortBy('date_desc');
-              setStatusFilter([]);
-              setShowFilters(false);
-            }}
-          />
-        )}
+        <CreateInvoiceModal
+          isOpen={showInvoiceModal}
+          onClose={() => {
+            setShowInvoiceModal(false);
+            setEditInvoice(null);
+          }}
+          onSuccess={(invoice) => {
+            setShowInvoiceModal(false);
+            setEditInvoice(null);
+            loadData();
+          }}
+          invoiceType={invoiceType}
+          editInvoice={editInvoice}
+        />
       </div>
-      
-      <CreateInvoiceModal
-        isOpen={showInvoiceModal}
-        onClose={() => {
-          setShowInvoiceModal(false);
-          setEditInvoice(null);
-        }}
-        onSuccess={(invoice) => {
-          setShowInvoiceModal(false);
-          setEditInvoice(null);
-          loadData();
-        }}
-        invoiceType={invoiceType}
-        editInvoice={editInvoice}
-      />
-    </div>
     </div>
   );
 };
