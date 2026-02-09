@@ -113,6 +113,13 @@ class ContactsApiService {
     });
   }
 
+  async deleteContacts(ids: string[]) {
+    return this.makeRequest('/contacts/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  }
+
   async uploadContactsCsv(file: File) {
     const formData = new FormData();
     formData.append('file', file);
@@ -189,6 +196,7 @@ export const searchContactsByTypeAndName = contactsApiService.searchContactsByTy
 export const getContactById = contactsApiService.getContactById.bind(contactsApiService);
 export const updateContact = contactsApiService.updateContact.bind(contactsApiService);
 export const deleteContact = contactsApiService.deleteContact.bind(contactsApiService);
+export const deleteContacts = contactsApiService.deleteContacts.bind(contactsApiService);
 export const uploadContactsCsv = contactsApiService.uploadContactsCsv.bind(contactsApiService);
 export const exportContactsCsv = contactsApiService.exportContactsCsv.bind(contactsApiService);
 export const createNote = contactsApiService.createNote.bind(contactsApiService);

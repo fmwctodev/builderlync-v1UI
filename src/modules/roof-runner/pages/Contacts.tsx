@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, Filter, Plus, Upload, Download } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, uploadContactsCsv, exportContactsCsv } from "../../../shared/store/services/contactsApi";
+import { Search, Filter, Plus, Upload, Download, X, Trash2 } from "lucide-react";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, deleteContacts, uploadContactsCsv, exportContactsCsv } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
@@ -61,6 +61,7 @@ const Contacts: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<any>(null);
   const [exportLoading, setExportLoading] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -403,6 +404,24 @@ const Contacts: React.FC = () => {
     }
   };
 
+  const confirmBulkDelete = async () => {
+    if (selectedContacts.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      await deleteContacts(selectedContacts);
+      setToast({ message: `${selectedContacts.length} contact(s) deleted successfully!`, type: 'success' });
+      setShowBulkDeleteConfirm(false);
+      setSelectedContacts([]);
+      fetchContacts();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete contacts';
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleExportCsv = async () => {
     setExportLoading(true);
     try {
@@ -562,6 +581,31 @@ const Contacts: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedContacts.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-red-800 dark:text-red-300">
+            {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedContacts([])}
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-1.5 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear
+            </button>
+            <button
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete selected
+            </button>
+          </div>
+        </div>
+      )}
+
       <ContactsTable
         contacts={contacts}
         loadingContacts={loadingContacts}
@@ -650,6 +694,35 @@ const Contacts: React.FC = () => {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contacts</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowBulkDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBulkDelete}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Deleting...' : `Delete ${selectedContacts.length} contact${selectedContacts.length !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>
