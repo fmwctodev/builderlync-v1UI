@@ -197,6 +197,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
 
   const [sections, setSections] = useState<Section[]>([
     { id: 'cover', name: "Cover", active: true, order: 0 },
@@ -372,8 +373,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     const files = e.target.files;
     if (files) {
       for (const file of Array.from(files)) {
-        const blobUrl = URL.createObjectURL(file);
-        uploadPhoto(sectionName, blobUrl);
+        const uploadId = crypto.randomUUID();
+        setUploadingPhotos(prev => new Set([...prev, uploadId]));
         
         try {
           const section = sections.find(s => s.name === sectionName);
@@ -397,42 +398,32 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
           const result = await response.json();
           if (result.success) {
-            const permanentUrl = result.data.url;
+            const fileKey = result.data.key;
             setSections(prev => prev.map(s => 
               s.name === sectionName && s.content?.photos
                 ? {
                     ...s,
                     content: {
                       ...s.content,
-                      photos: s.content.photos.map(url => url === blobUrl ? permanentUrl : url)
+                      photos: [...s.content.photos, fileKey]
                     }
                   }
                 : s
             ));
-            URL.revokeObjectURL(blobUrl);
           }
         } catch (error) {
           console.error('Error uploading photo:', error);
+        } finally {
+          setUploadingPhotos(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(uploadId);
+            return newSet;
+          });
         }
       }
     }
   };
 
-  const uploadPhoto = (sectionName: string, photoUrl: string) => {
-    setSections(
-      sections.map((section) =>
-        section.name === sectionName && section.content?.photos
-          ? {
-              ...section,
-              content: {
-                ...section.content,
-                photos: [...section.content.photos, photoUrl],
-              },
-            }
-          : section
-      )
-    );
-  };
 
   const deletePhoto = async (sectionName: string, index: number) => {
     const section = sections.find(s => s.name === sectionName);
@@ -1394,6 +1385,17 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                           </button>
                         </div>
                       ))}
+                    {Array.from(uploadingPhotos).map((uploadId) => (
+                      <div
+                        key={uploadId}
+                        className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden relative flex items-center justify-center"
+                      >
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Uploading...</span>
+                        </div>
+                      </div>
+                    ))}
                     <button
                       onClick={() => photoInputRef.current?.click()}
                       className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
