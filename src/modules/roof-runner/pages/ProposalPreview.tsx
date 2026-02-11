@@ -49,7 +49,7 @@ export default function ProposalPreview() {
   };
 
   const getCompanyPhone = () => {
-    return businessInfo?.business_phone || proposal?.sections?.settings?.companyPhone || "(000) 000-0000";
+    return businessInfo?.business_phone || businessInfo?.representative_phone || "(000) 000-0000";
   };
 
   const getCompanyEmail = () => {
@@ -81,25 +81,46 @@ export default function ProposalPreview() {
       const html2pdf = (await import("html2pdf.js")).default;
       const element = contentRef.current.cloneNode(true) as HTMLElement;
 
-      // Fetch and convert images to base64
+      // Convert images to base64 via backend proxy to avoid CORS
       const images = element.querySelectorAll('img');
       const imagePromises = Array.from(images).map(async (img) => {
         try {
           const imgElement = img as HTMLImageElement;
-          const response = await fetch(imgElement.src);
-          const blob = await response.blob();
-          const reader = new FileReader();
+          const originalSrc = imgElement.src;
           
-          return new Promise((resolve) => {
-            reader.onloadend = () => {
-              imgElement.src = reader.result as string;
-              resolve(true);
-            };
-            reader.readAsDataURL(blob);
+          // Skip if already base64
+          if (originalSrc.startsWith('data:')) {
+            return true;
+          }
+          
+          // Use backend proxy to fetch image
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+          const token = localStorage.getItem('token');
+          
+          const response = await fetch(`${API_BASE_URL}/proposals/proxy-image`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageUrl: originalSrc })
           });
+          
+          if (!response.ok) {
+            console.warn('Failed to proxy image:', originalSrc);
+            return false;
+          }
+          
+          const data = await response.json();
+          if (data.success && data.data.base64) {
+            imgElement.src = data.data.base64;
+            return true;
+          }
+          
+          return false;
         } catch (e) {
-          console.warn('Could not fetch image:', e);
-          return Promise.resolve(false);
+          console.warn('Could not convert image:', e);
+          return false;
         }
       });
 
@@ -125,6 +146,7 @@ export default function ProposalPreview() {
       await html2pdf().set(opt).from(element).save();
     } catch (error) {
       console.error("Error generating PDF:", error);
+      alert('Failed to generate PDF. Please try again.');
     } finally {
       pages.forEach((page) => {
         (page as HTMLElement).style.marginBottom = '';
@@ -262,68 +284,7 @@ export default function ProposalPreview() {
               </div>
             )}
 
-            {/* Other Sections - Disabled to show only 3 main pages
-            {proposal.sections?.sections
-              ?.filter(
-                (s: any) =>
-                  s.name !== "Cover" && s.name !== "Estimate" && s.active
-              )
-              .map((section: any) => (
-                <div
-                  key={section.id}
-                  className="bg-white dark:bg-gray-800 pdf-page"
-                  style={{
-                    width: "816px",
-                    height: "1056px",
-                    padding: "32px",
-                  }}
-                >
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    {section.name}
-                  </h2>
-                  {section.type === "photos" && section.content?.photos && (
-                    <div className="grid grid-cols-2 gap-4">
-                      {section.content.photos.map(
-                        (photo: string, idx: number) => (
-                          <img
-                            key={idx}
-                            src={photo}
-                            alt={`Photo ${idx + 1}`}
-                            className="w-full h-auto rounded-lg"
-                            
-                          />
-                        )
-                      )}
-                    </div>
-                  )}
-                  {section.type === "pdf" && section.content?.pdfs && (
-                    <div className="space-y-4">
-                      {section.content.pdfs.map((pdf: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
-                        >
-                          <iframe
-                            src={pdf.url}
-                            className="w-full h-[600px]"
-                            title={pdf.name}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {section.type === "text" && (
-                    <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                      {section.content?.description ||
-                        section.content?.text ||
-                        "Section content"}
-                    </div>
-                  )}
-                </div>
-              ))
-            */}
-
-            {/* Estimate Section - Page 1 */}
+            {/* Estimate Section - Page 1 (Demo) */}
             {proposal.sections?.items && (
               <div
                 className="bg-white dark:bg-gray-800 pdf-page"
@@ -735,7 +696,7 @@ export default function ProposalPreview() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 italic">
                         By signing this document you agree to the statement of
                         works provided by{" "}
-                        {proposal.sections.settings?.companyName ||
+                        {getCompanyName() ||
                           "Company Name"}{" "}
                         and in accordance with any terms described within.
                       </p>
@@ -772,6 +733,95 @@ export default function ProposalPreview() {
                 </div>
               </div>
             )}
+
+            {/* Photos and Other Sections */}
+            {proposal.sections?.sections
+              ?.filter(
+                (s: any) =>
+                  s.name !== "Cover" && s.name !== "Estimate" && s.active
+              )
+              .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+              .map((section: any) => (
+                <div
+                  key={section.id}
+                  className="bg-white dark:bg-gray-800 pdf-page"
+                  style={{
+                    width: "816px",
+                    minHeight: "1056px",
+                    padding: "32px",
+                    position: "relative"
+                  }}
+                >
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    {section.name}
+                  </h2>
+                  {section.type === "photos" && section.content?.photos && (
+                    <div className="grid grid-cols-2 gap-4">
+                      {section.content.photos.map(
+                        (photo: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={photo}
+                            alt={`Photo ${idx + 1}`}
+                            className="w-full h-auto rounded-lg"
+                          />
+                        )
+                      )}
+                    </div>
+                  )}
+                  {section.type === "pdf" && section.content?.pdfs && (
+                    <div className="space-y-4">
+                      {section.content.pdfs.map((pdf: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                        >
+                          <iframe
+                            src={pdf.url}
+                            className="w-full h-[600px]"
+                            title={pdf.name}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {section.type === "text" && (
+                    <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                      {section.content?.description ||
+                        section.content?.text ||
+                        "Section content"}
+                    </div>
+                  )}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {getRepresentativeName()}
+                        </div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {getCompanyName()}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {getCompanyPhone()}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {getCompanyEmail()}
+                        </div>
+                      </div>
+                      {getCompanyLogo() && (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                          <img
+                            src={getCompanyLogo()!}
+                            alt="Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
           </div>
         </div>
       )}

@@ -22,6 +22,15 @@ const Login: React.FC = () => {
   useAutoLogout();
 
   useEffect(() => {
+    // Check if logged in as admin
+    const adminToken = localStorage.getItem('adminToken');
+    const adminSession = localStorage.getItem('super_admin_session');
+    if (adminToken || adminSession) {
+      setToast({message: 'Please logout from admin session first', type: 'error'});
+    }
+  }, []);
+
+  useEffect(() => {
     if (requires2FA) {
       setShow2FAModal(true);
     } else if (user) {
@@ -59,6 +68,15 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if logged in as admin
+    const adminToken = localStorage.getItem('adminToken');
+    const adminSession = localStorage.getItem('super_admin_session');
+    if (adminToken || adminSession) {
+      setToast({message: 'Please logout from admin session first', type: 'error'});
+      return;
+    }
+
     dispatch(reset2FAState()); // Clear any previous 2FA state
     dispatch(loginRequest({ email, password }));
   };
