@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Search as SearchIcon, Filter } from 'lucide-react';
+import { Download, Search as SearchIcon, Filter, RefreshCw } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { fetchTransactions, Transaction } from '../../../../shared/store/services/paymentsApi';
+import { fetchTransactions, Transaction, syncQuickBooksPayments } from '../../../../shared/store/services/paymentsApi';
 
 const TransactionsTab: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncQuickBooks = async () => {
+    try {
+      setSyncing(true);
+      await syncQuickBooksPayments();
+      // Wait a moment for DB to update then reload
+      setTimeout(() => loadData(), 1000);
+    } catch (error) {
+      console.error('Error syncing QuickBooks payments:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -45,13 +59,23 @@ const TransactionsTab: React.FC = () => {
               Track customer payments at a single place
             </p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
-          >
-            <Download className="w-4 h-4" />
-            <span>Import as CSV</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleSyncQuickBooks}
+              disabled={syncing || loading}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing...' : 'Sync QuickBooks'}</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
+            >
+              <Download className="w-4 h-4" />
+              <span>Import as CSV</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">

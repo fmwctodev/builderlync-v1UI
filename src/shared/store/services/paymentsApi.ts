@@ -341,3 +341,17 @@ export const getDocumentStats = async () => {
   const response = await makeRequest('/contracts/stats');
   return response.data;
 };
+
+export const syncQuickBooksInvoices = async (): Promise<{ synced: number; errors: string[] }> => {
+  const response = await makeRequest('/quickbooks/sync-invoices', {
+    method: 'POST',
+  });
+  return response.data;
+};
+
+export const syncQuickBooksPayments = async (): Promise<{ synced: number; errors: string[] }> => {
+  const response = await makeRequest('/quickbooks/sync-payments', {
+    method: 'POST',
+  });
+  return response.data;
+};

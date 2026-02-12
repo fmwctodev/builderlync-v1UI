@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, Filter, Plus, Upload, Download, X, Trash2 } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, deleteContacts, uploadContactsCsv, exportContactsCsv } from "../../../shared/store/services/contactsApi";
+import { Search, Filter, Plus, Upload, Download, X, Trash2, RefreshCw } from "lucide-react";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, deleteContacts, uploadContactsCsv, exportContactsCsv, syncQuickBooksContacts } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
@@ -62,6 +62,22 @@ const Contacts: React.FC = () => {
   const [contactToDelete, setContactToDelete] = useState<any>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncContacts = async () => {
+    try {
+      setSyncing(true);
+      await syncQuickBooksContacts();
+      setToast({ message: 'Contacts synced successfully!', type: 'success' });
+      fetchContacts();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Failed to sync contacts');
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -450,6 +466,14 @@ const Contacts: React.FC = () => {
             >
               <Download className="w-4 h-4" />
               {exportLoading ? 'Exporting...' : 'Export CSV'}
+            </button>
+            <button
+              onClick={handleSyncContacts}
+              disabled={syncing}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync QuickBooks'}
             </button>
             {hasPermission('contacts', 'create') && (
               <button
