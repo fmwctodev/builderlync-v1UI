@@ -55,7 +55,7 @@ export const GoogleAnalyticsCallback: React.FC = () => {
       if (orgSlug) {
         navigate(`/org/${orgSlug}/marketing/analytics/${service}`, { replace: true });
       } else {
-        navigate('/marketing/analytics/${service}', { replace: true });
+        navigate(`/marketing/analytics/${service}`, { replace: true });
       }
     }
   }, [navigate, user]);
