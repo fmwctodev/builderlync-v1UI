@@ -222,7 +222,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false, sendToQuickBooks: boolean = false) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -233,7 +233,8 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         job_id: formData.job_id ? parseInt(formData.job_id) : null,
         line_items: lineItems,
         coupon_id: appliedCoupon?.id,
-        status: isDraft ? 'draft' : 'sent'
+        status: isDraft ? 'draft' : 'sent',
+        send_to_quickbooks: sendToQuickBooks
       };
 
       let response;
@@ -243,8 +244,14 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         response = await createInvoice(invoiceData);
       }
 
-      onSuccess(response);
-      onClose();
+      if (response.warning) {
+        setError(response.warning);
+        // Still call onSuccess since invoice was created locally
+        onSuccess(response.data || response);
+      } else {
+        onSuccess(response.data || response);
+        onClose();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create invoice');
     } finally {
@@ -662,7 +669,21 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
               <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                 Cancel
               </button>
-              <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+              {!editInvoice && (
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={(e) => handleSubmit(e, false, true)}
+                  className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading ? 'Processing...' : 'Create and Send'}
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+              >
                 {isLoading ? 'Creating...' : editInvoice ? `Update ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
               </button>
             </div>

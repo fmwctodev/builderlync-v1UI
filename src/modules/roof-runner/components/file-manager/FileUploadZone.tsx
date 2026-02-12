@@ -4,7 +4,7 @@ import { Upload, X, CheckCircle, AlertCircle, File } from 'lucide-react';
 import { backendFilesApi } from '../../../../shared/services/backendFilesApi';
 
 interface FileUploadZoneProps {
-  folderId: number | null;
+  folderId: string | number | null;
   onUploadComplete: () => void;
   onClose: () => void;
 }
@@ -91,11 +91,10 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
           {uploadingFiles.length === 0 ? (
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                isDragActive
+              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                   : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
-              }`}
+                }`}
             >
               <input {...getInputProps()} />
               <Upload className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />

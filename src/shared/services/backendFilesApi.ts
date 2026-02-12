@@ -3,9 +3,9 @@ import { getAuthToken } from '../utils/auth';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface FileRecord {
-  id: number;
+  id: string | number;
   user_id: number;
-  folder_id: number | null;
+  folder_id: string | number | null;
   filename: string;
   original_filename: string;
   file_path: string;
@@ -18,9 +18,9 @@ export interface FileRecord {
 }
 
 export interface FolderRecord {
-  id: number;
+  id: string | number;
   user_id: number;
-  parent_id: number | null;
+  parent_id: string | number | null;
   name: string;
   cloud_provider: 'google' | 'onedrive';
   cloud_folder_id: string;
@@ -30,7 +30,7 @@ export interface FolderRecord {
 export interface CreateFolderData {
   name: string;
   cloudProvider: 'google' | 'onedrive';
-  parentId?: number | null;
+  parentId?: string | number | null;
 }
 
 export interface UploadProgressCallback {
@@ -54,9 +54,9 @@ class BackendFilesApiService {
     }
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+  private async makeRequest(endpoint: string, options: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> } = {}) {
     const token = getAuthToken();
-    
+
     const headers: Record<string, string> = {
       'Authorization': token ? `Bearer ${token}` : '',
       ...options.headers,
@@ -66,7 +66,7 @@ class BackendFilesApiService {
     if (options.body && typeof options.body === 'string') {
       headers['Content-Type'] = 'application/json';
     }
-    
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
@@ -79,7 +79,7 @@ class BackendFilesApiService {
     return response.json();
   }
 
-  async getFiles(folderId?: number | null): Promise<{ data: FileRecord[]; pagination: any }> {
+  async getFiles(folderId?: string | number | null): Promise<{ data: FileRecord[]; pagination: any }> {
     const params = new URLSearchParams();
     if (folderId !== null && folderId !== undefined) {
       params.append('folderId', folderId.toString());
@@ -93,15 +93,15 @@ class BackendFilesApiService {
 
   async searchFiles(searchTerm: string): Promise<FileRecord[]> {
     const { data } = await this.getFiles();
-    return data.filter(file => 
+    return data.filter(file =>
       file.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.originalFilename.toLowerCase().includes(searchTerm.toLowerCase())
+      (file as any).originalFilename?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
   async uploadFile(
     file: File,
-    folderId?: number | null,
+    folderId?: string | number | null,
     onProgress?: UploadProgressCallback
   ): Promise<FileRecord> {
     const connection = await this.getConnectionTokens();
@@ -113,10 +113,10 @@ class BackendFilesApiService {
     if (folderId) formData.append('folderId', folderId.toString());
 
     const token = getAuthToken();
-    
+
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      
+
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable && onProgress) {
           const progress = (e.loaded / e.total) * 100;
@@ -126,7 +126,8 @@ class BackendFilesApiService {
 
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText));
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.data || response);
         } else {
           reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
         }
@@ -146,7 +147,7 @@ class BackendFilesApiService {
 
   async uploadMultipleFiles(
     files: File[],
-    folderId?: number | null,
+    folderId?: string | number | null,
     onProgress?: UploadProgressCallback
   ): Promise<FileRecord[]> {
     const uploadedFiles: FileRecord[] = [];
@@ -167,31 +168,35 @@ class BackendFilesApiService {
     return uploadedFiles;
   }
 
-  async getFileDownloadUrl(fileId: number): Promise<string> {
+  async getFileDownloadUrl(fileId: string | number): Promise<string> {
     return `${API_BASE_URL}/oauth/documents/${fileId}/download`;
   }
 
-  async deleteFile(fileId: number): Promise<void> {
+  async deleteFile(fileId: string | number): Promise<void> {
+    const connection = await this.getConnectionTokens();
     await this.makeRequest(`/oauth/documents/${fileId}`, {
       method: 'DELETE',
+      headers: {
+        'cloud-access-token': connection?.access_token || ''
+      }
     });
   }
 
-  async renameFile(fileId: number, newName: string): Promise<void> {
+  async renameFile(fileId: string | number, newName: string): Promise<void> {
     await this.makeRequest(`/oauth/documents/${fileId}`, {
       method: 'PATCH',
       body: JSON.stringify({ filename: newName }),
     });
   }
 
-  async moveFile(fileId: number, newFolderId: number | null): Promise<void> {
+  async moveFile(fileId: string | number, newFolderId: string | number | null): Promise<void> {
     await this.makeRequest(`/oauth/documents/${fileId}`, {
       method: 'PATCH',
       body: JSON.stringify({ folderId: newFolderId }),
     });
   }
 
-  async getFolders(parentId?: number | null): Promise<FolderRecord[]> {
+  async getFolders(parentId?: string | number | null): Promise<FolderRecord[]> {
     const params = new URLSearchParams();
     if (parentId !== null && parentId !== undefined) {
       params.append('parentId', parentId.toString());
@@ -205,16 +210,17 @@ class BackendFilesApiService {
 
   async createFolder(folderData: CreateFolderData): Promise<FolderRecord> {
     const connection = await this.getConnectionTokens();
-    return this.makeRequest('/oauth/documents/folders', {
+    const result = await this.makeRequest('/oauth/documents/folders', {
       method: 'POST',
       body: JSON.stringify({
         ...folderData,
         accessToken: connection?.access_token || ''
       }),
     });
+    return result.success ? result.data : result;
   }
 
-  async deleteFolder(folderId: number): Promise<void> {
+  async deleteFolder(folderId: string | number): Promise<void> {
     const connection = await this.getConnectionTokens();
     await this.makeRequest(`/oauth/documents/folders/${folderId}`, {
       method: 'DELETE',
@@ -222,23 +228,31 @@ class BackendFilesApiService {
     });
   }
 
-  async renameFolder(folderId: number, newName: string): Promise<void> {
+  async renameFolder(folderId: string | number, newName: string): Promise<void> {
     await this.makeRequest(`/oauth/documents/folders/${folderId}`, {
       method: 'PATCH',
       body: JSON.stringify({ name: newName }),
     });
   }
 
-  async moveFolder(folderId: number, newParentFolderId: number | null): Promise<void> {
+  async moveFolder(folderId: string | number, newParentFolderId: string | number | null): Promise<void> {
     await this.makeRequest(`/oauth/documents/folders/${folderId}`, {
       method: 'PATCH',
       body: JSON.stringify({ parentId: newParentFolderId }),
     });
   }
 
-  async getFolderBreadcrumbs(folderId: number): Promise<FolderRecord[]> {
+  async getFolderBreadcrumbs(folderId: string | number): Promise<FolderRecord[]> {
+    // This method might need adjustment if breadcrumbs aren't stored in DB
+    // For now returning current folder as single breadcrumb if it's a string ID
+    if (typeof folderId === 'string') {
+      const folders = await this.getFolders();
+      const current = folders.find(f => f.id === folderId);
+      return current ? [current] : [];
+    }
+
     const breadcrumbs: FolderRecord[] = [];
-    let currentFolderId: number | null = folderId;
+    let currentFolderId: string | number | null = folderId;
 
     while (currentFolderId) {
       const folders = await this.getFolders();
@@ -252,9 +266,9 @@ class BackendFilesApiService {
     return breadcrumbs;
   }
 
-  async getFolderContents(folderId: number | null): Promise<{ folders: FolderRecord[]; files: FileRecord[] }> {
+  async getFolderContents(folderId: string | number | null): Promise<{ folders: FolderRecord[]; files: FileRecord[] }> {
     console.log('Getting folder contents for folderId:', folderId);
-    
+
     try {
       const [folders, filesResponse] = await Promise.all([
         this.getFolders(folderId),
