@@ -29,25 +29,23 @@ const CalendarsNew: React.FC = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setActiveView('calendar')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeView === 'calendar'
+            className={`px-6 py-3 font-medium transition-all relative ${activeView === 'calendar'
                 ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
-            }`}
+              }`}
           >
             Calendar View
           </button>
           <button
             onClick={() => setActiveView('appointments')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeView === 'appointments'
+            className={`px-6 py-3 font-medium transition-all relative ${activeView === 'appointments'
                 ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
-            }`}
+              }`}
           >
             Appointment List View
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveView('settings')}
             className={`px-6 py-3 font-medium transition-all relative flex items-center gap-2 ${
               activeView === 'settings'
@@ -57,7 +55,7 @@ const CalendarsNew: React.FC = () => {
           >
             <Settings className="w-4 h-4" />
             Calendar Settings
-          </button>
+          </button> */}
         </div>
       </div>
 
