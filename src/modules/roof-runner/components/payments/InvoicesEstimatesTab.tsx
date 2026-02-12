@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, Settings, Plus, Search, Filter, ChevronDown, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, Plus, Filter, ChevronDown, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { fetchInvoices, Invoice as PaymentInvoice } from '../../../../shared/store/services/paymentsApi';
+import { fetchInvoices, Invoice as PaymentInvoice, syncQuickBooksInvoices } from '../../../../shared/store/services/paymentsApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 
 type SubView = 'all_invoices' | 'recurring_invoices' | 'templates' | 'estimates';
@@ -39,12 +39,25 @@ const InvoicesEstimatesTab: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('date_desc');
   const [dateRange, setDateRange] = useState<{ start?: string; end?: string }>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const itemsPerPage = 10;
   const [showNewDropdown, setShowNewDropdown] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceType, setInvoiceType] = useState<'invoice' | 'estimate'>('invoice');
   const [editInvoice, setEditInvoice] = useState<PaymentInvoice | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncQuickBooks = async () => {
+    try {
+      setSyncing(true);
+      await syncQuickBooksInvoices();
+      await loadData();
+    } catch (error) {
+      console.error('Error syncing QuickBooks invoices:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
 
   useEffect(() => {
     loadData();
@@ -127,35 +140,6 @@ const InvoicesEstimatesTab: React.FC = () => {
     return filtered;
   }, [invoices, searchQuery, statusFilter, dateRange, sortBy]);
 
-  const stats = useMemo(() => {
-    const draft = invoices.filter(inv => inv.status.toLowerCase() === 'draft');
-    const due = invoices.filter(inv => inv.balance > 0 && inv.status.toLowerCase() === 'open');
-    const paid = invoices.filter(inv => inv.balance === 0);
-    const overdue = invoices.filter(inv =>
-      inv.balance > 0 &&
-      new Date(inv.due_date) < new Date() &&
-      inv.status.toLowerCase() === 'open'
-    );
-
-    return {
-      draft: {
-        count: draft.length,
-        total: draft.reduce((sum, inv) => sum + inv.total_amount, 0)
-      },
-      due: {
-        count: due.length,
-        total: due.reduce((sum, inv) => sum + inv.balance, 0)
-      },
-      received: {
-        count: paid.length,
-        total: paid.reduce((sum, inv) => sum + inv.total_amount, 0)
-      },
-      overdue: {
-        count: overdue.length,
-        total: overdue.reduce((sum, inv) => sum + inv.balance, 0)
-      },
-    };
-  }, [invoices]);
 
   const getSubViewLabel = () => {
     switch (subView) {
@@ -235,6 +219,14 @@ const InvoicesEstimatesTab: React.FC = () => {
               <Settings className="w-4 h-4" />
               <span>Settings</span>
             </button> */}
+            <button
+              onClick={handleSyncQuickBooks}
+              disabled={syncing || loading}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing...' : 'Sync QuickBooks'}</span>
+            </button>
             <div className="relative">
               <button
                 onClick={() => setShowNewDropdown(!showNewDropdown)}
@@ -615,7 +607,7 @@ const InvoicesEstimatesTab: React.FC = () => {
             setShowInvoiceModal(false);
             setEditInvoice(null);
           }}
-          onSuccess={(invoice) => {
+          onSuccess={() => {
             setShowInvoiceModal(false);
             setEditInvoice(null);
             loadData();
