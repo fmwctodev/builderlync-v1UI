@@ -4,23 +4,23 @@ import { FolderItem } from '../../../../shared/services/fileManagerApi';
 
 interface FolderNavigationProps {
   folders: FolderItem[];
-  onFolderClick: (folderId: string) => void;
-  onDeleteFolder: (folderId: string) => void;
-  onCreateSubfolder?: (parentId: string) => void;
-  onUploadToFolder?: (folderId: string) => void;
+  onFolderClick: (folderId: string | number) => void;
+  onDeleteFolder: (folderId: string | number) => void;
+  onCreateSubfolder?: (parentId: string | number) => void;
+  onUploadToFolder?: (folderId: string | number) => void;
 }
 
-export default function FolderNavigation({ 
-  folders, 
-  onFolderClick, 
+export default function FolderNavigation({
+  folders,
+  onFolderClick,
   onDeleteFolder,
   onCreateSubfolder,
   onUploadToFolder
 }: FolderNavigationProps) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number}>({top: 0, left: 0});
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<{[key: string]: HTMLButtonElement}>({});
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement }>({});
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,13 +35,14 @@ export default function FolderNavigation({
     }
   }, [activeDropdown]);
 
-  const handleDropdownToggle = (folderId: string, e: React.MouseEvent) => {
+  const handleDropdownToggle = (folderId: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (activeDropdown === folderId) {
+    const id = folderId.toString();
+
+    if (activeDropdown === id) {
       setActiveDropdown(null);
     } else {
-      const button = buttonRefs.current[folderId];
+      const button = buttonRefs.current[id];
       if (button) {
         const rect = button.getBoundingClientRect();
         setDropdownPosition({
@@ -49,14 +50,14 @@ export default function FolderNavigation({
           left: rect.right - 192 + window.scrollX // 192px = w-48
         });
       }
-      setActiveDropdown(folderId);
+      setActiveDropdown(id);
     }
   };
 
-  const handleAction = (action: string, folderId: string, e: React.MouseEvent) => {
+  const handleAction = (action: string, folderId: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveDropdown(null);
-    
+
     switch (action) {
       case 'delete':
         if (confirm('Are you sure you want to delete this folder?')) {
@@ -84,10 +85,10 @@ export default function FolderNavigation({
             <Folder className="h-5 w-5 text-[#dc2626] mr-2" />
             <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{folder.name}</span>
           </div>
-          
-          <button 
+
+          <button
             ref={(el) => {
-              if (el) buttonRefs.current[folder.id] = el;
+              if (el) buttonRefs.current[folder.id.toString()] = el;
             }}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={(e) => handleDropdownToggle(folder.id, e)}
@@ -96,10 +97,10 @@ export default function FolderNavigation({
           </button>
         </div>
       ))}
-      
+
       {/* Fixed positioned dropdown */}
       {activeDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999]"
           style={{

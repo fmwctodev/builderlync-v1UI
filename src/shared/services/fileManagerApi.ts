@@ -3,9 +3,9 @@ import { cloudAuthService } from './cloudAuthService';
 import { getAuthToken } from '../utils/auth';
 
 export interface FileItem {
-  id: number;
+  id: string | number;
   user_id?: number;
-  folder_id?: number;
+  folder_id?: string | number;
   filename: string;
   original_filename?: string;
   file_path: string;
@@ -23,9 +23,9 @@ export interface FileItem {
 }
 
 export interface FolderItem {
-  id: string;
+  id: string | number;
   name: string;
-  parentId?: string;
+  parentId?: string | number;
   provider?: 'google' | 'onedrive';
   cloudFolderId?: string;
   createdAt?: string;
@@ -44,11 +44,11 @@ export const fileManagerApi = {
   /**
    * Get user's folders
    */
-  async getFolders(parentId?: string): Promise<FolderItem[]> {
+  async getFolders(parentId?: string | number): Promise<FolderItem[]> {
     const token = getAuthToken();
     const url = new URL(`${API_BASE_URL}/oauth/documents/folders`);
     if (parentId) {
-      url.searchParams.set('parentId', parentId);
+      url.searchParams.set('parentId', parentId.toString());
     }
 
     const response = await fetch(url.toString(), {
@@ -69,7 +69,7 @@ export const fileManagerApi = {
   /**
    * Create a new folder
    */
-  async createFolder(name: string, parentId?: string): Promise<FolderItem> {
+  async createFolder(name: string, parentId?: string | number): Promise<FolderItem> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');
@@ -103,11 +103,11 @@ export const fileManagerApi = {
   /**
    * Get files in a folder
    */
-  async getFiles(folderId?: string, page = 1, limit = 20): Promise<{ files: FileItem[], pagination: any }> {
+  async getFiles(folderId?: string | number, page = 1, limit = 20): Promise<{ files: FileItem[], pagination: any }> {
     const token = getAuthToken();
     const url = new URL(`${API_BASE_URL}/oauth/documents`);
 
-    if (folderId) url.searchParams.set('folderId', folderId);
+    if (folderId) url.searchParams.set('folderId', folderId.toString());
     url.searchParams.set('page', page.toString());
     url.searchParams.set('limit', limit.toString());
 
@@ -134,7 +134,7 @@ export const fileManagerApi = {
    */
   async uploadFile(
     file: File,
-    folderId?: string,
+    folderId?: string | number,
     description?: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<FileItem> {
@@ -149,7 +149,7 @@ export const fileManagerApi = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('cloudProvider', connection.provider === 'google_drive' ? 'google' : 'onedrive');
-    if (folderId) formData.append('folderId', folderId);
+    if (folderId) formData.append('folderId', folderId.toString());
     if (description) formData.append('description', description);
 
     return new Promise((resolve, reject) => {
@@ -189,7 +189,7 @@ export const fileManagerApi = {
   /**
    * Download a file
    */
-  async downloadFile(fileId: string): Promise<Blob> {
+  async downloadFile(fileId: string | number): Promise<Blob> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');
@@ -214,7 +214,7 @@ export const fileManagerApi = {
   /**
    * Delete a file
    */
-  async deleteFile(fileId: string): Promise<void> {
+  async deleteFile(fileId: string | number): Promise<void> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');
@@ -238,7 +238,7 @@ export const fileManagerApi = {
   /**
    * Delete a folder
    */
-  async deleteFolder(folderId: string): Promise<void> {
+  async deleteFolder(folderId: string | number): Promise<void> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');
@@ -262,7 +262,7 @@ export const fileManagerApi = {
   /**
    * Share a file
    */
-  async shareFile(fileId: string, email?: string): Promise<void> {
+  async shareFile(fileId: string | number, email?: string): Promise<void> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');
@@ -288,7 +288,7 @@ export const fileManagerApi = {
   /**
    * Get file details
    */
-  async getFileDetails(fileId: string): Promise<FileItem> {
+  async getFileDetails(fileId: string | number): Promise<FileItem> {
     const token = getAuthToken();
 
     const response = await fetch(`${API_BASE_URL}/oauth/documents/${fileId}`, {
@@ -309,7 +309,7 @@ export const fileManagerApi = {
   /**
    * Get file thumbnail
    */
-  async getFileThumbnail(fileId: string): Promise<string> {
+  async getFileThumbnail(fileId: string | number): Promise<string> {
     const connection = await cloudDriveApi.getCurrentUserConnection();
     if (!connection) {
       throw new Error('No cloud drive connected');

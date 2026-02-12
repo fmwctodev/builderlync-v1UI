@@ -23,7 +23,7 @@ export default function FileManager() {
   const [connection, setConnection] = useState<CloudDriveConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | number | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 });
   const [uploadStatus, setUploadStatus] = useState<'uploading' | 'success' | 'error' | null>(null);
   const [uploadFileName, setUploadFileName] = useState('');
@@ -32,8 +32,8 @@ export default function FileManager() {
   const [filters, setFilters] = useState<{ pdf: boolean; image: boolean }>({ pdf: false, image: false });
   const [sortBy, setSortBy] = useState('uploadDateNewest');
   const [showDashboard, setShowDashboard] = useState(true);
-  const [targetFolderId, setTargetFolderId] = useState<number | undefined>();
-  const [folderPath, setFolderPath] = useState<Array<{ id: number, name: string }>>([]);
+  const [targetFolderId, setTargetFolderId] = useState<string | number | undefined>();
+  const [folderPath, setFolderPath] = useState<Array<{ id: string | number, name: string }>>([]);
 
   const tabs = [
     { id: 'my-cloud' as const, label: 'My Cloud', icon: Cloud },
@@ -57,13 +57,12 @@ export default function FileManager() {
     }
   };
 
-  const handleFolderClick = (folderId: string) => {
-    const id = parseInt(folderId);
-    const folder = folders.find(f => f.id === id);
+  const handleFolderClick = (folderId: string | number) => {
+    const folder = folders.find(f => f.id.toString() === folderId.toString());
     if (folder) {
-      setFolderPath([...folderPath, { id: id, name: folder.name }]);
+      setFolderPath([...folderPath, { id: folder.id, name: folder.name }]);
     }
-    setCurrentFolderId(id);
+    setCurrentFolderId(folderId);
   };
 
   const handleBackClick = () => {
@@ -88,13 +87,12 @@ export default function FileManager() {
     setCurrentFolderId(null);
   };
 
-  const handleCreateSubfolder = (parentId: string) => {
-    setTargetFolderId(parseInt(parentId));
+  const handleCreateSubfolder = (parentId: string | number) => {
+    setTargetFolderId(parentId);
     setIsCreateFolderModalOpen(true);
   };
 
-  const handleUploadToFolder = (folderId: string) => {
-    const id = parseInt(folderId);
+  const handleUploadToFolder = (folderId: string | number) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -102,14 +100,14 @@ export default function FileManager() {
       const files = (e.target as HTMLInputElement).files;
       if (files) {
         Array.from(files).forEach(file => {
-          handleFileUploadToFolder(file, id);
+          handleFileUploadToFolder(file, folderId);
         });
       }
     };
     input.click();
   };
 
-  const handleFileUploadToFolder = async (file: File, folderId: number) => {
+  const handleFileUploadToFolder = async (file: File, folderId: string | number) => {
     try {
       setUploadFileName(file.name);
       setUploadStatus('uploading');
@@ -149,7 +147,7 @@ export default function FileManager() {
     if (searchTerm) {
       result = result.filter(file =>
         file.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        file.original_filename?.toLowerCase().includes(searchTerm.toLowerCase())
+        (file as any).original_filename?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -246,22 +244,20 @@ export default function FileManager() {
     }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = async (fileId: string | number) => {
     try {
-      const id = parseInt(fileId);
-      await backendFilesApi.deleteFile(id);
-      setFiles(files.filter(f => f.id !== id));
+      await backendFilesApi.deleteFile(fileId);
+      setFiles(files.filter(f => f.id !== fileId));
     } catch (err) {
       console.error('Error deleting file:', err);
       setError('Failed to delete file');
     }
   };
 
-  const handleDeleteFolder = async (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string | number) => {
     try {
-      const id = parseInt(folderId);
-      await backendFilesApi.deleteFolder(id);
-      setFolders(folders.filter(f => f.id !== id));
+      await backendFilesApi.deleteFolder(folderId);
+      setFolders(folders.filter(f => f.id !== folderId));
     } catch (err) {
       console.error('Error deleting folder:', err);
       setError('Failed to delete folder');
@@ -430,7 +426,7 @@ export default function FileManager() {
                 />
                 <FileGrid
                   files={displayedFiles.map(f => ({
-                    id: f.id,
+                    id: f.id as any,
                     name: f.filename,
                     type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
                     pages: 1,
@@ -441,7 +437,7 @@ export default function FileManager() {
                     file_path: f.file_path,
                     created_at: f.created_at
                   }))}
-                  onDeleteFile={(id) => handleDeleteFile(id.toString())}
+                  onDeleteFile={(id) => handleDeleteFile(id)}
                 />
               </>
             )}

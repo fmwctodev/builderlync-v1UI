@@ -50,6 +50,8 @@ export interface Invoice {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  warning?: string;
+  data?: any;
 }
 
 export interface Estimate {
@@ -147,20 +149,20 @@ export const fetchInvoices = async (filters?: {
   return response.data;
 };
 
-export const createInvoice = async (invoice: Partial<Invoice>): Promise<Invoice> => {
+export const createInvoice = async (invoice: Partial<Invoice>): Promise<any> => {
   const response = await makeRequest('/invoices', {
     method: 'POST',
     body: JSON.stringify(invoice),
   });
-  return response.data;
+  return response;
 };
 
-export const updateInvoice = async (id: string, updates: Partial<Invoice>): Promise<Invoice> => {
+export const updateInvoice = async (id: string, updates: Partial<Invoice>): Promise<any> => {
   const response = await makeRequest(`/invoices/${id}`, {
     method: 'PUT',
     body: JSON.stringify(updates),
   });
-  return response.data;
+  return response;
 };
 
 export const deleteInvoice = async (id: string): Promise<void> => {
