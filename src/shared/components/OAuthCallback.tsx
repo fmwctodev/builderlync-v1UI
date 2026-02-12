@@ -26,6 +26,15 @@ const OAuthCallback: React.FC = () => {
         return;
       }
 
+      // If state is not JSON, this callback was likely used by another Google OAuth flow
+      // (e.g. Google Analytics). Forward to the dedicated analytics callback route.
+      try {
+        JSON.parse(state);
+      } catch {
+        navigate(`/auth/google-analytics/callback${window.location.search}`, { replace: true });
+        return;
+      }
+
       // Handle Popup Flow (Legacy or specific use case)
       if (window.opener) {
         window.opener.postMessage({
