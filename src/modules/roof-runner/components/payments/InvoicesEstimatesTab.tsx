@@ -76,7 +76,7 @@ const InvoicesEstimatesTab: React.FC = () => {
         total_amount: inv.total || 0,
         balance: inv.total || 0,
         due_date: inv.due_date,
-        invoice_date: inv.issue_date,
+        invoice_date: inv.issue_date || inv.invoice_date,
         status: inv.status,
         currency_code: 'USD',
         email_status: '',
