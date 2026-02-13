@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
-import { createCalendar, getCalendarGroups, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
+import { createCalendar, updateCalendar, getCalendarGroups, CalendarGroup, Calendar } from '../../../../shared/store/services/calendarsApi';
 
 interface NewCalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editingCalendar?: Calendar | null;
 }
 
-const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, onSuccess, editingCalendar }) => {
   const [groups, setGroups] = useState<CalendarGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,8 +25,21 @@ const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, on
   useEffect(() => {
     if (isOpen) {
       fetchGroups();
+      if (editingCalendar) {
+        setFormData({
+          name: editingCalendar.name || '',
+          group_id: editingCalendar.group_id || '',
+          duration: editingCalendar.duration || 30,
+          type: editingCalendar.type || 'personal',
+          status: editingCalendar.status || 'active',
+          description: editingCalendar.description || '',
+          color: editingCalendar.color || '#3b82f6'
+        });
+      } else {
+        resetForm();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, editingCalendar]);
 
   const fetchGroups = async () => {
     try {
@@ -41,11 +55,17 @@ const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, on
     setLoading(true);
 
     try {
-      await createCalendar({
-        ...formData,
-        group_id: formData.group_id || undefined,
-        owner_id: '' // Will be set by API
-      } as any);
+      if (editingCalendar?.id) {
+        await updateCalendar(editingCalendar.id, {
+          ...formData,
+          group_id: formData.group_id || undefined,
+        });
+      } else {
+        await createCalendar({
+          ...formData,
+          group_id: formData.group_id || undefined,
+        });
+      }
 
       onSuccess();
       onClose();
@@ -80,7 +100,9 @@ const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, on
             <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
               <CalendarIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Calendar</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {editingCalendar ? 'Edit Calendar' : 'New Calendar'}
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -202,7 +224,7 @@ const NewCalendarModal: React.FC<NewCalendarModalProps> = ({ isOpen, onClose, on
               disabled={loading}
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Creating...' : 'Create Calendar'}
+              {loading ? (editingCalendar ? 'Saving...' : 'Creating...') : (editingCalendar ? 'Save Changes' : 'Create Calendar')}
             </button>
           </div>
         </form>

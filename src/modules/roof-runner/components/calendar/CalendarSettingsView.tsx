@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Settings as SettingsIcon } from 'lucide-react';
-import { getCalendars, getCalendarGroups, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
+import { getCalendars, getCalendarGroups, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
 import { format } from 'date-fns';
 
 interface CalendarSettingsViewProps {
   onNewCalendar: () => void;
+  onEditCalendar: (calendar: Calendar) => void;
 }
 
-const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalendar }) => {
+const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalendar, onEditCalendar }) => {
   const [activeTab, setActiveTab] = useState<'calendars' | 'service-menu' | 'rooms' | 'equipment'>('calendars');
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [groups, setGroups] = useState<CalendarGroup[]>([]);
@@ -45,6 +46,19 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
       newExpanded.add(groupId);
     }
     setExpandedGroups(newExpanded);
+  };
+
+  const handleDeleteCalendar = async (calendarId: string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this calendar?');
+    if (!confirmed) return;
+
+    try {
+      await deleteCalendar(calendarId);
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting calendar:', error);
+      alert('Failed to delete calendar');
+    }
   };
 
   const filteredCalendars = calendars.filter(cal => {
@@ -300,13 +314,19 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center gap-2">
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => onEditCalendar(calendar)}
+                            >
                               <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
                             <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
                               <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleDeleteCalendar(calendar.id)}
+                            >
                               <XIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
                             <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">

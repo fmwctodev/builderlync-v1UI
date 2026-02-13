@@ -5,6 +5,7 @@ import CalendarSettingsView from '../components/calendar/CalendarSettingsView';
 import NewAppointmentModal from '../components/calendar/NewAppointmentModal';
 import NewCalendarModal from '../components/calendar/NewCalendarModal';
 import CalendarsOld from './Calendars';
+import { Calendar } from '../../../shared/store/services/calendarsApi';
 
 type ViewMode = 'calendar' | 'appointments' | 'settings';
 
@@ -12,6 +13,7 @@ const CalendarsNew: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewMode>('calendar');
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
   const [showNewCalendarModal, setShowNewCalendarModal] = useState(false);
+  const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAppointmentSuccess = () => {
@@ -19,6 +21,7 @@ const CalendarsNew: React.FC = () => {
   };
 
   const handleCalendarSuccess = () => {
+    setEditingCalendar(null);
     setRefreshKey(prev => prev + 1);
   };
 
@@ -75,7 +78,14 @@ const CalendarsNew: React.FC = () => {
         {activeView === 'settings' && (
           <CalendarSettingsView
             key={`settings-${refreshKey}`}
-            onNewCalendar={() => setShowNewCalendarModal(true)}
+            onNewCalendar={() => {
+              setEditingCalendar(null);
+              setShowNewCalendarModal(true);
+            }}
+            onEditCalendar={(calendar) => {
+              setEditingCalendar(calendar);
+              setShowNewCalendarModal(true);
+            }}
           />
         )}
       </div>
@@ -88,8 +98,12 @@ const CalendarsNew: React.FC = () => {
       />
       <NewCalendarModal
         isOpen={showNewCalendarModal}
-        onClose={() => setShowNewCalendarModal(false)}
+        onClose={() => {
+          setShowNewCalendarModal(false);
+          setEditingCalendar(null);
+        }}
         onSuccess={handleCalendarSuccess}
+        editingCalendar={editingCalendar}
       />
     </div>
   );

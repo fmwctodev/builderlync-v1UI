@@ -204,7 +204,10 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {appointment.contacts
-                          ? `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim() || appointment.contacts.email || '-'
+                          ? appointment.contacts.full_name
+                            || `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim()
+                            || appointment.contacts.email
+                            || '-'
                           : '-'
                         }
                       </td>
