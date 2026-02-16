@@ -47,6 +47,11 @@ export interface TwoFactorSetup {
   backup_codes: string[];
 }
 
+export interface ProposalSettings {
+  enableCompanyRepresentativeSignature: boolean;
+  signatureFullName: string;
+}
+
 // Signature API
 export const getSignature = async (): Promise<SignatureResponse> => {
   const token = localStorage.getItem('token');
@@ -179,6 +184,35 @@ export const disable2FA = async (password: string): Promise<{ success: boolean; 
         'Content-Type': 'application/json'
       },
       data: { password }
+    }
+  );
+  return response.data;
+};
+
+// Proposal Settings API
+export const getProposalSettings = async (): Promise<{ success: boolean; data: ProposalSettings }> => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(
+    `${API_BASE_URL}/profile/proposal-settings`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  return response.data;
+};
+
+export const updateProposalSettings = async (data: ProposalSettings): Promise<{ success: boolean; message?: string; data: ProposalSettings }> => {
+  const token = localStorage.getItem('token');
+  const response = await axios.put(
+    `${API_BASE_URL}/profile/proposal-settings`,
+    data,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     }
   );
   return response.data;
