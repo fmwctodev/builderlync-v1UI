@@ -201,6 +201,13 @@ class ContactsApiService {
       body: JSON.stringify({ data, contactId }),
     });
   }
+
+  async syncQuickBooksContacts(): Promise<{ synced: number; errors: string[] }> {
+    const response = await this.makeRequest('/quickbooks/sync-contacts', {
+      method: 'POST',
+    });
+    return response.data;
+  }
 }
 
 const contactsApiService = new ContactsApiService();
@@ -219,3 +226,4 @@ export const getNotes = contactsApiService.getNotes.bind(contactsApiService);
 export const deleteNote = contactsApiService.deleteNote.bind(contactsApiService);
 export const updateNote = contactsApiService.updateNote.bind(contactsApiService);
 export const replyToNote = contactsApiService.replyToNote.bind(contactsApiService);
+export const syncQuickBooksContacts = contactsApiService.syncQuickBooksContacts.bind(contactsApiService);

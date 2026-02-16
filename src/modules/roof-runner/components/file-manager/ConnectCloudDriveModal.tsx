@@ -55,7 +55,6 @@ export default function ConnectCloudDriveModal({ isOpen, onClose, provider, onCo
       setError(null);
 
       const connection = await cloudDriveApi.getCurrentUserConnection();
-      console.log('Existing connection:', connection);
       setExistingConnection(connection);
     } catch (err) {
       console.error('Error checking connection:', err);

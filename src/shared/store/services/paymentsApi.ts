@@ -48,8 +48,17 @@ export interface Invoice {
   is_estimate?: boolean;
   job_id?: number;
   created_by?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  billing_address?: string;
+  shipping_address?: string;
+  ship_method?: string;
+  ship_date?: string;
+  tracking_number?: string;
   created_at: string;
   updated_at: string;
+  warning?: string;
+  data?: any;
 }
 
 export interface Estimate {
@@ -147,20 +156,20 @@ export const fetchInvoices = async (filters?: {
   return response.data;
 };
 
-export const createInvoice = async (invoice: Partial<Invoice>): Promise<Invoice> => {
+export const createInvoice = async (invoice: Partial<Invoice>): Promise<any> => {
   const response = await makeRequest('/invoices', {
     method: 'POST',
     body: JSON.stringify(invoice),
   });
-  return response.data;
+  return response;
 };
 
-export const updateInvoice = async (id: string, updates: Partial<Invoice>): Promise<Invoice> => {
+export const updateInvoice = async (id: string, updates: Partial<Invoice>): Promise<any> => {
   const response = await makeRequest(`/invoices/${id}`, {
     method: 'PUT',
     body: JSON.stringify(updates),
   });
-  return response.data;
+  return response;
 };
 
 export const deleteInvoice = async (id: string): Promise<void> => {
@@ -337,5 +346,19 @@ export const getInvoiceStats = async () => {
 
 export const getDocumentStats = async () => {
   const response = await makeRequest('/contracts/stats');
+  return response.data;
+};
+
+export const syncQuickBooksInvoices = async (): Promise<{ synced: number; errors: string[] }> => {
+  const response = await makeRequest('/quickbooks/sync-invoices', {
+    method: 'POST',
+  });
+  return response.data;
+};
+
+export const syncQuickBooksPayments = async (): Promise<{ synced: number; errors: string[] }> => {
+  const response = await makeRequest('/quickbooks/sync-payments', {
+    method: 'POST',
+  });
   return response.data;
 };

@@ -3,7 +3,7 @@ import { FileItem } from '../../../../shared/services/fileManagerApi';
 
 interface FileGridProps {
   files: FileItem[];
-  onDeleteFile: (fileId: number) => void;
+  onDeleteFile: (fileId: string | number) => void;
 }
 
 export default function FileGrid({ files, onDeleteFile }: FileGridProps) {

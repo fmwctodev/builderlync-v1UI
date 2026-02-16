@@ -8,6 +8,7 @@ import Toast from '../../../../shared/components/Toast';
 import { getErrorMessage } from '../../../../shared/utils/errorHandler';
 
 import { getAllActiveStaff, StaffMember } from '../../../../shared/store/services/staffApi';
+import { getJobs, Job } from '../../../../shared/store/services/jobsApi';
 
 interface AddOpportunityModalProps {
   isOpen: boolean;
@@ -15,10 +16,11 @@ interface AddOpportunityModalProps {
   onSuccess: () => void;
   defaultJobType?: JobType;
   selectedPipelineId?: string | null;
+  linkedJobData?: any | null;
 }
 
-export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial', selectedPipelineId }: AddOpportunityModalProps) {
-  const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>('contact');
+export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaultJobType = 'Commercial', selectedPipelineId, linkedJobData }: AddOpportunityModalProps) {
+  const [activeTab, setActiveTab] = useState<'opportunity' | 'contact'>(linkedJobData ? 'opportunity' : 'contact');
   const [selectedJobType, setSelectedJobType] = useState<JobType>(defaultJobType);
   const [pipeline, setPipeline] = useState<PipelineWithStages | null>(null);
   const [users, setUsers] = useState<StaffMember[]>([]);
@@ -45,9 +47,76 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
     property_country: '',
     property_latitude: undefined,
     property_longitude: undefined,
+    job_id: null
   });
+
+  useEffect(() => {
+    if (isOpen && linkedJobData) {
+      setFormData(prev => ({
+        ...prev,
+        opportunity_name: linkedJobData.name || linkedJobData.location || '',
+        contact_name: linkedJobData.customer?.full_name || linkedJobData.contactName || '',
+        contact_email: linkedJobData.customer?.email || '',
+        contact_phone: linkedJobData.customer?.phone || '',
+        property_address: linkedJobData.location || '',
+        job_id: linkedJobData.id,
+        value: typeof linkedJobData.jobValue === 'number' ? linkedJobData.jobValue : parseFloat(linkedJobData.jobValue) || 0,
+        source: linkedJobData.source || '',
+      }));
+      if (linkedJobData.jobType) {
+        const type = linkedJobData.jobType.charAt(0).toUpperCase() + linkedJobData.jobType.slice(1);
+        if (JOB_TYPES.includes(type as JobType)) {
+          setSelectedJobType(type as JobType);
+        }
+      }
+      setJobSearch(linkedJobData.name || linkedJobData.location || '');
+    }
+  }, [isOpen, linkedJobData]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [jobSearch, setJobSearch] = useState('');
+  const [matchingJobs, setMatchingJobs] = useState<Job[]>([]);
+  const [showJobList, setShowJobList] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (jobSearch.length > 2) {
+        try {
+          const response = await getJobs(1, 10, { search: jobSearch });
+          setMatchingJobs(response.data.data || []);
+          setShowJobList(true);
+        } catch (error) {
+          console.error('Error searching jobs:', error);
+        }
+      } else {
+        setMatchingJobs([]);
+        setShowJobList(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [jobSearch]);
+
+  const handleSelectJob = (job: Job) => {
+    setFormData(prev => ({
+      ...prev,
+      opportunity_name: job.name || job.location || '',
+      contact_name: job.customer?.full_name || job.contactName || '',
+      contact_email: job.customer?.email || '',
+      contact_phone: job.customer?.phone || '',
+      property_address: job.location || '',
+      job_id: job.id,
+      value: typeof job.jobValue === 'number' ? job.jobValue : parseFloat(job.jobValue) || 0,
+      source: job.source || '',
+    }));
+    if (job.jobType) {
+      const type = job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1);
+      if (JOB_TYPES.includes(type as JobType)) {
+        setSelectedJobType(type as JobType);
+      }
+    }
+    setJobSearch(job.name || job.location || '');
+    setShowJobList(false);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -318,6 +387,37 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
             </div>
           ) : (
             <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Link to Job (Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={jobSearch}
+                    onChange={(e) => setJobSearch(e.target.value)}
+                    placeholder="Search jobs by address or name..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                  {showJobList && matchingJobs.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {matchingJobs.map(job => (
+                        <button
+                          key={job.id}
+                          onClick={() => handleSelectJob(job)}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col border-b border-gray-50 dark:border-gray-700 last:border-0"
+                        >
+                          <span className="font-medium text-gray-900 dark:text-white">{job.location}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {job.customer?.full_name || job.contactName || 'No customer'} • ${job.jobValue}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Opportunity Name <span className="text-red-600">*</span>

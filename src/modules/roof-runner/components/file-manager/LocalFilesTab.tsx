@@ -16,8 +16,8 @@ interface LocalFilesTabProps {
 export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }: LocalFilesTabProps) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [folders, setFolders] = useState<FolderRecord[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
-  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id: number, name: string }>>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | number | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id: string | number, name: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -98,12 +98,12 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
     }
   };
 
-  const handleFolderClick = (folderId: string) => {
-    setCurrentFolderId(parseInt(folderId));
+  const handleFolderClick = (folderId: string | number) => {
+    setCurrentFolderId(folderId);
   };
 
-  const handleBreadcrumbClick = (folderId: string | null) => {
-    setCurrentFolderId(folderId ? parseInt(folderId) : null);
+  const handleBreadcrumbClick = (folderId: string | number | null) => {
+    setCurrentFolderId(folderId);
   };
 
   const handleUploadComplete = () => {
@@ -259,7 +259,7 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
             onFolderClick={handleFolderClick}
             onDeleteFolder={async (id) => {
               try {
-                await backendFilesApi.deleteFolder(parseInt(id));
+                await backendFilesApi.deleteFolder(id);
                 await loadFolderContents();
               } catch (error) {
                 console.error('Error deleting folder:', error);
@@ -278,7 +278,7 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
                 if (files) {
                   for (const file of Array.from(files)) {
                     try {
-                      await backendFilesApi.uploadFile(file, parseInt(folderId));
+                      await backendFilesApi.uploadFile(file, folderId);
                     } catch (error) {
                       console.error('Error uploading file:', error);
                     }
@@ -297,7 +297,7 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Files</h3>
           <FileGrid
             files={displayedFiles.map(f => ({
-              id: f.id,
+              id: f.id as any,
               name: f.filename,
               type: f.mime_type ? f.mime_type.split('/')[1] || 'file' : 'file',
               pages: 1,
