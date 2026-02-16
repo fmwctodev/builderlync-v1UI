@@ -9,18 +9,21 @@ interface CreateInvoiceModalProps {
   onSuccess: (invoice: Invoice) => void;
   editInvoice?: Invoice | null;
   invoiceType?: 'invoice' | 'estimate';
+  isViewOnly?: boolean;
 }
 
 interface LineItem {
+  item_name?: string;
   description: string;
   qty: number;
   rate: number;
   discount: number;
   tax: number;
   total: number;
+  unit_price?: number; // for backend compatibility
 }
 
-const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose, onSuccess, editInvoice, invoiceType = 'invoice' }) => {
+const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose, onSuccess, editInvoice, invoiceType = 'invoice', isViewOnly = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -46,11 +49,17 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
   const [formData, setFormData] = useState({
     customer_id: '',
     customer_name: '',
+    customer_email: '',
+    billing_address: '',
+    shipping_address: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     po_number: '',
     payment_terms: 'Net 30',
+    ship_method: '',
+    ship_date: '',
+    tracking_number: '',
     notes: '',
     message_to_customer: '',
     subtotal: 0,
@@ -70,11 +79,17 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         setFormData({
           customer_id: editInvoice.customer_id ? String(editInvoice.customer_id) : '',
           customer_name: editInvoice.customer_name || '',
+          customer_email: (editInvoice as any).customer_email || '',
+          billing_address: (editInvoice as any).billing_address || '',
+          shipping_address: (editInvoice as any).shipping_address || '',
           invoice_number: editInvoice.invoice_number || '',
           issue_date: editInvoice.issue_date || new Date().toISOString().split('T')[0],
           due_date: editInvoice.due_date || '',
           po_number: editInvoice.po_number || '',
           payment_terms: editInvoice.payment_terms || 'Net 30',
+          ship_method: (editInvoice as any).ship_method || '',
+          ship_date: (editInvoice as any).ship_date || '',
+          tracking_number: (editInvoice as any).tracking_number || '',
           notes: editInvoice.notes || '',
           message_to_customer: editInvoice.message_to_customer || '',
           subtotal: editInvoice.subtotal || 0,
@@ -84,11 +99,26 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
           total: editInvoice.total || 0,
           coupon_discount: editInvoice.coupon_discount || 0,
           status: editInvoice.status || 'draft',
-          is_estimate: (editInvoice as any).is_estimate || false,
+          is_estimate: (editInvoice as any).is_estimate ?? false,
           job_id: (editInvoice as any).job_id ? String((editInvoice as any).job_id) : ''
         });
-        setLineItems(editInvoice.line_items || [{ description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
-      } else {
+
+        const rawLineItems = (editInvoice as any).invoice_line_items || editInvoice.line_items || [];
+        if (rawLineItems.length > 0) {
+          setLineItems(rawLineItems.map((item: any) => ({
+            item_name: item.item_name || '',
+            description: item.description || '',
+            qty: item.quantity || item.qty || 1,
+            rate: item.unit_price || item.rate || 0,
+            discount: item.discount || 0,
+            tax: item.tax || 0,
+            total: item.amount || item.total || 0
+          })));
+        } else {
+          setLineItems([{ description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+        }
+      }
+      else {
         generateInvoiceNumber();
         setFormData(prev => ({ ...prev, is_estimate: invoiceType === 'estimate' }));
       }
@@ -213,7 +243,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+    setLineItems([...lineItems, { item_name: '', description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
   };
 
   const removeLineItem = (index: number) => {
@@ -266,7 +296,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
       <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {editInvoice ? `Edit ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+            {isViewOnly ? `View ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : editInvoice ? `Edit ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <X className="w-5 h-5" />
@@ -294,57 +324,94 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
           <div className="mb-4">
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="rounded" />
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="rounded" disabled={isViewOnly} />
               Make this a recurring invoice
             </label>
           </div>
 
           <div className="space-y-6">
-            {/* Customer Section */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Customer <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Search customers..."
-                value={customerSearch || formData.customer_name}
-                onChange={(e) => {
-                  setCustomerSearch(e.target.value);
-                  setFormData({ ...formData, customer_name: e.target.value });
-                  setShowCustomerList(true);
-                }}
-                onFocus={() => setShowCustomerList(true)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
-              />
+            {/* Customer & Address Section */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Customer <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Search customers..."
+                  value={customerSearch || formData.customer_name}
+                  disabled={isViewOnly}
+                  onChange={(e) => {
+                    setCustomerSearch(e.target.value);
+                    setFormData({ ...formData, customer_name: e.target.value });
+                    setShowCustomerList(true);
+                  }}
+                  onFocus={() => !isViewOnly && setShowCustomerList(true)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
+                />
 
-              {showCustomerList && customers.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {customers
-                    .filter(c => {
-                      const search = customerSearch.toLowerCase();
-                      const fullName = (c.fullName || c.first_name + ' ' + c.last_name).toLowerCase();
-                      const email = (c.email || '').toLowerCase();
-                      return fullName.includes(search) || email.includes(search);
-                    })
-                    .map((customer) => (
-                      <button
-                        key={customer.id}
-                        type="button"
-                        onClick={() => handleSelectCustomer(customer)}
-                        className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-0"
-                      >
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {customer.fullName || customer.first_name + ' ' + customer.last_name}
-                        </div>
-                        {customer.email && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400">{customer.email}</div>
-                        )}
-                      </button>
-                    ))}
+                {showCustomerList && customers.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {customers
+                      .filter(c => {
+                        const search = customerSearch.toLowerCase();
+                        const fullName = (c.fullName || c.first_name + ' ' + c.last_name).toLowerCase();
+                        const email = (c.email || '').toLowerCase();
+                        return fullName.includes(search) || email.includes(search);
+                      })
+                      .map((customer) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          onClick={() => handleSelectCustomer(customer)}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-0"
+                        >
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {customer.fullName || customer.first_name + ' ' + customer.last_name}
+                          </div>
+                          {customer.email && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{customer.email}</div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Email</label>
+                  <input
+                    type="email"
+                    value={formData.customer_email || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                  />
                 </div>
-              )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Address</label>
+                  <textarea
+                    value={formData.billing_address || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shipping Address</label>
+                  <textarea
+                    value={formData.shipping_address || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, shipping_address: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Invoice Details */}
@@ -355,8 +422,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   type="text"
                   required
                   value={formData.invoice_number}
+                  disabled={isViewOnly}
                   onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                 />
               </div>
               <div>
@@ -365,8 +433,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   type="date"
                   required
                   value={formData.issue_date}
+                  disabled={isViewOnly}
                   onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                 />
               </div>
               <div>
@@ -375,10 +444,29 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   type="date"
                   required
                   value={formData.due_date}
+                  disabled={isViewOnly}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                 />
               </div>
+            </div>
+
+            {/* Job Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job (Optional)</label>
+              <select
+                value={formData.job_id}
+                disabled={isViewOnly}
+                onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    #{job.id} ({job.createdByName || 'Job'})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -386,8 +474,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Terms</label>
                 <select
                   value={formData.payment_terms}
+                  disabled={isViewOnly}
                   onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                 >
                   <option>Net 30</option>
                   <option>Net 60</option>
@@ -398,28 +487,46 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PO Number (Optional)</label>
                 <input
                   type="text"
-                  value={formData.po_number}
+                  value={formData.po_number || ''}
+                  disabled={isViewOnly}
                   onChange={(e) => setFormData({ ...formData, po_number: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                 />
               </div>
             </div>
 
-            {/* Job Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job (Optional)</label>
-              <select
-                value={formData.job_id}
-                onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              >
-                <option value="">No job selected</option>
-                {jobs.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    #{job.id} ({job.createdByName})
-                  </option>
-                ))}
-              </select>
+            {/* Shipping Details */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ship Method</label>
+                <input
+                  type="text"
+                  value={formData.ship_method || ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, ship_method: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ship Date</label>
+                <input
+                  type="date"
+                  value={formData.ship_date ? formData.ship_date.split('T')[0] : ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, ship_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tracking Number</label>
+                <input
+                  type="text"
+                  value={formData.tracking_number || ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
             </div>
 
             {/* Line Items */}
@@ -433,13 +540,14 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-                  <div className="col-span-4">Description</div>
+                  <div className="col-span-2">Product/Service</div>
+                  <div className="col-span-3">Description</div>
                   <div className="col-span-1">Qty</div>
-                  <div className="col-span-2">Rate</div>
+                  <div className="col-span-1">Rate</div>
                   <div className="col-span-1">Discount %</div>
                   <div className="col-span-1">Tax %</div>
                   <div className="col-span-2">Total</div>
-                  <div className="col-span-1">Action</div>
+                  {!isViewOnly && <div className="col-span-1">Action</div>}
                 </div>
 
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -447,47 +555,64 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                     <div key={index} className="px-3 py-2 grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-900">
                       <input
                         type="text"
+                        placeholder="Product/Service"
+                        value={item.item_name || ''}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'item_name', e.target.value)}
+                        className="col-span-3 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="text"
                         placeholder="Description"
                         value={item.description}
+                        disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
-                        className="col-span-4 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="col-span-3 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="number"
                         value={item.qty}
+                        disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'qty', parseFloat(e.target.value) || 0)}
-                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="number"
                         value={item.rate}
+                        disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'rate', parseFloat(e.target.value) || 0)}
-                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="number"
                         value={item.discount}
+                        disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
-                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="number"
                         value={item.tax}
+                        disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'tax', parseFloat(e.target.value) || 0)}
-                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
-                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white">${item.total.toFixed(2)}</div>
-                      <button type="button" onClick={() => removeLineItem(index)} className="col-span-1 text-red-600 hover:text-red-700 justify-self-center">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white font-medium">${item.total.toFixed(2)}</div>
+                      {!isViewOnly && (
+                        <button type="button" onClick={() => removeLineItem(index)} className="col-span-1 text-red-600 hover:text-red-700 justify-self-center">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <button type="button" onClick={addLineItem} className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                <Plus className="w-4 h-4" /> Add Line Item
-              </button>
+              {!isViewOnly && (
+                <button type="button" onClick={addLineItem} className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                  <Plus className="w-4 h-4" /> Add Line Item
+                </button>
+              )}
             </div>
 
             {/* Apply Coupon Code */}
@@ -496,6 +621,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 <input
                   type="checkbox"
                   checked={showCouponInput}
+                  disabled={isViewOnly}
                   onChange={(e) => {
                     console.log('Coupon checkbox clicked:', e.target.checked);
                     setShowCouponInput(e.target.checked);
@@ -536,13 +662,15 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                           {appliedCoupon.coupon_code} - {appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`} off
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveCoupon}
-                        className="text-red-600 hover:text-red-700 text-xs"
-                      >
-                        Remove
-                      </button>
+                      {!isViewOnly && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-red-600 hover:text-red-700 text-xs"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -579,11 +707,12 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
                 <textarea
-                  value={formData.notes}
+                  value={formData.notes || ''}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={4}
+                  disabled={isViewOnly}
                   placeholder="Additional notes (not visible for customers)"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm disabled:opacity-50"
                 />
                 <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
                   <Edit2 className="w-3 h-3" />
@@ -600,8 +729,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   <input
                     type="number"
                     value={formData.discount}
+                    disabled={isViewOnly}
                     onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right"
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right disabled:opacity-50"
                   />
                 </div>
                 {appliedCoupon && (
@@ -619,8 +749,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   <input
                     type="number"
                     value={formData.shipping}
+                    disabled={isViewOnly}
                     onChange={(e) => setFormData({ ...formData, shipping: parseFloat(e.target.value) || 0 })}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right"
+                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right disabled:opacity-50"
                   />
                 </div>
                 <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-semibold">
@@ -634,11 +765,12 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message to Customer</label>
               <textarea
-                value={formData.message_to_customer}
+                value={formData.message_to_customer || ''}
                 onChange={(e) => setFormData({ ...formData, message_to_customer: e.target.value })}
                 rows={3}
+                disabled={isViewOnly}
                 placeholder="This message will appear on the invoice"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm disabled:opacity-50"
               />
               <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
                 <Edit2 className="w-3 h-3" />
@@ -658,18 +790,20 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
           {/* Footer Actions */}
           <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={(e: any) => handleSubmit(e, true)}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-            >
-              Save as Draft
-            </button>
-            <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                Cancel
+            {!isViewOnly && (
+              <button
+                type="button"
+                onClick={(e: any) => handleSubmit(e, true)}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+              >
+                Save as Draft
               </button>
-              {!editInvoice && (
+            )}
+            <div className={`flex gap-3 ${isViewOnly ? 'ml-auto' : ''}`}>
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                {isViewOnly ? 'Close' : 'Cancel'}
+              </button>
+              {!isViewOnly && !editInvoice && (
                 <button
                   type="button"
                   disabled={isLoading}
@@ -679,13 +813,15 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   {isLoading ? 'Processing...' : 'Create and Send'}
                 </button>
               )}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
-              >
-                {isLoading ? 'Creating...' : editInvoice ? `Update ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
-              </button>
+              {!isViewOnly && (
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading ? 'Creating...' : editInvoice ? `Update ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+                </button>
+              )}
             </div>
           </div>
         </form>

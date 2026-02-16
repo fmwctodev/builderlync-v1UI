@@ -48,6 +48,13 @@ export interface Invoice {
   is_estimate?: boolean;
   job_id?: number;
   created_by?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  billing_address?: string;
+  shipping_address?: string;
+  ship_method?: string;
+  ship_date?: string;
+  tracking_number?: string;
   created_at: string;
   updated_at: string;
   warning?: string;

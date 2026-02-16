@@ -47,7 +47,11 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                 </tr>
               ) : (
                 jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr
+                    key={job.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => onEdit(job)}
+                  >
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {job.updatedAt ? new Date(job.updatedAt).toLocaleDateString() : 'N/A'}
                     </td>
@@ -72,7 +76,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     <td className="px-4 py-3">
                       <div className="flex -space-x-1">
                         {job.assigneeUsers && job.assigneeUsers.length > 0 ? (
-                          job.assigneeUsers.slice(0, 3).map((user, index) => (
+                          job.assigneeUsers.slice(0, 3).map((user) => (
                             <div
                               key={user.id}
                               className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-medium text-white border-2 border-white dark:border-gray-800"
@@ -100,7 +104,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).reportsCount || 0}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{(job as any).proposalsCount || 0}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => onView(job)}
                           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -108,7 +112,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {(hasPermission('jobs', 'update') || hasPermission('projects', 'update')) && (
+                        {hasPermission('jobs', 'update') && (
                           <button
                             onClick={() => onEdit(job)}
                             className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-blue-400"
@@ -117,7 +121,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                             <Edit className="w-4 h-4" />
                           </button>
                         )}
-                        {(hasPermission('jobs', 'delete') || hasPermission('projects', 'delete')) && (
+                        {hasPermission('jobs', 'delete') && (
                           <button
                             onClick={() => onDelete(job.id!)}
                             className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"

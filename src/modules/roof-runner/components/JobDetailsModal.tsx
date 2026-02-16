@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAppSelector } from '../../../shared/store/hooks';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import ContactSearchDropdown from './ContactSearchDropdown';
@@ -28,10 +29,10 @@ interface JobDetailsModalProps {
   staff: StaffMember[];
   loading: boolean;
   viewingJob?: Job | null;
-  editingJob?: Job | null;
   readOnly?: boolean;
   modalMessage?: { message: string, type: 'success' | 'error' } | null;
   setModalMessage?: (message: { message: string, type: 'success' | 'error' } | null) => void;
+  onCreateOpportunity?: (job: Job) => void;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
@@ -44,10 +45,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   staff,
   loading,
   viewingJob,
-  editingJob,
   readOnly = false,
   modalMessage,
-  setModalMessage
+  setModalMessage,
+  onCreateOpportunity
 }) => {
   const { orgSlug } = useParams();
   const navigate = useNavigate();
@@ -59,6 +60,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [contactError, setContactError] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [initialContactName, setInitialContactName] = useState('');
+  const { user } = useAppSelector((state) => state.auth);
+
+  const currentUserAsStaff = staff.find(member =>
+    (member.user_id && member.user_id === user?.id?.toString()) ||
+    (member.email && user?.email && member.email.toLowerCase() === user.email.toLowerCase())
+  );
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
@@ -175,6 +183,17 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
                 </button>
               ))}
+
+              {viewingJob && onCreateOpportunity && (
+                <button
+                  onClick={() => onCreateOpportunity(viewingJob)}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 mt-4 border border-dashed border-blue-200 dark:border-blue-800"
+                >
+                  <div className="flex items-center">
+                    <span>Create Opportunity</span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -284,9 +303,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         }}
                         required
                         hasError={contactError}
-                        onCreateNew={() => setShowCreateContactModal(true)}
-                        onViewProfile={(contactId) => setShowViewContactModal(true)}
-                        onEditContact={(contactId) => setShowEditContactModal(true)}
+                        onCreateNew={(name) => {
+                          setInitialContactName(name);
+                          setShowCreateContactModal(true);
+                        }}
+                        onViewProfile={() => setShowViewContactModal(true)}
+                        onEditContact={() => setShowEditContactModal(true)}
                       />
                       {contactError && (
                         <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
@@ -302,10 +324,18 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="">Unassigned</option>
-                          {staff && staff.length > 0 ? staff.map(member => (
-                            <option key={member.id} value={member.id}>
-                              {member.first_name} {member.last_name}
+                          {user && (
+                            <option value={currentUserAsStaff?.id || user.id}>
+                              Me ({user.firstName} {user.lastName})
                             </option>
+                          )}
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            // Skip if this is the "Me" user we already added
+                            (member.id === currentUserAsStaff?.id || (member.user_id === user?.id?.toString())) ? null : (
+                              <option key={member.id} value={member.id}>
+                                {member.first_name} {member.last_name}
+                              </option>
+                            )
                           )) : (
                             <option disabled>Loading staff...</option>
                           )}
@@ -320,10 +350,18 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="">Select Job Owner</option>
-                          {staff && staff.length > 0 ? staff.map(member => (
-                            <option key={member.id} value={member.id}>
-                              {member.first_name} {member.last_name}
+                          {user && (
+                            <option value={currentUserAsStaff?.id || user.id}>
+                              Me ({user.firstName} {user.lastName})
                             </option>
+                          )}
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            // Skip if this is the "Me" user we already added
+                            (member.id === currentUserAsStaff?.id || (member.user_id === user?.id?.toString())) ? null : (
+                              <option key={member.id} value={member.id}>
+                                {member.first_name} {member.last_name}
+                              </option>
+                            )
                           )) : (
                             <option disabled>Loading staff...</option>
                           )}
@@ -671,7 +709,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
       <QuickCreateContactModal
         isOpen={showCreateContactModal}
-        onClose={() => setShowCreateContactModal(false)}
+        onClose={() => {
+          setShowCreateContactModal(false);
+          setInitialContactName('');
+        }}
         onContactCreated={(contact) => {
           setFormData({
             ...formData,
@@ -680,7 +721,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           });
           setContactError(false);
           setShowCreateContactModal(false);
+          setInitialContactName('');
         }}
+        initialName={initialContactName}
       />
 
       <ViewContactModal
