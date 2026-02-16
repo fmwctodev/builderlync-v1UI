@@ -212,7 +212,7 @@ export function AgentBuilder() {
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {agent.name}
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{agent.description}</p>
+                {/* <p className="text-sm text-gray-600 dark:text-gray-400">{agent.description}</p> */}
               </div>
             </div>
 

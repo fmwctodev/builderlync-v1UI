@@ -88,6 +88,7 @@ export interface Job {
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
   contact_id?: number | null;
+  opportunity_id?: string | null;
   contactName?: string | null;
   distance?: number | null;
   latitude?: string;
@@ -137,6 +138,7 @@ export interface CreateJobRequest {
   jobType?: 'residential' | 'commercial' | 'insurance';
   contactId?: number | null;
   contactName?: string | null;
+  opportunity_id?: string | null;
 }
 
 class JobsApiService {

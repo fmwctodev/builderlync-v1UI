@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
@@ -10,29 +10,31 @@ import JobsSettings from '../components/JobsSettings';
 import FiltersSidebar, { AdvancedFilters } from '../components/FiltersSidebar';
 import AddressModal from '../components/AddressModal';
 import JobDetailsModal from '../components/JobDetailsModal';
+import AddOpportunityModal from '../components/opportunities/AddOpportunityModal';
 import Toast from '../components/Toast';
 import { hasPermission } from '../../../shared/utils/permissions';
 
 const Jobs: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
+  const [showAddOpportunityModal, setShowAddOpportunityModal] = useState(false);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
+  const [linkedJobData, setLinkedJobData] = useState<Job | null>(null);
   const [jobAddress, setJobAddress] = useState('');
   const [jobCoordinates, setJobCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJobType, setSelectedJobType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
 
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -52,7 +54,7 @@ const Jobs: React.FC = () => {
     assignees: [],
     jobOwner: null,
     workflowStages: 'New lead',
-    closeDate: '',
+    closeDate: new Date().toISOString().split('T')[0],
     jobValue: '',
     source: '',
     details: '',
@@ -83,7 +85,7 @@ const Jobs: React.FC = () => {
     return id ? Number(id) : null;
   };
 
-  const resolveContactName = (job: Job): string | null => {
+  const resolveContactName = (job: Job | any): string | null => {
     return (
       job.contactName ||
       job.customer?.full_name ||
@@ -112,7 +114,6 @@ const Jobs: React.FC = () => {
 
       const response = await getJobs(page, 100, filters);
       const fetchedJobs = response.data.data || [];
-      setAllJobs(fetchedJobs);
       setJobs(fetchedJobs);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
@@ -122,14 +123,6 @@ const Jobs: React.FC = () => {
     }
   };
 
-  const filterJobsByType = (jobsList: Job[], type: string) => {
-    if (type === 'all') {
-      setJobs(jobsList);
-    } else {
-      const filtered = jobsList.filter(job => job.jobType === type);
-      setJobs(filtered);
-    }
-  };
 
   const fetchStaff = async () => {
     try {
@@ -151,30 +144,27 @@ const Jobs: React.FC = () => {
 
     try {
       setLoading(true);
-      const previousStage = editingJob?.workflowStages;
+      const previousStage = viewingJob?.workflowStages;
       const newStage = formData.workflowStages;
 
       // Set customerId from contactId
-      const jobData = {
+      const jobData: CreateJobRequest = {
         ...formData,
         customerId: formData.contactId || null,
-        customer_id: formData.contactId || null,
         // Ensure numeric fields are properly handled
-        jobValue: formData.jobValue || NaN,
+        jobValue: String(formData.jobValue || '0'),
         claimAmount: Number(formData.claimAmount) || 0,
         deductible: Number(formData.deductible) || 0,
         // Ensure assignees is an array of numbers
         assignees: formData.assignees.filter(id => id && !isNaN(Number(id))).map(id => Number(id)),
-        // Ensure editedBy is a number
-        editedBy: Number(formData.editedBy) || undefined
       };
 
-      if (editingJob) {
-        await updateJob(editingJob.id!, jobData);
+      if (viewingJob) {
+        await updateJob(viewingJob.id!, jobData);
 
-        if (previousStage !== newStage && editingJob.id) {
+        if (previousStage !== newStage && viewingJob.id) {
           try {
-            const createdTasks = await autoCreateTasksForStage(editingJob.id, newStage);
+            const createdTasks = await autoCreateTasksForStage(viewingJob.id, newStage);
             if (createdTasks.length > 0) {
               setModalMessage({
                 message: `Job updated! ${createdTasks.length} task(s) auto-created for ${newStage} stage`,
@@ -193,10 +183,9 @@ const Jobs: React.FC = () => {
 
         // Refresh the viewing job data
         const updatedJobsResponse = await getJobs(1, 100);
-        const updatedJob = updatedJobsResponse.data.data.find(j => j.id === editingJob.id);
+        const updatedJob = updatedJobsResponse.data.data.find(j => j.id === viewingJob.id);
         if (updatedJob) {
           setViewingJob(updatedJob);
-          setEditingJob(updatedJob);
         }
       } else {
         const response = await createJob(jobData);
@@ -221,7 +210,6 @@ const Jobs: React.FC = () => {
 
           // Set the newly created job as viewingJob so tabs can access it
           setViewingJob(newJob);
-          setEditingJob(newJob);
         } else {
           setModalMessage({ message: 'Job created successfully!', type: 'success' });
         }
@@ -253,7 +241,6 @@ const Jobs: React.FC = () => {
     const contactId = resolveContactId(job);
     const contactName = resolveContactName(job);
     setViewingJob(job);
-    setEditingJob(job);
     setFormData({
       name: job.name,
       location: job.location,
@@ -287,7 +274,6 @@ const Jobs: React.FC = () => {
     const contactId = resolveContactId(job);
     const contactName = resolveContactName(job);
     setViewingJob(job);
-    setEditingJob(job);
     setFormData({
       name: job.name,
       location: job.location,
@@ -325,7 +311,7 @@ const Jobs: React.FC = () => {
       assignees: [],
       jobOwner: null,
       workflowStages: 'New lead',
-      closeDate: '',
+      closeDate: new Date().toISOString().split('T')[0],
       jobValue: '',
       source: '',
       details: '',
@@ -345,6 +331,26 @@ const Jobs: React.FC = () => {
       contactName: null
     });
   };
+
+  useEffect(() => {
+    if (location.state?.createFromOpportunity && location.state?.opportunityData) {
+      const opp = location.state.opportunityData;
+      setFormData({
+        ...formData,
+        name: opp.opportunity_name,
+        location: opp.property_address || '',
+        jobValue: String(opp.value || ''),
+        source: opp.source || '',
+        jobType: 'residential', // Default or map if possible
+        contactName: opp.contacts?.[0]?.contact_name || null,
+        opportunity_id: opp.id,
+        // Map other fields as needed
+      });
+      setShowJobDetails(true);
+      // Clean up state so it doesn't re-trigger on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     fetchJobs();
@@ -371,6 +377,12 @@ const Jobs: React.FC = () => {
   };
 
 
+
+  const handleCreateOpportunity = (job: Job) => {
+    setLinkedJobData(job);
+    setShowAddOpportunityModal(true);
+    setShowJobDetails(false);
+  };
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -407,8 +419,13 @@ const Jobs: React.FC = () => {
                       ...jobUpdateData,
                       workflowStages: newStage,
                       editedBy: 1,
-                      // Ensure jobValue is a string to match CreateJobRequest type
-                      jobValue: String(job.jobValue || job.job_value || '')
+                      // Ensure jobValue is a valid numeric string, default to '0'
+                      jobValue: String(job.jobValue || job.job_value || '0'),
+                      // Ensure numeric fields are numbers or null
+                      claimAmount: Number(job.claimAmount || job.claim_amount || 0),
+                      deductible: Number(job.deductible || 0),
+                      latitude: job.latitude ? Number(job.latitude) : undefined,
+                      longitude: job.longitude ? Number(job.longitude) : undefined
                     } as CreateJobRequest);
                     fetchJobs();
                   }
@@ -481,7 +498,6 @@ const Jobs: React.FC = () => {
         onClose={() => {
           setShowJobDetails(false);
           setViewingJob(null);
-          setEditingJob(null);
           resetForm();
           setJobAddress('');
           setJobCoordinates(null);
@@ -494,9 +510,22 @@ const Jobs: React.FC = () => {
         staff={staff}
         loading={loading}
         viewingJob={viewingJob}
-        editingJob={editingJob}
         modalMessage={modalMessage}
         setModalMessage={setModalMessage}
+        onCreateOpportunity={handleCreateOpportunity}
+      />
+
+      <AddOpportunityModal
+        isOpen={showAddOpportunityModal}
+        onClose={() => {
+          setShowAddOpportunityModal(false);
+          setLinkedJobData(null);
+        }}
+        onSuccess={() => {
+          setShowAddOpportunityModal(false);
+          setLinkedJobData(null);
+        }}
+        linkedJobData={linkedJobData}
       />
 
     </div>

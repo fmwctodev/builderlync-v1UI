@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, Plus, Filter, ChevronDown, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, Plus, Filter, ChevronDown, RefreshCw, ChevronLeft, ChevronRight, X, Eye } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
@@ -21,8 +21,17 @@ interface Invoice {
   status: string;
   currency_code: string;
   email_status: string;
+  customer_email: string | null;
+  customer_phone: string | null;
+  billing_address: string | null;
+  shipping_address: string | null;
+  ship_method: string | null;
+  ship_date: string | null;
+  tracking_number: string | null;
   private_note: string | null;
   customer_memo: string | null;
+  po_number: string | null;
+  payment_terms: string | null;
   contacts: any;
   invoice_line_items: any[];
   rawData?: any;
@@ -44,6 +53,7 @@ const InvoicesEstimatesTab: React.FC = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceType, setInvoiceType] = useState<'invoice' | 'estimate'>('invoice');
   const [editInvoice, setEditInvoice] = useState<PaymentInvoice | null>(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncQuickBooks = async () => {
@@ -74,16 +84,25 @@ const InvoicesEstimatesTab: React.FC = () => {
         doc_number: inv.invoice_number,
         customer_name: inv.customer_name,
         total_amount: inv.total || 0,
-        balance: inv.total || 0,
+        balance: inv.balance ?? 0,
         due_date: inv.due_date,
         invoice_date: inv.issue_date || inv.invoice_date,
         status: inv.status,
-        currency_code: 'USD',
-        email_status: '',
-        private_note: inv.notes,
-        customer_memo: inv.message_to_customer,
-        contacts: null,
-        invoice_line_items: [],
+        currency_code: inv.currency_code || 'USD',
+        email_status: inv.email_status || '',
+        customer_email: inv.customer_email || null,
+        customer_phone: inv.customer_phone || null,
+        billing_address: inv.billing_address || null,
+        shipping_address: inv.shipping_address || null,
+        ship_method: inv.ship_method || null,
+        ship_date: inv.ship_date || null,
+        tracking_number: inv.tracking_number || null,
+        private_note: inv.notes || inv.private_note,
+        customer_memo: inv.message_to_customer || inv.customer_memo,
+        po_number: inv.po_number || null,
+        payment_terms: inv.payment_terms || null,
+        contacts: inv.contacts,
+        invoice_line_items: inv.invoice_line_items || [],
         rawData: inv
       })));
     } catch (error) {
@@ -241,6 +260,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                   <button
                     onClick={() => {
                       setInvoiceType('invoice');
+                      setIsViewOnly(false);
                       setShowInvoiceModal(true);
                       setShowNewDropdown(false);
                     }}
@@ -251,6 +271,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                   <button
                     onClick={() => {
                       setInvoiceType('estimate');
+                      setIsViewOnly(false);
                       setShowInvoiceModal(true);
                       setShowNewDropdown(false);
                     }}
@@ -478,42 +499,80 @@ const InvoicesEstimatesTab: React.FC = () => {
                               />
                             </td>
                             <td className="px-6 py-4">
-                              <button
-                                onClick={() => {
-                                  const invoiceData = invoice.rawData;
-                                  setEditInvoice({
-                                    id: invoiceData.id.toString(),
-                                    invoice_number: invoiceData.invoice_number,
-                                    name: invoiceData.invoice_number,
-                                    customer_id: invoiceData.customer_id,
-                                    customer_name: invoiceData.customer_name,
-                                    amount: invoiceData.total,
-                                    status: invoiceData.status,
-                                    issue_date: invoiceData.issue_date,
-                                    due_date: invoiceData.due_date,
-                                    po_number: invoiceData.po_number,
-                                    payment_terms: invoiceData.payment_terms,
-                                    line_items: invoiceData.line_items || [],
-                                    subtotal: invoiceData.subtotal,
-                                    discount: invoiceData.discount,
-                                    tax: invoiceData.tax,
-                                    shipping: invoiceData.shipping,
-                                    total: invoiceData.total,
-                                    coupon_id: invoiceData.coupon_id,
-                                    coupon_discount: invoiceData.coupon_discount,
-                                    notes: invoiceData.notes,
-                                    message_to_customer: invoiceData.message_to_customer,
-                                    is_estimate: invoiceData.is_estimate,
-                                    job_id: invoiceData.job_id,
-                                    created_at: invoiceData.created_at,
-                                    updated_at: invoiceData.updated_at
-                                  } as any);
-                                  setShowInvoiceModal(true);
-                                }}
-                                className="text-primary-600 hover:text-primary-700 text-sm"
-                              >
-                                Edit
-                              </button>
+                              <div className="flex items-center space-x-3">
+                                <button
+                                  onClick={() => {
+                                    const inv = invoice.rawData;
+                                    setEditInvoice({
+                                      id: inv.id.toString(),
+                                      invoice_number: inv.invoice_number,
+                                      customer_id: inv.customer_id,
+                                      customer_name: inv.customer_name,
+                                      issue_date: inv.issue_date,
+                                      due_date: inv.due_date,
+                                      po_number: inv.po_number,
+                                      payment_terms: inv.payment_terms,
+                                      notes: inv.notes,
+                                      message_to_customer: inv.message_to_customer,
+                                      subtotal: inv.subtotal,
+                                      discount: inv.discount,
+                                      tax: inv.tax,
+                                      shipping: inv.shipping,
+                                      total: inv.total,
+                                      status: inv.status,
+                                      is_estimate: inv.is_estimate,
+                                      invoice_line_items: inv.invoice_line_items,
+                                      created_at: inv.created_at,
+                                      updated_at: inv.updated_at
+                                    } as any);
+                                    setIsViewOnly(true);
+                                    setShowInvoiceModal(true);
+                                  }}
+                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const inv = invoice.rawData;
+                                    setEditInvoice({
+                                      id: inv.id.toString(),
+                                      invoice_number: inv.invoice_number,
+                                      customer_id: inv.customer_id,
+                                      customer_name: inv.customer_name,
+                                      customer_email: inv.customer_email,
+                                      customer_phone: inv.customer_phone,
+                                      billing_address: inv.billing_address,
+                                      shipping_address: inv.shipping_address,
+                                      issue_date: inv.issue_date,
+                                      due_date: inv.due_date,
+                                      po_number: inv.po_number,
+                                      payment_terms: inv.payment_terms,
+                                      ship_method: inv.ship_method,
+                                      ship_date: inv.ship_date,
+                                      tracking_number: inv.tracking_number,
+                                      notes: inv.notes,
+                                      message_to_customer: inv.message_to_customer,
+                                      subtotal: inv.subtotal,
+                                      discount: inv.discount,
+                                      tax: inv.tax,
+                                      shipping: inv.shipping,
+                                      total: inv.total,
+                                      status: inv.status,
+                                      is_estimate: inv.is_estimate,
+                                      invoice_line_items: inv.invoice_line_items,
+                                      created_at: inv.created_at,
+                                      updated_at: inv.updated_at
+                                    } as any);
+                                    setIsViewOnly(false);
+                                    setShowInvoiceModal(true);
+                                  }}
+                                  className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                                >
+                                  Edit
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -614,6 +673,7 @@ const InvoicesEstimatesTab: React.FC = () => {
           }}
           invoiceType={invoiceType}
           editInvoice={editInvoice}
+          isViewOnly={isViewOnly}
         />
       </div>
     </div>

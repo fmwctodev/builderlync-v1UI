@@ -69,6 +69,7 @@ export interface Opportunity {
   property_country?: string;
   property_latitude?: number;
   property_longitude?: number;
+  job_id?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -102,6 +103,7 @@ export interface OpportunityFormData {
   property_country?: string;
   property_latitude?: number;
   property_longitude?: number;
+  job_id?: number | null;
 }
 
 export interface CreateOpportunityRequest {

@@ -16,6 +16,7 @@ interface ViewEditOpportunityModalProps {
   onClose: () => void;
   onUpdate: () => void;
   onDelete: () => void;
+  onCreateJob?: (opportunity: OpportunityWithDetails) => void;
 }
 
 type SidebarSection =
@@ -32,6 +33,7 @@ export default function ViewEditOpportunityModal({
   onClose,
   onUpdate,
   onDelete,
+  onCreateJob,
 }: ViewEditOpportunityModalProps) {
   const [activeSection, setActiveSection] = useState<SidebarSection>('opportunity-details');
   const [opportunity, setOpportunity] = useState<OpportunityWithDetails | null>(null);
@@ -159,7 +161,7 @@ export default function ViewEditOpportunityModal({
 
       // Update originalData to match formData so there are no unsaved changes
       setOriginalData({ ...formData });
-      
+
       onUpdate();
       alert('Opportunity updated successfully!');
       // Close without confirmation since changes are saved
@@ -280,61 +282,55 @@ export default function ViewEditOpportunityModal({
               <nav className="p-4 space-y-1">
                 <button
                   onClick={() => setActiveSection('opportunity-details')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'opportunity-details'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'opportunity-details'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Opportunity Details
                 </button>
                 <button
                   onClick={() => setActiveSection('book-appointment')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'book-appointment'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'book-appointment'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Book/Update Appointment
                 </button>
                 <button
                   onClick={() => setActiveSection('tasks')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'tasks'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'tasks'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Tasks
                 </button>
                 <button
                   onClick={() => setActiveSection('notes')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'notes'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'notes'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Notes
                 </button>
                 <button
                   onClick={() => setActiveSection('payments')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'payments'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'payments'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Payments
                 </button>
                 <button
                   onClick={() => setActiveSection('associated-objects')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'associated-objects'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'associated-objects'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Associated Objects
                 </button>
@@ -609,6 +605,14 @@ export default function ViewEditOpportunityModal({
                 <p>Created on: {opportunity?.created_at ? new Date(opportunity.created_at).toLocaleString() : 'N/A'}</p>
               </div>
               <div className="flex items-center gap-3">
+                {formData.status === 'won' && opportunity && onCreateJob && (
+                  <button
+                    onClick={() => onCreateJob(opportunity)}
+                    className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                  >
+                    Create Job
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"

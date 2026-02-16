@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import OpportunitiesHeader from '../components/opportunities/OpportunitiesHeader';
 import FiltersAndSort from '../components/opportunities/FiltersAndSort';
 import KanbanBoard from '../components/opportunities/KanbanBoard';
@@ -8,8 +9,12 @@ import ViewEditOpportunityModal from '../components/opportunities/ViewEditOpport
 import PipelinesList from '../components/opportunities/PipelinesList';
 import CreatePipelineModal from '../components/opportunities/CreatePipelineModal';
 import EditPipelineModal from '../components/opportunities/EditPipelineModal';
+import type { OpportunityWithDetails } from '../types/opportunities';
 
 export default function Opportunities() {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [activeView, setActiveView] = useState<'opportunities' | 'pipelines'>('opportunities');
   const [internalView, setInternalView] = useState<'board' | 'list' | 'settings'>('board');
   const [activeTab, setActiveTab] = useState<string>('opportunities');
@@ -77,6 +82,17 @@ export default function Opportunities() {
     setSelectedPipelineId(null);
   };
 
+  const handleCreateJob = (opportunity: OpportunityWithDetails) => {
+    // Navigate to jobs page with opportunity data
+    navigate(`${orgPrefix}/jobs`, {
+      state: {
+        createFromOpportunity: true,
+        opportunityData: opportunity
+      }
+    });
+    setShowViewEditModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <OpportunitiesHeader
@@ -137,6 +153,7 @@ export default function Opportunities() {
         onClose={handleModalClose}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
+        onCreateJob={handleCreateJob}
       />
 
       <CreatePipelineModal

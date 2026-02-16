@@ -6,12 +6,14 @@ interface QuickCreateContactModalProps {
   isOpen: boolean;
   onClose: () => void;
   onContactCreated: (contact: { id: string; name: string }) => void;
+  initialName?: string;
 }
 
 const QuickCreateContactModal: React.FC<QuickCreateContactModalProps> = ({
   isOpen,
   onClose,
-  onContactCreated
+  onContactCreated,
+  initialName = ''
 }) => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -26,6 +28,12 @@ const QuickCreateContactModal: React.FC<QuickCreateContactModalProps> = ({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen && initialName) {
+      setFormData(prev => ({ ...prev, fullName: initialName }));
+    }
+  }, [isOpen, initialName]);
 
   if (!isOpen) return null;
 
@@ -119,9 +127,8 @@ const QuickCreateContactModal: React.FC<QuickCreateContactModalProps> = ({
               type="text"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                errors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               placeholder="John Doe"
             />
             {errors.fullName && (
@@ -151,9 +158,8 @@ const QuickCreateContactModal: React.FC<QuickCreateContactModalProps> = ({
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              }`}
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               placeholder="john@example.com"
             />
             {errors.email && (
