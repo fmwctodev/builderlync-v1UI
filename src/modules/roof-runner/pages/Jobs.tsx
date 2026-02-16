@@ -407,8 +407,8 @@ const Jobs: React.FC = () => {
                       ...jobUpdateData,
                       workflowStages: newStage,
                       editedBy: 1,
-                      // Ensure jobValue is a string to match CreateJobRequest type
-                      jobValue: String(job.jobValue || job.job_value || '')
+                      // Prevent empty-string numeric payloads on stage drag/drop updates
+                      jobValue: String(job.jobValue ?? job.job_value ?? 0)
                     } as CreateJobRequest);
                     fetchJobs();
                   }

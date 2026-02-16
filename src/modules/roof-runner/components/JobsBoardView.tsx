@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Job } from '../../../shared/store/services/jobsApi';
 
 interface JobsBoardViewProps {
   jobs: Job[];
   draggedCard: string | null;
   setDraggedCard: (cardId: string | null) => void;
-  onUpdateJobStage: (jobId: number, newStage: string) => void;
+  onUpdateJobStage: (jobId: number, newStage: string) => Promise<void> | void;
   onCardClick: (job: Job) => void;
 }
 
@@ -16,6 +16,7 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
   onUpdateJobStage,
   onCardClick
 }) => {
+  const [movingStage, setMovingStage] = useState<string | null>(null);
   const stages = [
     'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted', 'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract', 'Invoice Sent', '⁠Invoice Paid', 'Job Scheduled','Materials Ordered', 'Job Started', 'Job Complete'
   ];
@@ -33,6 +34,7 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
     const stageJobs = getJobsByStage(stage);
     return stageJobs.reduce((sum, job) => sum + parseFloat(job.job_value || job.jobValue?.toString() || '0'), 0);
   };
+  const isUpdatingStage = (stage: string) => movingStage === stage;
 
   return (
     <div className="h-full p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
@@ -53,19 +55,30 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                     ${stageValue.toLocaleString()}
                   </span>
                 </div>
+                {isUpdatingStage(stage) && (
+                  <div className="mt-2 inline-flex items-center gap-2 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                    Moving job...
+                  </div>
+                )}
               </div>
 
               {/* Cards Container */}
               <div
                 className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent min-h-[200px]"
                 onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
+                      onDrop={async (e) => {
                         e.preventDefault();
                         const cardData = e.dataTransfer.getData('text/plain');
                         if (cardData) {
                           const { jobId, sourceStage } = JSON.parse(cardData);
                           if (sourceStage !== stage) {
-                            onUpdateJobStage(jobId, stage);
+                            try {
+                              setMovingStage(stage);
+                              await onUpdateJobStage(jobId, stage);
+                            } finally {
+                              setMovingStage(null);
+                            }
                           }
                           setDraggedCard(null);
                         }
