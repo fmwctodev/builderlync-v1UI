@@ -23,6 +23,7 @@ import {
   getCatalogItems,
   CatalogItem as APICatalogItem,
 } from "../../../../shared/store/services/catalogApi";
+import { getBusinessInfo } from "../../../../shared/store/services/businessInfoApi";
 import { proposalsApi } from "../../services/proposalsApi";
 import { getContacts, type Contact } from "../../../../shared/store/services/contactsApi";
 import { proposalSharingApi } from "../../services/proposalSharingApi";
@@ -87,6 +88,7 @@ interface Item {
   visible: boolean;
   checked: boolean;
   isHeading?: boolean;
+  isCustom?: boolean;
 }
 
 interface Upgrade {
@@ -130,7 +132,6 @@ export default function ProposalBuilder({
     name: string;
     url: string;
   } | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -456,7 +457,7 @@ export default function ProposalBuilder({
         if (!content) return;
 
         // Load settings
-        const optionTitleFromContent = content.settings?.optionTitle || optionTitle;
+        const optionTitleFromContent = content.settings?.optionTitle || "Option 1";
         if (content.settings) {
           const s = content.settings;
           if (s.coverImage) setCoverImage(s.coverImage);
@@ -526,6 +527,43 @@ export default function ProposalBuilder({
     loadProposal();
     loadOrderHistory();
 
+    const loadBusinessProfile = async () => {
+      try {
+        const response = await getBusinessInfo();
+        if (!response.success || !response.data) return;
+
+        const business = response.data;
+        const representativeName = [business.representative_first_name, business.representative_last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+        const businessName = business.legal_business_name || business.friendly_business_name || representativeName || "Terrylynn Roofing LLC";
+        const businessPhone = business.representative_phone || business.business_phone || "(000) 000-0000";
+        const businessEmail = business.representative_email || business.business_email || "Company representative email";
+
+        // Keep proposal/template-specific values if already present; only fill defaults/empty.
+        setCompanyName((prev) => {
+          const v = (prev || "").trim();
+          const isDefault = !v || v === "Terrylynn Roofing LLC";
+          return isDefault ? businessName : prev;
+        });
+        setCompanyPhone((prev) => {
+          const v = (prev || "").trim();
+          const isDefault = !v || v === "(000) 000-0000";
+          return isDefault ? businessPhone : prev;
+        });
+        setCompanyEmail((prev) => {
+          const v = (prev || "").trim();
+          const isDefault = !v || v === "Company representative email";
+          return isDefault ? businessEmail : prev;
+        });
+        setCompanyLogo((prev) => prev || business.business_logo || null);
+      } catch (error) {
+        console.error("Failed to load business info:", error);
+      }
+    };
+
     // Load staff data
     const loadStaff = async () => {
       try {
@@ -539,6 +577,7 @@ export default function ProposalBuilder({
     };
 
     loadStaff();
+    loadBusinessProfile();
   }, [proposalId]);
 
   // Auto-save disabled - use manual save button only
@@ -852,44 +891,6 @@ export default function ProposalBuilder({
     );
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const blobUrl = URL.createObjectURL(file);
-      setCompanyLogo(blobUrl);
-
-      try {
-        const API_BASE_URL =
-          import.meta.env.VITE_API_BASE_URL ||
-          "https://builderlyncapi.testenvapp.com/api";
-        const token = localStorage.getItem("token");
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch(
-          `${API_BASE_URL}/templates/${proposalId}/logo`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
-
-        const result = await response.json();
-        if (result.success) {
-          const permanentUrl = result.data.url;
-          setCompanyLogo(permanentUrl);
-          URL.revokeObjectURL(blobUrl);
-        }
-      } catch (error) {
-        console.error("Error uploading logo:", error);
-      }
-    }
-  };
-
   const updateTextContent = (
     sectionName: string,
     text: string,
@@ -962,6 +963,7 @@ export default function ProposalBuilder({
               unitCost: catalogItem.preTaxCost?.toString() || "0",
               unit: catalogItem.unit || "square",
               salesTax: catalogItem.salesTax?.toString() || "0",
+              isCustom: true,
             }
             : i
         )
@@ -980,6 +982,7 @@ export default function ProposalBuilder({
         salesTax: catalogItem.salesTax?.toString() || "0",
         visible: true,
         checked: false,
+        isCustom: true,
       };
       setItems((prevItems) => [...prevItems, newItem]);
     }
@@ -1012,6 +1015,7 @@ export default function ProposalBuilder({
                     unitCost: catalogItem.preTaxCost?.toString() || "0",
                     unit: catalogItem.unit || "square",
                     salesTax: catalogItem.salesTax?.toString() || "0",
+                    isCustom: true,
                   }
                   : i
               ),
@@ -1033,6 +1037,7 @@ export default function ProposalBuilder({
         salesTax: catalogItem.salesTax?.toString() || "0",
         visible: true,
         checked: false,
+        isCustom: true,
       };
       setUpgrades((prevUpgrades) =>
         prevUpgrades.map((u) =>
@@ -1347,56 +1352,6 @@ export default function ProposalBuilder({
     );
   };
 
-  // Company details should always be editable regardless of proposal status
-  const CompanyEditableText = ({
-    value,
-    onChange,
-    className = "",
-    multiline = false,
-  }: Omit<EditableTextProps, 'triggerFocus' | 'onFocusComplete'>) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-
-    useEffect(() => {
-      setTempValue(value);
-    }, [value]);
-
-    const handleBlur = () => {
-      setIsEditing(false);
-      onChange(tempValue);
-    };
-
-    if (isEditing) {
-      return multiline ? (
-        <textarea
-          value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
-          onBlur={handleBlur}
-          autoFocus
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
-        />
-      ) : (
-        <input
-          type="text"
-          value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
-          onBlur={handleBlur}
-          autoFocus
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
-        />
-      );
-    }
-
-    return (
-      <span
-        onClick={() => setIsEditing(true)}
-        className={`${className} cursor-pointer inline-block w-full py-1`}
-      >
-        {value}
-      </span>
-    );
-  };
-
   const addOptions = [
     {
       icon: Image,
@@ -1658,7 +1613,7 @@ export default function ProposalBuilder({
                                 }`}
                             >
                               <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {idx === 0 ? optionTitle : sub}
+                                {idx === 0 ? (optionTitle || "Option 1") : "Summary"}
                               </span>
                             </button>
                           ))}
@@ -1838,38 +1793,26 @@ export default function ProposalBuilder({
                       {/* Middle Section - Title, Date, Customer Details */}
                       <div className="p-6 flex items-center justify-between">
                         <div className="flex-1">
-                          <EditableText
-                            value={coverTitle}
-                            onChange={setCoverTitle}
-                            className="text-2xl font-bold text-gray-900 dark:text-white block mb-2"
-                          />
-                          <EditableText
-                            value={coverDate}
-                            onChange={setCoverDate}
-                            className="text-sm text-gray-500 dark:text-gray-400 block"
-                          />
+                          <div className="text-2xl font-bold text-gray-900 dark:text-white block mb-2">
+                            {coverTitle}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 block">
+                            {coverDate}
+                          </div>
                         </div>
                         <div className="text-right text-sm">
-                          <EditableText
-                            value={customerName}
-                            onChange={setCustomerName}
-                            className="font-medium text-gray-900 dark:text-white block mb-1"
-                          />
-                          <EditableText
-                            value={customerAddress}
-                            onChange={setCustomerAddress}
-                            className="text-gray-600 dark:text-gray-400 block mb-1"
-                          />
-                          <EditableText
-                            value={customerPhone}
-                            onChange={setCustomerPhone}
-                            className="text-gray-600 dark:text-gray-400 block mb-1"
-                          />
-                          <EditableText
-                            value={customerEmail}
-                            onChange={setCustomerEmail}
-                            className="text-gray-600 dark:text-gray-400 block"
-                          />
+                          <div className="font-medium text-gray-900 dark:text-white block mb-1">
+                            {customerName}
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-400 block mb-1">
+                            {customerAddress}
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-400 block mb-1">
+                            {customerPhone}
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-400 block">
+                            {customerEmail}
+                          </div>
                         </div>
                       </div>
 
@@ -1877,26 +1820,16 @@ export default function ProposalBuilder({
                       <div className="border-t border-gray-200 dark:border-gray-700 p-6">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {/* <div className="text-sm text-gray-600 dark:text-gray-400">
                               Company representative name
-                            </div>
+                            </div> */}
                             <div className="flex items-center gap-2">
-                              <CompanyEditableText
-                                value={companyName}
-                                onChange={setCompanyName}
-                                className="font-medium text-gray-900 dark:text-white"
-                              />
+                              <div className="font-medium text-gray-900 dark:text-white">
+                                {companyName}
+                              </div>
                             </div>
-                            <CompanyEditableText
-                              value={companyPhone}
-                              onChange={setCompanyPhone}
-                              className="text-sm text-gray-500 dark:text-gray-400 block"
-                            />
-                            <CompanyEditableText
-                              value={companyEmail}
-                              onChange={setCompanyEmail}
-                              className="text-sm text-gray-500 dark:text-gray-400 block"
-                            />
+                            <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyPhone}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyEmail}</div>
                           </div>
                           <div className="relative">
                             <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -1912,12 +1845,6 @@ export default function ProposalBuilder({
                                 </span>
                               )}
                             </div>
-                            <button
-                              onClick={() => logoInputRef.current?.click()}
-                              className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                            >
-                              <Pencil size={10} />
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -2304,26 +2231,16 @@ export default function ProposalBuilder({
                         <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {/* <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Company representative name
-                              </div>
+                              </div> */}
                               <div className="flex items-center gap-2">
-                                <EditableText
-                                  value={companyName}
-                                  onChange={setCompanyName}
-                                  className="font-medium text-gray-900 dark:text-white"
-                                />
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {companyName}
+                                </div>
                               </div>
-                              <EditableText
-                                value={companyPhone}
-                                onChange={setCompanyPhone}
-                                className="text-sm text-gray-500 dark:text-gray-400 block"
-                              />
-                              <EditableText
-                                value={companyEmail}
-                                onChange={setCompanyEmail}
-                                className="text-sm text-gray-500 dark:text-gray-400 block"
-                              />
+                              <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyPhone}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyEmail}</div>
                             </div>
                             <div className="relative">
                               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -2339,19 +2256,6 @@ export default function ProposalBuilder({
                                   </span>
                                 )}
                               </div>
-                              <button
-                                onClick={() => logoInputRef.current?.click()}
-                                className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                              >
-                                <Pencil size={10} />
-                              </button>
-                              <input
-                                ref={logoInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                              />
                             </div>
                           </div>
                         </div>
@@ -2376,11 +2280,6 @@ export default function ProposalBuilder({
                                   {optionTitle}
                                 </div>
                               </div>
-                              <div className="flex justify-between items-center py-2 pl-3">
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  {optionDescription}
-                                </span>
-                              </div>
                               <div className="space-y-2 py-2">
                                 <div className="flex justify-between items-center text-sm">
                                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
@@ -2390,50 +2289,52 @@ export default function ProposalBuilder({
                                   <span className="text-gray-600 dark:text-gray-400">Margin ({defaultMargin}%)</span>
                                   <span className="text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) * parseFloat(defaultMargin) / 100).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
                                   <span className="font-medium text-gray-900 dark:text-white">Total</span>
                                   <span className="font-medium text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) * (1 + parseFloat(defaultMargin) / 100)).toFixed(2)}</span>
                                 </div>
                               </div>
                             </div>
 
-                            <div>
-                              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  {upgradesTitle}
-                                </div>
-                              </div>
-                              {upgrades.map((upgrade) => {
-                                const upgradeSubtotal = upgrade.items
-                                  .filter((item) => item.visible && !item.isHeading)
-                                  .reduce((sum, item) => sum + parseFloat(item.unitCost || "0") * parseFloat(item.qty || "0"), 0);
-                                const upgradeTotal = upgradeSubtotal * (1 + parseFloat(defaultMargin) / 100);
-                                return (
-                                  <div key={upgrade.id} className="mb-2 pl-3 text-sm">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
-                                      </div>
-                                      <div className="font-medium text-gray-900 dark:text-white">${upgradeTotal.toFixed(2)}</div>
-                                    </div>
+                            {upgrades.length > 0 && (
+                              <div>
+                                <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
+                                  <div className="font-medium text-gray-900 dark:text-white">
+                                    {upgradesTitle}
                                   </div>
-                                );
-                              })}
-                              <div className="space-y-2 py-2 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex justify-between items-center text-sm">
-                                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                                  <span className="text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                  <span className="text-gray-600 dark:text-gray-400">Margin ({defaultMargin}%)</span>
-                                  <span className="text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * parseFloat(defaultMargin) / 100).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-                                  <span className="font-medium text-gray-900 dark:text-white">Total</span>
-                                  <span className="font-medium text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * (1 + parseFloat(defaultMargin) / 100)).toFixed(2)}</span>
+                                {upgrades.map((upgrade) => {
+                                  const upgradeSubtotal = upgrade.items
+                                    .filter((item) => item.visible && !item.isHeading)
+                                    .reduce((sum, item) => sum + parseFloat(item.unitCost || "0") * parseFloat(item.qty || "0"), 0);
+                                  const upgradeTotal = upgradeSubtotal * (1 + parseFloat(defaultMargin) / 100);
+                                  return (
+                                    <div key={upgrade.id} className="mb-2 pl-3 text-sm">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
+                                        </div>
+                                        <div className="font-medium text-gray-900 dark:text-white">${upgradeTotal.toFixed(2)}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                <div className="space-y-2 py-2 border-t border-gray-200 dark:border-gray-700">
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                                    <span className="text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Margin ({defaultMargin}%)</span>
+                                    <span className="text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * parseFloat(defaultMargin) / 100).toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * (1 + parseFloat(defaultMargin) / 100)).toFixed(2)}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
 
                             <div className="pt-4 border-t-2 border-gray-300 dark:border-gray-600">
                               <div className="flex justify-between items-center py-2">
@@ -2460,26 +2361,16 @@ export default function ProposalBuilder({
                         <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {/* <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Company representative name
-                              </div>
+                              </div> */}
                               <div className="flex items-center gap-2">
-                                <EditableText
-                                  value={companyName}
-                                  onChange={setCompanyName}
-                                  className="font-medium text-gray-900 dark:text-white"
-                                />
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {companyName}
+                                </div>
                               </div>
-                              <EditableText
-                                value={companyPhone}
-                                onChange={setCompanyPhone}
-                                className="text-sm text-gray-500 dark:text-gray-400 block"
-                              />
-                              <EditableText
-                                value={companyEmail}
-                                onChange={setCompanyEmail}
-                                className="text-sm text-gray-500 dark:text-gray-400 block"
-                              />
+                              <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyPhone}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 block">{companyEmail}</div>
                             </div>
                             <div className="relative">
                               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -2495,12 +2386,6 @@ export default function ProposalBuilder({
                                   </span>
                                 )}
                               </div>
-                              <button
-                                onClick={() => logoInputRef.current?.click()}
-                                className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                              >
-                                <Pencil size={10} />
-                              </button>
                             </div>
                           </div>
                         </div>
@@ -2782,16 +2667,27 @@ export default function ProposalBuilder({
                                         <input
                                           type="text"
                                           value={item.name}
+                                          onChange={(e) =>
+                                            setItems(
+                                              items.map((i) =>
+                                                i.id === item.id
+                                                  ? { ...i, name: e.target.value }
+                                                  : i
+                                              )
+                                            )
+                                          }
                                           onFocus={() => {
-                                            setEditingItemId(item.id);
-                                            setShowCatalogDropdown(true);
-                                            setTimeout(
-                                              () =>
-                                                catalogInputRef.current?.focus(),
-                                              100
-                                            );
+                                            if (!item.isCustom) {
+                                              setEditingItemId(item.id);
+                                              setShowCatalogDropdown(true);
+                                              setTimeout(
+                                                () =>
+                                                  catalogInputRef.current?.focus(),
+                                                100
+                                              );
+                                            }
                                           }}
-                                          readOnly
+                                           readOnly={!item.isCustom}
                                           className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
                                         />
                                         {showCatalogDropdown &&
@@ -2911,8 +2807,7 @@ export default function ProposalBuilder({
                                             )
                                           }
                                           className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                          disabled
-                                        />
+                                          disabled={!item.isCustom} />
                                       </td>
                                       <td className="px-3 py-2 text-sm">
                                         <input
@@ -2931,7 +2826,6 @@ export default function ProposalBuilder({
                                             )
                                           }
                                           className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                          disabled
                                         />
                                       </td>
                                       <td className="px-3 py-2 text-sm">
@@ -2951,8 +2845,7 @@ export default function ProposalBuilder({
                                             )
                                           }
                                           className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                          disabled
-                                        />
+                                          disabled={!item.isCustom} />
                                       </td>
                                       <td className="px-3 py-2 text-sm">
                                         <input
@@ -2998,8 +2891,7 @@ export default function ProposalBuilder({
                                             )
                                           }
                                           className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                          disabled
-                                        />
+                                          disabled={!item.isCustom} />
                                       </td>
                                       <td className="px-3 py-2">
                                         <div className="flex gap-1">
@@ -3098,6 +2990,29 @@ export default function ProposalBuilder({
                               )}
                             </div>
                             <button
+                              onClick={() => {
+                                const newItem: Item = {
+                                  id: crypto.randomUUID(),
+                                  name: "New Item",
+                                  description: "",
+                                  mapping: "",
+                                  coverage: "",
+                                  unitCost: "0",
+                                  unit: "square",
+                                  qty: "1",
+                                  salesTax: "0",
+                                  visible: true,
+                                  checked: false,
+                                  isCustom: true,
+                                };
+                                setItems([...items, newItem]);
+                              }}
+                              className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                            >
+                              <Plus size={14} />
+                              Add custom item
+                            </button>
+                            <button
                               onClick={addSectionHeading}
                               className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
                             >
@@ -3128,7 +3043,7 @@ export default function ProposalBuilder({
                           </h3>
                           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded">
                             {upgrades.map((upgrade) => (
-                              <div key={upgrade.id} className="mb-4">
+                            <>  <div key={upgrade.id} className="mb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                   <input
                                     type="text"
@@ -3348,7 +3263,7 @@ export default function ProposalBuilder({
                                           </td>
                                         </tr>
                                       ) : (
-                                        <tr
+                                      <tr
                                           key={uItem.id}
                                           draggable
                                           onDragStart={() =>
@@ -3398,92 +3313,110 @@ export default function ProposalBuilder({
                                             <input
                                               type="text"
                                               value={uItem.name}
+                                              onChange={(e) =>
+                                                setUpgrades(
+                                                  upgrades.map((u) =>
+                                                    u.id === upgrade.id
+                                                      ? {
+                                                        ...u,
+                                                        items: u.items.map(
+                                                          (i) =>
+                                                            i.id === uItem.id
+                                                              ? { ...i, name: e.target.value }
+                                                              : i
+                                                        ),
+                                                      }
+                                                      : u
+                                                  )
+                                                )
+                                              }
                                               onFocus={() => {
-                                                setEditingUpgradeItemId({
-                                                  upgradeId: upgrade.id,
-                                                  itemId: uItem.id,
-                                                });
-                                                setShowUpgradeCatalogDropdown(
-                                                  upgrade.id
-                                                );
-                                                setTimeout(
-                                                  () =>
-                                                    upgradeCatalogInputRef.current?.focus(),
-                                                  100
-                                                );
-                                              }}
-                                              readOnly
-                                              className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
-                                            />
-                                            {showUpgradeCatalogDropdown ===
-                                              upgrade.id &&
-                                              editingUpgradeItemId?.itemId ===
-                                              uItem.id && (
-                                                <div className="absolute top-full left-0 mt-1 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                                  <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                                      Editing: {uItem.name}
-                                                    </div>
-                                                    <input
-                                                      ref={
-                                                        upgradeCatalogInputRef
-                                                      }
-                                                      type="text"
-                                                      value={
-                                                        upgradeCatalogSearch
-                                                      }
-                                                      onChange={(e) =>
-                                                        setUpgradeCatalogSearch(
-                                                          e.target.value
-                                                        )
-                                                      }
-                                                      placeholder="Search catalog..."
-                                                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                      onBlur={() =>
-                                                        setTimeout(() => {
-                                                          setShowUpgradeCatalogDropdown(
-                                                            null
-                                                          );
-                                                          setEditingUpgradeItemId(
-                                                            null
-                                                          );
-                                                        }, 200)
-                                                      }
-                                                    />
-                                                  </div>
-                                                  <div className="max-h-64 overflow-y-auto">
-                                                    {catalogItems
-                                                      .filter((item) =>
-                                                        item.name
-                                                          .toLowerCase()
-                                                          .includes(
-                                                            upgradeCatalogSearch.toLowerCase()
+                                                if (!uItem.isCustom) {
+                                                   setEditingUpgradeItemId({
+                                                     itemId: uItem.id,
+                                                   });
+                                                   setShowUpgradeCatalogDropdown(
+                                                     upgrade.id
+                                                   );
+                                                   setTimeout(
+                                                     () =>
+                                                       upgradeCatalogInputRef.current?.focus(),
+                                                     100
+                                                   );
+                                                 }
+                                               }}
+                                               readOnly={!uItem.isCustom}
+                                               className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
+                                             />
+                                             {showUpgradeCatalogDropdown ===
+                                               upgrade.id &&
+                                               editingUpgradeItemId?.itemId ===
+                                               uItem.id && (
+                                                  <div className="absolute top-full left-0 mt-1 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
+                                                    <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                                                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                        Editing: {uItem.name}
+                                                      </div>
+                                                      <input
+                                                        ref={
+                                                          upgradeCatalogInputRef
+                                                        }
+                                                        type="text"
+                                                        value={
+                                                          upgradeCatalogSearch
+                                                        }
+                                                        onChange={(e) =>
+                                                          setUpgradeCatalogSearch(
+                                                            e.target.value
                                                           )
-                                                      )
-                                                      .map((item, idx) => (
-                                                        <button
-                                                          key={idx}
-                                                          onClick={() =>
-                                                            addItemToUpgradeFromCatalog(
-                                                              upgrade.id,
-                                                              item
+                                                        }
+                                                        placeholder="Search catalog..."
+                                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                        onBlur={() =>
+                                                          setTimeout(() => {
+                                                            setShowUpgradeCatalogDropdown(
+                                                              null
+                                                            );
+                                                            setEditingUpgradeItemId(
+                                                              null
+                                                            );
+                                                          }, 200)
+                                                        }
+                                                      />
+                                                    </div>
+                                                    <div className="max-h-64 overflow-y-auto">
+                                                      {catalogItems
+                                                        .filter((item) =>
+                                                          item.name
+                                                            .toLowerCase()
+                                                            .includes(
+                                                              upgradeCatalogSearch.toLowerCase()
                                                             )
-                                                          }
-                                                          className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                                        >
-                                                          <div className="font-medium text-gray-900 dark:text-white text-sm">
-                                                            {item.name}
-                                                          </div>
-                                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {item.description}
-                                                          </div>
-                                                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                            ${item.preTaxCost} per{" "}
-                                                            {item.unit}
-                                                          </div>
-                                                        </button>
-                                                      ))}
-                                                  </div>
+                                                        )
+                                                        .map((item, idx) => (
+                                                          <button
+                                                            key={idx}
+                                                            onClick={() =>
+                                                              addItemToUpgradeFromCatalog(
+                                                                upgrade.id,
+                                                                item
+                                                              )
+                                                            }
+                                                            className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
+                                                          >
+                                                            <div className="font-medium text-gray-900 dark:text-white text-sm">
+                                                              {item.name}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                              {item.description}
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                              ${item.preTaxCost} per{" "}
+                                                              {item.unit}
+                                                            </div>
+                                                          </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                               )}
                                           </td>
@@ -3738,7 +3671,7 @@ export default function ProposalBuilder({
                                           </td>
                                         </tr>
                                       )
-                                    )}
+                                       )}
                                   </tbody>
                                 </table>
 
@@ -3816,6 +3749,35 @@ export default function ProposalBuilder({
                                       )}
                                   </div>
                                   <button
+                                    onClick={() => {
+                                      const newItem: Item = {
+                                        id: crypto.randomUUID(),
+                                        name: "New Item",
+                                        description: "",
+                                        mapping: "",
+                                        coverage: "",
+                                        unitCost: "0",
+                                        unit: "square",
+                                        qty: "1",
+                                        salesTax: "0",
+                                        visible: true,
+                                        checked: false,
+                                        isCustom: true,
+                                      };
+                                      setUpgrades(
+                                        upgrades.map((u) =>
+                                          u.id === upgrade.id
+                                            ? { ...u, items: [...u.items, newItem] }
+                                            : u
+                                        )
+                                      );
+                                    }}
+                                    className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                                  >
+                                    <Plus size={14} />
+                                    Add custom item
+                                  </button>
+                                  <button
                                     onClick={() =>
                                       addSectionHeadingToUpgrade(upgrade.id)
                                     }
@@ -3825,7 +3787,7 @@ export default function ProposalBuilder({
                                     Add section heading
                                   </button>
                                 </div>
-                              </div>
+                              </div></>
                             ))}
                             <button
                               onClick={addUpgrade}
@@ -3853,7 +3815,7 @@ export default function ProposalBuilder({
                                 id="default"
                                 checked
                                 className="rounded"
-                                readOnly
+                                readOnly={!uItem.isCustom}
                               />
                               <label
                                 htmlFor="default"
@@ -3868,7 +3830,7 @@ export default function ProposalBuilder({
                                 id="minimum"
                                 checked
                                 className="rounded"
-                                readOnly
+                                readOnly={!uItem.isCustom}
                               />
                               <label
                                 htmlFor="minimum"
@@ -4474,3 +4436,6 @@ export default function ProposalBuilder({
     </>
   );
 }
+
+
+

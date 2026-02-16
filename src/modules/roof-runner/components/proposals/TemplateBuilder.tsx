@@ -18,6 +18,7 @@ import {
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
+import { getBusinessInfo } from '../../../../shared/store/services/businessInfoApi';
 import { templateApi } from '../../services/templateApi';
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -74,6 +75,7 @@ interface Item {
   visible: boolean;
   checked: boolean;
   isHeading?: boolean;
+  isCustom?: boolean;
 }
 
 interface Upgrade {
@@ -114,7 +116,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     name: string;
     url: string;
   } | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -170,6 +171,9 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [companyEmail, setCompanyEmail] = useState(
     "Company representative email"
   );
+  const [representativeName, setRepresentativeName] = useState("Company Representative");
+  const [representativePhone, setRepresentativePhone] = useState("(000) 000-0000");
+  const [representativeEmail, setRepresentativeEmail] = useState("representative@email.com");
   const [defaultMargin, setDefaultMargin] = useState("10");
   const [minimumMargin, setMinimumMargin] = useState("5");
   const [coverContent, setCoverContent] = useState(
@@ -305,13 +309,9 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             setOptionDescription(data.content.settings.optionDescription || "");
             setItemSectionTitle(data.content.settings.itemSectionTitle || "Item");
             setUpgradesTitle(data.content.settings.upgradesTitle || "Upgrades");
-            setCompanyName(data.content.settings.companyName || "");
-            setCompanyPhone(data.content.settings.companyPhone || "");
-            setCompanyEmail(data.content.settings.companyEmail || "");
             setDefaultMargin(data.content.settings.defaultMargin || "10");
             setMinimumMargin(data.content.settings.minimumMargin || "5");
             setCoverContent(data.content.settings.coverContent || "Click to edit cover page content...");
-            setCompanyLogo(data.content.settings.companyLogo || null);
             setCoverImage(data.content.settings.coverImage || null);
             setCoverTitle(data.content.settings.coverTitle || "Project Proposal");
             setCoverDate(data.content.settings.coverDate || new Date().toLocaleDateString());
@@ -325,6 +325,31 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         console.error('Failed to load template:', error);
       } finally {
         setLoading(false);
+      }
+    };
+
+    const loadBusinessProfile = async () => {
+      try {
+        const response = await getBusinessInfo();
+        if (!response.success || !response.data) return;
+
+        const business = response.data;
+        const repName = [business.representative_first_name, business.representative_last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+        setCompanyName(business.legal_business_name || business.friendly_business_name || repName || "Terrylynn Roofing LLC");
+        setCompanyPhone(business.business_phone || business.representative_phone || "(000) 000-0000");
+        setCompanyEmail(business.business_email || business.representative_email || "Company representative email");
+        setRepresentativeName(repName || business.legal_business_name || business.friendly_business_name || "Company Representative");
+        setRepresentativePhone(business.representative_phone || business.business_phone || "(000) 000-0000");
+        setRepresentativeEmail(business.representative_email || business.business_email || "representative@email.com");
+        if (business.business_logo) {
+          setCompanyLogo(business.business_logo);
+        }
+      } catch (error) {
+        console.error('Failed to load business info:', error);
       }
     };
 
@@ -342,7 +367,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       }
     };
 
-    loadTemplate();
+    const initialize = async () => {
+      await loadTemplate();
+      await loadBusinessProfile();
+    };
+
+    initialize();
     loadCatalogItems();
   }, [templateId]);
 
@@ -557,39 +587,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     );
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const blobUrl = URL.createObjectURL(file);
-      setCompanyLogo(blobUrl);
-      
-      try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
-        const token = localStorage.getItem('token');
-        
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(`${API_BASE_URL}/templates/${templateId}/logo`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          const permanentUrl = result.data.url;
-          setCompanyLogo(permanentUrl);
-          URL.revokeObjectURL(blobUrl);
-        }
-      } catch (error) {
-        console.error('Error uploading logo:', error);
-      }
-    }
-  };
-
   const updateTextContent = (
     sectionName: string,
     text: string,
@@ -645,6 +642,46 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     setUpgrades(
       upgrades.map((u) =>
         u.id === upgradeId ? { ...u, items: [...u.items, newHeading] } : u
+      )
+    );
+  };
+
+  const addCustomItem = () => {
+    const newItem: Item = {
+      id: crypto.randomUUID(),
+      name: "New Item",
+      description: "",
+      mapping: "",
+      coverage: "",
+      unitCost: "0",
+      unit: "square",
+      qty: "1",
+      salesTax: "0",
+      visible: true,
+      checked: false,
+      isCustom: true,
+    };
+    setItems((prevItems) => [...prevItems, newItem]);
+  };
+
+  const addCustomItemToUpgrade = (upgradeId: string) => {
+    const newItem: Item = {
+      id: crypto.randomUUID(),
+      name: "New Item",
+      description: "",
+      mapping: "",
+      coverage: "",
+      unitCost: "0",
+      unit: "square",
+      qty: "1",
+      salesTax: "0",
+      visible: true,
+      checked: false,
+      isCustom: true,
+    };
+    setUpgrades((prevUpgrades) =>
+      prevUpgrades.map((u) =>
+        u.id === upgradeId ? { ...u, items: [...u.items, newItem] } : u
       )
     );
   };
@@ -1271,38 +1308,26 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   {/* Middle Section - Title, Date, Customer Details */}
                   <div className="p-6 flex items-center justify-between">
                     <div className="flex-1">
-                      <EditableText
-                        value={coverTitle}
-                        onChange={setCoverTitle}
-                        className="text-2xl font-bold text-gray-900 dark:text-white block mb-2"
-                      />
-                      <EditableText
-                        value={coverDate}
-                        onChange={setCoverDate}
-                        className="text-sm text-gray-500 dark:text-gray-400 block"
-                      />
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white block mb-2">
+                        {coverTitle}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 block">
+                        {coverDate}
+                      </div>
                     </div>
                     <div className="text-right text-sm">
-                      <EditableText
-                        value={customerName}
-                        onChange={setCustomerName}
-                        className="font-medium text-gray-900 dark:text-white block mb-1"
-                      />
-                      <EditableText
-                        value={customerAddress}
-                        onChange={setCustomerAddress}
-                        className="text-gray-600 dark:text-gray-400 block mb-1"
-                      />
-                      <EditableText
-                        value={customerPhone}
-                        onChange={setCustomerPhone}
-                        className="text-gray-600 dark:text-gray-400 block mb-1"
-                      />
-                      <EditableText
-                        value={customerEmail}
-                        onChange={setCustomerEmail}
-                        className="text-gray-600 dark:text-gray-400 block"
-                      />
+                      <div className="font-medium text-gray-900 dark:text-white block mb-1">
+                        {customerName}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400 block mb-1">
+                        {customerAddress}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400 block mb-1">
+                        {customerPhone}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400 block">
+                        {customerEmail}
+                      </div>
                     </div>
                   </div>
 
@@ -1310,26 +1335,16 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   <div className="border-t border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {/* <div className="text-sm text-gray-600 dark:text-gray-400">
                           Company representative name
-                        </div>
+                        </div> */}
                         <div className="flex items-center gap-2">
-                          <EditableText
-                            value={companyName}
-                            onChange={setCompanyName}
-                            className="font-medium text-gray-900 dark:text-white"
-                          />
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {companyName}
+                          </div>
                         </div>
-                        <EditableText
-                          value={companyPhone}
-                          onChange={setCompanyPhone}
-                          className="text-sm text-gray-500 dark:text-gray-400 block"
-                        />
-                        <EditableText
-                          value={companyEmail}
-                          onChange={setCompanyEmail}
-                          className="text-sm text-gray-500 dark:text-gray-400 block"
-                        />
+                        <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativePhone}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativeEmail}</div>
                       </div>
                       <div className="relative">
                         <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -1345,12 +1360,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             </span>
                           )}
                         </div>
-                        <button
-                          onClick={() => logoInputRef.current?.click()}
-                          className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                        >
-                          <Pencil size={10} />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1675,26 +1684,16 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {/* <div className="text-sm text-gray-600 dark:text-gray-400">
                             Company representative name
-                          </div>
+                          </div> */}
                           <div className="flex items-center gap-2">
-                            <EditableText
-                              value={companyName}
-                              onChange={setCompanyName}
-                              className="font-medium text-gray-900 dark:text-white"
-                            />
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {companyName}
+                            </div>
                           </div>
-                          <EditableText
-                            value={companyPhone}
-                            onChange={setCompanyPhone}
-                            className="text-sm text-gray-500 dark:text-gray-400 block"
-                          />
-                          <EditableText
-                            value={companyEmail}
-                            onChange={setCompanyEmail}
-                            className="text-sm text-gray-500 dark:text-gray-400 block"
-                          />
+                          <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativePhone}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativeEmail}</div>
                         </div>
                         <div className="relative">
                           <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -1710,19 +1709,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                               </span>
                             )}
                           </div>
-                          <button
-                            onClick={() => logoInputRef.current?.click()}
-                            className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm"
-                          >
-                            <Pencil size={10} />
-                          </button>
-                          <input
-                            ref={logoInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                          />
                         </div>
                       </div>
                     </div>
@@ -1795,12 +1781,14 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     <div className="mt-auto pt-8 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Company representative name</div>
+                          {/* <div className="text-sm text-gray-600 dark:text-gray-400">Company representative name</div> */}
                           <div className="flex items-center gap-2">
-                            <EditableText value={companyName} onChange={setCompanyName} className="font-medium text-gray-900 dark:text-white" />
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {companyName}
+                            </div>
                           </div>
-                          <EditableText value={companyPhone} onChange={setCompanyPhone} className="text-sm text-gray-500 dark:text-gray-400 block" />
-                          <EditableText value={companyEmail} onChange={setCompanyEmail} className="text-sm text-gray-500 dark:text-gray-400 block" />
+                          <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativePhone}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 block">{representativeEmail}</div>
                         </div>
                         <div className="relative">
                           <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
@@ -1810,9 +1798,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                               <span className="text-xs text-gray-500 dark:text-gray-400">LOGO</span>
                             )}
                           </div>
-                          <button onClick={() => logoInputRef.current?.click()} className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors shadow-sm">
-                            <Pencil size={10} />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -2057,11 +2042,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                     type="text"
                                     value={item.name}
                                     onFocus={() => {
-                                      setEditingItemId(item.id);
-                                      setShowCatalogDropdown(true);
-                                      setTimeout(() => catalogInputRef.current?.focus(), 100);
+                                      if (!item.isCustom) {
+                                        setEditingItemId(item.id);
+                                        setShowCatalogDropdown(true);
+                                        setTimeout(() => catalogInputRef.current?.focus(), 100);
+                                      }
                                     }}
-                                    readOnly
+                                    readOnly={!item.isCustom}
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
                                   />
                                   {showCatalogDropdown && editingItemId === item.id && (
@@ -2145,7 +2132,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       )
                                     }
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                    disabled
+                                    disabled={!item.isCustom}
                                   />
                                 </td>
                                 <td className="px-3 py-2 text-sm">
@@ -2162,7 +2149,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       )
                                     }
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                    disabled
                                   />
                                 </td>
                                 <td className="px-3 py-2 text-sm">
@@ -2179,7 +2165,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       )
                                     }
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                    disabled
+                                    disabled={!item.isCustom}
                                   />
                                 </td>
                                 <td className="px-3 py-2 text-sm">
@@ -2215,7 +2201,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       )
                                     }
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300"
-                                    disabled
+                                    disabled={!item.isCustom}
                                   />
                                 </td>
                                 <td className="px-3 py-2">
@@ -2295,6 +2281,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             </div>
                           )}
                         </div>
+                        <button
+                          onClick={addCustomItem}
+                          className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                        >
+                          <Plus size={14} />
+                          Add custom item
+                        </button>
                         <button
                           onClick={addSectionHeading}
                           className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
@@ -2501,11 +2494,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                         type="text"
                                         value={uItem.name}
                                         onFocus={() => {
-                                          setEditingUpgradeItemId({upgradeId: upgrade.id, itemId: uItem.id});
-                                          setShowUpgradeCatalogDropdown(upgrade.id);
-                                          setTimeout(() => upgradeCatalogInputRef.current?.focus(), 100);
+                                          if (!uItem.isCustom) {
+                                            setEditingUpgradeItemId({upgradeId: upgrade.id, itemId: uItem.id});
+                                            setShowUpgradeCatalogDropdown(upgrade.id);
+                                            setTimeout(() => upgradeCatalogInputRef.current?.focus(), 100);
+                                          }
                                         }}
-                                        readOnly
+                                        readOnly={!uItem.isCustom}
                                         className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
                                       />
                                       {showUpgradeCatalogDropdown === upgrade.id && editingUpgradeItemId?.itemId === uItem.id && (
@@ -2814,6 +2809,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                   </div>
                                 )}
                               </div>
+                              <button
+                                onClick={() => addCustomItemToUpgrade(upgrade.id)}
+                                className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                              >
+                                <Plus size={14} />
+                                Add custom item
+                              </button>
                               <button
                                 onClick={() => addSectionHeadingToUpgrade(upgrade.id)}
                                 className="text-primary-600 hover:text-primary-700 flex items-center gap-1"

@@ -76,6 +76,7 @@ export interface UserPreferences {
   private_mode_enabled: boolean;
   meeting_location: string;
   custom_location: string;
+  timezone?: string | null;
   bcc_email: string | null;
   created_at: string;
   updated_at: string;
