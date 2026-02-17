@@ -937,13 +937,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   };
 
   const handleSectionDragStart = (index: number) => {
-    if (sections[index].name === 'Cover' || sections[index].name === 'Estimate') return;
     setDraggedSectionIndex(index);
   };
 
   const handleSectionDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (index <= 1 || draggedSectionIndex === null || draggedSectionIndex === index) return;
+    if (draggedSectionIndex === null || draggedSectionIndex === index) return;
     const newSections = [...sections];
     const draggedSection = newSections[draggedSectionIndex];
     newSections.splice(draggedSectionIndex, 1);
@@ -956,12 +955,76 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     setDraggedSectionIndex(null);
   };
 
+  const escapeHtml = (text: string) =>
+    text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const sanitizeRichHtml = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html || "", "text/html");
+    const allowedTags = new Set([
+      "P", "BR", "DIV", "SPAN",
+      "B", "STRONG", "I", "EM", "U",
+      "UL", "OL", "LI",
+      "H1", "H2", "H3",
+      "A", "MARK"
+    ]);
+
+    const walk = (node: Node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          if (!allowedTags.has(el.tagName)) {
+            el.replaceWith(...Array.from(el.childNodes));
+            continue;
+          }
+
+          for (const attr of Array.from(el.attributes)) {
+            if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
+            el.removeAttribute(attr.name);
+          }
+
+          if (el.tagName === "A") {
+            const href = el.getAttribute("href") || "";
+            const safeHref =
+              href.startsWith("http://") ||
+              href.startsWith("https://") ||
+              href.startsWith("mailto:") ||
+              href.startsWith("tel:") ||
+              href.startsWith("#");
+            if (!safeHref) el.removeAttribute("href");
+            if (el.getAttribute("target") === "_blank") {
+              el.setAttribute("rel", "noopener noreferrer");
+            }
+          }
+        }
+        walk(child);
+      }
+    };
+
+    walk(doc.body);
+    return doc.body.innerHTML;
+  };
+
+  const toRichHtml = (value: string) => {
+    if (!value) return "";
+    if (/<[a-z][\s\S]*>/i.test(value)) return sanitizeRichHtml(value);
+    return escapeHtml(value)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/==(.+?)==/g, '<mark class="bg-yellow-200 dark:bg-yellow-700/40 px-0.5 rounded">$1</mark>')
+      .replace(/\n/g, "<br/>");
+  };
+
   interface EditableTextProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
     className?: string;
     multiline?: boolean;
+    richText?: boolean;
     maxLength?: number;
     triggerFocus?: boolean;
     onFocusComplete?: () => void;
@@ -973,13 +1036,25 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     placeholder = "",
     className = "",
     multiline = false,
+    richText = false,
     maxLength,
     triggerFocus = false,
     onFocusComplete,
   }: EditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
+    const [formatState, setFormatState] = useState({
+      bold: false,
+      italic: false,
+      underline: false,
+      unorderedList: false,
+      orderedList: false,
+      h2: false,
+      highlight: false,
+    });
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const editorRef = useRef<HTMLDivElement>(null);
+    const initializedRichEditorRef = useRef(false);
 
     const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
       let node = el?.parentElement || null;
@@ -1017,8 +1092,29 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     }, [triggerFocus, onFocusComplete]);
 
     useEffect(() => {
-      setTempValue(value);
+      setTempValue(richText && multiline ? toRichHtml(value) : value);
     }, [value]);
+
+    useEffect(() => {
+      if (!(isEditing && multiline && richText)) {
+        initializedRichEditorRef.current = false;
+        return;
+      }
+      const el = editorRef.current;
+      if (!el || initializedRichEditorRef.current) return;
+      el.innerHTML = richText && multiline ? toRichHtml(value) : value;
+      initializedRichEditorRef.current = true;
+      requestAnimationFrame(() => {
+        el.focus();
+        const selection = window.getSelection();
+        if (!selection) return;
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      });
+    }, [isEditing, multiline, richText, value]);
 
     useEffect(() => {
       if (isEditing && multiline) {
@@ -1026,12 +1122,152 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       }
     }, [isEditing, multiline]);
 
+    const refreshToolbarState = () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const anchor = selection.anchorNode;
+      if (!anchor || !editor.contains(anchor)) return;
+
+      const blockValue = String(document.queryCommandValue("formatBlock") || "")
+        .replace(/[<>]/g, "")
+        .toLowerCase();
+      const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
+      const highlightActive =
+        !!highlightValue &&
+        highlightValue !== "transparent" &&
+        highlightValue !== "rgba(0, 0, 0, 0)" &&
+        highlightValue !== "none";
+
+      setFormatState({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        underline: document.queryCommandState("underline"),
+        unorderedList: document.queryCommandState("insertUnorderedList"),
+        orderedList: document.queryCommandState("insertOrderedList"),
+        h2: blockValue === "h2",
+        highlight: highlightActive,
+      });
+    };
+
+    useEffect(() => {
+      if (!(isEditing && multiline && richText)) return;
+      const handleSelectionChange = () => refreshToolbarState();
+      document.addEventListener("selectionchange", handleSelectionChange);
+      return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    }, [isEditing, multiline, richText]);
+
     const handleBlur = () => {
       setIsEditing(false);
-      onChange(tempValue);
+      onChange(richText && multiline ? sanitizeRichHtml(tempValue) : tempValue);
     };
 
     if (isEditing) {
+      if (multiline && richText) {
+        const runCmd = (command: string, val?: string) => {
+          editorRef.current?.focus();
+          document.execCommand(command, false, val);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          refreshToolbarState();
+        };
+
+        const normalizeUrl = (rawUrl: string) => {
+          const trimmed = rawUrl.trim();
+          if (!trimmed) return "";
+          if (/^(https?:\/\/|mailto:|tel:|#)/i.test(trimmed)) return trimmed;
+          return `https://${trimmed}`;
+        };
+
+        const insertLink = () => {
+          const rawUrl = window.prompt("Enter URL");
+          if (!rawUrl) return;
+          const url = normalizeUrl(rawUrl);
+          if (!url) return;
+
+          editorRef.current?.focus();
+          const selection = window.getSelection();
+          const selectedText = selection?.toString().trim() || "";
+
+          if (!selectedText) {
+            const safeUrl = url.replace(/"/g, "&quot;");
+            document.execCommand(
+              "insertHTML",
+              false,
+              `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`
+            );
+          } else {
+            document.execCommand("createLink", false, url);
+            document.execCommand("styleWithCSS", false, "false");
+            document.execCommand("foreColor", false, "inherit");
+          }
+
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+        };
+
+        const onEditorBlur = () => {
+          setIsEditing(false);
+          initializedRichEditorRef.current = false;
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          onChange(html);
+        };
+
+        const toggleHeading = () => {
+          runCmd("formatBlock", formatState.h2 ? "<p>" : "<h2>");
+        };
+
+        const toolbarBtnClass = (isActive = false, extra = "") =>
+          `px-2 py-0.5 text-xs border rounded transition-colors ${
+            isActive
+              ? "border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300"
+              : "border-gray-300 dark:border-gray-600"
+          } ${extra}`;
+
+        return (
+          <div className="w-full">
+            <div className="mb-1 flex flex-wrap items-center gap-1">
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("bold")} className={toolbarBtnClass(formatState.bold)}>B</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("italic")} className={toolbarBtnClass(formatState.italic, "italic")}>I</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("underline")} className={toolbarBtnClass(formatState.underline, "underline")}>U</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleHeading} className={toolbarBtnClass(formatState.h2)}>H2</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertUnorderedList")} className={toolbarBtnClass(formatState.unorderedList)}>UL</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertOrderedList")} className={toolbarBtnClass(formatState.orderedList)}>OL</button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => runCmd("hiliteColor", formatState.highlight ? "transparent" : "#fef08a")}
+                className={toolbarBtnClass(formatState.highlight)}
+              >
+                Highlight
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={insertLink}
+                className={toolbarBtnClass(false)}
+              >
+                Link
+              </button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("undo")} className={toolbarBtnClass(false)}>Undo</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("redo")} className={toolbarBtnClass(false)}>Redo</button>
+            </div>
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={() => setTempValue(sanitizeRichHtml(editorRef.current?.innerHTML || ""))}
+              onBlur={onEditorBlur}
+              className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus-within:border-primary-500 focus:outline-none px-0 py-1 min-h-[72px] whitespace-pre-wrap break-words`}
+            />
+            {!tempValue && (
+              <div className="text-gray-400 dark:text-gray-500 text-sm mt-1">{placeholder}</div>
+            )}
+          </div>
+        );
+      }
+
       return multiline ? (
         <textarea
           ref={textareaRef}
@@ -1058,6 +1294,16 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           placeholder={placeholder}
           maxLength={maxLength}
           className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+        />
+      );
+    }
+
+    if (richText && multiline && value) {
+      return (
+        <div
+          onClick={() => setIsEditing(true)}
+          className={`${className} cursor-pointer inline-block w-full py-1`}
+          dangerouslySetInnerHTML={{ __html: toRichHtml(value) }}
         />
       );
     }
@@ -1146,11 +1392,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               {sections.map((section, index) => (
                 <div 
                   key={section.id}
-                  draggable={section.name !== 'Cover'}
+                  draggable={true}
                   onDragStart={() => handleSectionDragStart(index)}
                   onDragOver={(e) => handleSectionDragOver(e, index)}
                   onDragEnd={handleSectionDragEnd}
-                  className={section.name !== 'Cover' && section.name !== 'Estimate' ? 'cursor-move' : ''}
+                  className="cursor-move"
                 >
                   <div
                     className={`flex items-center gap-2 p-2 rounded ${
@@ -1159,9 +1405,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                         : "hover:bg-gray-100 dark:hover:bg-gray-700"
                     }`}
                   >
-                    {section.name !== 'Cover' && section.name !== 'Estimate' && (
-                      <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
-                    )}
+                    <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
                     <button
                       className="flex items-center justify-between flex-1 text-left"
                       onClick={() => setActiveSection(section.name)}
@@ -1587,6 +1831,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     }
                     className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap"
                     multiline={true}
+                    richText={true}
                     placeholder="Click to add description"
                   />
                 </div>
@@ -1626,6 +1871,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                           onChange={setOptionDescription}
                           className="text-sm text-gray-500 dark:text-gray-400 break-words"
                           multiline={true}
+                          richText={true}
                           placeholder="Add description"
                         />
                       </div>
@@ -1797,9 +2043,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                               <div className="font-medium text-gray-900 dark:text-white truncate" title={optionTitle}>{optionTitle}</div>
                             </div>
                             <div className="flex justify-between items-center py-2 pl-3">
-                              <span className="text-sm text-gray-600 dark:text-gray-400 break-words">
-                                {optionDescription}
-                              </span>
+                              <span
+                                className="text-sm text-gray-600 dark:text-gray-400 break-words"
+                                dangerouslySetInnerHTML={{ __html: toRichHtml(optionDescription || "") }}
+                              />
                             </div>
                             <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
                               <span className="font-medium text-gray-900 dark:text-white">Total</span>
