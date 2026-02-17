@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Wallet, Download, Check, FileText, AlertCircle, ChevronRight, MapPin } from 'lucide-react';
+import { ArrowLeft, Wallet, Download, Check, FileText, AlertCircle, ChevronRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AddressSearch from './AddressSearch';
 import { eagleViewService } from '../../services/eagleViewService';
@@ -61,6 +61,26 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
     }
   };
 
+  const checkBillingStatus = async () => {
+    try {
+      setLoading(true);
+      const details = await eagleViewService.getAccountDetails();
+      if (details && details.billingExists === false) {
+        const confirmRedirect = window.confirm("You don't have billing information. Please add it first. You will be redirected to EagleView to add your billing information.");
+        if (confirmRedirect) {
+          window.open('https://apps.eagleview.com/myev/billing-information', '_blank');
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to check billing status', error);
+      return true; // Continue if check fails? Or maybe show error.
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadConnectionStatus = async () => {
     try {
       setLoading(true);
@@ -70,7 +90,12 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
 
       if (status.connected) {
         setPaymentMethod('account');
-        setStep('product-selection');
+        const hasBilling = await checkBillingStatus();
+        if (hasBilling) {
+          setStep('product-selection');
+        } else {
+          onBack(); // Go back if no billing
+        }
       }
     } catch (error) {
       console.error('Failed to load connection status', error);
@@ -172,10 +197,13 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
             </div>
 
             <div
-              onClick={() => {
+              onClick={async () => {
                 if (connectionStatus.connected && connectionStatus.usingOwnAccount) {
                   setPaymentMethod('account');
-                  setStep('product-selection');
+                  const hasBilling = await checkBillingStatus();
+                  if (hasBilling) {
+                    setStep('product-selection');
+                  }
                 } else {
                   navigate(`/org/${orgSlug}/settings/integrations`);
                 }
