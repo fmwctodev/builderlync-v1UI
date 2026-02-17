@@ -54,6 +54,8 @@ export interface Template {
   organization_id?: string;
   created_by?: string;
   is_default: boolean;
+  is_locked?: boolean;
+  is_global?: boolean;
   summary?: {
     sectionCount: number;
     itemCount: number;

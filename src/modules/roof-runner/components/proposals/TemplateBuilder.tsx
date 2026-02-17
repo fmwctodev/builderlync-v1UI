@@ -207,6 +207,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isTemplateLocked, setIsTemplateLocked] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
 
   const [sections, setSections] = useState<Section[]>([
@@ -227,16 +228,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const optionTitleCharCount = optionTitle.length;
 
   const handleUseTemplate = async () => {
-    // Check if there's at least one item
-    const hasItems = items.some(item => !item.isHeading);
-    
-    if (!hasItems) {
-      alert('Please add at least one item to use this template');
-      return;
-    }
-    
     // Check if title is provided
-    if (!optionTitle || optionTitle.trim() === '') {
+    if (!isTemplateLocked && !optionTitle || optionTitle.trim() === '') {
       alert('Please add a title to use this template');
       return;
     }
@@ -251,6 +244,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   };
 
   const handleSave = async () => {
+    if (isTemplateLocked) {
+      alert('This is a locked template and cannot be edited.');
+      return;
+    }
+
     setSaving(true);
     try {
       const content = {
@@ -301,6 +299,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       setLoading(true);
       try {
         const data = await templateApi.getTemplateById(templateId);
+        setIsTemplateLocked(!!data.is_locked);
         
         // Load template data into state
         setTemplateName(data.name);
@@ -1508,7 +1507,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             <h2 className="text-lg font-medium text-gray-900 dark:text-white">
               {activeSection}
             </h2>
-            {activeSection === "Estimate" && (
+            {activeSection === "Estimate" && !isTemplateLocked && (
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {optionTitle}
@@ -1526,11 +1525,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || isTemplateLocked}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={16} />
-              {saving ? 'Saving...' : 'Save Template'}
+              {isTemplateLocked ? 'Read Only' : saving ? 'Saving...' : 'Save Template'}
             </button>
             <button
               onClick={handleUseTemplate}
@@ -1544,14 +1543,23 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         {/* Template Preview */}
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-4xl mx-auto">
+            {isTemplateLocked && (
+              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                This is a locked global template. You can view and use it, but you cannot edit or save changes.
+              </div>
+            )}
             <div className={activeSection === "Estimate" ? "space-y-8" : `bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${activeSection === "Cover" ? "" : "p-8"}`}>
               {/* Render active section content */}
               {activeSection === "Cover" && (
                 <div className="flex flex-col min-h-[800px]">
                   {/* Top 60% - Cover Image */}
                   <div 
-                    className="relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => !coverImage && coverImageInputRef.current?.click()}
+                    className={`relative h-[480px] bg-gray-100 dark:bg-gray-700 overflow-hidden transition-colors ${
+                      isTemplateLocked
+                        ? "cursor-not-allowed"
+                        : "cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
+                    onClick={() => !isTemplateLocked && !coverImage && coverImageInputRef.current?.click()}
                   >
                     {coverImage && (
                       <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
@@ -1565,7 +1573,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       </div>
                     )}
                     <div className="absolute top-4 right-4 flex gap-2">
-                      {coverImage && (
+                      {coverImage && !isTemplateLocked && (
                         <>
                           <button
                             onClick={(e) => {
@@ -1594,8 +1602,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       ref={coverImageInputRef}
                       type="file"
                       accept="image/*"
+                      disabled={isTemplateLocked}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
+                        e.currentTarget.value = '';
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = () => {
@@ -1890,13 +1900,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             {optionTitleCharCount}/{MAX_OPTION_TITLE_CHARS} characters
                           </div>
                         </div>
-                        <button
-                          onClick={() => setShowEditModal(true)}
-                          className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 flex-shrink-0"
-                        >
-                          <Pencil size={14} />
-                          Edit option
-                        </button>
+                        {!isTemplateLocked && (
+                          <button
+                            onClick={() => setShowEditModal(true)}
+                            className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 flex-shrink-0"
+                          >
+                            <Pencil size={14} />
+                            Edit option
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mb-4">
                         <EditableText
@@ -3274,6 +3286,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     handleSave();
                     setShowEditModal(false);
                   }}
+                  disabled={isTemplateLocked}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 flex items-center gap-2"
                 >
                   <Save size={16} />
@@ -3363,6 +3376,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                 </button>
                 <button
                   onClick={async () => {
+                    if (isTemplateLocked) {
+                      alert('This is a locked template and cannot be edited.');
+                      return;
+                    }
                     if (croppedAreaPixels && cropImage) {
                       const croppedImage = await getCroppedImg(cropImage, croppedAreaPixels);
                       setCoverImage(croppedImage);
@@ -3388,12 +3405,19 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                           body: formData
                         });
 
-                        const result = await response.json();
-                        if (result.success) {
-                          setCoverImage(result.data.url);
+                        if (!response.ok) {
+                          const errorText = await response.text();
+                          throw new Error(errorText || 'Failed to upload cover image');
                         }
+
+                        const result = await response.json();
+                        if (!result.success || !result.data?.url) {
+                          throw new Error(result.message || 'Failed to upload cover image');
+                        }
+                        setCoverImage(result.data.url);
                       } catch (error) {
                         console.error('Error uploading cover image:', error);
+                        alert('Cover image upload failed. Please try again.');
                       }
                       
                       setShowCropModal(false);
