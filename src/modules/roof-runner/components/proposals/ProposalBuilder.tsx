@@ -292,9 +292,18 @@ export default function ProposalBuilder({
     optionTitleValue: string
   ) => {
     const baseSections = Array.isArray(loadedSections) ? loadedSections : [];
-    const hasCover = baseSections.some((section) => section.id === "cover");
-    const hasEstimate = baseSections.some((section) => section.id === "estimate");
-    const withDefaults = [...baseSections];
+    const isCoverSection = (section: Section) =>
+      section.id === "cover" ||
+      section.name?.toLowerCase() === "cover" ||
+      section.type === "cover";
+    const isEstimateSection = (section: Section) =>
+      section.id === "estimate" ||
+      section.name?.toLowerCase() === "estimate" ||
+      section.type === "estimate";
+
+    const hasCover = baseSections.some((section) => isCoverSection(section));
+    const hasEstimate = baseSections.some((section) => isEstimateSection(section));
+    let withDefaults = [...baseSections];
 
     if (!hasCover) {
       withDefaults.unshift({
@@ -316,9 +325,18 @@ export default function ProposalBuilder({
         type: "estimate",
       });
     } else {
+      // Keep only one estimate-like section to avoid duplicate default Estimate entries.
+      const firstEstimateIndex = withDefaults.findIndex((section) =>
+        isEstimateSection(section)
+      );
+      withDefaults = withDefaults.filter((section, index) => {
+        if (!isEstimateSection(section)) return true;
+        return index === firstEstimateIndex;
+      });
+
       // Keep subsections in sync with the current option title.
       const estimateIndex = withDefaults.findIndex(
-        (section) => section.id === "estimate"
+        (section) => isEstimateSection(section)
       );
       if (estimateIndex !== -1) {
         const estimateSection = withDefaults[estimateIndex];

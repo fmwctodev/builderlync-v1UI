@@ -937,13 +937,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   };
 
   const handleSectionDragStart = (index: number) => {
-    if (sections[index].name === 'Cover' || sections[index].name === 'Estimate') return;
     setDraggedSectionIndex(index);
   };
 
   const handleSectionDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (index <= 1 || draggedSectionIndex === null || draggedSectionIndex === index) return;
+    if (draggedSectionIndex === null || draggedSectionIndex === index) return;
     const newSections = [...sections];
     const draggedSection = newSections[draggedSectionIndex];
     newSections.splice(draggedSectionIndex, 1);
@@ -1146,11 +1145,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               {sections.map((section, index) => (
                 <div 
                   key={section.id}
-                  draggable={section.name !== 'Cover'}
+                  draggable={true}
                   onDragStart={() => handleSectionDragStart(index)}
                   onDragOver={(e) => handleSectionDragOver(e, index)}
                   onDragEnd={handleSectionDragEnd}
-                  className={section.name !== 'Cover' && section.name !== 'Estimate' ? 'cursor-move' : ''}
+                  className="cursor-move"
                 >
                   <div
                     className={`flex items-center gap-2 p-2 rounded ${
@@ -1159,9 +1158,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                         : "hover:bg-gray-100 dark:hover:bg-gray-700"
                     }`}
                   >
-                    {section.name !== 'Cover' && section.name !== 'Estimate' && (
-                      <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
-                    )}
+                    <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
                     <button
                       className="flex items-center justify-between flex-1 text-left"
                       onClick={() => setActiveSection(section.name)}

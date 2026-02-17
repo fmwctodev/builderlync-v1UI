@@ -709,8 +709,8 @@ export default function Proposals() {
               </button>
               <button
                 onClick={async () => {
-                  if (!selectedTemplate && selectedMeasurement) {
-                    alert('Please select a template when using a measurement report');
+                  if (!selectedTemplate) {
+                    alert('Please select a template to create a proposal');
                     return;
                   }
                   try {
@@ -720,19 +720,28 @@ export default function Proposals() {
                     const address = proposalAddress || selectedMeasurement?.address;
                     const latitude = proposalLat || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.latitude;
                     const longitude = proposalLng || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.longitude;
+                    const templateId = String(selectedTemplate.id || '').trim();
+                    const reportId = selectedMeasurement?.id ? String(selectedMeasurement.id) : undefined;
+                    const lat = latitude !== null && latitude !== undefined ? String(latitude) : undefined;
+                    const lng = longitude !== null && longitude !== undefined ? String(longitude) : undefined;
+
+                    if (!templateId) {
+                      alert('Invalid template selected. Please reselect a template.');
+                      return;
+                    }
 
                     // Get customer details from selected job if available
                     const selectedJob = nearbyJobs.find(job => job.id === selectedJobId);
 
                     const proposalData = {
-                      ...(selectedTemplate && { template_id: selectedTemplate.id }),
+                      template_id: templateId,
                       title: selectedTemplate?.name || 'New Proposal',
                       address: {
                         address: address,
-                        latitude: latitude,
-                        longitude: longitude
+                        lat,
+                        lng
                       },
-                      ...(selectedMeasurement && { report_id: selectedMeasurement.id }),
+                      ...(reportId && { report_id: reportId }),
                       ...(selectedJobId && { job_id: selectedJobId }),
                       ...(selectedJob && {
                         customer_name: selectedJob.customer?.full_name || selectedJob.contactName,
@@ -756,16 +765,21 @@ export default function Proposals() {
                     navigate(`${orgPrefix}/proposals/editor/${proposal.id}`);
                   } catch (error) {
                     console.error('Error creating proposal:', error);
-                    alert('Failed to create proposal. Please try again.');
+                    const errorMessage =
+                      (error as any)?.response?.data?.message ||
+                      (error as any)?.response?.data?.error ||
+                      (error as any)?.message ||
+                      'Failed to create proposal. Please try again.';
+                    alert(errorMessage);
                   } finally {
                     setCreatingProposal(false);
                   }
                 }}
-                disabled={selectedMeasurement && !selectedTemplate}
+                disabled={!selectedTemplate || creatingProposal}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={selectedMeasurement && !selectedTemplate ? 'Template is required when measurement is selected' : ''}
+                title={!selectedTemplate ? 'Select a template to continue' : ''}
               >
-                {selectedTemplate ? 'Create Proposal' : 'Create Without Template'}
+                {creatingProposal ? 'Creating...' : 'Create Proposal'}
               </button>
             </div>
           </div>
