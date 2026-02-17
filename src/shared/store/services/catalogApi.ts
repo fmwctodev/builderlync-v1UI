@@ -63,6 +63,17 @@ export interface BulkDeleteResponse {
   };
 }
 
+export interface CatalogImportResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    created: number;
+    updated: number;
+    failed: number;
+    errors: Array<{ row: number; message: string }>;
+  };
+}
+
 // Get catalog items with filters
 export const getCatalogItems = async (filters: CatalogFilters = {}): Promise<CatalogResponse> => {
   try {
@@ -183,6 +194,41 @@ export const updateCatalogItemType = async (id: string, itemType: 'Material' | '
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to update item type'
+    };
+  }
+};
+
+export const exportCatalogCsv = async (): Promise<{ success: boolean; blob?: Blob; message?: string }> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/catalog/items/export-csv`, {
+      headers: getAuthHeaders(),
+      responseType: 'blob'
+    });
+
+    return {
+      success: true,
+      blob: response.data
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to export catalog CSV'
+    };
+  }
+};
+
+export const importCatalogCsv = async (csv: string): Promise<CatalogImportResponse> => {
+  try {
+    const response = await axios.post<CatalogImportResponse>(
+      `${API_BASE_URL}/catalog/items/import-csv`,
+      { csv },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to import catalog CSV'
     };
   }
 };

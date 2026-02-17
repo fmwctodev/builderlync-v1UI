@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link } from 'lucide-react';
-import { getCatalogItems, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem } from '../../../shared/store/services/catalogApi';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link, Download, Upload } from 'lucide-react';
+import { getCatalogItems, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
 import { abcSupplyService } from '../services/abcSupplyService';
@@ -37,6 +37,7 @@ export default function Catalog() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
     itemType: true,
@@ -289,6 +290,49 @@ export default function Catalog() {
     }
   };
 
+  const handleExportCsv = async () => {
+    const response = await exportCatalogCsv();
+    if (!response.success || !response.blob) {
+      setToast({ message: response.message || 'Failed to export CSV', type: 'error' });
+      return;
+    }
+
+    const blobUrl = URL.createObjectURL(response.blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    link.download = `catalog-export-${dateSuffix}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const handleImportCsv = async (file: File) => {
+    try {
+      const csvText = await file.text();
+      const response = await importCatalogCsv(csvText);
+      if (!response.success || !response.data) {
+        setToast({ message: response.message || 'Failed to import CSV', type: 'error' });
+        return;
+      }
+
+      const { created, updated, failed, errors } = response.data;
+      const message = `Import complete: ${created} created, ${updated} updated, ${failed} failed`;
+      setToast({ message, type: failed > 0 ? 'error' : 'success' });
+      if (failed > 0 && errors.length > 0) {
+        console.warn('Catalog CSV import row errors:', errors);
+      }
+      loadItems();
+    } catch (error) {
+      setToast({ message: 'Failed to read CSV file', type: 'error' });
+    } finally {
+      if (csvInputRef.current) {
+        csvInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
@@ -314,13 +358,41 @@ export default function Catalog() {
             </button>
           </div>
         </div>
-        <button
-          onClick={addItem}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Add Item
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-300"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
+          <button
+            onClick={() => csvInputRef.current?.click()}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-700 dark:text-gray-300"
+          >
+            <Upload size={16} />
+            Upload CSV
+          </button>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                handleImportCsv(file);
+              }
+            }}
+          />
+          <button
+            onClick={addItem}
+            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add Item
+          </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">

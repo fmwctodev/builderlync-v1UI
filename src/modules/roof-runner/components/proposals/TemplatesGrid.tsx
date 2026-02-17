@@ -140,6 +140,7 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
                             setShowRenameModal(true);
                             setOpenDropdown(null);
                           }}
+                          disabled={template.is_locked}
                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                         >
                           Rename
@@ -154,17 +155,19 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
                         >
                           Make a copy
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingTemplateId(template.id);
-                            setShowDeleteModal(true);
-                            setOpenDropdown(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-error-600"
-                        >
-                          Delete
-                        </button>
+                        {!template.is_global && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingTemplateId(template.id);
+                              setShowDeleteModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-error-600"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

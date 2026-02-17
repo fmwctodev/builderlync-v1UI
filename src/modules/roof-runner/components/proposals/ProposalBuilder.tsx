@@ -2158,36 +2158,66 @@ export default function ProposalBuilder({
                     (s) => s.name === activeSection && s.type === "photos"
                   ) && (
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                          Photos
-                        </h2>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
+                        <EditableText
+                          value={sections.find((s) => s.name === activeSection)?.name || "Photos"}
+                          onChange={(val) => {
+                            const activeSectionData = sections.find((s) => s.name === activeSection && s.type === "photos");
+                            if (!activeSectionData) return;
+                            setSections(
+                              sections.map((s) => (s.id === activeSectionData.id ? { ...s, name: val } : s))
+                            );
+                            setActiveSection(val);
+                          }}
+                          className="text-xl font-bold text-gray-900 dark:text-white mb-4 block"
+                          placeholder="Section title"
+                        />
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Gallery view
+                          </span>
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {(sections.find((s) => s.name === activeSection)?.content?.photos || []).length} photos
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
                           {sections
                             .find((s) => s.name === activeSection)
                             ?.content?.photos?.map((photo, idx) => (
                               <div
                                 key={idx}
-                                className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden relative group"
+                                className="group rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden shadow-sm"
                               >
-                                <img
-                                  src={photo}
-                                  alt={`Photo ${idx + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
+                                <div className="relative aspect-[4/3] overflow-hidden">
+                                  <img
+                                    src={photo}
+                                    alt={`Photo ${idx + 1}`}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  />
+                                  {proposalStatus !== 'sent' && (
+                                    <button
+                                      onClick={() => deletePhoto(activeSection, idx)}
+                                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  )}
+                                </div>
                                 {proposalStatus !== 'sent' && (
-                                  <button
-                                    onClick={() => deletePhoto(activeSection, idx)}
-                                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X size={16} />
-                                  </button>
+                                  <div className="px-3 py-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <span>{`Photo ${idx + 1}`}</span>
+                                  </div>
+                                )}
+                                {proposalStatus === 'sent' && (
+                                  <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                                    {`Photo ${idx + 1}`}
+                                  </div>
                                 )}
                               </div>
                             ))}
                           {proposalStatus !== 'sent' && (
                             <button
                               onClick={() => photoInputRef.current?.click()}
-                              className="aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                              className="aspect-[4/3] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                             >
                               <Plus className="w-8 h-8 text-gray-400" />
                               <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -2211,9 +2241,19 @@ export default function ProposalBuilder({
                     (s) => s.name === activeSection && s.type === "pdf"
                   ) && (
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                          PDF Documents
-                        </h2>
+                        <EditableText
+                          value={sections.find((s) => s.name === activeSection)?.name || "PDF Documents"}
+                          onChange={(val) => {
+                            const activeSectionData = sections.find((s) => s.name === activeSection && s.type === "pdf");
+                            if (!activeSectionData) return;
+                            setSections(
+                              sections.map((s) => (s.id === activeSectionData.id ? { ...s, name: val } : s))
+                            );
+                            setActiveSection(val);
+                          }}
+                          className="text-xl font-bold text-gray-900 dark:text-white mb-4 block"
+                          placeholder="Section title"
+                        />
                         <div className="space-y-6 mb-4">
                           {sections
                             .find((s) => s.name === activeSection)
