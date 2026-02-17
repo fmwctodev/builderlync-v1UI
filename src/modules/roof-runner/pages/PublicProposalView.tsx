@@ -12,6 +12,67 @@ export default function PublicProposalView() {
   const [downloading, setDownloading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const escapeHtml = (text: string) =>
+    text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const sanitizeRichHtml = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html || "", "text/html");
+    const allowedTags = new Set([
+      "P", "BR", "DIV", "SPAN",
+      "B", "STRONG", "I", "EM", "U",
+      "UL", "OL", "LI",
+      "H1", "H2", "H3",
+      "A", "MARK"
+    ]);
+
+    const walk = (node: Node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          if (!allowedTags.has(el.tagName)) {
+            el.replaceWith(...Array.from(el.childNodes));
+            continue;
+          }
+          for (const attr of Array.from(el.attributes)) {
+            if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
+            el.removeAttribute(attr.name);
+          }
+          if (el.tagName === "A") {
+            const href = el.getAttribute("href") || "";
+            const safeHref =
+              href.startsWith("http://") ||
+              href.startsWith("https://") ||
+              href.startsWith("mailto:") ||
+              href.startsWith("tel:") ||
+              href.startsWith("#");
+            if (!safeHref) el.removeAttribute("href");
+            if (el.getAttribute("target") === "_blank") {
+              el.setAttribute("rel", "noopener noreferrer");
+            }
+          }
+        }
+        walk(child);
+      }
+    };
+
+    walk(doc.body);
+    return doc.body.innerHTML;
+  };
+
+  const toRichHtml = (value: string) => {
+    if (!value) return "";
+    if (/<[a-z][\s\S]*>/i.test(value)) return sanitizeRichHtml(value);
+    return escapeHtml(value)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/==(.+?)==/g, "<mark>$1</mark>")
+      .replace(/\n/g, "<br/>");
+  };
+
   useEffect(() => {
     if (token) {
       loadProposal();
@@ -192,9 +253,10 @@ export default function PublicProposalView() {
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   {proposal.sections?.settings?.optionTitle || "Option 1"}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {proposal.sections?.settings?.optionDescription || ""}
-                </p>
+                <div
+                  className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words"
+                  dangerouslySetInnerHTML={{ __html: toRichHtml(proposal.sections?.settings?.optionDescription || "") }}
+                />
               </div>
 
               <div className="space-y-6">
@@ -217,7 +279,12 @@ export default function PublicProposalView() {
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                              {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
+                              {item.description && (
+                                <div
+                                  className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                  dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
+                                />
+                              )}
                               <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 {item.unitCost && <span>Unit Cost: ${item.unitCost}</span>}
                                 {item.qty && <span>Qty: {item.qty}</span>}
@@ -255,7 +322,12 @@ export default function PublicProposalView() {
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
                                     <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                                    {item.description && <div className="text-gray-600 dark:text-gray-400">{item.description}</div>}
+                              {item.description && (
+                                <div
+                                  className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                  dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
+                                />
+                              )}
                                   </div>
                                   {item.unitCost && item.qty && (
                                     <div className="font-medium text-gray-900 dark:text-white">
