@@ -358,6 +358,13 @@ const Jobs: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Refresh staff when opening job details so "Me" label reflects latest profile updates.
+    if (showJobDetails) {
+      fetchStaff();
+    }
+  }, [showJobDetails]);
+
+  useEffect(() => {
     fetchJobs();
   }, [selectedJobType, selectedFilter, searchQuery, advancedFilters]);
 

@@ -6,7 +6,7 @@ import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
-import { getNearbyJobs, Job } from '../../../shared/store/services/jobsApi';
+import { getNearbyJobs, getJobById, Job } from '../../../shared/store/services/jobsApi';
 import { abcSupplyService } from '../services/abcSupplyService';
 import { eagleViewService } from '../services/eagleViewService';
 
@@ -24,6 +24,7 @@ export default function Proposals() {
   const [showNewProposalDropdown, setShowNewProposalDropdown] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hasHandledJobIdRef = useRef(false);
   const [currentStep, setCurrentStep] = useState<'measurement' | 'location' | 'template'>('measurement');
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -105,6 +106,50 @@ export default function Proposals() {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (hasHandledJobIdRef.current) return;
+
+    const params = new URLSearchParams(location.search);
+    const rawJobId = params.get('JobId') || params.get('jobId');
+    const parsedJobId = rawJobId ? Number(rawJobId) : NaN;
+    if (!parsedJobId || Number.isNaN(parsedJobId)) return;
+
+    hasHandledJobIdRef.current = true;
+
+    const initializeFromJobId = async () => {
+      try {
+        const response = await getJobById(parsedJobId);
+        const job: Job | undefined = response?.data || response;
+
+        if (job) {
+          setSelectedJobId(parsedJobId);
+          setAttachToJob(true);
+          setNearbyJobs([job]);
+          setProposalAddress(job.location || '');
+
+          const lat = job.latitude ? Number(job.latitude) : null;
+          const lng = job.longitude ? Number(job.longitude) : null;
+          if (lat && lng) {
+            setProposalLat(lat);
+            setProposalLng(lng);
+          }
+        } else {
+          setSelectedJobId(parsedJobId);
+          setAttachToJob(true);
+        }
+      } catch (error) {
+        console.error('Error loading job from query param:', error);
+        setSelectedJobId(parsedJobId);
+        setAttachToJob(true);
+      } finally {
+        setCurrentStep('measurement');
+        setShowNewProposalModal(true);
+      }
+    };
+
+    initializeFromJobId();
+  }, [location.search]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -398,7 +443,11 @@ export default function Proposals() {
               <button
                 onClick={() => {
                   setSelectedMeasurement(null);
-                  setCurrentStep('location');
+                  if (selectedJobId) {
+                    setShowTemplateModal(true);
+                  } else {
+                    setCurrentStep('location');
+                  }
                 }}
                 className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
               >
@@ -684,7 +733,7 @@ export default function Proposals() {
                         longitude: longitude
                       },
                       ...(selectedMeasurement && { report_id: selectedMeasurement.id }),
-                      ...(attachToJob && selectedJobId && { job_id: selectedJobId }),
+                      ...(selectedJobId && { job_id: selectedJobId }),
                       ...(selectedJob && {
                         customer_name: selectedJob.customer?.full_name || selectedJob.contactName,
                         customer_email: selectedJob.customer?.email,
