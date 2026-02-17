@@ -823,15 +823,24 @@ export default function ProposalPreview() {
                     {section.name}
                   </h2>
                   {section.type === "photos" && section.content?.photos && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       {section.content.photos.map(
                         (photo: string, idx: number) => (
-                          <img
+                          <div
                             key={idx}
-                            src={photo}
-                            alt={`Photo ${idx + 1}`}
-                            className="w-full h-auto rounded-lg"
-                          />
+                            className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                          >
+                            <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
+                              <img
+                                src={photo}
+                                alt={`Photo ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
+                              {`Photo ${idx + 1}`}
+                            </div>
+                          </div>
                         )
                       )}
                     </div>
