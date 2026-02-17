@@ -100,7 +100,13 @@ interface Section {
 }
 
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
-  const [templateName, setTemplateName] = useState("demo");
+  const MAX_OPTION_TITLE_CHARS = 100;
+  const limitChars = useCallback((text: string, maxChars: number) => {
+    if (text.length <= maxChars) return text;
+    return text.slice(0, maxChars);
+  }, []);
+
+  const [templateName, setTemplateName] = useState("");
   const [activeSection, setActiveSection] = useState("Estimate");
   const [activeSubsection, setActiveSubsection] = useState("Option 1");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -210,10 +216,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       name: "Estimate",
       active: true,
       order: 1,
-      subsections: [optionTitle, "Summary"],
+      subsections: [optionTitle || "Option 1", "Summary"],
       type: "estimate",
     },
   ]);
+
+  const handleOptionTitleChange = useCallback((value: string) => {
+    setOptionTitle(limitChars(value, MAX_OPTION_TITLE_CHARS));
+  }, [limitChars]);
+  const optionTitleCharCount = optionTitle.length;
 
   const handleUseTemplate = async () => {
     // Check if there's at least one item
@@ -300,7 +311,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           setUpgrades(data.content.upgrades || []);
           
           if (data.content.settings) {
-            const loadedOptionTitle = data.content.settings.optionTitle || "";
+            const loadedOptionTitle = limitChars(data.content.settings.optionTitle || "", MAX_OPTION_TITLE_CHARS);
             setOptionTitle(loadedOptionTitle);
             // Update subsection name to match option title
             setSections(prev => prev.map(s => 
@@ -948,8 +959,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   interface EditableTextProps {
     value: string;
     onChange: (value: string) => void;
+    placeholder?: string;
     className?: string;
     multiline?: boolean;
+    maxLength?: number;
     triggerFocus?: boolean;
     onFocusComplete?: () => void;
   }
@@ -957,13 +970,44 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const EditableText = ({
     value,
     onChange,
+    placeholder = "",
     className = "",
     multiline = false,
+    maxLength,
     triggerFocus = false,
     onFocusComplete,
   }: EditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
+      let node = el?.parentElement || null;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY)) return node;
+        node = node.parentElement;
+      }
+      return null;
+    };
+
+    const autoResizeTextarea = () => {
+      const el = textareaRef.current;
+      if (!el) return;
+
+      const scrollParent = getScrollParent(el);
+      const parentScrollTop = scrollParent?.scrollTop ?? null;
+      const winX = window.scrollX;
+      const winY = window.scrollY;
+
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+
+      if (scrollParent && parentScrollTop !== null) {
+        scrollParent.scrollTop = parentScrollTop;
+      }
+      window.scrollTo(winX, winY);
+    };
 
     useEffect(() => {
       if (triggerFocus) {
@@ -976,6 +1020,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       setTempValue(value);
     }, [value]);
 
+    useEffect(() => {
+      if (isEditing && multiline) {
+        autoResizeTextarea();
+      }
+    }, [isEditing, multiline]);
+
     const handleBlur = () => {
       setIsEditing(false);
       onChange(tempValue);
@@ -984,11 +1034,19 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     if (isEditing) {
       return multiline ? (
         <textarea
+          ref={textareaRef}
           value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
+          onChange={(e) => {
+            setTempValue(e.target.value);
+            requestAnimationFrame(autoResizeTextarea);
+          }}
+          onInput={autoResizeTextarea}
           onBlur={handleBlur}
           autoFocus
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          rows={1}
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1 resize-none overflow-hidden`}
         />
       ) : (
         <input
@@ -997,6 +1055,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           onChange={(e) => setTempValue(e.target.value)}
           onBlur={handleBlur}
           autoFocus
+          placeholder={placeholder}
+          maxLength={maxLength}
           className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
         />
       );
@@ -1005,9 +1065,9 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     return (
       <span
         onClick={() => setIsEditing(true)}
-        className={`${className} cursor-pointer inline-block w-full py-1`}
+        className={`${className} cursor-pointer inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
       >
-        {value}
+        {value || placeholder}
       </span>
     );
   };
@@ -1056,7 +1116,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           <div className="text-xs text-gray-500">Changes auto-saved</div>
         </div>
 
-        <div className="flex-1  p-4">
+        <div className="flex-1 p-4 flex flex-col min-h-0">
           <div className="flex items-center gap-2 mb-4">
             <input
               type="text"
@@ -1066,7 +1126,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             />
           </div>
 
-          <div>
+          <div className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Proposal sections
@@ -1082,7 +1142,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
               {sections.map((section, index) => (
                 <div 
                   key={section.id}
@@ -1175,8 +1235,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             activeSubsection === sub ? 'bg-gray-100 dark:bg-gray-700' : ''
                           }`}
                         >
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {idx === 0 ? optionTitle : sub}
+                          <span className="text-sm text-gray-600 dark:text-gray-400 block truncate" title={idx === 0 ? (optionTitle || "Option 1") : sub}>
+                            {idx === 0 ? (optionTitle || "Option 1") : sub}
                           </span>
                         </button>
                       ))}
@@ -1185,14 +1245,14 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                 </div>
               ))}
 
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-              >
-                <Plus size={16} />
-                <span className="text-sm">Add section</span>
-              </button>
             </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full mt-3 p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 flex-shrink-0"
+            >
+              <Plus size={16} />
+              <span className="text-sm">Add section</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1205,8 +1265,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               {activeSection}
             </h2>
             {activeSection === "Estimate" && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {optionTitle}
                 </span>
                 <button
@@ -1499,7 +1559,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   <EditableText
                     value={
                       sections.find((s) => s.name === activeSection)?.content
-                        ?.text || "Click to add title"
+                        ?.text || ""
                     }
                     onChange={(val) =>
                       updateTextContent(
@@ -1510,11 +1570,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       )
                     }
                     className="text-2xl font-bold text-gray-900 dark:text-white mb-4 block"
+                    placeholder="Click to add title"
                   />
                   <EditableText
                     value={
                       sections.find((s) => s.name === activeSection)?.content
-                        ?.description || "Click to add description"
+                        ?.description || ""
                     }
                     onChange={(val) =>
                       updateTextContent(
@@ -1526,6 +1587,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                     }
                     className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap"
                     multiline={true}
+                    placeholder="Click to add description"
                   />
                 </div>
               )}
@@ -1535,29 +1597,36 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                   {/* Page 1: Option Details */}
                   <div id="estimate-page-1" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 min-h-[1000px] flex flex-col mb-8">
                     <div className="mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <input
-                          type="text"
-                          value={optionTitle}
-                          onChange={(e) => setOptionTitle(e.target.value)}
-                          placeholder="Add title"
-                          className="text-lg font-medium text-gray-900 dark:text-white bg-transparent border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-0 py-1"
-                        />
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="min-w-0 flex-1">
+                          <EditableText
+                            value={optionTitle}
+                            onChange={handleOptionTitleChange}
+                            className="text-lg font-medium text-gray-900 dark:text-white break-words"
+                            maxLength={MAX_OPTION_TITLE_CHARS}
+                            triggerFocus={triggerFocus}
+                            onFocusComplete={() => setTriggerFocus(false)}
+                            placeholder="Add title"
+                          />
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {optionTitleCharCount}/{MAX_OPTION_TITLE_CHARS} characters
+                          </div>
+                        </div>
                         <button
                           onClick={() => setShowEditModal(true)}
-                          className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
+                          className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1 flex-shrink-0"
                         >
                           <Pencil size={14} />
                           Edit option
                         </button>
                       </div>
                       <div className="flex items-center gap-2 mb-4">
-                        <input
-                          type="text"
+                        <EditableText
                           value={optionDescription}
-                          onChange={(e) => setOptionDescription(e.target.value)}
+                          onChange={setOptionDescription}
+                          className="text-sm text-gray-500 dark:text-gray-400 break-words"
+                          multiline={true}
                           placeholder="Add description"
-                          className="text-sm text-gray-500 dark:text-gray-400 bg-transparent border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-primary-500 focus:outline-none px-0 py-1 w-full"
                         />
                       </div>
                     </div>
@@ -1725,10 +1794,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                         {items.filter(item => item.visible && !item.isHeading).length > 0 && (
                           <div>
                             <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                              <div className="font-medium text-gray-900 dark:text-white">{optionTitle}</div>
+                              <div className="font-medium text-gray-900 dark:text-white truncate" title={optionTitle}>{optionTitle}</div>
                             </div>
                             <div className="flex justify-between items-center py-2 pl-3">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                              <span className="text-sm text-gray-600 dark:text-gray-400 break-words">
                                 {optionDescription}
                               </span>
                             </div>
@@ -1854,12 +1923,19 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50">
           <div className="h-full flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <EditableText
-                  value={optionTitle}
-                  onChange={setOptionTitle}
-                  className="text-lg font-medium text-gray-900 dark:text-white"
-                />
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
+                  <EditableText
+                    value={optionTitle}
+                    onChange={handleOptionTitleChange}
+                    className="text-lg font-medium text-gray-900 dark:text-white truncate"
+                    maxLength={MAX_OPTION_TITLE_CHARS}
+                    placeholder="Add title"
+                  />
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {optionTitleCharCount}/{MAX_OPTION_TITLE_CHARS} characters
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setShowEditModal(false)}

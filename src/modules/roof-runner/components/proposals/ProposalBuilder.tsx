@@ -116,7 +116,7 @@ export default function ProposalBuilder({
   proposalId,
   onClose,
 }: ProposalBuilderProps) {
-  const [templateName, setTemplateName] = useState("demo");
+  const [templateName, setTemplateName] = useState("");
   const [activeSection, setActiveSection] = useState("Estimate");
   const [activeSubsection, setActiveSubsection] = useState("Option 1");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -148,8 +148,8 @@ export default function ProposalBuilder({
   const [customerEmail, setCustomerEmail] = useState("customer@email.com");
 
   // Template data states
-  const [optionTitle, setOptionTitle] = useState("Option 1");
-  const [optionDescription, setOptionDescription] = useState("Add description");
+  const [optionTitle, setOptionTitle] = useState("");
+  const [optionDescription, setOptionDescription] = useState("");
   const [itemSectionTitle, setItemSectionTitle] = useState("Item");
   const [itemDescription1, setItemDescription1] = useState("This is a testing");
   const [itemDescription2, setItemDescription2] = useState(
@@ -282,7 +282,7 @@ export default function ProposalBuilder({
       name: "Estimate",
       active: true,
       order: 1,
-      subsections: [optionTitle, "Summary"],
+      subsections: [optionTitle || "Option 1", "Summary"],
       type: "estimate",
     },
   ]);
@@ -1287,6 +1287,7 @@ export default function ProposalBuilder({
   interface EditableTextProps {
     value: string;
     onChange: (value: string) => void;
+    placeholder?: string;
     className?: string;
     multiline?: boolean;
     triggerFocus?: boolean;
@@ -1296,6 +1297,7 @@ export default function ProposalBuilder({
   const EditableText = ({
     value,
     onChange,
+    placeholder = "",
     className = "",
     multiline = false,
     triggerFocus = false,
@@ -1303,7 +1305,36 @@ export default function ProposalBuilder({
   }: EditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const isDisabled = proposalStatus === 'sent';
+
+    const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
+      let node = el?.parentElement || null;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY)) return node;
+        node = node.parentElement;
+      }
+      return null;
+    };
+
+    const autoResizeTextarea = () => {
+      const el = textareaRef.current;
+      if (!el) return;
+
+      const scrollParent = getScrollParent(el);
+      const parentScrollTop = scrollParent?.scrollTop ?? null;
+      const winX = window.scrollX;
+      const winY = window.scrollY;
+
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+
+      if (scrollParent && parentScrollTop !== null) {
+        scrollParent.scrollTop = parentScrollTop;
+      }
+      window.scrollTo(winX, winY);
+    };
 
     useEffect(() => {
       if (triggerFocus && !isDisabled) {
@@ -1316,6 +1347,12 @@ export default function ProposalBuilder({
       setTempValue(value);
     }, [value]);
 
+    useEffect(() => {
+      if (isEditing && multiline) {
+        autoResizeTextarea();
+      }
+    }, [isEditing, multiline]);
+
     const handleBlur = () => {
       setIsEditing(false);
       onChange(tempValue);
@@ -1324,11 +1361,18 @@ export default function ProposalBuilder({
     if (isEditing && !isDisabled) {
       return multiline ? (
         <textarea
+          ref={textareaRef}
           value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
+          onChange={(e) => {
+            setTempValue(e.target.value);
+            requestAnimationFrame(autoResizeTextarea);
+          }}
+          onInput={autoResizeTextarea}
           onBlur={handleBlur}
           autoFocus
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+          placeholder={placeholder}
+          rows={1}
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1 resize-none overflow-hidden`}
         />
       ) : (
         <input
@@ -1337,6 +1381,7 @@ export default function ProposalBuilder({
           onChange={(e) => setTempValue(e.target.value)}
           onBlur={handleBlur}
           autoFocus
+          placeholder={placeholder}
           className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
         />
       );
@@ -1345,9 +1390,9 @@ export default function ProposalBuilder({
     return (
       <span
         onClick={() => !isDisabled && setIsEditing(true)}
-        className={`${className} ${isDisabled ? 'cursor-default' : 'cursor-pointer'} inline-block w-full py-1`}
+        className={`${className} ${isDisabled ? 'cursor-default' : 'cursor-pointer'} inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
       >
-        {value}
+        {value || placeholder}
       </span>
     );
   };
@@ -1483,7 +1528,7 @@ export default function ProposalBuilder({
 
               <div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                   {sections.map((section, index) => (
                     <div
                       key={section.id}
@@ -1983,7 +2028,7 @@ export default function ProposalBuilder({
                         <EditableText
                           value={
                             sections.find((s) => s.name === activeSection)
-                              ?.content?.text || "Click to add title"
+                              ?.content?.text || ""
                           }
                           onChange={(val) =>
                             updateTextContent(
@@ -1994,11 +2039,12 @@ export default function ProposalBuilder({
                             )
                           }
                           className="text-2xl font-bold text-gray-900 dark:text-white mb-4 block"
+                          placeholder="Click to add title"
                         />
                         <EditableText
                           value={
                             sections.find((s) => s.name === activeSection)
-                              ?.content?.description || "Click to add description"
+                              ?.content?.description || ""
                           }
                           onChange={(val) =>
                             updateTextContent(
@@ -2010,6 +2056,7 @@ export default function ProposalBuilder({
                           }
                           className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap"
                           multiline={true}
+                          placeholder="Click to add description"
                         />
                       </div>
                     )}
@@ -2024,11 +2071,12 @@ export default function ProposalBuilder({
                         <div className="mb-6">
                           <div className="flex items-center justify-between mb-4">
                             <EditableText
-                              value={optionTitle || "Add title"}
+                              value={optionTitle}
                               onChange={setOptionTitle}
                               className="text-lg font-medium text-gray-900 dark:text-white"
                               triggerFocus={triggerFocus}
                               onFocusComplete={() => setTriggerFocus(false)}
+                              placeholder="Add title"
                             />
                             {proposalStatus !== 'sent' && (
                               <button
@@ -2042,9 +2090,10 @@ export default function ProposalBuilder({
                           </div>
                           <div className="flex items-center gap-2 mb-4">
                             <EditableText
-                              value={optionDescription || "Add description"}
+                              value={optionDescription}
                               onChange={setOptionDescription}
                               className="text-sm text-gray-500 dark:text-gray-400"
+                              placeholder="Add description"
                             />
                           </div>
                         </div>

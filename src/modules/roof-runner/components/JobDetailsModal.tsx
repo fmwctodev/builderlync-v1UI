@@ -324,14 +324,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="">Unassigned</option>
-                          {user && (
-                            <option value={currentUserAsStaff?.id || user.id}>
-                              Me ({user.firstName} {user.lastName})
+                          {currentUserAsStaff && (
+                            <option value={currentUserAsStaff.id}>
+                              Me ({currentUserAsStaff.first_name} {currentUserAsStaff.last_name})
                             </option>
                           )}
                           {staff && staff.length > 0 ? staff.map(member => (
                             // Skip if this is the "Me" user we already added
-                            (member.id === currentUserAsStaff?.id || (member.user_id === user?.id?.toString())) ? null : (
+                            (member.id === currentUserAsStaff?.id) ? null : (
                               <option key={member.id} value={member.id}>
                                 {member.first_name} {member.last_name}
                               </option>
@@ -350,14 +350,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                           <option value="">Select Job Owner</option>
-                          {user && (
-                            <option value={currentUserAsStaff?.id || user.id}>
-                              Me ({user.firstName} {user.lastName})
+                          {currentUserAsStaff && (
+                            <option value={currentUserAsStaff.id}>
+                              Me ({currentUserAsStaff.first_name} {currentUserAsStaff.last_name})
                             </option>
                           )}
                           {staff && staff.length > 0 ? staff.map(member => (
                             // Skip if this is the "Me" user we already added
-                            (member.id === currentUserAsStaff?.id || (member.user_id === user?.id?.toString())) ? null : (
+                            (member.id === currentUserAsStaff?.id) ? null : (
                               <option key={member.id} value={member.id}>
                                 {member.first_name} {member.last_name}
                               </option>
@@ -596,7 +596,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   {viewingJob?.id && (
                     <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-end">
                       <button
-                        onClick={() => navigate(`/org/${orgSlug}/proposals`)}
+                        onClick={() => navigate(`/org/${orgSlug}/proposals?JobId=${viewingJob.id}`)}
                         className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                       >
                         Create Proposal
