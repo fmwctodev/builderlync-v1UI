@@ -54,6 +54,8 @@ const EmailSyncSection: React.FC = () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
       const token = localStorage.getItem('token');
+      localStorage.setItem('oauth_email_provider', selectedProvider);
+      localStorage.setItem('oauth_return_path', window.location.pathname + window.location.search);
 
       // Get OAuth URL from backend for selected provider
       const response = await fetch(`${API_BASE_URL}/profile/email-connections/oauth-url?provider=${selectedProvider}`, {
@@ -111,10 +113,12 @@ const EmailSyncSection: React.FC = () => {
 
           window.removeEventListener('message', handleMessage);
           if (popup) popup.close();
+          localStorage.removeItem('oauth_email_provider');
         } else if (event.data.type === 'oauth-error') {
           alert('Authentication failed. Please try again.');
           setConnecting(false);
           window.removeEventListener('message', handleMessage);
+          localStorage.removeItem('oauth_email_provider');
         }
       };
 
@@ -125,11 +129,13 @@ const EmailSyncSection: React.FC = () => {
         alert('Popup was blocked. Please allow popups for this site.');
         setConnecting(false);
         window.removeEventListener('message', handleMessage);
+        localStorage.removeItem('oauth_email_provider');
       }
     } catch (err: any) {
       console.error('Error initiating OAuth:', err);
       alert('Failed to initiate authentication');
       setConnecting(false);
+      localStorage.removeItem('oauth_email_provider');
     }
   };
 

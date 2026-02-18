@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { emailOAuthService } from '../services/emailOAuthService';
 
 const EmailSyncCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -32,26 +33,65 @@ const EmailSyncCallback: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       const err = params.get('error');
+      const state = params.get('state');
+      const providerFromQuery = params.get('provider') as 'gmail' | 'outlook' | null;
 
       if (err) {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'oauth-error', error: err }, window.location.origin);
+          setTimeout(() => window.close(), 600);
+          return;
+        }
         setError(err);
         return;
       }
 
-      if (!code) {
-        setError('Missing authorization code');
+      if (!code || !state) {
+        if (window.opener) {
+          window.opener.postMessage(
+            { type: 'oauth-error', error: 'Missing authorization code or state' },
+            window.location.origin
+          );
+          setTimeout(() => window.close(), 600);
+          return;
+        }
+        setError('Missing authorization code or state');
         return;
       }
 
-      // Store code and redirect back to settings
-      const returnPath = getSettingsPath();
-      localStorage.removeItem('oauth_return_path');
-      localStorage.setItem('email_oauth_code', code);
-      
-      setStatus('Email connected! Redirecting...');
-      setTimeout(() => {
-        navigate(returnPath, { replace: true });
-      }, 1000);
+      // Popup flow: send auth data back to opener and close
+      if (window.opener) {
+        window.opener.postMessage(
+          {
+            type: 'oauth-success',
+            code,
+            state,
+          },
+          window.location.origin
+        );
+        setStatus('Email connected! Closing window...');
+        setTimeout(() => window.close(), 600);
+        return;
+      }
+
+      try {
+        setStatus('Verifying credentials...');
+        const providerFromPath = window.location.pathname.includes('outlook') ? 'outlook' : 'gmail';
+        const storedProvider = localStorage.getItem('oauth_email_provider') as 'gmail' | 'outlook' | null;
+        const provider = providerFromQuery || storedProvider || providerFromPath;
+
+        await emailOAuthService.handleOAuthCallback(code, state, provider);
+
+        const returnPath = getSettingsPath();
+        localStorage.removeItem('oauth_return_path');
+        localStorage.removeItem('oauth_email_provider');
+        setStatus('Email connected! Redirecting...');
+        setTimeout(() => {
+          navigate(returnPath, { replace: true });
+        }, 1000);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to connect email account');
+      }
     };
 
     handleCallback();
