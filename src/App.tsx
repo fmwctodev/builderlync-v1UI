@@ -36,6 +36,7 @@ function App() {
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
               <Route path="/auth/google/callback" element={<OAuthCallback />} />
               <Route path="/auth/gmail/callback" element={<OAuthOutlookCallback />} />
+              <Route path="/auth/outlook/callback" element={<OAuthOutlookCallback />} />
               <Route path="/auth/email/callback" element={<EmailSyncCallback />} />
               <Route path="/outlook-callback" element={<OAuthOutlookCallback />} />
               <Route path="/integrations/abc-supply/callback" element={<ABCSupplyCallback />} />
