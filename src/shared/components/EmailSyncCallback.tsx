@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { emailOAuthService } from '../services/emailOAuthService';
@@ -7,6 +7,7 @@ const EmailSyncCallback: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('Connecting email account...');
+  const hasHandledCallbackRef = useRef(false);
 
   const getSettingsPath = () => {
     const savedReturnPath = localStorage.getItem('oauth_return_path');
@@ -30,6 +31,8 @@ const EmailSyncCallback: React.FC = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      if (hasHandledCallbackRef.current) return;
+      hasHandledCallbackRef.current = true;
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       const err = params.get('error');
@@ -133,3 +136,5 @@ const EmailSyncCallback: React.FC = () => {
 };
 
 export default EmailSyncCallback;
+
+

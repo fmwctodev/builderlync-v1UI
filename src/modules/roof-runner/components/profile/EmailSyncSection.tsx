@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Check, Copy, Loader2 } from 'lucide-react';
 import { getEmailConnections, disconnectEmail, connectEmail, EmailConnection } from '../../../../shared/store/services/profileApi';
 
@@ -9,6 +9,7 @@ const EmailSyncSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState<'gmail' | 'outlook'>('gmail');
   const [connecting, setConnecting] = useState(false);
+  const oauthHandledRef = useRef(false);
 
   useEffect(() => {
     loadEmailConnections();
@@ -72,6 +73,7 @@ const EmailSyncSection: React.FC = () => {
 
       const authUrl = data.data.authUrl;
       const state = data.data.state;
+      oauthHandledRef.current = false;
 
       // Open OAuth popup
       const width = 500;
@@ -90,14 +92,18 @@ const EmailSyncSection: React.FC = () => {
         if (event.origin !== window.location.origin) return;
 
         if (event.data.type === 'oauth-success') {
-          const { code } = event.data;
+          if (oauthHandledRef.current) return;
+          oauthHandledRef.current = true;
+
+          const { code, state } = event.data;
 
           try {
             // Send to backend
             const response = await connectEmail({
               provider: selectedProvider,
               authCode: code,
-              email: ''
+              email: '',
+              state
             });
 
             if (response.success) {
@@ -115,6 +121,9 @@ const EmailSyncSection: React.FC = () => {
           if (popup) popup.close();
           localStorage.removeItem('oauth_email_provider');
         } else if (event.data.type === 'oauth-error') {
+          if (oauthHandledRef.current) return;
+          oauthHandledRef.current = true;
+
           alert('Authentication failed. Please try again.');
           setConnecting(false);
           window.removeEventListener('message', handleMessage);
@@ -333,3 +342,8 @@ const EmailSyncSection: React.FC = () => {
 };
 
 export default EmailSyncSection;
+
+
+
+
+

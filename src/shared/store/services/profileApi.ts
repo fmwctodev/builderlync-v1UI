@@ -103,6 +103,7 @@ export const connectEmail = async (data: {
   provider: string;
   authCode: string;
   email: string;
+  state?: string;
 }): Promise<{ success: boolean; message?: string; data: EmailConnection }> => {
   const token = localStorage.getItem('token');
   const response = await axios.post(
