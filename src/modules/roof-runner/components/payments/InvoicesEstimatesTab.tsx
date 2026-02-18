@@ -519,8 +519,10 @@ const InvoicesEstimatesTab: React.FC = () => {
                                       tax: inv.tax,
                                       shipping: inv.shipping,
                                       total: inv.total,
+                                      coupon_discount: inv.coupon_discount,
                                       status: inv.status,
                                       is_estimate: inv.is_estimate,
+                                      line_items: inv.line_items,           // JSONB line items
                                       invoice_line_items: inv.invoice_line_items,
                                       created_at: inv.created_at,
                                       updated_at: inv.updated_at
