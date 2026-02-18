@@ -59,6 +59,7 @@ import { SierraAiModule } from '../sierra-ai/SierraAiModule';
 import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
 import { useEffect } from 'react';
 import OutlookCallback from './pages/OutlookCallback';
+import EagleViewCallback from './pages/EagleViewCallback';
 
 const RootRedirect = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -146,8 +147,9 @@ export function RoofRunnerModule() {
           {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
           <Route path="support" element={<Support />} />
           <Route path="settings/*" element={<Settings />} />
-          <Route path="auth/google/callback" element={<OAuthCallback />} />
           <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
+          <Route path="integrations/eagleview/success" element={<EagleViewCallback />} />
+          <Route path="integrations/eagleview/error" element={<EagleViewCallback />} />
         </Route>
         <Route path="marketing/analytics/google-analytics" element={<ProtectedRoute><OrgProvider><GoogleAnalyticsPage /></OrgProvider></ProtectedRoute>} />
       </Routes>

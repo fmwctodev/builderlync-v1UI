@@ -234,11 +234,12 @@ class EagleViewService {
     }
   }
 
-  async getAvailableProducts(): Promise<any[]> {
+  async getAvailableProducts(paymentMethod?: 'credits' | 'account'): Promise<any[]> {
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
-      const response = await fetch(`${API_BASE_URL}/eagleview/available-products`, {
+      const url = `${API_BASE_URL}/eagleview/available-products${paymentMethod ? `?paymentMethod=${paymentMethod}` : ''}`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
