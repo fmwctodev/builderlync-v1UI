@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   Building, Users, Calendar, Mail, CreditCard,
-  Zap, Database, Shield, FileText, Palette, Settings as SettingsIcon
+  Zap, Database, Shield, FileText, Palette, Bell, Settings as SettingsIcon
 } from 'lucide-react';
 import { usePermissions } from '../../../../shared/utils/usePermissions';
 
@@ -29,6 +29,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
     // { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs`, permission: () => can('system', 'view_audit_logs') },
     { id: 'brand-board', label: 'Brand Board', icon: Palette, path: `${orgPrefix}/settings/brand-board`, permission: () => can('system', 'manage_brand') },
     { id: 'email-service', label: 'Email Service', icon: Mail, path: `${orgPrefix}/settings/email-service`, permission: () => canAccess('communications') },
+    { id: 'notifications', label: 'Notifications', icon: Bell, path: `${orgPrefix}/settings/notifications` },
   ];
 
   const tabs = allTabs.filter(tab => !tab.permission || tab.permission());

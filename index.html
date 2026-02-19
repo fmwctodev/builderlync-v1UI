@@ -12,12 +12,24 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function (OneSignal) {
+        const allowedHosts = ["app.builderlync.com"];
+        if (!allowedHosts.includes(window.location.hostname)) {
+          console.info(
+            "[OneSignal] Skipping init on non-production host:",
+            window.location.hostname
+          );
+          return;
+        }
+
         await OneSignal.init({
           appId: "beca86ea-f844-411c-b294-93f24fa8bec5",
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          serviceWorkerUpdaterPath: "/OneSignalSDK.sw.js",
+          serviceWorkerParam: { scope: "/" },
           safari_web_id:
             "web.onesignal.auto.1a1cd43f-104c-4ac2-b069-e07775f1eeb9",
           notifyButton: {
-            enable: true,
+            enable: false,
           },
         });
       });

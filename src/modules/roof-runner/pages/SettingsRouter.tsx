@@ -12,6 +12,7 @@ import Permissions from '../components/settings/Permissions';
 import AuditLogs from '../components/settings/AuditLogs';
 import BrandBoard from '../components/settings/BrandBoard';
 import EmailService from '../components/settings/EmailService';
+import Notifications from '../components/settings/Notifications';
 
 const SettingsRouter: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const SettingsRouter: React.FC = () => {
         <Route path="audit-logs" element={<AuditLogs />} />
         <Route path="brand-board" element={<BrandBoard />} />
         <Route path="email-service" element={<EmailService />} />
+        <Route path="notifications" element={<Notifications />} />
       </Routes>
     </SettingsLayout>
   );
