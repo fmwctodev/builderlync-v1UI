@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navigation } from './shared/components/Navigation';
 import { Dashboard } from './shared/components/Dashboard';
 import { ThemeProvider } from './shared/context/ThemeContext';
 import { WidgetProvider } from './shared/context/WidgetContext';
 import IncomingCallNotification from './shared/components/IncomingCallNotification';
+import { useAppSelector } from './shared/store/hooks';
+import { oneSignalService } from './shared/services/oneSignalService';
 
 // Module imports
 // import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
@@ -25,6 +28,16 @@ import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
 
 function App() {
+  const { user, token } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (user && token) {
+      oneSignalService.syncAuthenticatedUser(user);
+      return;
+    }
+    oneSignalService.clearAuthenticatedUser();
+  }, [user, token]);
+
   return (
     <ThemeProvider>
       <WidgetProvider>
