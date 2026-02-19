@@ -33,10 +33,25 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
     }
   }, [file.id, file.mime_type]);
 
+  const getFileType = () => {
+    const mime = file.mime_type.toLowerCase();
+    if (mime.startsWith('image/')) return 'Image';
+    if (mime.includes('pdf')) return 'PDF';
+    if (mime.includes('word') || mime.includes('document')) return 'Document';
+    if (mime.includes('sheet') || mime.includes('excel')) return 'Spreadsheet';
+    if (mime.includes('presentation') || mime.includes('powerpoint')) return 'Presentation';
+    if (mime.includes('video')) return 'Video';
+    if (mime.includes('audio')) return 'Audio';
+    if (mime.includes('zip') || mime.includes('rar') || mime.includes('compressed')) return 'Archive';
+    if (mime.includes('text')) return 'Text';
+    return 'File';
+  };
+
   const getFileIcon = () => {
-    if (file.mime_type.startsWith('image/')) {
+    const mime = file.mime_type.toLowerCase();
+    if (mime.startsWith('image/')) {
       return <Image className="h-12 w-12 text-blue-400" />;
-    } else if (file.mime_type === 'application/pdf') {
+    } else if (mime.includes('pdf')) {
       return <FileText className="h-12 w-12 text-red-400" />;
     } else {
       return <FileText className="h-12 w-12 text-gray-400" />;
@@ -66,7 +81,7 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete "${file.filename}"?`)) {
-      onDelete(file.id);
+      onDelete(typeof file.id === 'string' ? parseInt(file.id, 10) : file.id);
     }
     setShowDropdown(false);
   };
@@ -87,8 +102,8 @@ export default function FileCard({ file, onDelete }: FileCardProps) {
         ) : (
           <>
             {getFileIcon()}
-            <span className="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center px-2 truncate w-full">
-              {file.mime_type}
+            <span className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-400 text-center px-2 truncate w-full">
+              {getFileType()}
             </span>
           </>
         )}

@@ -242,28 +242,14 @@ class BackendFilesApiService {
     });
   }
 
-  async getFolderBreadcrumbs(folderId: string | number): Promise<FolderRecord[]> {
-    // This method might need adjustment if breadcrumbs aren't stored in DB
-    // For now returning current folder as single breadcrumb if it's a string ID
-    if (typeof folderId === 'string') {
-      const folders = await this.getFolders();
-      const current = folders.find(f => f.id === folderId);
-      return current ? [current] : [];
+  async getFolderBreadcrumbs(folderId: string | number): Promise<Array<{ id: string | number, name: string }>> {
+    try {
+      const result = await this.makeRequest(`/oauth/documents/folders/${folderId}/breadcrumbs`);
+      return result.success ? result.data : [];
+    } catch (error) {
+      console.error('Error getting breadcrumbs:', error);
+      return [];
     }
-
-    const breadcrumbs: FolderRecord[] = [];
-    let currentFolderId: string | number | null = folderId;
-
-    while (currentFolderId) {
-      const folders = await this.getFolders();
-      const folder = folders.find(f => f.id === currentFolderId);
-      if (!folder) break;
-
-      breadcrumbs.unshift(folder);
-      currentFolderId = folder.parent_id;
-    }
-
-    return breadcrumbs;
   }
 
   async getFolderContents(folderId: string | number | null): Promise<{ folders: FolderRecord[]; files: FileRecord[] }> {
