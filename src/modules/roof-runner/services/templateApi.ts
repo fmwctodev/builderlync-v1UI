@@ -60,6 +60,7 @@ export interface Template {
     sectionCount: number;
     itemCount: number;
     upgradeCount: number;
+    coverImage?: string | null;
   };
 }
 

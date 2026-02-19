@@ -662,7 +662,9 @@ export default function Proposals() {
                     <div className="text-gray-500 dark:text-gray-400">No templates found</div>
                   </div>
                 ) : (
-                  templates.map((template) => (
+                  templates.map((template) => {
+                    const coverImage = template.content?.settings?.coverImage || template.summary?.coverImage;
+                    return (
                     <div
                       key={template.id}
                       className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${selectedTemplate?.id === template.id
@@ -673,9 +675,9 @@ export default function Proposals() {
                         setSelectedTemplate(template);
                       }}
                     >
-                      {template.content?.settings?.coverImage ? (
+                      {coverImage ? (
                         <img
-                          src={template.content.settings.coverImage}
+                          src={coverImage}
                           alt={template.name}
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -691,7 +693,8 @@ export default function Proposals() {
                         </div>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

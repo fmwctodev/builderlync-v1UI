@@ -97,16 +97,18 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Add Template</span>
         </div>
 
-        {templates.map((template) => (
+        {templates.map((template) => {
+          const coverImage = template.content?.settings?.coverImage || template.summary?.coverImage;
+          return (
           <div 
             key={template.id} 
             className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => navigate(`${orgPrefix}/proposals/template/${template.id}`, { state: { from: 'templates' } })}
           >
             <div className="h-48 bg-gray-200 dark:bg-gray-600 overflow-hidden">
-              {template.content?.settings?.coverImage ? (
+              {coverImage ? (
                 <img 
-                  src={template.content.settings.coverImage} 
+                  src={coverImage} 
                   alt={template.name}
                   className="w-full h-full object-cover"
                 />
@@ -175,7 +177,8 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Rename Modal */}

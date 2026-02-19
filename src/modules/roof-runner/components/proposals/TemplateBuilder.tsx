@@ -438,14 +438,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
 
           const result = await response.json();
           if (result.success) {
-            const fileKey = result.data.key;
+            const photoUrl = result.data?.url || result.data?.key;
+            if (!photoUrl) return;
             setSections(prev => prev.map(s => 
               s.name === sectionName && s.content?.photos
                 ? {
                     ...s,
                     content: {
                       ...s.content,
-                      photos: [...s.content.photos, fileKey]
+                      photos: [...s.content.photos, photoUrl]
                     }
                   }
                 : s
