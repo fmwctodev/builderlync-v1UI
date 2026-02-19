@@ -57,10 +57,7 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
   const loadFolderContents = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading folder contents for currentFolderId:', currentFolderId);
       const { folders: loadedFolders, files: loadedFiles } = await backendFilesApi.getFolderContents(currentFolderId);
-      console.log('Loaded folders:', loadedFolders);
-      console.log('Loaded files:', loadedFiles);
       setFolders(loadedFolders);
       setFiles(loadedFiles);
     } catch (error) {

@@ -106,25 +106,42 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
         });
 
         console.log('Loading invoice with coupon_discount:', editInvoice.coupon_discount);
+        console.log('Full editInvoice data:', editInvoice);
+
+        // Load coupon if exists
+        if ((editInvoice as any).coupon_id) {
+          const couponCode = (editInvoice as any).coupon_code || '';
+          if (couponCode) {
+            const couponData = {
+              id: (editInvoice as any).coupon_id,
+              coupon_code: couponCode,
+              discount_value: editInvoice.coupon_discount || 0,
+              discount_type: 'fixed' as const
+            };
+            setAppliedCoupon(couponData as any);
+            setCouponCode(couponCode);
+            setShowCouponInput(true);
+          }
+        }
 
         // line_items is stored as JSONB in the invoices table with fields: qty, rate, discount, tax, total
         const rawLineItems = (editInvoice as any).invoice_line_items?.length
           ? (editInvoice as any).invoice_line_items.map((item: any) => ({
-            item_name: item.item_name || '',
+            item_name: item.item_name || item.product_name || item.name || '',
             description: item.description || '',
             qty: item.quantity || item.qty || 1,
-            rate: item.unit_price || item.rate || 0,
+            rate: item.unit_price || item.rate || item.price || 0,
             discount: item.discount || 0,
-            tax: 5, // Force GST @ 5%
-            total: item.amount || ((item.quantity || 1) * (item.unit_price || 0))
+            tax: 5,
+            total: item.amount || item.total || ((item.quantity || 1) * (item.unit_price || 0))
           }))
           : ((editInvoice as any).line_items || []).map((item: any) => ({
-            item_name: item.item_name || '',
+            item_name: item.item_name || item.product_name || item.name || '',
             description: item.description || '',
             qty: item.qty || item.quantity || 1,
-            rate: item.rate || item.unit_price || 0,
+            rate: item.rate || item.unit_price || item.price || 0,
             discount: item.discount || 0,
-            tax: 5, // Force GST @ 5%
+            tax: 5,
             total: item.total || item.amount || ((item.qty || 1) * (item.rate || 0))
           }));
         // Set flag synchronously via ref BEFORE setLineItems so the useEffect guard works
