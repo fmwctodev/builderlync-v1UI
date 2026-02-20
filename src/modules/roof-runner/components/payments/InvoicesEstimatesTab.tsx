@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, Plus, Filter, ChevronDown, RefreshCw, ChevronLeft, ChevronRight, X, Eye } from 'lucide-react';
+import { FileText, Plus, Filter, ChevronDown, RefreshCw, ChevronLeft, ChevronRight, X, Eye, Trash2 } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { fetchInvoices, Invoice as PaymentInvoice, syncQuickBooksInvoices } from '../../../../shared/store/services/paymentsApi';
+import { fetchInvoices, Invoice as PaymentInvoice, syncQuickBooksInvoices, deleteInvoice } from '../../../../shared/store/services/paymentsApi';
 import CreateInvoiceModal from './CreateInvoiceModal';
 
 type SubView = 'all_invoices' | 'recurring_invoices' | 'templates' | 'estimates';
@@ -79,32 +79,35 @@ const InvoicesEstimatesTab: React.FC = () => {
       console.log('Loading invoices...');
       const response = await fetchInvoices({ is_estimate: false });
       console.log('Invoice response:', response);
-      setInvoices(response.map((inv: any) => ({
-        id: inv.id,
-        doc_number: inv.invoice_number,
-        customer_name: inv.customer_name,
-        total_amount: inv.total || 0,
-        balance: inv.balance ?? 0,
-        due_date: inv.due_date,
-        invoice_date: inv.issue_date || inv.invoice_date,
-        status: inv.status,
-        currency_code: inv.currency_code || 'USD',
-        email_status: inv.email_status || '',
-        customer_email: inv.customer_email || null,
-        customer_phone: inv.customer_phone || null,
-        billing_address: inv.billing_address || null,
-        shipping_address: inv.shipping_address || null,
-        ship_method: inv.ship_method || null,
-        ship_date: inv.ship_date || null,
-        tracking_number: inv.tracking_number || null,
-        private_note: inv.notes || inv.private_note,
-        customer_memo: inv.message_to_customer || inv.customer_memo,
-        po_number: inv.po_number || null,
-        payment_terms: inv.payment_terms || null,
-        contacts: inv.contacts,
-        invoice_line_items: inv.invoice_line_items || [],
-        rawData: inv
-      })));
+      setInvoices(response.map((inv: any) => {
+        return {
+          id: inv.id,
+          doc_number: inv.invoice_number,
+          customer_name: inv.customer_name,
+          total_amount: inv.total || 0,
+          balance: inv.balance ?? 0,
+          due_date: inv.due_date,
+          invoice_date: inv.issue_date || inv.invoice_date,
+          status: inv.status,
+          currency_code: inv.currency_code || 'USD',
+          email_status: inv.email_status || '',
+          customer_email: inv.customer_email || null,
+          customer_phone: inv.customer_phone || null,
+          billing_address: inv.billing_address || null,
+          shipping_address: inv.shipping_address || null,
+          ship_method: inv.ship_method || null,
+          ship_date: inv.ship_date || null,
+          tracking_number: inv.tracking_number || null,
+          private_note: inv.notes || inv.private_note,
+          customer_memo: inv.message_to_customer || inv.customer_memo,
+          po_number: inv.po_number || null,
+          payment_terms: inv.payment_terms || null,
+          contacts: inv.contacts,
+          invoice_line_items: inv.invoice_line_items || [],
+          coupon_code: inv.coupon_code || null,
+          rawData: inv
+        };
+      }));
     } catch (error) {
       console.error('Error loading invoices:', error);
     } finally {
@@ -503,39 +506,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const inv = invoice.rawData;
-                                    setEditInvoice({
-                                      id: inv.id.toString(),
-                                      invoice_number: inv.invoice_number,
-                                      customer_id: inv.customer_id,
-                                      customer_name: inv.customer_name,
-                                      issue_date: inv.issue_date,
-                                      due_date: inv.due_date,
-                                      po_number: inv.po_number,
-                                      payment_terms: inv.payment_terms,
-                                      notes: inv.notes,
-                                      message_to_customer: inv.message_to_customer,
-                                      subtotal: inv.subtotal,
-                                      discount: inv.discount,
-                                      tax: inv.tax,
-                                      shipping: inv.shipping,
-                                      total: inv.total,
-                                      status: inv.status,
-                                      is_estimate: inv.is_estimate,
-                                      invoice_line_items: inv.invoice_line_items,
-                                      created_at: inv.created_at,
-                                      updated_at: inv.updated_at
-                                    } as any);
-                                    setIsViewOnly(true);
-                                    setShowInvoiceModal(true);
-                                  }}
-                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-                                  title="View Details"
-                                >
-                                  <Eye className="w-5 h-5" />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const inv = invoice.rawData;
+                                    
                                     setEditInvoice({
                                       id: inv.id.toString(),
                                       invoice_number: inv.invoice_number,
@@ -559,9 +530,58 @@ const InvoicesEstimatesTab: React.FC = () => {
                                       tax: inv.tax,
                                       shipping: inv.shipping,
                                       total: inv.total,
+                                      coupon_discount: inv.coupon_discount,
+                                      coupon_id: inv.coupon_id,
+                                      coupon_code: inv.coupon_code,
+                                      status: inv.status,
+                                      is_estimate: inv.is_estimate,
+                                      line_items: inv.line_items,
+                                      invoice_line_items: inv.invoice_line_items,
+                                      created_at: inv.created_at,
+                                      updated_at: inv.updated_at
+                                    } as any);
+                                    setIsViewOnly(true);
+                                    setShowInvoiceModal(true);
+                                  }}
+                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const inv = invoice.rawData;
+                                    
+                                    setEditInvoice({
+                                      id: inv.id.toString(),
+                                      invoice_number: inv.invoice_number,
+                                      customer_id: inv.customer_id,
+                                      customer_name: inv.customer_name,
+                                      customer_email: inv.customer_email,
+                                      customer_phone: inv.customer_phone,
+                                      billing_address: inv.billing_address,
+                                      shipping_address: inv.shipping_address,
+                                      issue_date: inv.issue_date,
+                                      due_date: inv.due_date,
+                                      po_number: inv.po_number,
+                                      payment_terms: inv.payment_terms,
+                                      ship_method: inv.ship_method,
+                                      ship_date: inv.ship_date,
+                                      tracking_number: inv.tracking_number,
+                                      notes: inv.notes,
+                                      message_to_customer: inv.message_to_customer,
+                                      subtotal: inv.subtotal,
+                                      discount: inv.discount,
+                                      tax: inv.tax,
+                                      shipping: inv.shipping,
+                                      total: inv.total,
+                                      coupon_discount: inv.coupon_discount,
+                                      coupon_id: inv.coupon_id,
+                                      coupon_code: inv.coupon_code,
                                       status: inv.status,
                                       is_estimate: inv.is_estimate,
                                       invoice_line_items: inv.invoice_line_items,
+                                      line_items: inv.line_items,
                                       created_at: inv.created_at,
                                       updated_at: inv.updated_at
                                     } as any);
@@ -571,6 +591,23 @@ const InvoicesEstimatesTab: React.FC = () => {
                                   className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                                 >
                                   Edit
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(`Are you sure you want to delete invoice ${invoice.doc_number}? This will delete it from both the database and QuickBooks.`)) {
+                                      try {
+                                        await deleteInvoice(invoice.id.toString());
+                                        await loadData();
+                                      } catch (error) {
+                                        console.error('Error deleting invoice:', error);
+                                        alert('Failed to delete invoice');
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                                  title="Delete Invoice"
+                                >
+                                  <Trash2 className="w-5 h-5" />
                                 </button>
                               </div>
                             </td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Upload, Edit2, Check } from 'lucide-react';
 import { createInvoice, updateInvoice, Invoice } from '../../../../shared/store/services/paymentsApi';
 import { getActiveCoupons, validateCoupon, Coupon } from '../../../../shared/store/services/couponsApi';
@@ -37,12 +37,14 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
   const [jobs, setJobs] = useState<any[]>([]);
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  // useRef so it's synchronous — useState would be async and miss the first render
+  const isLoadingExistingRef = useRef(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([{
     description: '',
     qty: 1,
     rate: 0,
     discount: 0,
-    tax: 0,
+    tax: 5, // Static GST @ 5%
     total: 0
   }]);
 
@@ -103,20 +105,56 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
           job_id: (editInvoice as any).job_id ? String((editInvoice as any).job_id) : ''
         });
 
-        const rawLineItems = (editInvoice as any).invoice_line_items || editInvoice.line_items || [];
-        if (rawLineItems.length > 0) {
-          setLineItems(rawLineItems.map((item: any) => ({
-            item_name: item.item_name || '',
+        console.log('Loading invoice with coupon_discount:', editInvoice.coupon_discount);
+        console.log('Full editInvoice data:', editInvoice);
+
+        // Load coupon if exists
+        if ((editInvoice as any).coupon_id) {
+          const couponCode = (editInvoice as any).coupon_code || '';
+          if (couponCode) {
+            const couponData = {
+              id: (editInvoice as any).coupon_id,
+              coupon_code: couponCode,
+              discount_value: editInvoice.coupon_discount || 0,
+              discount_type: 'fixed' as const
+            };
+            setAppliedCoupon(couponData as any);
+            setCouponCode(couponCode);
+            setShowCouponInput(true);
+          }
+        }
+
+        // line_items is stored as JSONB in the invoices table with fields: qty, rate, discount, tax, total
+        const rawLineItems = (editInvoice as any).invoice_line_items?.length
+          ? (editInvoice as any).invoice_line_items.map((item: any) => ({
+            item_name: item.item_name || item.product_name || item.name || '',
             description: item.description || '',
             qty: item.quantity || item.qty || 1,
-            rate: item.unit_price || item.rate || 0,
+            rate: item.unit_price || item.rate || item.price || 0,
             discount: item.discount || 0,
-            tax: item.tax || 0,
-            total: item.amount || item.total || 0
-          })));
+            tax: 5,
+            total: item.amount || item.total || ((item.quantity || 1) * (item.unit_price || 0))
+          }))
+          : ((editInvoice as any).line_items || []).map((item: any) => ({
+            item_name: item.item_name || item.product_name || item.name || '',
+            description: item.description || '',
+            qty: item.qty || item.quantity || 1,
+            rate: item.rate || item.unit_price || item.price || 0,
+            discount: item.discount || 0,
+            tax: 5,
+            total: item.total || item.amount || ((item.qty || 1) * (item.rate || 0))
+          }));
+        // Set flag synchronously via ref BEFORE setLineItems so the useEffect guard works
+        isLoadingExistingRef.current = true;
+        if (rawLineItems.length > 0) {
+          setLineItems(rawLineItems);
         } else {
-          setLineItems([{ description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+          setLineItems([{ description: '', qty: 1, rate: 0, discount: 0, tax: 5, total: 0 }]);
         }
+        // Clear flag after a tick - do NOT recalculate for view mode, keep stored values
+        setTimeout(() => {
+          isLoadingExistingRef.current = false;
+        }, 100);
       }
       else {
         generateInvoiceNumber();
@@ -129,7 +167,12 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
   }, [isOpen, editInvoice, invoiceType]);
 
   useEffect(() => {
-    calculateTotals();
+    // Only auto-recalculate for NEW invoices. For existing invoices (view/edit),
+    // the stored subtotal/tax/total from DB are already set and should not be overwritten
+    // unless the user actually changes a line item.
+    if (!isLoadingExistingRef.current) {
+      calculateTotals(lineItems, formData.discount, formData.shipping, appliedCoupon);
+    }
   }, [lineItems, formData.discount, formData.shipping, appliedCoupon]);
 
   const loadCustomers = async () => {
@@ -181,26 +224,70 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
     setFormData(prev => ({ ...prev, invoice_number: `${prefix}-${timestamp}` }));
   };
 
-  const calculateTotals = () => {
-    const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
-    const tax = lineItems.reduce((sum, item) => sum + (item.total * item.tax / 100), 0);
-    let coupon_discount = 0;
+  const calculateTotals = (
+    items = lineItems,
+    manualDiscount = formData.discount || 0,
+    shipping = formData.shipping || 0,
+    coupon = appliedCoupon
+  ) => {
+    // Step 1: subtotal = sum of (qty × rate), before any discounts
+    const subtotal = parseFloat(items.reduce((sum, item) => sum + (item.qty * item.rate), 0).toFixed(2));
 
-    if (appliedCoupon) {
-      if (appliedCoupon.discount_type === 'percentage') {
-        coupon_discount = subtotal * (appliedCoupon.discount_value / 100);
+    // Step 2: per-line discounts (percentage off each line's base amount)
+    const lineDiscountTotal = parseFloat(items.reduce((sum, item) => {
+      return sum + ((item.qty * item.rate) * ((item.discount || 0) / 100));
+    }, 0).toFixed(2));
+
+    // Step 3: coupon discount (applied on subtotal)
+    let coupon_discount = 0;
+    if (coupon) {
+      if (coupon.discount_type === 'percentage') {
+        coupon_discount = parseFloat((subtotal * (coupon.discount_value / 100)).toFixed(2));
       } else {
-        coupon_discount = appliedCoupon.discount_value;
+        coupon_discount = parseFloat(coupon.discount_value.toFixed(2));
       }
     }
 
-    const total = subtotal + tax + formData.shipping - formData.discount - coupon_discount;
-    setFormData(prev => ({ ...prev, subtotal, tax, total, coupon_discount }));
+    // Step 4: total discount = line discounts + coupon + manual
+    const totalDiscounts = parseFloat((lineDiscountTotal + coupon_discount + manualDiscount).toFixed(2));
+
+    // Step 5: taxable base = subtotal minus ALL discounts (matches QBO exactly)
+    const taxableBase = parseFloat(Math.max(0, subtotal - totalDiscounts).toFixed(2));
+
+    // Step 6: tax = taxable base × weighted average tax rate across lines
+    // We apply each line's tax% proportionally to the taxable base
+    const weightedTaxRate = subtotal > 0
+      ? items.reduce((sum, item) => sum + ((item.qty * item.rate) / subtotal * (item.tax || 0)), 0)
+      : 0;
+    const tax = parseFloat((taxableBase * weightedTaxRate / 100).toFixed(2));
+
+    // Step 7: final total
+    const total = parseFloat((taxableBase + tax + shipping).toFixed(2));
+
+    console.log('Invoice Calculation:', {
+      subtotal,
+      lineDiscountTotal,
+      coupon_discount,
+      manualDiscount,
+      totalDiscounts,
+      taxableBase,
+      weightedTaxRate,
+      tax,
+      shipping,
+      total
+    });
+
+    setFormData(prev => ({ ...prev, subtotal, tax, total, coupon_discount, discount: manualDiscount }));
   };
 
   const handleSelectCustomer = (customer: any) => {
-    const customerName = customer.fullName || customer.first_name + ' ' + customer.last_name;
-    setFormData({ ...formData, customer_id: customer.id, customer_name: customerName });
+    const customerName = customer.full_name || customer.fullName || `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    setFormData({
+      ...formData,
+      customer_id: customer.id,
+      customer_name: customerName,
+      customer_email: customer.email || formData.customer_email  // Auto-fill email from contact
+    });
     setCustomerSearch(customerName);
     setShowCustomerList(false);
   };
@@ -234,16 +321,20 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
 
   const handleLineItemChange = (index: number, field: keyof LineItem, value: any) => {
     const updatedItems = [...lineItems];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    const parsedValue = (field === 'qty' || field === 'rate' || field === 'discount' || field === 'tax')
+      ? parseFloat(value) || 0
+      : value;
+    updatedItems[index] = { ...updatedItems[index], [field]: parsedValue };
     const item = updatedItems[index];
     const baseAmount = item.qty * item.rate;
-    const discountAmount = baseAmount * (item.discount / 100);
-    item.total = baseAmount - discountAmount;
+    const discountAmount = baseAmount * ((item.discount || 0) / 100);
+    // total = post line-item discount (used for display in the row)
+    item.total = parseFloat((baseAmount - discountAmount).toFixed(2));
     setLineItems(updatedItems);
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { item_name: '', description: '', qty: 1, rate: 0, discount: 0, tax: 0, total: 0 }]);
+    setLineItems([...lineItems, { item_name: '', description: '', qty: 1, rate: 0, discount: 0, tax: 5, total: 0 }]);
   };
 
   const removeLineItem = (index: number) => {
@@ -256,6 +347,23 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validate email if sending to QuickBooks
+    if (sendToQuickBooks && !formData.customer_email) {
+      setError('Customer email is required to send invoice to QuickBooks');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    if (sendToQuickBooks && formData.customer_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.customer_email)) {
+        setError('Please enter a valid customer email address');
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       const invoiceData: any = {
@@ -379,13 +487,17 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 )}
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Customer Email <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="email"
+                    required
                     value={formData.customer_email || ''}
                     disabled={isViewOnly}
                     onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    placeholder="customer@example.com"
                   />
                 </div>
               </div>
@@ -545,7 +657,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                   <div className="col-span-1">Qty</div>
                   <div className="col-span-1">Rate</div>
                   <div className="col-span-1">Discount %</div>
-                  <div className="col-span-1">Tax %</div>
+                  <div className="col-span-1">Tax (GST 5%)</div>
                   <div className="col-span-2">Total</div>
                   {!isViewOnly && <div className="col-span-1">Action</div>}
                 </div>
@@ -559,7 +671,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                         value={item.item_name || ''}
                         disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'item_name', e.target.value)}
-                        className="col-span-3 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="text"
@@ -581,7 +693,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                         value={item.rate}
                         disabled={isViewOnly}
                         onChange={(e) => handleLineItemChange(index, 'rate', parseFloat(e.target.value) || 0)}
-                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
                       />
                       <input
                         type="number"
@@ -592,12 +704,13 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                       />
                       <input
                         type="number"
-                        value={item.tax}
-                        disabled={isViewOnly}
-                        onChange={(e) => handleLineItemChange(index, 'tax', parseFloat(e.target.value) || 0)}
-                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                        value={5}
+                        disabled
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white opacity-75"
                       />
-                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white font-medium">${item.total.toFixed(2)}</div>
+                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white font-medium">
+                        ${(item.total > 0 ? item.total : ((item.qty * item.rate) * (1 - (item.discount || 0) / 100))).toFixed(2)}
+                      </div>
                       {!isViewOnly && (
                         <button type="button" onClick={() => removeLineItem(index)} className="col-span-1 text-red-600 hover:text-red-700 justify-self-center">
                           <Trash2 className="w-4 h-4" />
@@ -719,44 +832,56 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                  <span className="text-gray-900 dark:text-white font-medium">${formData.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Discount</span>
-                  <input
-                    type="number"
-                    value={formData.discount}
-                    disabled={isViewOnly}
-                    onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right disabled:opacity-50"
-                  />
-                </div>
-                {appliedCoupon && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Coupon ({appliedCoupon.coupon_code})</span>
-                    <span className="text-green-600 dark:text-green-400">-${formData.coupon_discount.toFixed(2)}</span>
+              <div>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Additional Discount ($)</label>
+                    <input
+                      type="number"
+                      value={formData.discount}
+                      disabled={isViewOnly}
+                      onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    />
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                  <span className="text-gray-900 dark:text-white">${formData.tax.toFixed(2)}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shipping ($)</label>
+                    <input
+                      type="number"
+                      value={formData.shipping}
+                      disabled={isViewOnly}
+                      onChange={(e) => setFormData({ ...formData, shipping: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Shipping</span>
-                  <input
-                    type="number"
-                    value={formData.shipping}
-                    disabled={isViewOnly}
-                    onChange={(e) => setFormData({ ...formData, shipping: parseFloat(e.target.value) || 0 })}
-                    className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right disabled:opacity-50"
-                  />
-                </div>
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-semibold">
-                  <span className="text-gray-900 dark:text-white">Total:</span>
-                  <span className="text-gray-900 dark:text-white">${formData.total.toFixed(2)}</span>
+                <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                    <span className="text-gray-900 dark:text-white font-medium">${formData.subtotal.toFixed(2)}</span>
+                  </div>
+                  {((formData.discount || 0) + (formData.coupon_discount || 0) > 0) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                      <span className="text-red-600 dark:text-red-400">-${((formData.discount || 0) + (formData.coupon_discount || 0)).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {formData.tax > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">GST @ 5%</span>
+                      <span className="text-gray-900 dark:text-white">${formData.tax.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {formData.shipping > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Shipping</span>
+                      <span className="text-gray-900 dark:text-white">${formData.shipping.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-semibold">
+                    <span className="text-gray-900 dark:text-white">Total:</span>
+                    <span className="text-gray-900 dark:text-white">${formData.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>

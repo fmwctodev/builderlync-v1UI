@@ -180,7 +180,7 @@ class EagleViewService {
     }
   }
 
-  async getOrderStatus(orderId: string): Promise<EagleViewReport | null> {
+  async getOrderStatus(_orderId: string): Promise<EagleViewReport | null> {
     console.log('Order status endpoint not available');
     return null;
   }
@@ -214,7 +214,7 @@ class EagleViewService {
     }
   }
 
-  async downloadReport(reportId: string, format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
+  async downloadReport(reportId: string, _format: 'pdf' | 'xml' | 'dxf'): Promise<Blob | null> {
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
@@ -234,11 +234,12 @@ class EagleViewService {
     }
   }
 
-  async getAvailableProducts(): Promise<any[]> {
+  async getAvailableProducts(paymentMethod?: 'credits' | 'account'): Promise<any[]> {
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
-      const response = await fetch(`${API_BASE_URL}/eagleview/available-products`, {
+      const url = `${API_BASE_URL}/eagleview/available-products${paymentMethod ? `?paymentMethod=${paymentMethod}` : ''}`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -253,6 +254,28 @@ class EagleViewService {
     } catch (error) {
       console.error('Failed to fetch available products:', error);
       return [];
+    }
+  }
+
+  async getAccountDetails(): Promise<any> {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const response = await fetch(`${API_BASE_URL}/eagleview/account-details`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      console.error('Failed to fetch account details:', error);
+      throw error;
     }
   }
 

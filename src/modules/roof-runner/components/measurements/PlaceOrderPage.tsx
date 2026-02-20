@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Wallet, Download, Check, FileText, AlertCircle, ChevronRight, MapPin } from 'lucide-react';
+import { ArrowLeft, Wallet, Download, Check, FileText, AlertCircle, ChevronRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AddressSearch from './AddressSearch';
 import { eagleViewService } from '../../services/eagleViewService';
@@ -46,18 +46,42 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
 
   useEffect(() => {
     loadConnectionStatus();
-    loadAvailableProducts();
   }, []);
 
-  const loadAvailableProducts = async () => {
+  useEffect(() => {
+    loadAvailableProducts(paymentMethod);
+  }, [paymentMethod]);
+
+  const loadAvailableProducts = async (currentPaymentMethod?: 'credits' | 'account' | null) => {
     try {
       setProductsLoading(true);
-      const products = await eagleViewService.getAvailableProducts();
+      // Explicitly pass the payment method to ensure correct account products are fetched
+      const products = await eagleViewService.getAvailableProducts(currentPaymentMethod || undefined);
       setAvailableProducts(products);
     } catch (error) {
       console.error('Failed to load available products', error);
     } finally {
       setProductsLoading(false);
+    }
+  };
+
+  const checkBillingStatus = async () => {
+    try {
+      setLoading(true);
+      const details = await eagleViewService.getAccountDetails();
+      if (details && details.billingExists === false) {
+        const confirmRedirect = window.confirm("You don't have billing information. Please add it first. You will be redirected to EagleView to add your billing information.");
+        if (confirmRedirect) {
+          window.open('https://apps.eagleview.com/myev/billing-information', '_blank');
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to check billing status', error);
+      return true; // Continue if check fails? Or maybe show error.
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,9 +92,10 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
       const status = (response as any).data || response;
       setConnectionStatus(status);
 
+      // If connected, default to 'account' but don't force step change 
+      // so user can still choose credits if they want.
       if (status.connected) {
         setPaymentMethod('account');
-        setStep('product-selection');
       }
     } catch (error) {
       console.error('Failed to load connection status', error);
@@ -146,6 +171,10 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div
               onClick={() => {
+                if (!connectionStatus.connected && (connectionStatus.credits || 0) <= 0) {
+                  setShowBuyCredits(true);
+                  return;
+                }
                 setPaymentMethod('credits');
                 setStep('product-selection');
               }}
@@ -172,10 +201,13 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
             </div>
 
             <div
-              onClick={() => {
+              onClick={async () => {
                 if (connectionStatus.connected && connectionStatus.usingOwnAccount) {
                   setPaymentMethod('account');
-                  setStep('product-selection');
+                  const hasBilling = await checkBillingStatus();
+                  if (hasBilling) {
+                    setStep('product-selection');
+                  }
                 } else {
                   navigate(`/org/${orgSlug}/settings/integrations`);
                 }
@@ -214,6 +246,13 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               </div>
             </div>
           </div>
+
+          <BuyCreditsModal
+            isOpen={showBuyCredits}
+            onClose={() => setShowBuyCredits(false)}
+            currentBalance={connectionStatus.credits}
+            orgSlug={orgSlug || ''}
+          />
         </div>
       </div>
     );
@@ -228,7 +267,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
       <div className="space-y-6">
         <div>
           <button
-            onClick={() => connectionStatus.connected ? onBack() : setStep('payment-method')}
+            onClick={() => setStep('payment-method')}
             className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-4 text-sm"
           >
             <ArrowLeft className="w-4 h-4" /> {connectionStatus.connected ? 'Back' : 'Back to account selection'}
@@ -312,58 +351,81 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
 
           <div className="space-y-4">
             {productsLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading products...</div>
+              <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl space-y-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                <p className="text-gray-500">Fetching available products...</p>
+              </div>
             ) : availableProducts.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No products available. Please check your EagleView connection.</div>
-            ) : (
-              availableProducts.map(product => (
-                <div
-                  key={product.productID}
-                  onClick={() => setSelectedOptionId(product.productID.toString())}
-                  className={`bg-white dark:bg-gray-800 p-6 rounded-lg border transition-all cursor-pointer ${selectedOptionId === product.productID.toString()
-                    ? 'border-blue-500 ring-1 ring-blue-500'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
-                    }`}
+              <div className="p-8 text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-1">No products available</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                  {paymentMethod === 'credits'
+                    ? "We couldn't reach the EagleView service. Please check your internet or try again in a moment."
+                    : "We couldn't find any products associated with your connected account. Please verify your EagleView subscription."}
+                </p>
+                <button
+                  onClick={() => loadAvailableProducts(paymentMethod)}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-bold text-gray-900 dark:text-white text-lg">{product.name}</h4>
-                        {product.isRoofProduct && (
-                          <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-blue-100 text-blue-700">
-                            Roof
-                          </span>
-                        )}
-                        {product.isTemporarilyUnavailable && (
-                          <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-red-100 text-red-700">
-                            Unavailable
-                          </span>
+                  Retry
+                </button>
+              </div>
+            ) : (
+              availableProducts.map((product) => {
+                const productId = product.ProductId || product.productID;
+                if (productId === undefined || productId === null) return null;
+                const productIdStr = productId.toString();
+
+                return (
+                  <div
+                    key={productIdStr}
+                    onClick={() => setSelectedOptionId(productIdStr)}
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer bg-white dark:bg-gray-800 flex items-center justify-between group ${selectedOptionId === productIdStr
+                      ? 'border-primary-500 ring-1 ring-primary-500 shadow-sm'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
+                      }`}
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h4 className="font-bold text-gray-900 dark:text-white text-lg">{product.name}</h4>
+                          {product.isRoofProduct && (
+                            <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-blue-100 text-blue-700">
+                              Roof
+                            </span>
+                          )}
+                          {product.isTemporarilyUnavailable && (
+                            <span className="text-xs uppercase px-2 py-0.5 rounded font-semibold bg-red-100 text-red-700">
+                              Unavailable
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-500">{product.description}</p>
+                        {product.DetailedDescription && (
+                          <div className="text-xs text-gray-400 mt-2 whitespace-pre-line">
+                            {product.DetailedDescription}
+                          </div>
                         )}
                       </div>
-                      <p className="text-gray-500">{product.description}</p>
-                      {product.DetailedDescription && (
-                        <div className="text-xs text-gray-400 mt-2 whitespace-pre-line">
-                          {product.DetailedDescription}
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                            {product.priceMin === 0 && product.priceMax === 0 ? 'Price TBD' : `$${product.priceMin} - $${product.priceMax}`}
+                          </span>
+                          <div className="text-xs text-gray-500">
+                            {calculateTotalCredits()} Credits
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                          {product.priceMin === 0 && product.priceMax === 0 ? 'Price TBD' : `$${product.priceMin} - $${product.priceMax}`}
-                        </span>
-                        <div className="text-xs text-gray-500">
-                          {calculateTotalCredits()} Credits
+                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${selectedOptionId === productIdStr ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                          }`}>
+                          {selectedOptionId === productIdStr && <Check className="w-4 h-4 text-white" />}
                         </div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${selectedOptionId === product.productID.toString() ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                        }`}>
-                        {selectedOptionId === product.productID.toString() && <Check className="w-4 h-4 text-white" />}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
