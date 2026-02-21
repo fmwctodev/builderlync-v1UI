@@ -135,10 +135,10 @@ export function RoofRunnerModule() {
           {/* <Route path="automation" element={<Automations />} /> */}
           <Route path="opportunities" element={<Opportunities />} />
           <Route path="marketing" element={<Marketing />} />
-          <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
           <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
           <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
           <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
+          <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
           <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
           <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
           <Route path="file-manager" element={<FileManager />} />
