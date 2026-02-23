@@ -1,10 +1,9 @@
-import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAppSelector } from './store/hooks';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
-import BlankPage from './pages/BlankPage';
 import JobCam from './pages/JobCam';
 import Measurements from './pages/Measurements';
 import { PaymentSuccess } from './components/measurements/PaymentSuccess';
@@ -26,20 +25,20 @@ import MaterialSetup from './pages/MaterialSetup';
 import MaterialsList from './pages/MaterialsList';
 import EditMaterial from './pages/EditMaterial';
 import ConversationsNew from './pages/ConversationsNew';
-import { AIAgentsModule } from '../ai-agents/AIAgentsModule';
 import Contacts from './pages/Contacts';
 import ContactProfile from './pages/ContactProfile';
 import WorkOrders from './pages/WorkOrders';
-import Automations from './pages/Automations';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
-import Reputation from './pages/Reputation';
 import Marketing from './pages/Marketing';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import { GoogleAnalyticsPage } from './pages/GoogleAnalyticsPage';
 import { GoogleAnalyticsCallback } from './pages/GoogleAnalyticsCallback';
 import GoogleBusinessPage from './pages/GoogleBusinessPage';
 import GoogleAdsPage from './pages/GoogleAdsPage';
+import FacebookAdsPage from './pages/FacebookAdsPage';
+import TikTokAdsPage from './pages/TikTokAdsPage';
+import SocialAdsCallback from './components/settings/SocialAdsCallback';
 import Catalog from './pages/Catalog';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
@@ -99,7 +98,10 @@ export function RoofRunnerModule() {
         <Route path="auth/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
         <Route path="auth/set-password" element={<SetPassword />} />
         <Route path="auth/google-analytics/callback" element={<GoogleAnalyticsCallback />} />
+        <Route path="auth/facebook-ads/callback" element={<SocialAdsCallback platform="facebook" />} />
+        <Route path="auth/tiktok-ads/callback" element={<SocialAdsCallback platform="tiktok" />} />
         <Route path="oauth/google-drive/callback" element={<OAuthCallback />} />
+        <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
         <Route path="oauth/onedrive/callback" element={<OAuthCallback />} />
         <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
         <Route path="proposal/view" element={<PublicProposalView />} />
@@ -138,6 +140,8 @@ export function RoofRunnerModule() {
           <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
           <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
           <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
+          <Route path="marketing/analytics/facebook-ads" element={<FacebookAdsPage />} />
+          <Route path="marketing/analytics/tiktok-ads" element={<TikTokAdsPage />} />
           <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
           <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
           <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
@@ -147,7 +151,7 @@ export function RoofRunnerModule() {
           {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
           <Route path="support" element={<Support />} />
           <Route path="settings/*" element={<Settings />} />
-          <Route path="auth/microsoft/callback" element={<OAuthCallback />} />
+
           <Route path="integrations/eagleview/success" element={<EagleViewCallback />} />
           <Route path="integrations/eagleview/error" element={<EagleViewCallback />} />
         </Route>

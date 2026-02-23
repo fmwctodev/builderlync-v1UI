@@ -1,4 +1,4 @@
-import { getAuthToken } from '../utils/auth';
+import { getAuthToken, logoutAndRedirect } from '../utils/auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
@@ -19,10 +19,19 @@ export interface CloudDriveConnection {
   updated_at: string;
 }
 
+const request = async (url: string, options: RequestInit = {}) => {
+  const response = await fetch(url, options);
+  if (response.status === 401) {
+    logoutAndRedirect();
+    throw new Error('Unauthorized');
+  }
+  return response;
+};
+
 export const cloudDriveApi = {
   async getConnection(): Promise<CloudDriveConnection | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/file-manager/connection`, {
+      const response = await request(`${API_BASE_URL}/file-manager/connection`, {
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
@@ -53,7 +62,7 @@ export const cloudDriveApi = {
     connectionData: Partial<CloudDriveConnection>
   ): Promise<CloudDriveConnection> {
     console.log("connectionData", connectionData);
-    const response = await fetch(`${API_BASE_URL}/file-manager/connection`, {
+    const response = await request(`${API_BASE_URL}/file-manager/connection`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -92,7 +101,7 @@ export const cloudDriveApi = {
     };
     console.log('OAuth payload:', payload);
 
-    const response = await fetch(`${API_BASE_URL}/file-manager/connection`, {
+    const response = await request(`${API_BASE_URL}/file-manager/connection`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -114,7 +123,7 @@ export const cloudDriveApi = {
     connectionId: string,
     updates: Partial<CloudDriveConnection>
   ): Promise<CloudDriveConnection> {
-    const response = await fetch(`${API_BASE_URL}/file-manager/connection/${connectionId}`, {
+    const response = await request(`${API_BASE_URL}/file-manager/connection/${connectionId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -132,7 +141,7 @@ export const cloudDriveApi = {
   },
 
   async deleteConnection(connectionId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/file-manager/connection/${connectionId}`, {
+    const response = await request(`${API_BASE_URL}/file-manager/connection/${connectionId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -183,7 +192,7 @@ export const cloudDriveApi = {
 
   async syncFiles(): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/file-manager/sync`, {
+      const response = await request(`${API_BASE_URL}/file-manager/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -215,5 +224,26 @@ export const cloudDriveApi = {
       }
       throw error;
     }
+  },
+
+  async listFiles(rootFolderId?: string): Promise<any[]> {
+    const response = await request(`${API_BASE_URL}/file-manager/tree?rootFolderId=${rootFolderId || ''}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch files');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  async listFolders(rootFolderId?: string): Promise<any[]> {
+    const items = await this.listFiles(rootFolderId);
+    return items.filter(item => item.type === 'folder');
   },
 };

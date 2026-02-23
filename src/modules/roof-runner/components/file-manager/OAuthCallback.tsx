@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { cloudAuthService } from '../../../../shared/services/cloudAuthService';
@@ -8,8 +8,12 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const handleCallback = async () => {
       try {
         const code = searchParams.get('code');
@@ -25,25 +29,58 @@ export default function OAuthCallback() {
         }
 
         setMessage('Connecting your cloud drive...');
-        
+
         const connection = await cloudAuthService.handleOAuthCallback(code, state);
-        
+
+        if (!initialized.current) return; // Cleanup check
+
         setStatus('success');
         setMessage(`Successfully connected ${connection.provider}!`);
-        
-        // Redirect to file manager after 2 seconds
+
+        // Get return path or organization slug
+        const returnPath = localStorage.getItem('oauth_return_path');
+        const orgSlug = localStorage.getItem('currentOrganizationSlug') || localStorage.getItem('companySlug');
+
+        let redirectPath = '/file-manager';
+        if (returnPath && returnPath.includes('/org/')) {
+          redirectPath = returnPath;
+        } else if (orgSlug) {
+          redirectPath = `/org/${orgSlug}/file-manager`;
+        }
+
+        localStorage.removeItem('oauth_return_path');
+
+        // Redirect after 2 seconds
         setTimeout(() => {
-          navigate('/file-manager');
+          navigate(redirectPath);
         }, 2000);
-        
-      } catch (err) {
+
+      } catch (err: any) {
+        if (!initialized.current) return;
+
         console.error('OAuth callback error:', err);
-        setStatus('error');
-        setMessage(err instanceof Error ? err.message : 'Failed to connect cloud drive');
-        
-        // Redirect to file manager after 3 seconds
+
+        // Only update status if we aren't already successful
+        setStatus(current => {
+          if (current === 'success') return 'success';
+          return 'error';
+        });
+
+        setMessage(current => {
+          if (current === 'success') return message; // Keep the success message
+          return err.message || 'Failed to connect cloud drive';
+        });
+
+        // Get return path or organization slug for error redirect as well
+        const orgSlug = localStorage.getItem('currentOrganizationSlug') || localStorage.getItem('companySlug');
+        let redirectPath = '/file-manager';
+        if (orgSlug) {
+          redirectPath = `/org/${orgSlug}/file-manager`;
+        }
+
+        // Redirect after 3 seconds if it was an error
         setTimeout(() => {
-          navigate('/file-manager');
+          navigate(redirectPath);
         }, 3000);
       }
     };
@@ -63,7 +100,7 @@ export default function OAuthCallback() {
             <p className="text-gray-600 dark:text-gray-400">{message}</p>
           </>
         )}
-        
+
         {status === 'success' && (
           <>
             <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
@@ -76,7 +113,7 @@ export default function OAuthCallback() {
             </p>
           </>
         )}
-        
+
         {status === 'error' && (
           <>
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />

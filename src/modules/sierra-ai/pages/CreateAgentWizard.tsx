@@ -87,10 +87,11 @@ export function CreateAgentWizard() {
 
     try {
       const { elevenlabsApi } = await import('../services/elevenlabsApi');
-      
+
       const agentType = wizardState.template === 'business_assistant' ? 'voice' : 'voice';
 
       const response = await elevenlabsApi.createAgent({
+        organization_id: (user?.organization_id || user?.organizationId || orgSlug || '').toString(),
         name: wizardState.agentName,
         description: wizardState.mainGoal,
         agent_type: agentType,
@@ -100,8 +101,8 @@ export function CreateAgentWizard() {
         temperature: 0.7,
         max_tokens: 500,
         template: wizardState.template,
-        industry: wizardState.industry?.id,
-        use_case: wizardState.useCase?.id,
+        industry: wizardState.industry,
+        use_case: wizardState.useCase,
         website: wizardState.website,
       });
 
@@ -230,11 +231,10 @@ export function CreateAgentWizard() {
                   <button
                     key={industry.id}
                     onClick={() => handleIndustrySelect(industry.id)}
-                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${
-                      isOther
-                        ? 'border-dashed border-gray-300 dark:border-gray-600'
-                        : 'border-gray-200 dark:border-gray-700'
-                    } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
+                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${isOther
+                      ? 'border-dashed border-gray-300 dark:border-gray-600'
+                      : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
                   >
                     <div className="flex flex-col items-center text-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
@@ -282,11 +282,10 @@ export function CreateAgentWizard() {
                   <button
                     key={useCase.id}
                     onClick={() => handleUseCaseSelect(useCase.id)}
-                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${
-                      isOtherPersonal
-                        ? 'border-dashed border-gray-300 dark:border-gray-600'
-                        : 'border-gray-200 dark:border-gray-700'
-                    } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
+                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${isOtherPersonal
+                      ? 'border-dashed border-gray-300 dark:border-gray-600'
+                      : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
                   >
                     <div className="flex flex-col items-center text-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
@@ -377,19 +376,17 @@ export function CreateAgentWizard() {
                 />
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              {/* <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <button
                   onClick={() =>
                     setWizardState({ ...wizardState, chatOnly: !wizardState.chatOnly })
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    wizardState.chatOnly ? 'bg-gray-400' : 'bg-gray-300'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${wizardState.chatOnly ? 'bg-gray-400' : 'bg-gray-300'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      wizardState.chatOnly ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wizardState.chatOnly ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
                 <div>
@@ -398,7 +395,7 @@ export function CreateAgentWizard() {
                     Audio will not be processed and only text will be used
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="flex items-center justify-between">
@@ -425,13 +422,12 @@ export function CreateAgentWizard() {
           {progressDots.map((step, index) => (
             <div
               key={step}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentStepIndex
-                  ? 'bg-gray-900 dark:bg-white'
-                  : index < currentStepIndex
+              className={`w-2 h-2 rounded-full transition-colors ${index === currentStepIndex
+                ? 'bg-gray-900 dark:bg-white'
+                : index < currentStepIndex
                   ? 'bg-gray-400 dark:bg-gray-600'
                   : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+                }`}
             />
           ))}
         </div>
