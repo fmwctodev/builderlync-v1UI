@@ -15,6 +15,7 @@ const GoogleBusinessPage: React.FC = () => {
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
       handleCallback(code);
     } else {
       fetchLocations();
@@ -128,7 +129,7 @@ const GoogleBusinessPage: React.FC = () => {
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{error}</h3>
 
-          {error?.includes('Google API Limit') ? (
+          {error?.includes('Google API Limit') || error?.includes('Quota exceeded') || error?.includes('Quota') ? (
             <>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Google's API is temporarily limiting requests. Your account is connected, but we cannot fetch locations right now.
@@ -143,27 +144,15 @@ const GoogleBusinessPage: React.FC = () => {
             </>
           ) : (
             <>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Business account to view insights</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Services from the Integrations tab to view insights</p>
               <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch(
-                      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/google-analytics/google-business/connect`,
-                      {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                      }
-                    );
-                    const data = await response.json();
-                    if (data.data?.authUrl) {
-                      window.location.href = data.data.authUrl;
-                    }
-                  } catch (err) {
-                    alert('Failed to initiate connection');
-                  }
+                onClick={() => {
+                  const basePath = orgSlug ? `/org/${orgSlug}` : '';
+                  navigate(`${basePath}/settings/integrations`);
                 }}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                Connect Google Business
+                Go to Integrations Settings
               </button>
             </>
           )}

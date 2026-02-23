@@ -5,6 +5,10 @@ import App from './App.tsx';
 import { store } from './shared/store';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 import './index.css';
+import { setupGlobalInterceptors } from './shared/utils/setupGlobalInterceptors';
+
+// Initialize global 401 logout interceptors
+setupGlobalInterceptors();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

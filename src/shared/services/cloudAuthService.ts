@@ -1,13 +1,25 @@
 import { cloudDriveApi, CloudDriveConnection } from './cloudDriveApi';
+import { logoutAndRedirect } from '../utils/auth';
+
+const request = async (url: string, options: RequestInit = {}) => {
+  const response = await fetch(url, options);
+  if (response.status === 401) {
+    logoutAndRedirect();
+    throw new Error('Unauthorized');
+  }
+  return response;
+};
 
 export type CloudProvider = 'google' | 'onedrive_personal' | 'onedrive_business';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'XXXXXXXXXXXXXXXXXXXXX';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+
 interface OAuthConfig {
   clientId: string;
   redirectUri: string;
   scope: string;
   authUrl: string;
 }
+
 const OAUTH_CONFIGS: Record<CloudProvider, OAuthConfig> = {
   google: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
@@ -17,13 +29,13 @@ const OAUTH_CONFIGS: Record<CloudProvider, OAuthConfig> = {
   },
   onedrive_personal: {
     clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || '',
-    redirectUri: `${window.location.origin}/file-manager/oauth-callback`,
+    redirectUri: `${window.location.origin}/auth/microsoft/callback`,
     scope: 'Files.ReadWrite offline_access',
     authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
   },
   onedrive_business: {
     clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || '',
-    redirectUri: `${window.location.origin}/file-manager/oauth-callback`,
+    redirectUri: `${window.location.origin}/auth/microsoft/callback`,
     scope: 'Files.ReadWrite offline_access',
     authUrl: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'
   }
@@ -65,7 +77,7 @@ export const cloudAuthService = {
       const stateData = JSON.parse(state);
       const provider = stateData.provider;
 
-      const response = await fetch(`${API_BASE_URL}/auth/google/callback`, {
+      const response = await request(`${API_BASE_URL}/auth/oauth/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,9 +103,12 @@ export const cloudAuthService = {
       const data = result.data;
 
       // Create connection record
+      let dbProvider: 'google_drive' | 'onedrive_personal' | 'onedrive_business' = 'google_drive';
+      if (provider === 'onedrive_personal') dbProvider = 'onedrive_personal';
+      else if (provider === 'onedrive_business') dbProvider = 'onedrive_business';
+
       const connection = await cloudDriveApi.createConnectionFromOAuth(
-        provider === 'google' ? 'google_drive' :
-          provider === 'onedrive_personal' ? 'onedrive_personal' : 'onedrive_business',
+        dbProvider,
         {
           access_token: data.access_token,
           refresh_token: data.refresh_token,
@@ -118,7 +133,7 @@ export const cloudAuthService = {
     }
 
     try {
-      const response = await fetch('/api/auth/oauth/refresh', {
+      const response = await request(`${API_BASE_URL}/auth/oauth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

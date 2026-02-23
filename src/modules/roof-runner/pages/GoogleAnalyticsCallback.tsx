@@ -60,6 +60,32 @@ export const GoogleAnalyticsCallback: React.FC = () => {
     }
 
     if (code) {
+      const returnPath = localStorage.getItem('google_auth_return');
+
+      // If returning to integrations, redirect back without code after verifying
+      if (returnPath === 'integrations') {
+        localStorage.removeItem('google_auth_return');
+
+        // We need to call the API here directly since the Integrations page doesn't have the callback logic
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/google-analytics/google-business/callback?code=${code}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to connect to Google');
+            return res.json();
+          })
+          .then(() => {
+            const targetUrl = finalOrgSlug ? `/org/${finalOrgSlug}/settings/integrations` : '/settings/integrations';
+            navigate(targetUrl, { replace: true });
+          })
+          .catch(err => {
+            console.error(err);
+            setError('Failed to swap code during Integration connection');
+            setTimeout(() => navigate(finalOrgSlug ? `/org/${finalOrgSlug}/settings/integrations` : '/settings/integrations'), 2000);
+          });
+        return;
+      }
+
       const targetUrl = finalOrgSlug
         ? `/org/${finalOrgSlug}/marketing/analytics/${service}?code=${code}`
         : `/marketing/analytics/${service}?code=${code}`;

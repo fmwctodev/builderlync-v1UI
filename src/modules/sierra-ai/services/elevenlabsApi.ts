@@ -29,6 +29,10 @@ export interface CreateAgentPayload {
   language?: string;
   temperature?: number;
   max_tokens?: number;
+  template?: string;
+  industry?: string;
+  use_case?: string;
+  website?: string;
 }
 
 export interface UpdateAgentPayload {

@@ -15,6 +15,7 @@ const GoogleAdsPage: React.FC = () => {
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
       handleCallback(code);
     } else {
       fetchCampaigns();
@@ -29,7 +30,7 @@ const GoogleAdsPage: React.FC = () => {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }
       );
-      
+
       if (response.ok) {
         await fetchCampaigns();
       } else {
@@ -57,10 +58,11 @@ const GoogleAdsPage: React.FC = () => {
         setCampaigns(data.data || []);
         if (data.data && data.data.length > 0) {
           setSelectedCampaign(data.data[0].id);
-          fetchMetrics(data.data[0].id);
+          setMetrics(data.data[0].metrics || null);
         }
       } else {
-        setError('Not connected to Google Ads');
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || 'Not connected to Google Ads');
       }
     } catch (err) {
       setError('Failed to fetch campaigns');
@@ -69,27 +71,13 @@ const GoogleAdsPage: React.FC = () => {
     }
   };
 
-  const fetchMetrics = async (campaignId: string) => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/google-ads/metrics?campaignId=${encodeURIComponent(campaignId)}`,
-        {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        }
-      );
 
-      if (response.ok) {
-        const data = await response.json();
-        setMetrics(data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch metrics:', err);
-    }
-  };
 
   const handleCampaignChange = (campaignId: string) => {
     setSelectedCampaign(campaignId);
-    fetchMetrics(campaignId);
+    // Use the functional state update or just map it directly since campaigns is in scope
+    const camp = campaigns.find(c => c.id === campaignId);
+    setMetrics(camp?.metrics || null);
   };
 
   if (loading) {
@@ -117,27 +105,15 @@ const GoogleAdsPage: React.FC = () => {
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{error}</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Ads account to view campaign metrics</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Services from the Integrations tab to view campaign metrics</p>
           <button
-            onClick={async () => {
-              try {
-                const response = await fetch(
-                  `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/google-analytics/connect`,
-                  {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                  }
-                );
-                const data = await response.json();
-                if (data.data?.authUrl) {
-                  window.location.href = data.data.authUrl;
-                }
-              } catch (err) {
-                alert('Failed to initiate connection');
-              }
+            onClick={() => {
+              const basePath = orgSlug ? `/org/${orgSlug}` : '';
+              navigate(`${basePath}/settings/integrations`);
             }}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Connect Google Ads
+            Go to Integrations Settings
           </button>
         </div>
       </div>
@@ -220,8 +196,15 @@ const GoogleAdsPage: React.FC = () => {
               {metrics.clicks || 0}
             </p>
             <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-600 dark:text-green-400">Last 30 days</span>
+              {metrics.clicksChange !== undefined && (
+                <>
+                  <TrendingUp className={`h-4 w-4 ${metrics.clicksChange >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <span className={`text-sm font-medium ${metrics.clicksChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {metrics.clicksChange >= 0 ? '+' : ''}{metrics.clicksChange}%
+                  </span>
+                </>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">vs last 30 days</span>
             </div>
           </div>
 
@@ -234,8 +217,15 @@ const GoogleAdsPage: React.FC = () => {
               {metrics.impressions || 0}
             </p>
             <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-600 dark:text-green-400">Last 30 days</span>
+              {metrics.impressionsChange !== undefined && (
+                <>
+                  <TrendingUp className={`h-4 w-4 ${metrics.impressionsChange >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <span className={`text-sm font-medium ${metrics.impressionsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {metrics.impressionsChange >= 0 ? '+' : ''}{metrics.impressionsChange}%
+                  </span>
+                </>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">vs last 30 days</span>
             </div>
           </div>
 
@@ -248,8 +238,15 @@ const GoogleAdsPage: React.FC = () => {
               ${metrics.cost || 0}
             </p>
             <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-600 dark:text-green-400">Last 30 days</span>
+              {metrics.costChange !== undefined && (
+                <>
+                  <TrendingUp className={`h-4 w-4 ${metrics.costChange <= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <span className={`text-sm font-medium ${metrics.costChange <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {metrics.costChange > 0 ? '+' : ''}{metrics.costChange}%
+                  </span>
+                </>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">vs last 30 days</span>
             </div>
           </div>
 
@@ -262,8 +259,15 @@ const GoogleAdsPage: React.FC = () => {
               {metrics.conversions || 0}
             </p>
             <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-600 dark:text-green-400">Last 30 days</span>
+              {metrics.conversionsChange !== undefined && (
+                <>
+                  <TrendingUp className={`h-4 w-4 ${metrics.conversionsChange >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <span className={`text-sm font-medium ${metrics.conversionsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {metrics.conversionsChange >= 0 ? '+' : ''}{metrics.conversionsChange}%
+                  </span>
+                </>
+              )}
+              <span className="text-sm text-gray-500 dark:text-gray-400">vs last 30 days</span>
             </div>
           </div>
         </div>

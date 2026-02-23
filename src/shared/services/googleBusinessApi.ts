@@ -1,7 +1,10 @@
 import { apiClient } from '../utils/api';
 
 export const googleBusinessApi = {
-  connect: async () => {
+  connect: async (returnPath?: string) => {
+    if (returnPath) {
+      localStorage.setItem('google_auth_return', returnPath);
+    }
     const response = await apiClient.get('/google-analytics/google-business/connect');
     if (response.data?.authUrl) {
       window.location.href = response.data.authUrl;

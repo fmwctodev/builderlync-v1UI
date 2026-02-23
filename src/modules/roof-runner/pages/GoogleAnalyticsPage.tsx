@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, Eye, Clock, ArrowUp, ArrowDown } from 'lucide-react';
-import { getGoogleAuthUrl, exchangeCodeForToken, getAnalyticsData, disconnectGoogleAnalytics, getConnectionStatus } from '../../../shared/services/googleAuthService';
+import { exchangeCodeForToken, getAnalyticsData, disconnectGoogleAnalytics, getConnectionStatus } from '../../../shared/services/googleAuthService';
 
 interface MetricSummary {
   current: number;
@@ -63,11 +63,11 @@ export const GoogleAnalyticsPage: React.FC = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    
+
     if (code && !connected) {
       setLoading(true);
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       exchangeCodeForToken(code)
         .then(() => {
           setConnected(true);
@@ -92,30 +92,30 @@ export const GoogleAnalyticsPage: React.FC = () => {
 
   const fetchAnalyticsData = async () => {
     if (!propertyId || !connected) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const startDate = thirtyDaysAgo.toISOString().split('T')[0];
       const endDate = now.toISOString().split('T')[0];
-      
+
       const response = await getAnalyticsData('google_analytics', startDate, endDate, propertyId);
       const analyticsData = response.data || response;
-      
+
       // Handle empty data response
       if (analyticsData.rows && analyticsData.rows.length === 0) {
         setError(analyticsData.message || 'No data available for the selected date range');
         setData(null);
         return;
       }
-      
+
       if (!analyticsData.summary || !analyticsData.dailyMetrics) {
         throw new Error('Invalid response format from server');
       }
-      
+
       setData(analyticsData);
       localStorage.setItem('google_property_id', propertyId);
     } catch (err) {
@@ -136,16 +136,6 @@ export const GoogleAnalyticsPage: React.FC = () => {
     const month = dateStr.substring(4, 6);
     const day = dateStr.substring(6, 8);
     return `${year}-${month}-${day}`;
-  };
-
-  const handleConnect = async () => {
-    try {
-      const authUrl = await getGoogleAuthUrl();
-      window.location.href = authUrl;
-    } catch (err) {
-      console.error('Error getting auth URL:', err);
-      alert('Failed to get authorization URL');
-    }
   };
 
   const handleDisconnect = async () => {
@@ -196,13 +186,16 @@ export const GoogleAnalyticsPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Connect Google Analytics</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Connect your Google Analytics account to start fetching data and insights.
+            Connect your Google Services from the Integrations tab to start fetching data and insights.
           </p>
           <button
-            onClick={handleConnect}
+            onClick={() => {
+              const basePath = orgSlug ? `/org/${orgSlug}` : '';
+              navigate(`${basePath}/settings/integrations`);
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Connect Google Analytics
+            Go to Integrations Settings
           </button>
         </div>
       </div>
@@ -221,7 +214,7 @@ export const GoogleAnalyticsPage: React.FC = () => {
         </button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Google Analytics</h1>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <label className="block text-sm font-medium text-gray-900 dark:text-white">
