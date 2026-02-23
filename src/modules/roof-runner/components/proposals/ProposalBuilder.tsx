@@ -4165,7 +4165,7 @@ export default function ProposalBuilder({
                                 id="default"
                                 checked
                                 className="rounded"
-                                readOnly={!uItem.isCustom}
+                                readOnly
                               />
                               <label
                                 htmlFor="default"
@@ -4180,7 +4180,7 @@ export default function ProposalBuilder({
                                 id="minimum"
                                 checked
                                 className="rounded"
-                                readOnly={!uItem.isCustom}
+                                readOnly
                               />
                               <label
                                 htmlFor="minimum"

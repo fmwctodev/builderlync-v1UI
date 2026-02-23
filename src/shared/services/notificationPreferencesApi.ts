@@ -1,7 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+import { getAuthToken } from '../utils/auth';
+
+const RAW_API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '');
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   return {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -22,9 +26,13 @@ export const notificationPreferencesApi = {
       headers: getAuthHeaders(),
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result?.success) {
-      throw new Error(result?.message || 'Failed to fetch notification preferences');
+      throw new Error(
+        result?.message ||
+          result?.error ||
+          `Failed to fetch notification preferences (${response.status})`
+      );
     }
 
     return result.data;
@@ -37,12 +45,15 @@ export const notificationPreferencesApi = {
       body: JSON.stringify({ pushEnabled }),
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result?.success) {
-      throw new Error(result?.message || 'Failed to update notification preferences');
+      throw new Error(
+        result?.message ||
+          result?.error ||
+          `Failed to update notification preferences (${response.status})`
+      );
     }
 
     return result.data;
   },
 };
-

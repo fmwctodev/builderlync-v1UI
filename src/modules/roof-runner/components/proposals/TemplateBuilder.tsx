@@ -76,6 +76,9 @@ interface Item {
   checked: boolean;
   isHeading?: boolean;
   isCustom?: boolean;
+  catalogItemId?: string;
+  pricingSource?: "manual" | "catalog_live";
+  priceSyncedAt?: string;
 }
 
 interface Upgrade {
@@ -98,6 +101,44 @@ interface Section {
     description?: string;
   };
 }
+
+const syncLiveCatalogPricing = (items: Item[], catalogItems: APICatalogItem[]): Item[] => {
+  if (!items.length || !catalogItems.length) return items;
+  const catalogMap = new Map(catalogItems.map((item) => [String(item.id), item]));
+  let changed = false;
+
+  const nextItems = items.map((item) => {
+    const isCatalogLinked =
+      Boolean(item.catalogItemId) &&
+      (item.pricingSource === "catalog_live" || item.pricingSource === undefined);
+    if (!isCatalogLinked || !item.catalogItemId) return item;
+    const catalogItem = catalogMap.get(String(item.catalogItemId));
+    if (!catalogItem) return item;
+
+    const nextUnitCost = getCatalogFinalUnitCost(catalogItem);
+    const nextSalesTax = catalogItem.salesTax?.toString() || "0";
+
+    if (item.unitCost === nextUnitCost && item.salesTax === nextSalesTax) return item;
+
+    changed = true;
+    return {
+      ...item,
+      unitCost: nextUnitCost,
+      salesTax: nextSalesTax,
+      pricingSource: "catalog_live",
+      priceSyncedAt: new Date().toISOString(),
+    };
+  });
+
+  return changed ? nextItems : items;
+};
+
+const getCatalogFinalUnitCost = (catalogItem: APICatalogItem): string => {
+  const preTaxCost = Number(catalogItem.preTaxCost || 0);
+  const materialPurchaseTax = Number(catalogItem.materialPurchaseTax || 0);
+  const finalUnitCost = preTaxCost + (preTaxCost * materialPurchaseTax) / 100;
+  return Number.isFinite(finalUnitCost) ? finalUnitCost.toFixed(2) : "0.00";
+};
 
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const MAX_OPTION_TITLE_CHARS = 100;
@@ -209,6 +250,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [saving, setSaving] = useState(false);
   const [isTemplateLocked, setIsTemplateLocked] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
+  const catalogItemsRef = useRef<APICatalogItem[]>([]);
 
   const [sections, setSections] = useState<Section[]>([
     { id: 'cover', name: "Cover", active: true, order: 0 },
@@ -295,6 +337,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   };
 
   useEffect(() => {
+    catalogItemsRef.current = catalogItems;
+  }, [catalogItems]);
+
+  useEffect(() => {
     const loadTemplate = async () => {
       setLoading(true);
       try {
@@ -305,9 +351,19 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         setTemplateName(data.name);
         
         if (data.content) {
-          setSections(data.content.sections || []);
-          setItems(data.content.items || []);
-          setUpgrades(data.content.upgrades || []);
+          const contentSections = data.content.sections || [];
+          const contentItems = data.content.items || [];
+          const contentUpgrades = data.content.upgrades || [];
+          const latestCatalogItems = catalogItemsRef.current || [];
+
+          setSections(contentSections);
+          setItems(syncLiveCatalogPricing(contentItems, latestCatalogItems));
+          setUpgrades(
+            contentUpgrades.map((upgrade: Upgrade) => ({
+              ...upgrade,
+              items: syncLiveCatalogPricing(upgrade.items || [], latestCatalogItems),
+            }))
+          );
           
           if (data.content.settings) {
             const loadedOptionTitle = limitChars(data.content.settings.optionTitle || "", MAX_OPTION_TITLE_CHARS);
@@ -385,6 +441,17 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     initialize();
     loadCatalogItems();
   }, [templateId]);
+
+  useEffect(() => {
+    if (!catalogItems.length) return;
+    setItems((prev) => syncLiveCatalogPricing(prev, catalogItems));
+    setUpgrades((prevUpgrades) =>
+      prevUpgrades.map((upgrade) => ({
+        ...upgrade,
+        items: syncLiveCatalogPricing(upgrade.items, catalogItems),
+      }))
+    );
+  }, [catalogItems]);
 
   // Removed blob URL cleanup since we're now using permanent URLs
 
@@ -671,6 +738,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       visible: true,
       checked: false,
       isCustom: true,
+      pricingSource: "manual",
     };
     setItems((prevItems) => [...prevItems, newItem]);
   };
@@ -689,6 +757,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       visible: true,
       checked: false,
       isCustom: true,
+      pricingSource: "manual",
     };
     setUpgrades((prevUpgrades) =>
       prevUpgrades.map((u) =>
@@ -704,9 +773,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         name: catalogItem.name,
         description: catalogItem.description || "",
         coverage: catalogItem.coverage?.toString() || "",
-        unitCost: catalogItem.preTaxCost?.toString() || "0",
+        unitCost: getCatalogFinalUnitCost(catalogItem),
         unit: catalogItem.unit || "square",
         salesTax: catalogItem.salesTax?.toString() || "0",
+        catalogItemId: String(catalogItem.id),
+        pricingSource: "catalog_live",
+        priceSyncedAt: new Date().toISOString(),
       } : i));
       setEditingItemId(null);
     } else {
@@ -716,12 +788,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         description: catalogItem.description || "",
         mapping: "",
         coverage: catalogItem.coverage?.toString() || "",
-        unitCost: catalogItem.preTaxCost?.toString() || "0",
+        unitCost: getCatalogFinalUnitCost(catalogItem),
         unit: catalogItem.unit || "square",
         qty: "1",
         salesTax: catalogItem.salesTax?.toString() || "0",
         visible: true,
         checked: false,
+        catalogItemId: String(catalogItem.id),
+        pricingSource: "catalog_live",
+        priceSyncedAt: new Date().toISOString(),
       };
       setItems(prevItems => [...prevItems, newItem]);
     }
@@ -743,9 +818,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           name: catalogItem.name,
           description: catalogItem.description || "",
           coverage: catalogItem.coverage?.toString() || "",
-          unitCost: catalogItem.preTaxCost?.toString() || "0",
+          unitCost: getCatalogFinalUnitCost(catalogItem),
           unit: catalogItem.unit || "square",
           salesTax: catalogItem.salesTax?.toString() || "0",
+          catalogItemId: String(catalogItem.id),
+          pricingSource: "catalog_live",
+          priceSyncedAt: new Date().toISOString(),
         } : i)
       } : u));
       setEditingUpgradeItemId(null);
@@ -756,12 +834,15 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         description: catalogItem.description || "",
         mapping: "",
         coverage: catalogItem.coverage?.toString() || "",
-        unitCost: catalogItem.preTaxCost?.toString() || "0",
+        unitCost: getCatalogFinalUnitCost(catalogItem),
         unit: catalogItem.unit || "square",
         qty: "1",
         salesTax: catalogItem.salesTax?.toString() || "0",
         visible: true,
         checked: false,
+        catalogItemId: String(catalogItem.id),
+        pricingSource: "catalog_live",
+        priceSyncedAt: new Date().toISOString(),
       };
       setUpgrades(prevUpgrades =>
         prevUpgrades.map((u) =>
@@ -2083,50 +2164,28 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       </div>
 
                       <div className="space-y-6">
-                        {items.filter(item => item.visible && !item.isHeading).length > 0 && (
-                          <div>
-                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                              <div className="font-medium text-gray-900 dark:text-white truncate" title={optionTitle}>{optionTitle}</div>
-                            </div>
-                            <div className="flex justify-between items-center py-2 pl-3">
-                              <span
-                                className="text-sm text-gray-600 dark:text-gray-400 break-words"
-                                dangerouslySetInnerHTML={{ __html: toRichHtml(optionDescription || "") }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                              <span className="font-medium text-gray-900 dark:text-white">Total</span>
-                              <span className="font-medium text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
-                            </div>
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white">
+                            Bill Summary
                           </div>
-                        )}
-
-                        {upgrades.length > 0 && upgrades.some(u => u.items.filter(item => item.visible && !item.isHeading).length > 0) && (
-                          <div>
-                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded mb-2">
-                              <div className="font-medium text-gray-900 dark:text-white">{upgradesTitle}</div>
-                            </div>
-                            {upgrades.map((upgrade) => (
-                              <div key={upgrade.id} className="mb-2 pl-3 text-sm">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
-                                  </div>
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    ${upgrade.items.filter(item => item.visible && !item.isHeading).reduce((sum, item) => sum + (parseFloat(item.unitCost || '0') * parseFloat(item.qty || '0')), 0).toFixed(2)}
-                                  </div>
-                                </div>
+                          <div className="px-4 py-3 space-y-4 text-sm">
+                            {items.filter(item => item.visible).length > 0 && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-700 dark:text-gray-300 truncate" title={optionTitle}>
+                                  {optionTitle || "Estimate"} Subtotal
+                                </span>
+                                <span className="font-medium text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
                               </div>
-                            ))}
-                            <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                              <span className="font-medium text-gray-900 dark:text-white">Total</span>
-                              <span className="font-medium text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
-                            </div>
-                          </div>
-                        )}
+                            )}
 
-                        <div className="pt-4 border-t-2 border-gray-300 dark:border-gray-600">
-                          <div className="flex justify-between items-center py-2">
+                            {upgrades.length > 0 && upgrades.some(u => u.items.filter(item => item.visible).length > 0) && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-700 dark:text-gray-300">{upgradesTitle || "Upgrades"} Subtotal</span>
+                                <span className="font-medium text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="border-t-2 border-gray-300 dark:border-gray-600 px-4 py-3 flex items-center justify-between">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">Overall Total</span>
                             <span className="text-lg font-bold text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) + parseFloat(calculateUpgradeSubtotal())).toFixed(2)}</span>
                           </div>
@@ -2445,7 +2504,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                             >
                                               <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
                                               <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${item.unitCost} per {item.unit}</div>
+                                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
                                             </button>
                                           ))}
                                       </div>
@@ -2512,7 +2571,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                       setItems(
                                         items.map((i) =>
                                           i.id === item.id
-                                            ? { ...i, unitCost: e.target.value }
+                                            ? { ...i, unitCost: e.target.value, pricingSource: "manual" }
                                             : i
                                         )
                                       )
@@ -2643,7 +2702,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                     >
                                       <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
                                       <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${item.unitCost} per {item.unit}</div>
+                                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
                                     </button>
                                   ))}
                               </div>
@@ -2897,7 +2956,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                                 >
                                                   <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
                                                   <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${item.unitCost} per {item.unit}</div>
+                                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
                                                 </button>
                                               ))}
                                           </div>
@@ -3001,6 +3060,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                                             ...i,
                                                             unitCost:
                                                               e.target.value,
+                                                            pricingSource:
+                                                              "manual",
                                                           }
                                                         : i
                                                     ),
@@ -3171,7 +3232,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                           >
                                             <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${item.unitCost} per {item.unit}</div>
+                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
                                           </button>
                                         ))}
                                     </div>

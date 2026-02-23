@@ -30,6 +30,7 @@ export interface Calendar {
   owner_id: string;
   description?: string;
   color: string;
+  cal_url?: string | null;
   created_at: string;
   updated_at: string;
 }

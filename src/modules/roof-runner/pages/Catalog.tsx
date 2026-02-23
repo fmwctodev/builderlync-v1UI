@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link, Download, Upload } from 'lucide-react';
-import { getCatalogItems, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
+import { getCatalogItems, getCatalogItemById, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
 import { abcSupplyService } from '../services/abcSupplyService';
@@ -157,10 +157,18 @@ export default function Catalog() {
     }
   };
 
-  const openEditSidebar = (item: CatalogItem) => {
+  const openEditSidebar = async (item: CatalogItem) => {
     setSelectedItem(item);
     setIsCreatingNew(false);
     setSidebarOpen(true);
+    try {
+      const response = await getCatalogItemById(item.id);
+      if (response.success && response.data) {
+        setSelectedItem(response.data);
+      }
+    } catch {
+      // Keep sidebar usable with list-row data even if detail fetch fails.
+    }
   };
 
   const handleSaveItem = async (updatedData: Partial<CatalogItem>) => {

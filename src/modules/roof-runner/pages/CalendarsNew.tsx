@@ -26,10 +26,10 @@ const CalendarsNew: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full min-h-0 flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
-        <div className="flex items-center gap-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 overflow-x-auto">
+        <div className="flex items-center gap-4 min-w-max">
           <button
             onClick={() => setActiveView('calendar')}
             className={`px-6 py-3 font-medium transition-all relative ${activeView === 'calendar'
@@ -48,7 +48,7 @@ const CalendarsNew: React.FC = () => {
           >
             Appointment List View
           </button>
-          {/* <button
+          <button
             onClick={() => setActiveView('settings')}
             className={`px-6 py-3 font-medium transition-all relative flex items-center gap-2 ${
               activeView === 'settings'
@@ -58,12 +58,12 @@ const CalendarsNew: React.FC = () => {
           >
             <Settings className="w-4 h-4" />
             Calendar Settings
-          </button> */}
+          </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-auto">
         {activeView === 'calendar' && (
           <CalendarsOld />
         )}

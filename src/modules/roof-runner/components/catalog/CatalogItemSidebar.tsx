@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lightbulb, Truck, Plus, Search } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogItem } from '../../../../shared/store/services/catalogApi';
 
 interface CatalogItemSidebarProps {
@@ -17,8 +18,10 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   onSave,
   isCreating = false
 }) => {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [formData, setFormData] = useState<Partial<CatalogItem>>({});
-  const [affectedTemplates] = useState(['New template', 'New template', 'New template']);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Array<{name: string; searchQuery?: string}>>([]);
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   
@@ -425,19 +428,25 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
           {!isCreating && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Affected templates
+                Affected templates ({formData.usage?.totalTemplates || 0})
               </h3>
-              <div className="space-y-2">
-                {affectedTemplates.map((template, index) => (
-                  <a
-                    key={index}
-                    href="#"
-                    className="block px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    {template}
-                  </a>
-                ))}
-              </div>
+              {formData.usage?.templates && formData.usage.templates.length > 0 ? (
+                <div className="space-y-2">
+                  {formData.usage.templates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="block px-3 py-2 text-sm text-primary-600 dark:text-primary-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                      onClick={() => navigate(`${orgPrefix}/proposals/template/${template.id}`)}
+                    >
+                      {template.name} ({template.referenceCount})
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  Not used in any template
+                </div>
+              )}
             </div>
           )}
 
