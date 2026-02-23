@@ -25,6 +25,16 @@ export interface CatalogItem {
   materialPurchaseTax: number;
   createdAt: string;
   updatedAt: string;
+  usage?: {
+    totalTemplates: number;
+    totalReferences: number;
+    templates: Array<{
+      id: string;
+      name: string;
+      referenceCount: number;
+      updatedAt: string;
+    }>;
+  };
 }
 
 export interface CatalogFilters {
@@ -194,6 +204,21 @@ export const updateCatalogItemType = async (id: string, itemType: 'Material' | '
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to update item type'
+    };
+  }
+};
+
+export const getCatalogItemById = async (id: string): Promise<SingleItemResponse> => {
+  try {
+    const response = await axios.get<SingleItemResponse>(
+      `${API_BASE_URL}/catalog/items/${id}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch catalog item'
     };
   }
 };

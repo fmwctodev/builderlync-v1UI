@@ -61,6 +61,21 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
     }
   };
 
+  const handleShareCalendar = async (calendar: Calendar) => {
+    if (!calendar.cal_url) {
+      alert('No booking URL found for this calendar');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(calendar.cal_url);
+      alert('Booking URL copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy booking URL:', error);
+      alert('Failed to copy booking URL');
+    }
+  };
+
   const filteredCalendars = calendars.filter(cal => {
     const matchesSearch = cal.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || cal.status === statusFilter;
@@ -320,7 +335,10 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                             >
                               <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleShareCalendar(calendar)}
+                            >
                               <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
                             <button
