@@ -67,12 +67,14 @@ export const abcSupplyApi = {
     };
   },
 
-  searchItems: async (query: string, limit: number = 20, branchId?: string): Promise<Product[]> => {
+  searchItems: async (query: string, limit: number = 20, branchId?: string, page: number = 1): Promise<Product[]> => {
     const response = await api.get('/abc-supply/search', {
-      params: { q: query, limit, branchId }
+      params: { query, branchId, page, limit }
     });
 
-    return response.data.items || response.data.data || response.data || [];
+    const payload = response.data;
+    const items = payload?.data?.items || payload?.items || payload?.data || payload;
+    return Array.isArray(items) ? items : [];
   },
 
   filterItems: async (filters: string[], itemsPerPage: number = 20, pageNumber: number = 1, branchId?: string): Promise<Product[]> => {

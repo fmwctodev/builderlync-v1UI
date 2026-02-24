@@ -3,7 +3,6 @@ import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye
 import { getCatalogItems, getCatalogItemById, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
-import { abcSupplyService } from '../services/abcSupplyService';
 import { srsService } from '../services/srsService';
 
 interface ColumnVisibility {
@@ -72,16 +71,21 @@ export default function Catalog() {
 
   useEffect(() => {
     loadItems();
-    checkAbcSupplyIntegration();
+    fetchABCSupplyStatus();
     checkSrsIntegration();
   }, [searchQuery, filterTypes, sortOption]);
 
-  const checkAbcSupplyIntegration = async () => {
+  const fetchABCSupplyStatus = async () => {
     try {
-      // Try to get branches to check if integration is working
-      const branches = await abcSupplyService.getBranches();
-      setAbcSupplyIntegrated(branches.length > 0);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/status`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAbcSupplyIntegrated(data.data?.connected || false);
+      }
     } catch (error) {
+      console.error('Error fetching ABC Supply status:', error);
       setAbcSupplyIntegrated(false);
     }
   };
@@ -182,6 +186,12 @@ export default function Catalog() {
         measurements: updatedData.measurements ?? selectedItem.measurements ?? newItemDefaults.measurements,
         coverage: updatedData.coverage ?? selectedItem.coverage ?? newItemDefaults.coverage,
         supplier: updatedData.supplier ?? selectedItem.supplier ?? newItemDefaults.supplier,
+        supplierType: updatedData.supplierType ?? selectedItem.supplierType ?? null,
+        productId: updatedData.productId ?? selectedItem.productId ?? '',
+        productData: updatedData.productData ?? selectedItem.productData ?? null,
+        branchId: updatedData.branchId ?? selectedItem.branchId ?? '',
+        branchData: updatedData.branchData ?? selectedItem.branchData ?? null,
+        abcSelectedShipTo: updatedData.abcSelectedShipTo ?? selectedItem.abcSelectedShipTo ?? null,
         preTaxCost: updatedData.preTaxCost ?? selectedItem.preTaxCost ?? newItemDefaults.preTaxCost,
         waste: updatedData.waste ?? selectedItem.waste ?? newItemDefaults.waste,
         unit: updatedData.unit ?? selectedItem.unit ?? newItemDefaults.unit,
@@ -189,8 +199,27 @@ export default function Catalog() {
         materialPurchaseTax: updatedData.materialPurchaseTax ?? selectedItem.materialPurchaseTax ?? newItemDefaults.materialPurchaseTax,
       };
 
+      const normalizedData = { ...mergedData };
+      const hasValidAbcProduct = Boolean(
+        normalizedData.supplierType === 'abc' &&
+        normalizedData.productId &&
+        String(normalizedData.productId).trim() &&
+        normalizedData.branchId &&
+        String(normalizedData.branchId).trim()
+      );
+
+      if (normalizedData.supplierType === 'abc' && !hasValidAbcProduct) {
+        normalizedData.supplier = '';
+        normalizedData.supplierType = null;
+        normalizedData.productId = '';
+        normalizedData.productData = null;
+        normalizedData.branchId = '';
+        normalizedData.branchData = null;
+        normalizedData.abcSelectedShipTo = null;
+      }
+
       if (isCreatingNew) {
-        const response = await createCatalogItem(mergedData);
+        const response = await createCatalogItem(normalizedData);
 
         if (response.success && response.data) {
           setToast({ message: 'Item created successfully', type: 'success' });
@@ -201,11 +230,11 @@ export default function Catalog() {
           setToast({ message: response.message || 'Failed to create item', type: 'error' });
         }
       } else {
-        const response = await updateCatalogItem(selectedItem.id, mergedData);
+        const response = await updateCatalogItem(selectedItem.id, normalizedData);
 
         if (response.success) {
-          setItems(items.map(item => item.id === selectedItem.id ? { ...item, ...mergedData } : item));
-          setSelectedItem({ ...selectedItem, ...mergedData });
+          setItems(items.map(item => item.id === selectedItem.id ? { ...item, ...normalizedData } : item));
+          setSelectedItem({ ...selectedItem, ...normalizedData });
         } else {
           setToast({ message: response.message || 'Failed to update item', type: 'error' });
         }
@@ -745,6 +774,7 @@ export default function Catalog() {
         item={selectedItem}
         onSave={handleSaveItem}
         isCreating={isCreatingNew}
+        abcSupplyConnected={Boolean(abcSupplyIntegrated)}
       />
 
       {toast && (

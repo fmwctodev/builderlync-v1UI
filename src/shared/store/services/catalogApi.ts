@@ -18,6 +18,12 @@ export interface CatalogItem {
   measurements?: string;
   coverage: number;
   supplier?: string;
+  supplierType?: 'abc' | 'srs' | null;
+  productId?: string;
+  productData?: any;
+  branchId?: string;
+  branchData?: any;
+  abcSelectedShipTo?: any;
   preTaxCost: number;
   waste: number;
   unit: string;
