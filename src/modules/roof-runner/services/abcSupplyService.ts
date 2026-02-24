@@ -221,6 +221,21 @@ class ABCSupplyService {
     }
   }
 
+  async getStatus(): Promise<{ connected: boolean }> {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/status`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { connected: data.data?.connected || false };
+      }
+      return { connected: false };
+    } catch (error) {
+      return { connected: false };
+    }
+  }
+
   async getPrices(priceRequest: PriceRequest): Promise<any> {
     try {
       const response = await this.makeAuthenticatedRequest(import.meta.env.VITE_GETPRICE_API, {

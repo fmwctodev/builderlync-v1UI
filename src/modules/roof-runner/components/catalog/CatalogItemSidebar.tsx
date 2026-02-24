@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Lightbulb, Truck, Plus, Search } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogItem } from '../../../../shared/store/services/catalogApi';
+import { abcSupplyApi } from '../../../abc-supply/services/api';
+import { Product } from '../../../abc-supply/types';
 
 interface CatalogItemSidebarProps {
   isOpen: boolean;
@@ -9,6 +11,7 @@ interface CatalogItemSidebarProps {
   item: CatalogItem | null;
   onSave: (item: Partial<CatalogItem>) => void;
   isCreating?: boolean;
+  abcSupplyConnected?: boolean;
 }
 
 const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
@@ -16,7 +19,8 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   onClose,
   item,
   onSave,
-  isCreating = false
+  isCreating = false,
+  abcSupplyConnected = false,
 }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -24,14 +28,16 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   const [formData, setFormData] = useState<Partial<CatalogItem>>({});
   const [selectedSuppliers, setSelectedSuppliers] = useState<Array<{name: string; searchQuery?: string}>>([]);
   const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [abcSelectionMissing, setAbcSelectionMissing] = useState(false);
+  const [abcSearchResults, setAbcSearchResults] = useState<Product[]>([]);
+  const [abcSearchLoading, setAbcSearchLoading] = useState(false);
+  const searchDebounceRef = useRef<number | null>(null);
   
-  // Check integration status from app - these would come from your app state/context
   const supplierIntegrations = {
-    'ABC Supply': false, // Change to true if integrated
-    'SRS': false // Change to true if integrated
+    'ABC Supply': abcSupplyConnected,
   };
   
-  const supplierOptions = ['ABC Supply', 'SRS'];
+  const supplierOptions = ['ABC Supply'];
   
   const renderSupplierName = (name: string) => {
     if (name === 'ABC Supply') {
@@ -62,6 +68,47 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     }
   }, [item]);
 
+  useEffect(() => {
+    if (!isOpen || !abcSupplyConnected) {
+      setAbcSelectionMissing(false);
+      return;
+    }
+
+    try {
+      const selectedBranchRaw = localStorage.getItem('abc_selected_branch');
+      const selectedShipToRaw = localStorage.getItem('abc_selected_shipto');
+
+      const selectedBranch = selectedBranchRaw ? JSON.parse(selectedBranchRaw) : null;
+      const selectedShipTo = selectedShipToRaw ? JSON.parse(selectedShipToRaw) : null;
+
+      const hasValidBranch = Boolean(
+        selectedBranch &&
+        typeof selectedBranch === 'object' &&
+        (selectedBranch.id || selectedBranch.number) &&
+        selectedBranch.name
+      );
+
+      const hasValidShipTo = Boolean(
+        selectedShipTo &&
+        typeof selectedShipTo === 'object' &&
+        selectedShipTo.number &&
+        selectedShipTo.name
+      );
+
+      setAbcSelectionMissing(!(hasValidBranch && hasValidShipTo));
+    } catch {
+      setAbcSelectionMissing(true);
+    }
+  }, [isOpen, abcSupplyConnected]);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        window.clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (field: keyof CatalogItem, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -73,7 +120,15 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   };
 
   const handleImmediateSave = (field: keyof CatalogItem, value: any) => {
-    const updatedData = { ...formData, [field]: value };
+    const updatedData: Partial<CatalogItem> = { ...formData, [field]: value };
+    setFormData(updatedData);
+    if (!isCreating) {
+      onSave(updatedData);
+    }
+  };
+
+  const handleImmediatePatchSave = (patch: Partial<CatalogItem>) => {
+    const updatedData: Partial<CatalogItem> = { ...formData, ...patch };
     setFormData(updatedData);
     if (!isCreating) {
       onSave(updatedData);
@@ -81,17 +136,47 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   };
 
   const addSupplier = (supplierName: string) => {
+    if (supplierName === 'ABC Supply') {
+      if (!abcSupplyConnected) {
+        setShowAddSupplier(false);
+        navigate(`${orgPrefix}/settings/integrations`);
+        return;
+      }
+
+      if (abcSelectionMissing) {
+        setShowAddSupplier(false);
+        navigate(orgPrefix ? `${orgPrefix}/material-orders` : '/material-orders');
+        return;
+      }
+    }
+
     const newSuppliers = [...selectedSuppliers, { name: supplierName }];
     setSelectedSuppliers(newSuppliers);
-    const supplierValue = newSuppliers.map(s => s.name).join(', ');
-    handleImmediateSave('supplier', supplierValue);
+    if (supplierName !== 'ABC Supply') {
+      const supplierValue = newSuppliers.map(s => s.name).join(', ');
+      handleImmediateSave('supplier', supplierValue);
+    }
     setShowAddSupplier(false);
   };
 
   const removeSupplier = (index: number) => {
+    const removedSupplier = selectedSuppliers[index];
     const newSuppliers = selectedSuppliers.filter((_, i) => i !== index);
     setSelectedSuppliers(newSuppliers);
     const supplierValue = newSuppliers.map(s => s.name).join(', ');
+    if (removedSupplier?.name === 'ABC Supply') {
+      setAbcSearchResults([]);
+      handleImmediatePatchSave({
+        supplier: supplierValue,
+        supplierType: null,
+        productId: '',
+        productData: null,
+        branchId: '',
+        branchData: null,
+        abcSelectedShipTo: null,
+      });
+      return;
+    }
     handleImmediateSave('supplier', supplierValue);
   };
 
@@ -99,6 +184,77 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     const newSuppliers = [...selectedSuppliers];
     newSuppliers[index] = { ...newSuppliers[index], searchQuery };
     setSelectedSuppliers(newSuppliers);
+
+    if (newSuppliers[index]?.name !== 'ABC Supply') return;
+    if (!abcSupplyConnected || abcSelectionMissing) return;
+
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+    }
+
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setAbcSearchResults([]);
+      return;
+    }
+
+    searchDebounceRef.current = window.setTimeout(async () => {
+      try {
+        setAbcSearchLoading(true);
+        const selectedBranchRaw = localStorage.getItem('abc_selected_branch');
+        const selectedBranch = selectedBranchRaw ? JSON.parse(selectedBranchRaw) : null;
+        const branchId = String(selectedBranch?.id || selectedBranch?.number || '');
+        const results = await abcSupplyApi.searchItems(query, 50, branchId || undefined, 1);
+        setAbcSearchResults(Array.isArray(results) ? results : []);
+      } catch {
+        setAbcSearchResults([]);
+      } finally {
+        setAbcSearchLoading(false);
+      }
+    }, 300);
+  };
+
+  const selectAbcProduct = (index: number, product: Product) => {
+    const selectedBranchRaw = localStorage.getItem('abc_selected_branch');
+    const selectedShipToRaw = localStorage.getItem('abc_selected_shipto');
+    const selectedBranch = selectedBranchRaw ? JSON.parse(selectedBranchRaw) : null;
+    const selectedShipTo = selectedShipToRaw ? JSON.parse(selectedShipToRaw) : null;
+
+    const newSuppliers = [...selectedSuppliers];
+    const label = `${product.itemDescription || product.familyName || 'Product'} (${product.itemNumber})`;
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: label };
+    setSelectedSuppliers(newSuppliers);
+    setAbcSearchResults([]);
+
+    const branchId = String(selectedBranch?.id || selectedBranch?.number || '');
+    const hasValidSelection = Boolean(product?.itemNumber && branchId);
+
+    handleImmediatePatchSave({
+      supplier: hasValidSelection ? 'ABC Supply' : '',
+      supplierType: hasValidSelection ? 'abc' : null,
+      productId: hasValidSelection ? (product.itemNumber || '') : '',
+      productData: hasValidSelection ? product : null,
+      branchId: hasValidSelection ? branchId : '',
+      branchData: hasValidSelection ? (selectedBranch || null) : null,
+      abcSelectedShipTo: hasValidSelection ? (selectedShipTo || null) : null,
+    });
+  };
+
+  const clearAbcProductSelection = (index: number) => {
+    const newSuppliers = [...selectedSuppliers];
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
+    setSelectedSuppliers(newSuppliers);
+    setAbcSearchResults([]);
+
+    handleImmediatePatchSave({
+      supplier: '',
+      supplierType: null,
+      productId: '',
+      productData: null,
+      branchId: '',
+      branchData: null,
+      abcSelectedShipTo: null,
+    });
   };
 
   const availableSuppliers = supplierOptions.filter(
@@ -293,7 +449,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                 </span>
                 <span className="text-xs text-green-600 dark:text-green-400">All changes saved</span>
               </div>
-              
+
               {selectedSuppliers.length === 0 ? (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                   <div className="flex items-start space-x-2 mb-3">
@@ -308,6 +464,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                   >
                     Connect
                   </button>
+                  {abcSupplyConnected && abcSelectionMissing && (
+                    <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                      Select Branch + Ship To in Material Orders first.
+                    </p>
+                  )}
                   {showAddSupplier && (
                     <div className="mt-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                       {supplierOptions.map((supplier) => (
@@ -331,7 +492,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
               ) : (
                 <div className="space-y-3">
                   {selectedSuppliers.map((supplier, index) => {
-                    const isIntegrated = supplierIntegrations[supplier.name as keyof typeof supplierIntegrations];
+                    const abcProductSelected = Boolean(formData.productId);
+                    const selectedAbcProduct = abcProductSelected ? (formData.productData as Product | null) : null;
+                    const isIntegrated = supplier.name === 'ABC Supply'
+                      ? supplierIntegrations['ABC Supply'] && abcProductSelected
+                      : false;
                     
                     return (
                       <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-700">
@@ -357,11 +522,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                   : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                               }`}>
-                                {isIntegrated ? 'Integrated' : 'Manual'}
+                                {isIntegrated ? 'Connected' : (supplier.name === 'ABC Supply' && abcSupplyConnected ? 'Select Product' : 'Not Connected')}
                               </span>
-                              {!isIntegrated && (
+                              {!isIntegrated && !(supplier.name === 'ABC Supply' && abcSupplyConnected) && (
                                 <button
-                                  onClick={() => setShowAddSupplier(true)}
+                                  onClick={() => navigate(`${orgPrefix}/settings/integrations`)}
                                   className="text-primary-600 dark:text-primary-400 hover:underline"
                                 >
                                   Connect
@@ -377,16 +542,78 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                           </button>
                         </div>
                         
-                        <div className="relative mt-3">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
-                          <input
-                            type="text"
-                            placeholder="Search supplier catalog..."
-                            value={supplier.searchQuery || ''}
-                            onChange={(e) => updateSupplierSearch(index, e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                          />
-                        </div>
+                        {supplier.name === 'ABC Supply' && abcSupplyConnected && abcSelectionMissing ? (
+                          <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20 p-3">
+                            <p className="text-xs text-amber-800 dark:text-amber-300 mb-2">
+                              Select ABC Branch + Ship To first.
+                            </p>
+                            <button
+                              onClick={() => navigate(orgPrefix ? `${orgPrefix}/material-orders` : '/material-orders')}
+                              className="w-full px-3 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                            >
+                              Go to Material Orders
+                            </button>
+                          </div>
+                        ) : supplier.name === 'ABC Supply' && abcSupplyConnected && abcProductSelected ? (
+                          <div className="mt-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected product</p>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {selectedAbcProduct?.itemDescription || selectedAbcProduct?.familyName || formData.name || 'Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              #{formData.productId || selectedAbcProduct?.itemNumber || 'N/A'}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                onClick={() => clearAbcProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded-lg hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+                              >
+                                Remove product
+                              </button>
+                              <button
+                                onClick={() => clearAbcProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 dark:border-primary-700 dark:text-primary-300 dark:hover:bg-primary-900/20"
+                              >
+                                Add another
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative mt-3">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                            <input
+                              type="text"
+                              placeholder="Search supplier catalog and select product..."
+                              value={supplier.searchQuery || ''}
+                              onChange={(e) => updateSupplierSearch(index, e.target.value)}
+                              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                            />
+                            {supplier.name === 'ABC Supply' && (
+                              <div className="mt-2">
+                                {abcSearchLoading && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Searching products...</p>
+                                )}
+                                {!abcSearchLoading && abcSearchResults.length > 0 && (
+                                  <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                                    {abcSearchResults.map((product) => (
+                                      <button
+                                        key={product.itemNumber}
+                                        onClick={() => selectAbcProduct(index, product)}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                      >
+                                        <div className="font-medium text-gray-900 dark:text-white">{product.itemDescription || product.familyName || 'Product'}</div>
+                                        <div className="text-gray-500 dark:text-gray-400">#{product.itemNumber}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!abcSearchLoading && (supplier.searchQuery || '').trim().length >= 2 && abcSearchResults.length === 0 && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">No products found.</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
