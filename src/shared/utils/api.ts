@@ -52,6 +52,7 @@ api.interceptors.response.use(
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       console.error('Access forbidden:', error.response.data);
+      logoutAndRedirect();
     }
 
     // Handle 404 Not Found

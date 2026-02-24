@@ -21,7 +21,7 @@ const baseQueryWithReauth: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
-  if (result.error && result.error.status === 401) {
+  if (result.error && (result.error.status === 401 || result.error.status === 403)) {
     logoutAndRedirect();
   }
   return result;
@@ -41,7 +41,7 @@ export const dashboardApi = createApi({
     getUserPreferences: builder.query({
       query: (userId: string) => `/dashboard/preferences/${userId}`,
       transformResponse: (response: any) => response.data || [],
-      providesTags: (result, error, userId) => [{ type: 'Preferences', id: userId }],
+      providesTags: (_result, _error, userId) => [{ type: 'Preferences', id: userId }],
     }),
 
     savePreferences: builder.mutation({
@@ -50,7 +50,7 @@ export const dashboardApi = createApi({
         method: 'POST',
         body: { preferences },
       }),
-      invalidatesTags: (result, error, { userId }) => [{ type: 'Preferences', id: userId }],
+      invalidatesTags: (_result, _error, { userId }) => [{ type: 'Preferences', id: userId }],
     }),
   }),
 });
