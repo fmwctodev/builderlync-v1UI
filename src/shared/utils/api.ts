@@ -45,9 +45,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle 401 Unauthorized - redirect to login
-    if (error.response?.status === 401) {
-      logoutAndRedirect();
-    }
+    // if (error.response?.status === 401) {
+    //   logoutAndRedirect();
+    // }
 
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
