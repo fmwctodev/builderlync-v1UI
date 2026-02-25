@@ -11,7 +11,8 @@ import {
   Mail,
   RefreshCw,
   Edit2,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -562,6 +563,13 @@ export const Users: React.FC = () => {
                               title="View Detail"
                             >
                               <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/super-admin/users/${user.id}/import`)}
+                              className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                              title="Import Data"
+                            >
+                              <Upload className="w-4 h-4" />
                             </button>
                             {user.userType === 'staff' && (
                               <button

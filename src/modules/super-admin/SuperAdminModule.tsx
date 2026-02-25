@@ -8,6 +8,7 @@ import { Accounts } from './pages/Accounts';
 import { AccountDetail } from './pages/AccountDetail';
 import { Users } from './pages/Users';
 import { UserDetail } from './pages/UserDetail';
+import { UserImport } from './pages/UserImport';
 import { Roles } from './pages/Roles';
 import { Billing } from './pages/Billing';
 import { Usage } from './pages/Usage';
@@ -30,6 +31,7 @@ export const SuperAdminModule: React.FC = () => {
         <Route path="accounts/:accountId" element={<AccountDetail />} />
         <Route path="users" element={<Users />} />
         <Route path="users/:userId" element={<UserDetail />} />
+        <Route path="users/:userId/import" element={<UserImport />} />
         <Route path="roles" element={<Roles />} />
         <Route path="billing" element={<Billing />} />
         <Route path="usage" element={<Usage />} />
