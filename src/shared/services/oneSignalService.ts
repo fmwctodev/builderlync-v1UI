@@ -54,16 +54,30 @@ const withOneSignal = async <T>(
   });
 };
 
+const buildOneSignalExternalId = (user: User): string | null => {
+  if (!user?.id) return null;
+
+  const orgPart = String(user.organizationId || user.organization_id || user.companySlug || "global")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "_");
+  const userPart = String(user.id).trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+
+  return `builderlync:${orgPart}:${userPart}`;
+};
+
 export const oneSignalService = {
   syncAuthenticatedUser(user: User) {
-    if (!user?.id) return;
+    const externalId = buildOneSignalExternalId(user);
+    if (!externalId) return;
 
     enqueueOneSignal(async (oneSignal) => {
       try {
-        await oneSignal.login(String(user.id));
+        await oneSignal.login(externalId);
 
         const tags: Record<string, string> = {
           user_type: "authenticated",
+          one_signal_external_id: externalId,
         };
         if (user.companySlug) tags.company_slug = String(user.companySlug);
         if (user.organizationId) tags.organization_id = String(user.organizationId);
@@ -74,7 +88,7 @@ export const oneSignalService = {
         }
 
       } catch (error) {
-        console.error("OneSignal auth sync failed:", error);
+        console.error("OneSignal auth sync failed:", { externalId, error });
       }
     });
   },
