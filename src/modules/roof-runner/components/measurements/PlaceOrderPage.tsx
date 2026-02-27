@@ -43,6 +43,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const [deliveryProductId, setDeliveryProductId] = useState<number>(8); // Default to Regular
   const [measurementInstructionType, setMeasurementInstructionType] = useState<number>(1); // Default to Primary+Garage
   const [changesInLast4Years, setChangesInLast4Years] = useState<boolean>(false);
+  const [promoCode, setPromoCode] = useState<string>('');
 
   useEffect(() => {
     loadConnectionStatus();
@@ -756,22 +757,21 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
           </div>
         </div>
 
-        {paymentMethod === 'credits' && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-4 h-4 text-gray-400"><FileText className="w-full h-full" /></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Promo Code</span>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Enter promo code"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700"
-              />
-              <button className="px-4 py-2 bg-red-400 text-white rounded-md text-sm font-medium hover:bg-red-500">Apply</button>
-            </div>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-4 h-4 text-gray-400"><FileText className="w-full h-full" /></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Promo Code</span>
           </div>
-        )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="Enter promo code"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700"
+            />
+          </div>
+        </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -910,6 +910,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                       reportAttributes: {},
                       changesInLast4Years: changesInLast4Years
                     },
+                    promoCode: promoCode.trim() || undefined,
                     placeOrderUser: 'BuilderLync User',
                     paymentMethod: paymentMethod,
                     credits: totalCredits
