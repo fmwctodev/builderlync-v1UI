@@ -208,6 +208,12 @@ export default function Catalog() {
         String(normalizedData.branchId).trim()
       );
 
+      const hasValidSrsProduct = Boolean(
+        normalizedData.supplierType === 'srs' &&
+        normalizedData.productId &&
+        String(normalizedData.productId).trim()
+      );
+
       if (normalizedData.supplierType === 'abc' && !hasValidAbcProduct) {
         normalizedData.supplier = '';
         normalizedData.supplierType = null;
@@ -216,6 +222,13 @@ export default function Catalog() {
         normalizedData.branchId = '';
         normalizedData.branchData = null;
         normalizedData.abcSelectedShipTo = null;
+      }
+
+      if (normalizedData.supplierType === 'srs' && !hasValidSrsProduct) {
+        normalizedData.supplier = '';
+        normalizedData.supplierType = null;
+        normalizedData.productId = '';
+        normalizedData.productData = null;
       }
 
       if (isCreatingNew) {
@@ -775,6 +788,8 @@ export default function Catalog() {
         onSave={handleSaveItem}
         isCreating={isCreatingNew}
         abcSupplyConnected={Boolean(abcSupplyIntegrated)}
+        // srsConnected={Boolean(srsIntegrated)}
+        srsConnected={true}
       />
 
       {toast && (
