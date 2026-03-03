@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogItem } from '../../../../shared/store/services/catalogApi';
 import { abcSupplyApi } from '../../../abc-supply/services/api';
 import { Product } from '../../../abc-supply/types';
+import { srsService } from '../../services/srsService';
 
 interface CatalogItemSidebarProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface CatalogItemSidebarProps {
   onSave: (item: Partial<CatalogItem>) => void;
   isCreating?: boolean;
   abcSupplyConnected?: boolean;
+  srsConnected?: boolean;
 }
 
 const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
@@ -21,6 +23,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   onSave,
   isCreating = false,
   abcSupplyConnected = false,
+  srsConnected = false,
 }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -31,13 +34,15 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   const [abcSelectionMissing, setAbcSelectionMissing] = useState(false);
   const [abcSearchResults, setAbcSearchResults] = useState<Product[]>([]);
   const [abcSearchLoading, setAbcSearchLoading] = useState(false);
+  const [srsSearchResults, setSrsSearchResults] = useState<any[]>([]);
+  const [srsSearchLoading, setSrsSearchLoading] = useState(false);
   const searchDebounceRef = useRef<number | null>(null);
   
   const supplierIntegrations = {
     'ABC Supply': abcSupplyConnected,
   };
   
-  const supplierOptions = ['ABC Supply'];
+  const supplierOptions = ['ABC Supply', 'SRS'];
   
   const renderSupplierName = (name: string) => {
     if (name === 'ABC Supply') {
@@ -150,9 +155,15 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       }
     }
 
+    if (supplierName === 'SRS' && !srsConnected) {
+      setShowAddSupplier(false);
+      navigate(`${orgPrefix}/settings/integrations`);
+      return;
+    }
+
     const newSuppliers = [...selectedSuppliers, { name: supplierName }];
     setSelectedSuppliers(newSuppliers);
-    if (supplierName !== 'ABC Supply') {
+    if (supplierName !== 'ABC Supply' && supplierName !== 'SRS') {
       const supplierValue = newSuppliers.map(s => s.name).join(', ');
       handleImmediateSave('supplier', supplierValue);
     }
@@ -177,6 +188,16 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       });
       return;
     }
+    if (removedSupplier?.name === 'SRS') {
+      setSrsSearchResults([]);
+      handleImmediatePatchSave({
+        supplier: supplierValue,
+        supplierType: null,
+        productId: '',
+        productData: null,
+      });
+      return;
+    }
     handleImmediateSave('supplier', supplierValue);
   };
 
@@ -185,9 +206,6 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     newSuppliers[index] = { ...newSuppliers[index], searchQuery };
     setSelectedSuppliers(newSuppliers);
 
-    if (newSuppliers[index]?.name !== 'ABC Supply') return;
-    if (!abcSupplyConnected || abcSelectionMissing) return;
-
     if (searchDebounceRef.current) {
       window.clearTimeout(searchDebounceRef.current);
     }
@@ -195,23 +213,44 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     const query = searchQuery.trim();
     if (query.length < 2) {
       setAbcSearchResults([]);
+      setSrsSearchResults([]);
       return;
     }
 
-    searchDebounceRef.current = window.setTimeout(async () => {
-      try {
-        setAbcSearchLoading(true);
-        const selectedBranchRaw = localStorage.getItem('abc_selected_branch');
-        const selectedBranch = selectedBranchRaw ? JSON.parse(selectedBranchRaw) : null;
-        const branchId = String(selectedBranch?.id || selectedBranch?.number || '');
-        const results = await abcSupplyApi.searchItems(query, 50, branchId || undefined, 1);
-        setAbcSearchResults(Array.isArray(results) ? results : []);
-      } catch {
-        setAbcSearchResults([]);
-      } finally {
-        setAbcSearchLoading(false);
-      }
-    }, 300);
+    if (newSuppliers[index]?.name === 'ABC Supply') {
+      if (!abcSupplyConnected || abcSelectionMissing) return;
+
+      searchDebounceRef.current = window.setTimeout(async () => {
+        try {
+          setAbcSearchLoading(true);
+          const selectedBranchRaw = localStorage.getItem('abc_selected_branch');
+          const selectedBranch = selectedBranchRaw ? JSON.parse(selectedBranchRaw) : null;
+          const branchId = String(selectedBranch?.id || selectedBranch?.number || '');
+          const results = await abcSupplyApi.searchItems(query, 50, branchId || undefined, 1);
+          setAbcSearchResults(Array.isArray(results) ? results : []);
+        } catch {
+          setAbcSearchResults([]);
+        } finally {
+          setAbcSearchLoading(false);
+        }
+      }, 300);
+    }
+
+    if (newSuppliers[index]?.name === 'SRS') {
+      if (!srsConnected) return;
+
+      searchDebounceRef.current = window.setTimeout(async () => {
+        try {
+          setSrsSearchLoading(true);
+          const result = await srsService.searchProducts(query, 1, 50);
+          setSrsSearchResults(result?.data || []);
+        } catch {
+          setSrsSearchResults([]);
+        } finally {
+          setSrsSearchLoading(false);
+        }
+      }, 300);
+    }
   };
 
   const selectAbcProduct = (index: number, product: Product) => {
@@ -240,6 +279,23 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     });
   };
 
+  const selectSrsProduct = (index: number, product: any) => {
+    const newSuppliers = [...selectedSuppliers];
+    const label = `${product.productName || product.itemDescription || 'Product'} (${product.productId || product.itemNumber})`;
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: label };
+    setSelectedSuppliers(newSuppliers);
+    setSrsSearchResults([]);
+
+    const hasValidSelection = Boolean(product?.productId || product?.itemNumber);
+
+    handleImmediatePatchSave({
+      supplier: hasValidSelection ? 'SRS' : '',
+      supplierType: hasValidSelection ? 'srs' : null,
+      productId: hasValidSelection ? String(product.productId || product.itemNumber || '') : '',
+      productData: hasValidSelection ? product : null,
+    });
+  };
+
   const clearAbcProductSelection = (index: number) => {
     const newSuppliers = [...selectedSuppliers];
     newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
@@ -254,6 +310,20 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       branchId: '',
       branchData: null,
       abcSelectedShipTo: null,
+    });
+  };
+
+  const clearSrsProductSelection = (index: number) => {
+    const newSuppliers = [...selectedSuppliers];
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
+    setSelectedSuppliers(newSuppliers);
+    setSrsSearchResults([]);
+
+    handleImmediatePatchSave({
+      supplier: '',
+      supplierType: null,
+      productId: '',
+      productData: null,
     });
   };
 
@@ -492,11 +562,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
               ) : (
                 <div className="space-y-3">
                   {selectedSuppliers.map((supplier, index) => {
-                    const abcProductSelected = Boolean(formData.productId);
+                    const abcProductSelected = Boolean(formData.supplierType === 'abc' && formData.productId);
+                    const srsProductSelected = Boolean(formData.supplierType === 'srs' && formData.productId);
                     const selectedAbcProduct = abcProductSelected ? (formData.productData as Product | null) : null;
-                    const isIntegrated = supplier.name === 'ABC Supply'
-                      ? supplierIntegrations['ABC Supply'] && abcProductSelected
-                      : false;
+                    const selectedSrsProduct = srsProductSelected ? (formData.productData as any) : null;
+                    const isIntegrated = (supplier.name === 'ABC Supply' && abcProductSelected) || (supplier.name === 'SRS' && srsProductSelected);
                     
                     return (
                       <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-700">
@@ -578,6 +648,31 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                               </button>
                             </div>
                           </div>
+                        // ) : supplier.name === 'SRS' && srsConnected && srsProductSelected ? (
+                        ) : supplier.name === 'SRS' && srsProductSelected ? (
+                          <div className="mt-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected product</p>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {selectedSrsProduct?.productName || selectedSrsProduct?.itemDescription || formData.name || 'Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              #{formData.productId || selectedSrsProduct?.productId || selectedSrsProduct?.itemNumber || 'N/A'}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                onClick={() => clearSrsProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded-lg hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+                              >
+                                Remove product
+                              </button>
+                              <button
+                                onClick={() => clearSrsProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 dark:border-primary-700 dark:text-primary-300 dark:hover:bg-primary-900/20"
+                              >
+                                Add another
+                              </button>
+                            </div>
+                          </div>
                         ) : (
                           <div className="relative mt-3">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
@@ -608,6 +703,30 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                                   </div>
                                 )}
                                 {!abcSearchLoading && (supplier.searchQuery || '').trim().length >= 2 && abcSearchResults.length === 0 && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">No products found.</p>
+                                )}
+                              </div>
+                            )}
+                            {supplier.name === 'SRS' && (
+                              <div className="mt-2">
+                                {srsSearchLoading && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Searching products...</p>
+                                )}
+                                {!srsSearchLoading && srsSearchResults.length > 0 && (
+                                  <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                                    {srsSearchResults.map((product) => (
+                                      <button
+                                        key={product.productId || product.itemNumber}
+                                        onClick={() => selectSrsProduct(index, product)}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                      >
+                                        <div className="font-medium text-gray-900 dark:text-white">{product.productName || product.itemDescription || 'Product'}</div>
+                                        <div className="text-gray-500 dark:text-gray-400">#{product.productId || product.itemNumber}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!srsSearchLoading && (supplier.searchQuery || '').trim().length >= 2 && srsSearchResults.length === 0 && (
                                   <p className="text-xs text-gray-500 dark:text-gray-400">No products found.</p>
                                 )}
                               </div>

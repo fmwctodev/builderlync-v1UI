@@ -62,7 +62,8 @@ class SRSService {
 
   async validateConnection(): Promise<boolean> {
     try {
-      const response = await fetch('/api/srs/validate');
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
+      const response = await fetch(`${baseUrl}/srs/validate`);
       
       if (response.ok) {
         const data = await response.json();
@@ -72,6 +73,22 @@ class SRSService {
       return false;
     } catch (error) {
       return false;
+    }
+  }
+
+  async searchProducts(query: string, page = 1, limit = 50): Promise<{ data: any[]; pagination?: any }> {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
+      const response = await fetch(`${baseUrl}/srs/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      
+      return { data: [] };
+    } catch (error) {
+      return { data: [] };
     }
   }
 
