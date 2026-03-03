@@ -82,12 +82,20 @@ class SRSService {
       const response = await fetch(`${baseUrl}/srs/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
       
       if (response.ok) {
-        const data = await response.json();
-        return data;
+        const result = await response.json();
+        // Handle nested data structure: result.data.data
+        if (result.success && result.data) {
+          return {
+            data: result.data.data || [],
+            pagination: result.data.pagination
+          };
+        }
+        return { data: [] };
       }
       
       return { data: [] };
     } catch (error) {
+      console.error('SRS search error:', error);
       return { data: [] };
     }
   }
