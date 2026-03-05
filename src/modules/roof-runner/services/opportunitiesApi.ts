@@ -70,4 +70,13 @@ export const opportunitiesApi = {
   async getOpportunitiesByJobType(jobType: JobType): Promise<OpportunityWithDetails[]> {
     return this.getOpportunities({ job_type: jobType });
   },
+
+  async removeFollower(id: string, userId: string): Promise<void> {
+    try {
+      await opportunitiesBackendApi.removeFollower(id, userId);
+    } catch (error) {
+      console.error('Error removing follower:', error);
+      throw error;
+    }
+  },
 };

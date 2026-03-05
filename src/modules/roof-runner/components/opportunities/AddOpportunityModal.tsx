@@ -383,8 +383,8 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                   propertyState={formData.property_state || ''}
                   propertyZip={formData.property_zip || ''}
                   propertyCountry={formData.property_country || ''}
-                  onAddressChange={(field, value) => {
-                    setFormData({ ...formData, [field]: value });
+                  onAddressChange={(updates) => {
+                    setFormData(prev => ({ ...prev, ...updates }));
                   }}
                 />
               </div>

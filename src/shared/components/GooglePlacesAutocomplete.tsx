@@ -2,7 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 
 interface GooglePlacesAutocompleteProps {
   value: string;
-  onChange: (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => void;
+  onChange: (
+    address: string,
+    isFromAutocomplete: boolean,
+    lat?: number,
+    lng?: number,
+    addressComponents?: {
+      street_number?: string;
+      route?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      country?: string;
+    }
+  ) => void;
   placeholder?: string;
   className?: string;
 }
@@ -110,7 +123,23 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
         if (place && place.geometry) {
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
-          onChange(suggestion.description, true, lat, lng);
+
+          const components: any = {};
+          place.address_components?.forEach((c: any) => {
+            const types = c.types;
+            if (types.includes('street_number')) components.street_number = c.long_name;
+            if (types.includes('route')) components.route = c.long_name;
+            if (types.includes('locality')) components.city = c.long_name;
+            else if (types.includes('sublocality_level_1') && !components.city) components.city = c.long_name;
+            else if (types.includes('sublocality') && !components.city) components.city = c.long_name;
+
+            if (types.includes('administrative_area_level_1')) components.state = c.short_name;
+            if (types.includes('postal_code')) components.zip = c.long_name;
+            if (types.includes('postal_code_suffix') && components.zip) components.zip += `-${c.long_name}`;
+            if (types.includes('country')) components.country = c.long_name;
+          });
+
+          onChange(suggestion.description, true, lat, lng, components);
           setShowSuggestions(false);
         }
       }

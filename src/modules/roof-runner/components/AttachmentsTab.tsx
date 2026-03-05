@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderPlus, Upload, Search, MoreHorizontal, ArrowUp, File, X } from 'lucide-react';
+import { Upload, Search, MoreHorizontal, ArrowUp, File, X, Download } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cloudDriveApi } from '../../../shared/services/cloudDriveApi';
 import { backendFilesApi, FileRecord } from '../../../shared/services/backendFilesApi';
@@ -20,8 +20,25 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [documentSearch, setDocumentSearch] = useState('');
-  const [attachmentsIds, setAttachmentsIds] = useState<number[]>([]);
+  const [attachmentsIds, setAttachmentsIds] = useState<(number | string)[]>([]);
   const [previewItem, setPreviewItem] = useState<FileRecord | null>(null);
+
+  const fetchJobAttachmentsIds = async () => {
+    if (!jobId) return;
+    try {
+      setLoading(true);
+      const response = await getJobById(jobId);
+      const job = response.data || response;
+      const ids = job?.attachmentsId || job?.attachments_id || [];
+      setAttachmentsIds(Array.isArray(ids) ? ids : []);
+      const docs = job?.attachmentsDocuments || [];
+      setAttachments(Array.isArray(docs) ? docs : []);
+    } catch (error) {
+      console.error('Error loading job attachments ids:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -38,23 +55,6 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   }, []);
 
   useEffect(() => {
-    const fetchJobAttachmentsIds = async () => {
-      if (!jobId) return;
-      try {
-        setLoading(true);
-        const response = await getJobById(jobId);
-        const job = response.data || response;
-        const ids = job?.attachmentsId || job?.attachments_id || [];
-        setAttachmentsIds(Array.isArray(ids) ? ids : []);
-        const docs = job?.attachmentsDocuments || [];
-        setAttachments(Array.isArray(docs) ? docs : []);
-      } catch (error) {
-        console.error('Error loading job attachments ids:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchJobAttachmentsIds();
   }, [jobId]);
 
@@ -66,12 +66,62 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const isImageFile = (mimeType?: string) => {
-    return !!mimeType && mimeType.startsWith('image/');
+  const getExtension = (filename: string) => {
+    return filename.split('.').pop()?.toLowerCase() || '';
   };
 
-  const isPdfFile = (mimeType?: string) => {
-    return !!mimeType && mimeType.includes('pdf');
+  const isImageFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+    return (!!mimeType && mimeType.startsWith('image/')) || imageExtensions.includes(ext);
+  };
+
+  const isPdfFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+    return (!!mimeType && mimeType.includes('pdf')) || ext === 'pdf';
+  };
+
+  const isOfficeFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+
+    const officeMimes = [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/rtf',
+      'text/plain',
+      'text/csv'
+    ];
+
+    const officeExtensions = [
+      'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'ods', 'odt', 'msg'
+    ];
+
+    return (!!mimeType && officeMimes.some(m => mimeType.includes(m))) || officeExtensions.includes(ext);
+  };
+
+  const isCloudUrl = (url?: string) => {
+    if (!url) return false;
+    const cloudDomains = [
+      'onedrive.live.com',
+      '1drv.ms',
+      'google.com/drive',
+      'sharepoint.com',
+      'docs.google.com',
+      'drive.google.com',
+      'microsoft.com',
+      'live.com'
+    ];
+    return url.startsWith('http') && cloudDomains.some(domain => url.includes(domain));
   };
 
   const loadDocuments = async () => {
@@ -91,10 +141,10 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const handleAttachDocument = async (doc: FileRecord) => {
     if (!jobId) return;
     try {
-      const nextIds = Array.from(new Set([...attachmentsIds, doc.id]));
-      setAttachmentsIds(nextIds);
+      const nextIds = Array.from(new Set([...attachmentsIds, doc.id])).filter(id => id !== null && id !== undefined && id !== "") as (number | string)[];
       await updateJobAttachmentsIds(jobId, nextIds);
-      setAttachments([doc, ...attachments]);
+      // Re-fetch to get the imported versions with correct IDs and GCS paths
+      await fetchJobAttachmentsIds();
       setShowDocumentPicker(false);
     } catch (error) {
       console.error('Error attaching document:', error);
@@ -137,7 +187,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Search/Filter bar removed for now */}
 
       <div className="flex-1 p-6">
@@ -191,7 +241,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 hover:shadow-md transition-shadow"
               >
                 <div className="aspect-square w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  {isImageFile(attachment.mime_type) ? (
+                  {isImageFile(attachment) ? (
                     <img
                       src={attachment.file_path}
                       alt={attachment.filename}
@@ -211,7 +261,16 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <button
-                    onClick={() => setPreviewItem(attachment)}
+                    onClick={() => {
+                      if (isCloudUrl(attachment.file_path)) {
+                        window.open(attachment.file_path, '_blank');
+                      } else if (isImageFile(attachment) || isPdfFile(attachment) || isOfficeFile(attachment)) {
+                        setPreviewItem(attachment);
+                      } else {
+                        // For other types, try to open in new tab directly
+                        window.open(attachment.file_path, '_blank');
+                      }
+                    }}
                     className="text-xs text-primary-600 hover:text-primary-700"
                   >
                     Preview
@@ -327,7 +386,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
               </button>
             </div>
             <div className="p-4">
-              {isImageFile(previewItem.mime_type) ? (
+              {isImageFile(previewItem) ? (
                 <div className="w-full max-h-[70vh] flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
                   <img
                     src={previewItem.file_path}
@@ -335,17 +394,42 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                     className="max-h-[70vh] w-auto object-contain"
                   />
                 </div>
-              ) : isPdfFile(previewItem.mime_type) ? (
+              ) : (isPdfFile(previewItem) && !isCloudUrl(previewItem.file_path)) ? (
                 <div className="w-full h-[70vh] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
                   <iframe
                     src={previewItem.file_path}
                     className="w-full h-full"
                     title={previewItem.filename}
+                    frameBorder="0"
+                  />
+                </div>
+              ) : (isOfficeFile(previewItem) && !isCloudUrl(previewItem.file_path)) ? (
+                <div className="w-full h-[70vh] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
+                  <iframe
+                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewItem.file_path)}&embedded=true`}
+                    className="w-full h-full"
+                    title={previewItem.filename}
+                    frameBorder="0"
                   />
                 </div>
               ) : (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Preview not available for this file type.
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <File className="w-16 h-16 text-primary-400 mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
+                    Preview not available for this file type
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mb-6 font-mono">
+                    {previewItem.mime_type}
+                  </p>
+                  <a
+                    href={previewItem.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Open in New Tab</span>
+                  </a>
                 </div>
               )}
             </div>

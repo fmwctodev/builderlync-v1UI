@@ -246,7 +246,7 @@ class JobsApiService {
     return this.makeRequest(`/jobs/${id}`);
   }
 
-  async updateJobAttachmentsIds(id: number, attachmentIds: number[]) {
+  async updateJobAttachmentsIds(id: number, attachmentIds: (number | string)[]) {
     return this.makeRequest(`/jobs/${id}/attachments-ids`, {
       method: 'PUT',
       body: JSON.stringify({ attachmentIds }),
