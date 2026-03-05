@@ -7,6 +7,7 @@ const CouponsTab: React.FC = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
@@ -90,9 +91,8 @@ const CouponsTab: React.FC = () => {
         </div>
         <button
           onClick={() => {
-            console.log('Create Coupon button clicked');
+            setEditingCoupon(null);
             setShowCreateModal(true);
-            console.log('showCreateModal set to:', true);
           }}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
         >
@@ -109,7 +109,10 @@ const CouponsTab: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No coupons found</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">Create your first coupon to get started</p>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setEditingCoupon(null);
+              setShowCreateModal(true);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
           >
             <Plus className="w-4 h-4" />
@@ -117,8 +120,8 @@ const CouponsTab: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+          <table className="w-full min-w-max">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -184,6 +187,16 @@ const CouponsTab: React.FC = () => {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => {
+                          setEditingCoupon(coupon);
+                          setShowCreateModal(true);
+                        }}
+                        className="p-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleDelete(coupon.id)}
                         className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         title="Delete"
@@ -201,19 +214,17 @@ const CouponsTab: React.FC = () => {
 
       <CreateCouponModal
         isOpen={showCreateModal}
+        editCoupon={editingCoupon}
         onClose={() => {
-          console.log('Closing modal');
+          setEditingCoupon(null);
           setShowCreateModal(false);
         }}
-        onSuccess={() => {
-          console.log('Coupon created successfully');
+        onSuccess={(_coupon) => {
           loadCoupons();
+          setEditingCoupon(null);
           setShowCreateModal(false);
         }}
       />
-      
-      {/* Debug info */}
-      {console.log('showCreateModal state:', showCreateModal)}
     </div>
   );
 };
