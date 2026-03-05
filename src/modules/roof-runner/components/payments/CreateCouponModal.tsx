@@ -1,26 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { createCoupon, Coupon } from '../../../../shared/store/services/couponsApi';
+import { createCoupon, Coupon, updateCoupon } from '../../../../shared/store/services/couponsApi';
 
 interface CreateCouponModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (coupon: Coupon) => void;
+  editCoupon?: Coupon | null;
 }
 
-const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const getInitialFormData = () => ({
+  coupon_name: '',
+  coupon_code: '',
+  discount_type: 'percentage' as 'percentage' | 'fixed',
+  discount_value: 0,
+  start_date: new Date().toISOString().split('T')[0],
+  end_date: '',
+  maximum_redemptions: '',
+  status: 'active' as 'active' | 'inactive'
+});
+
+const toDateInput = (value?: string) => {
+  if (!value) return '';
+  return value.split('T')[0];
+};
+
+const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, onSuccess, editCoupon }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    coupon_name: '',
-    coupon_code: '',
-    discount_type: 'percentage' as 'percentage' | 'fixed',
-    discount_value: 0,
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
-    maximum_redemptions: '',
-    status: 'active' as 'active' | 'inactive'
-  });
+  const [formData, setFormData] = useState(getInitialFormData);
+  const isEditMode = Boolean(editCoupon);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (editCoupon) {
+      setFormData({
+        coupon_name: editCoupon.coupon_name || '',
+        coupon_code: editCoupon.coupon_code || '',
+        discount_type: editCoupon.discount_type || 'percentage',
+        discount_value: Number(editCoupon.discount_value || 0),
+        start_date: toDateInput(editCoupon.start_date) || new Date().toISOString().split('T')[0],
+        end_date: toDateInput(editCoupon.end_date),
+        maximum_redemptions:
+          editCoupon.maximum_redemptions !== undefined && editCoupon.maximum_redemptions !== null
+            ? String(editCoupon.maximum_redemptions)
+            : '',
+        status: editCoupon.status || 'active',
+      });
+    } else {
+      setFormData(getInitialFormData());
+    }
+    setError(null);
+  }, [isOpen, editCoupon]);
 
   const generateCode = () => {
     const code = 'SUMMER' + Math.floor(Math.random() * 100);
@@ -38,19 +70,19 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, 
         maximum_redemptions: formData.maximum_redemptions ? parseInt(formData.maximum_redemptions) : undefined,
         end_date: formData.end_date || undefined
       };
-      const response = await createCoupon(couponData);
+      const response = isEditMode && editCoupon
+        ? await updateCoupon(editCoupon.id, couponData)
+        : await createCoupon(couponData);
       onSuccess(response);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create coupon');
+      setError(err.response?.data?.message || (isEditMode ? 'Failed to update coupon' : 'Failed to create coupon'));
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!isOpen) return null;
-
-  console.log('CreateCouponModal rendering, isOpen:', isOpen);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
@@ -61,7 +93,9 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex-1">Create Coupon</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex-1">
+            {isEditMode ? 'Edit Coupon' : 'Create Coupon'}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <X className="w-5 h-5" />
           </button>
@@ -238,7 +272,7 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, 
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
               </svg>
-              {isLoading ? 'Creating...' : 'Create Coupon'}
+              {isLoading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Coupon')}
             </button>
           </div>
         </form>
