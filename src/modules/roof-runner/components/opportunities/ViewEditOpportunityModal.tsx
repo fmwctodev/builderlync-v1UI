@@ -9,6 +9,7 @@ import OpportunityTasksTab from './OpportunityTasksTab';
 import OpportunityNotesTab from './OpportunityNotesTab';
 import OpportunityPaymentsTab from './OpportunityPaymentsTab';
 import OpportunityAssociatedObjectsTab from './OpportunityAssociatedObjectsTab';
+import PropertyAddressInput from './PropertyAddressInput';
 
 interface ViewEditOpportunityModalProps {
   isOpen: boolean;
@@ -57,6 +58,13 @@ export default function ViewEditOpportunityModal({
     contact_email: '',
     contact_phone: '',
     follower_ids: [],
+    property_address: '',
+    property_city: '',
+    property_state: '',
+    property_zip: '',
+    property_country: '',
+    property_latitude: undefined,
+    property_longitude: undefined,
   });
   const [originalData, setOriginalData] = useState<OpportunityFormData | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -97,6 +105,13 @@ export default function ViewEditOpportunityModal({
         contact_email: primaryContact?.contact_email || '',
         contact_phone: primaryContact?.contact_phone || '',
         follower_ids: data.followers?.map(f => f.user_id) || [],
+        property_address: data.property_address || '',
+        property_city: data.property_city || '',
+        property_state: data.property_state || '',
+        property_zip: data.property_zip || '',
+        property_country: data.property_country || '',
+        property_latitude: data.property_latitude,
+        property_longitude: data.property_longitude,
       };
 
       setFormData(formValues);
@@ -181,6 +196,13 @@ export default function ViewEditOpportunityModal({
         contact_email: '',
         contact_phone: '',
         follower_ids: [],
+        property_address: '',
+        property_city: '',
+        property_state: '',
+        property_zip: '',
+        property_country: '',
+        property_latitude: undefined,
+        property_longitude: undefined,
       });
       setOriginalData(null);
       setErrors({});
@@ -232,6 +254,13 @@ export default function ViewEditOpportunityModal({
       contact_email: '',
       contact_phone: '',
       follower_ids: [],
+      property_address: '',
+      property_city: '',
+      property_state: '',
+      property_zip: '',
+      property_country: '',
+      property_latitude: undefined,
+      property_longitude: undefined,
     });
     setOriginalData(null);
     setErrors({});
@@ -405,6 +434,19 @@ export default function ViewEditOpportunityModal({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <PropertyAddressInput
+                      propertyAddress={formData.property_address || ''}
+                      propertyCity={formData.property_city || ''}
+                      propertyState={formData.property_state || ''}
+                      propertyZip={formData.property_zip || ''}
+                      propertyCountry={formData.property_country || ''}
+                      onAddressChange={(updates) => {
+                        setFormData(prev => ({ ...prev, ...updates }));
+                      }}
+                    />
                   </div>
 
                   <div>

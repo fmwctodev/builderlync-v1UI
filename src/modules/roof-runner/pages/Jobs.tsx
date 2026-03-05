@@ -98,6 +98,16 @@ const Jobs: React.FC = () => {
     );
   };
 
+  const formatDateForInput = (dateString: string | undefined | null): string => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toISOString().split('T')[0];
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
+  };
+
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
@@ -248,7 +258,7 @@ const Jobs: React.FC = () => {
       assignees: job.assignees,
       jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
-      closeDate: job.close_date || job.closeDate,
+      closeDate: formatDateForInput(job.close_date || job.closeDate),
       jobValue: String(job.job_value || job.jobValue || ''),
       source: job.source,
       details: job.details,
@@ -256,7 +266,7 @@ const Jobs: React.FC = () => {
       insuranceCompany: job.insurance_company || job.insuranceCompany || '',
       policyAccountNumber: job.policy_account_number || job.policyAccountNumber || '',
       claimNumber: job.claim_number || job.claimNumber || '',
-      dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
+      dateOfLoss: formatDateForInput(job.date_of_loss || job.dateOfLoss),
       typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
       claimAmount: Number(job.claim_amount || job.claimAmount || 0),
       deductible: job.deductible || 0,
@@ -281,7 +291,7 @@ const Jobs: React.FC = () => {
       assignees: job.assignees,
       jobOwner: job.job_owner || job.jobOwner || null,
       workflowStages: job.workflow_stages || job.workflowStages,
-      closeDate: job.close_date || job.closeDate,
+      closeDate: formatDateForInput(job.close_date || job.closeDate),
       jobValue: String(job.job_value || job.jobValue || ''),
       source: job.source,
       details: job.details,
@@ -289,7 +299,7 @@ const Jobs: React.FC = () => {
       insuranceCompany: job.insurance_company || job.insuranceCompany || '',
       policyAccountNumber: job.policy_account_number || job.policyAccountNumber || '',
       claimNumber: job.claim_number || job.claimNumber || '',
-      dateOfLoss: job.date_of_loss || job.dateOfLoss || '',
+      dateOfLoss: formatDateForInput(job.date_of_loss || job.dateOfLoss),
       typeOfDamage: job.type_of_damage || job.typeOfDamage || '',
       claimAmount: Number(job.claim_amount || job.claimAmount || 0),
       deductible: job.deductible || 0,
