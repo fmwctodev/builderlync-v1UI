@@ -354,19 +354,21 @@ export const sendInternalComment = async (request: SendInternalCommentRequest): 
  * Mark conversation messages as read
  */
 export const markConversationAsRead = async (conversationId: string): Promise<void> => {
-  // Skip for mock conversations
-  if (conversationId.startsWith('conv_')) {
-    return;
-  }
-  
-  const { error } = await supabase
-    .from('conversation_messages')
-    .update({ delivery_status: 'read' })
-    .eq('conversation_id', conversationId)
-    .eq('direction', 'inbound')
-    .neq('delivery_status', 'read');
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
 
-  if (error) throw error;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/mark-read`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    console.error('Failed to mark conversation as read');
+  }
 };
 
 /**

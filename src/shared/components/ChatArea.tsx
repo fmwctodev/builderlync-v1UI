@@ -86,6 +86,9 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
         // Skip markConversationAsRead for mock conversations
         if (!conversationId.startsWith('conv_')) {
           await markConversationAsRead(conversationId);
+        } else {
+          // For mock conversations, still call the API
+          await markConversationAsRead(conversationId);
         }
       } catch (err: any) {
         console.error('Failed to load conversation:', err);
