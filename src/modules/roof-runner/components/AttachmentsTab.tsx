@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, MoreHorizontal, ArrowUp, File, X, Download } from 'lucide-react';
+import { Upload, Search, MoreHorizontal, ArrowUp, File, X, Download, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cloudDriveApi } from '../../../shared/services/cloudDriveApi';
 import { backendFilesApi, FileRecord } from '../../../shared/services/backendFilesApi';
@@ -22,6 +22,15 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const [documentSearch, setDocumentSearch] = useState('');
   const [attachmentsIds, setAttachmentsIds] = useState<(number | string)[]>([]);
   const [previewItem, setPreviewItem] = useState<FileRecord | null>(null);
+  const [attachingDocId, setAttachingDocId] = useState<number | string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<number | string | null>(null);
+  const [removingDocId, setRemovingDocId] = useState<number | string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const fetchJobAttachmentsIds = async () => {
     if (!jobId) return;
@@ -139,8 +148,9 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   };
 
   const handleAttachDocument = async (doc: FileRecord) => {
-    if (!jobId) return;
+    if (!jobId || attachingDocId !== null) return;
     try {
+      setAttachingDocId(doc.id);
       const nextIds = Array.from(new Set([...attachmentsIds, doc.id])).filter(id => id !== null && id !== undefined && id !== "") as (number | string)[];
       await updateJobAttachmentsIds(jobId, nextIds);
       // Re-fetch to get the imported versions with correct IDs and GCS paths
@@ -148,6 +158,23 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
       setShowDocumentPicker(false);
     } catch (error) {
       console.error('Error attaching document:', error);
+    } finally {
+      setAttachingDocId(null);
+    }
+  };
+
+  const handleRemoveDocument = async (docId: number | string) => {
+    if (!jobId || removingDocId !== null) return;
+    try {
+      setRemovingDocId(docId);
+      const nextIds = attachmentsIds.filter(id => id !== docId);
+      await updateJobAttachmentsIds(jobId, nextIds);
+      await fetchJobAttachmentsIds();
+    } catch (error) {
+      console.error('Error removing document:', error);
+    } finally {
+      setRemovingDocId(null);
+      setActiveMenuId(null);
     }
   };
 
@@ -275,9 +302,36 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                   >
                     Preview
                   </button>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      className="text-gray-400 hover:text-gray-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === attachment.id ? null : attachment.id);
+                      }}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                    {activeMenuId === attachment.id && (
+                      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-700 z-10 py-1 text-left">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveDocument(attachment.id);
+                          }}
+                          disabled={removingDocId === attachment.id}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors disabled:opacity-50"
+                        >
+                          {removingDocId === attachment.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                          <span className="font-medium">{removingDocId === attachment.id ? 'Removing...' : 'Remove document'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -347,9 +401,18 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                       </div>
                       <button
                         onClick={() => handleAttachDocument(doc)}
-                        className="text-sm text-primary-600 hover:text-primary-700"
+                        disabled={attachingDocId !== null}
+                        className={`text-sm flex items-center space-x-1 ${attachingDocId === doc.id
+                          ? 'text-primary-400 cursor-not-allowed'
+                          : attachingDocId !== null
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-primary-600 hover:text-primary-700'
+                          }`}
                       >
-                        Attach
+                        {attachingDocId === doc.id && (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                        )}
+                        <span>{attachingDocId === doc.id ? 'Attaching...' : 'Attach'}</span>
                       </button>
                     </div>
                   ))}
