@@ -307,6 +307,16 @@ const Conversations: React.FC = () => {
     }
   };
 
+  const clearConversationUnreadLocally = (conversationId: string) => {
+    setTeamConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, unread_count: 0 }
+          : conversation,
+      ),
+    );
+  };
+
   const loadConversationMessages = async (conversationId: string) => {
     try {
       setMessagesLoading(true);
@@ -325,6 +335,7 @@ const Conversations: React.FC = () => {
       }));
 
       setConversationMessages(formattedMessages);
+      clearConversationUnreadLocally(conversationId);
 
       // Mark conversation as read
       await markConversationAsRead(conversationId);
@@ -422,6 +433,7 @@ const Conversations: React.FC = () => {
 
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedConversationId(conversationId);
+    clearConversationUnreadLocally(conversationId);
     await loadConversationMessages(conversationId);
   };
 
@@ -571,7 +583,7 @@ const Conversations: React.FC = () => {
                           {contact.lastMessage}
                         </p>
                       </div>
-                      {contact.unread && (
+                      {contact.unread && selectedContact !== index && (
                         <div className="w-2 h-2 bg-red-600 rounded-full dark:bg-red-500"></div>
                       )}
                     </div>

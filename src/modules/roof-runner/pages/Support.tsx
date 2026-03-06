@@ -1,11 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { MessageCircle, Mail, HelpCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { HelpCircle, Mail, MessageCircle } from 'lucide-react';
 import { SupportTicketModal } from '../components/SupportTicketModal';
-import { supportApi } from '../services/supportApi';
+import { supportApi, SupportTicketListItem } from '../services/supportApi';
+
+const statusStyles: Record<string, string> = {
+  open: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  waiting: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  resolved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  closed: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+};
+
+const priorityStyles: Record<string, string> = {
+  low: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+};
 
 const Support: React.FC = () => {
   const [showTicketModal, setShowTicketModal] = useState(false);
-  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [tickets, setTickets] = useState<SupportTicketListItem[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 5, total: 0, totalPages: 1 });
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicketListItem | null>(null);
+  const [openingTicket, setOpeningTicket] = useState(false);
 
   useEffect(() => {
     (window as any).chattermateId = 'f638c1bb-753c-476d-bee1-1ded1ee2e39d';
@@ -27,17 +48,50 @@ const Support: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    loadTickets(currentPage);
+  }, [currentPage]);
+
+  const loadTickets = async (page = 1) => {
+    try {
+      setLoadingTickets(true);
+      const query: any = { page, limit: 5 };
+      const response = await supportApi.getMyTickets(query);
+      setTickets(response.data || []);
+      setPagination(response.pagination || { page: 1, limit: 5, total: 0, totalPages: 1 });
+    } catch {
+      setToast({ message: 'Failed to load tickets.', type: 'error' });
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const handleOpenTicket = async (ticketId: string) => {
+    try {
+      const quickPreview = tickets.find((t) => t.id === ticketId) || null;
+      setSelectedTicket(quickPreview);
+      setOpeningTicket(true);
+      const response = await supportApi.getTicketById(ticketId);
+      setSelectedTicket(response.data);
+    } catch {
+      setToast({ message: 'Failed to open ticket details.', type: 'error' });
+    } finally {
+      setOpeningTicket(false);
+    }
+  };
+
   const handleSubmitTicket = async (data: { subject: string; message: string; priority: string; image?: File | null }) => {
     try {
       await supportApi.submitTicket(data as any);
       setToast({ message: 'Support ticket submitted successfully! We\'ll get back to you within 24 hours.', type: 'success' });
+      setShowTicketModal(false);
+      setCurrentPage(1);
+      await loadTickets(1);
     } catch (error) {
       setToast({ message: 'Failed to submit ticket. Please try again.', type: 'error' });
       throw error;
     }
   };
-
-
 
   const faqs = [
     {
@@ -60,16 +114,13 @@ const Support: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Support Center</h1>
         <p className="text-gray-600 dark:text-gray-400">Get help, find answers, and connect with our support team</p>
       </div>
 
-      {/* Support Options */}
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Start Chat */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -78,16 +129,13 @@ const Support: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Get instant help from ChatterMate AI assistant with access to our complete knowledge base
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
-              To enable ChatterMate widget:
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">To enable ChatterMate widget:</p>
             <ol className="text-xs text-gray-500 dark:text-gray-500 text-left space-y-1">
               <li>1. Add localhost:5173 to allowed domains in ChatterMate dashboard</li>
               <li>2. Widget will appear in bottom right corner</li>
             </ol>
           </div>
 
-          {/* Email Support */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -103,56 +151,95 @@ const Support: React.FC = () => {
               Send Email
             </button>
           </div>
-
-          {/* Phone Support */}
-          {/* <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Phone className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Call Support</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Speak directly with our support team for urgent issues
-            </p>
-            <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-              Call Now
-            </button>
-          </div> */}
         </div>
 
-        {/* Knowledge Base */}
-        {/* <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Knowledge Base</h3>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search articles..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Tickets</h3>
+            <button
+              onClick={() => loadTickets(currentPage)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Refresh
+            </button>
+          </div>
+          <div className="p-6">
+            {loadingTickets ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Loading tickets...</div>
+            ) : tickets.length === 0 ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">No tickets found for this filter.</div>
+            ) : (
+              <div className="space-y-3">
+                {tickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{ticket.ticket_number}</div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">{ticket.subject}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Updated: {new Date(ticket.updated_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${priorityStyles[ticket.priority] || priorityStyles.medium}`}>
+                        {ticket.priority}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyles[ticket.status] || statusStyles.open}`}>
+                        {ticket.status.replace('_', ' ')}
+                      </span>
+                      <button
+                        onClick={() => handleOpenTicket(ticket.id)}
+                        className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      >
+                        View
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm">
+              <div className="text-gray-600 dark:text-gray-300">
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} tickets)
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  disabled={pagination.page <= 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 dark:text-white"
+                >
+                  Prev
+                </button>
+                {Array.from({ length: pagination.totalPages }, (_, index) => index + 1)
+                  .slice(Math.max(0, pagination.page - 3), Math.max(0, pagination.page - 3) + 5)
+                  .map((pageNo) => (
+                    <button
+                      key={pageNo}
+                      onClick={() => setCurrentPage(pageNo)}
+                      className={`px-3 py-1.5 border rounded-lg ${
+                        pageNo === pagination.page
+                          ? 'bg-red-600 border-red-600 text-white'
+                          : 'border-gray-300 dark:border-gray-600 dark:text-white'
+                      }`}
+                    >
+                      {pageNo}
+                    </button>
+                  ))}
+                <button
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages))}
+                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 dark:text-white"
+                >
+                  Next
+                </button>
               </div>
             </div>
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {knowledgeBaseArticles.map((article, index) => (
-                <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs dark:bg-red-900 dark:text-red-200">
-                      {article.category}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{article.readTime}</span>
-                  </div>
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">{article.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{article.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div> */}
+        </div>
 
-        {/* FAQ Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Frequently Asked Questions</h3>
@@ -176,8 +263,7 @@ const Support: React.FC = () => {
       </div>
 
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-          }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
           {toast.message}
         </div>
       )}
@@ -187,6 +273,47 @@ const Support: React.FC = () => {
         onClose={() => setShowTicketModal(false)}
         onSubmit={handleSubmitTicket}
       />
+
+      {(selectedTicket || openingTicket) && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 max-w-2xl w-full">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ticket Details</h3>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="px-2 py-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              {openingTicket || !selectedTicket ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400">Loading ticket...</div>
+              ) : (
+                <>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{selectedTicket.ticket_number}</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">{selectedTicket.subject}</div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyles[selectedTicket.status] || statusStyles.open}`}>
+                      {selectedTicket.status.replace('_', ' ')}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${priorityStyles[selectedTicket.priority] || priorityStyles.medium}`}>
+                      {selectedTicket.priority}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedTicket.message}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Created: {new Date(selectedTicket.created_at).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Last Update: {new Date(selectedTicket.updated_at).toLocaleString()}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

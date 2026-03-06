@@ -10,6 +10,7 @@ import {
   getTeamConversations,
   getConversationMessages,
   sendTeamMessage,
+  markConversationAsRead,
 } from '../../../shared/store/services/teamMessagingApi';
 import { TeamConversationListItem, TeamMessageItem } from '../types/teamMessaging';
 import { formatDistanceToNow } from 'date-fns';
@@ -152,6 +153,16 @@ const ConversationsNew: React.FC = () => {
       }));
 
       setConversationMessages(formattedMessages);
+
+      setTeamConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, unread_count: 0 }
+            : conversation,
+        ),
+      );
+
+      await markConversationAsRead(conversationId);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -216,6 +227,13 @@ const ConversationsNew: React.FC = () => {
 
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedTeamConversationId(conversationId);
+    setTeamConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, unread_count: 0 }
+          : conversation,
+      ),
+    );
     await loadConversationMessages(conversationId);
   };
 
