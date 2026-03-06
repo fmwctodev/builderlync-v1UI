@@ -17,6 +17,37 @@ export interface SupportTicket {
   image?: File | null;
 }
 
+export interface SupportTicketListItem {
+  id: string;
+  ticket_number: string;
+  subject: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
+  created_at: string;
+  updated_at: string;
+  jira_issue_id?: string | null;
+}
+
+export interface TicketListQuery {
+  page?: number;
+  limit?: number;
+  status?: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  search?: string;
+}
+
+export interface TicketListResponse {
+  success: boolean;
+  data: SupportTicketListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const supportApi = {
   async submitTicket(data: SupportTicket): Promise<{ success: boolean; message: string }> {
     let payload: any = data;
@@ -35,6 +66,21 @@ export const supportApi = {
 
     const response = await axios.post(`${API_BASE_URL}/support`, payload, {
       headers,
+    });
+    return response.data;
+  },
+
+  async getMyTickets(query: TicketListQuery = {}): Promise<TicketListResponse> {
+    const response = await axios.get(`${API_BASE_URL}/support`, {
+      headers: getAuthHeaders(),
+      params: query,
+    });
+    return response.data;
+  },
+
+  async getTicketById(ticketId: string): Promise<{ success: boolean; data: SupportTicketListItem }> {
+    const response = await axios.get(`${API_BASE_URL}/support/${ticketId}`, {
+      headers: getAuthHeaders(),
     });
     return response.data;
   },

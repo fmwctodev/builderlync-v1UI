@@ -147,8 +147,9 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   };
 
   const filteredConversations = conversations.filter((conv) => {
+    const unreadCount = Number(conv.unread_count || 0);
     // Filter by tab
-    if (activeFilter === 'unread' && (!conv.unread_count || conv.unread_count === 0)) {
+    if (activeFilter === 'unread' && unreadCount <= 0) {
       return false;
     }
     
@@ -356,12 +357,22 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredConversations.map((conversation) => {
               const isSelected = selectedConversation === conversation.id;
-              const hasUnread = conversation.unread_count && conversation.unread_count > 0;
+              const unreadCount = Number(conversation.unread_count || 0);
+              const hasUnread = unreadCount > 0;
 
               return (
                 <div
                   key={conversation.id}
-                  onClick={() => onSelectConversation(conversation.id)}
+                  onClick={() => {
+                    setConversations((prev) =>
+                      prev.map((item) =>
+                        item.id === conversation.id
+                          ? { ...item, unread_count: 0 }
+                          : item,
+                      ),
+                    );
+                    onSelectConversation(conversation.id);
+                  }}
                   className={`p-3 cursor-pointer transition-all ${
                     isSelected
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500'
@@ -421,7 +432,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
                     {hasUnread && (
                       <div className="flex-shrink-0">
                         <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
-                          {conversation.unread_count}
+                          {unreadCount}
                         </span>
                       </div>
                     )}
