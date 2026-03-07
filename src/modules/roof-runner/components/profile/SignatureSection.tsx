@@ -25,6 +25,8 @@ import {
 import { getSignature, updateSignature } from '../../../../shared/store/services/profileApi';
 import './SignatureEditor.css';
 
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
+
 interface SignatureSectionProps {
   onUpdate?: () => void;
 }
@@ -88,7 +90,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
         const formData = new FormData();
         formData.append('profile', file);
 
-        const token = localStorage.getItem('token');
+        const token = getAccessToken();
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
         const response = await fetch(`${API_BASE_URL}/auth/profile`, {
           method: 'PUT',
@@ -417,3 +419,4 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 };
 
 export default SignatureSection;
+

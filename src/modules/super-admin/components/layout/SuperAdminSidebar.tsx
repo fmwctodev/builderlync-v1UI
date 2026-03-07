@@ -10,6 +10,7 @@ import {
   Plug,
   Shield,
   MessageSquare,
+  LayoutTemplate,
   Server,
   Wrench,
   Settings,
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Integrations & API', to: '/super-admin/integrations', icon: Plug },
   { name: 'Security & Audit', to: '/super-admin/security', icon: Shield },
   { name: 'Support & Feedback', to: '/super-admin/support', icon: MessageSquare },
+  { name: 'Templates', to: '/super-admin/templates', icon: LayoutTemplate },
   { name: 'System Health', to: '/super-admin/system', icon: Server },
   { name: 'Maintenance', to: '/super-admin/maintenance', icon: Wrench },
 ];

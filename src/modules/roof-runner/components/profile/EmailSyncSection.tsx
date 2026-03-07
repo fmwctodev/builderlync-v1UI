@@ -1,6 +1,8 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Check, Copy, Loader2 } from 'lucide-react';
 import { getEmailConnections, disconnectEmail, connectEmail, EmailConnection } from '../../../../shared/store/services/profileApi';
+
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
 
 const EmailSyncSection: React.FC = () => {
   const [connections, setConnections] = useState<EmailConnection[]>([]);
@@ -54,7 +56,7 @@ const EmailSyncSection: React.FC = () => {
     setConnecting(true);
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       localStorage.setItem('oauth_email_provider', selectedProvider);
       localStorage.setItem('oauth_return_path', window.location.pathname + window.location.search);
 
@@ -342,6 +344,7 @@ const EmailSyncSection: React.FC = () => {
 };
 
 export default EmailSyncSection;
+
 
 
 

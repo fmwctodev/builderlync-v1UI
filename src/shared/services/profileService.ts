@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   return {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
@@ -26,7 +27,7 @@ export const profileService = {
     if (updates.phone) formData.append('phone', updates.phone);
     if (updates.avatar_url !== undefined) formData.append('avatar_url', updates.avatar_url || '');
 
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -39,7 +40,7 @@ export const profileService = {
     const formData = new FormData();
     formData.append('profile', file);
 
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,

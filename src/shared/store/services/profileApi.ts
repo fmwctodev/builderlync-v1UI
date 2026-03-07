@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
 
 // Signature Types
 export interface Signature {
@@ -54,7 +55,7 @@ export interface ProposalSettings {
 
 // Signature API
 export const getSignature = async (): Promise<SignatureResponse> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.get<SignatureResponse>(
     `${API_BASE_URL}/profile/signature`,
     {
@@ -71,7 +72,7 @@ export const updateSignature = async (data: {
   enableSignature: boolean;
   includeInReplies: boolean;
 }): Promise<SignatureResponse> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.put<SignatureResponse>(
     `${API_BASE_URL}/profile/signature`,
     data,
@@ -87,7 +88,7 @@ export const updateSignature = async (data: {
 
 // Email Connections API
 export const getEmailConnections = async (): Promise<EmailConnectionsResponse> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.get<EmailConnectionsResponse>(
     `${API_BASE_URL}/profile/email-connections`,
     {
@@ -105,7 +106,7 @@ export const connectEmail = async (data: {
   email: string;
   state?: string;
 }): Promise<{ success: boolean; message?: string; data: EmailConnection }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.post(
     `${API_BASE_URL}/profile/email-connections`,
     data,
@@ -120,7 +121,7 @@ export const connectEmail = async (data: {
 };
 
 export const disconnectEmail = async (id: string): Promise<{ success: boolean; message?: string }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.delete(
     `${API_BASE_URL}/profile/email-connections/${id}`,
     {
@@ -134,7 +135,7 @@ export const disconnectEmail = async (id: string): Promise<{ success: boolean; m
 
 // Two-Factor Authentication API
 export const get2FAStatus = async (): Promise<{ success: boolean; data: TwoFactorStatus }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.get(
     `${API_BASE_URL}/profile/2fa`,
     {
@@ -147,7 +148,7 @@ export const get2FAStatus = async (): Promise<{ success: boolean; data: TwoFacto
 };
 
 export const setup2FA = async (): Promise<{ success: boolean; data: TwoFactorSetup }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.post(
     `${API_BASE_URL}/profile/2fa/setup`,
     {},
@@ -161,7 +162,7 @@ export const setup2FA = async (): Promise<{ success: boolean; data: TwoFactorSet
 };
 
 export const verify2FA = async (code: string): Promise<{ success: boolean; message?: string }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.post(
     `${API_BASE_URL}/profile/2fa/verify`,
     { code },
@@ -176,7 +177,7 @@ export const verify2FA = async (code: string): Promise<{ success: boolean; messa
 };
 
 export const disable2FA = async (password: string): Promise<{ success: boolean; message?: string }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.delete(
     `${API_BASE_URL}/profile/2fa`,
     {
@@ -192,7 +193,7 @@ export const disable2FA = async (password: string): Promise<{ success: boolean; 
 
 // Proposal Settings API
 export const getProposalSettings = async (): Promise<{ success: boolean; data: ProposalSettings }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.get(
     `${API_BASE_URL}/profile/proposal-settings`,
     {
@@ -205,7 +206,7 @@ export const getProposalSettings = async (): Promise<{ success: boolean; data: P
 };
 
 export const updateProposalSettings = async (data: ProposalSettings): Promise<{ success: boolean; message?: string; data: ProposalSettings }> => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const response = await axios.put(
     `${API_BASE_URL}/profile/proposal-settings`,
     data,
@@ -218,3 +219,4 @@ export const updateProposalSettings = async (data: ProposalSettings): Promise<{ 
   );
   return response.data;
 };
+

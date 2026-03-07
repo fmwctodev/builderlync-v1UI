@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
   return {
     'Authorization': `Bearer ${token}`,
   };
