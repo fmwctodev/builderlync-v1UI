@@ -140,6 +140,8 @@ const getCatalogFinalUnitCost = (catalogItem: APICatalogItem): string => {
   return Number.isFinite(finalUnitCost) ? finalUnitCost.toFixed(2) : "0.00";
 };
 
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
+
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const MAX_OPTION_TITLE_CHARS = 100;
   const limitChars = useCallback((text: string, maxChars: number) => {
@@ -488,7 +490,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           if (!section) return;
 
           const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
-          const token = localStorage.getItem('token');
+          const token = getAccessToken();
           
           const formData = new FormData();
           formData.append('file', file);
@@ -575,7 +577,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           if (!section) return;
 
           const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
-          const token = localStorage.getItem('token');
+          const token = getAccessToken();
           
           const formData = new FormData();
           formData.append('file', file);
@@ -3452,7 +3454,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                         const file = new File([blob], 'cover-image.jpg', { type: 'image/jpeg' });
                         
                         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
-                        const token = localStorage.getItem('token');
+                        const token = getAccessToken();
                         
                         const formData = new FormData();
                         formData.append('file', file);

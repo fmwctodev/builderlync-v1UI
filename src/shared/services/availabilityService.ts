@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   return {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',

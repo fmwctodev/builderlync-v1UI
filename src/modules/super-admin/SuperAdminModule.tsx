@@ -19,6 +19,8 @@ import { Support } from './pages/Support';
 import { System } from './pages/System';
 import { Maintenance } from './pages/Maintenance';
 import { Settings } from './pages/Settings';
+import { Templates } from './pages/Templates';
+import { TemplateEditor } from './pages/TemplateEditor';
 
 export const SuperAdminModule: React.FC = () => {
   return (
@@ -39,6 +41,8 @@ export const SuperAdminModule: React.FC = () => {
         <Route path="integrations" element={<Integrations />} />
         <Route path="security" element={<Security />} />
         <Route path="support" element={<Support />} />
+        <Route path="templates" element={<Templates />} />
+        <Route path="templates/:templateId" element={<TemplateEditor />} />
         <Route path="system" element={<System />} />
         <Route path="maintenance" element={<Maintenance />} />
         <Route path="settings/*" element={<Settings />} />

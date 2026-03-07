@@ -6,12 +6,18 @@ import { templateApi, Template } from '../../services/templateApi';
 interface TemplatesGridProps {
   openDropdown: string | null;
   setOpenDropdown: (id: string | null) => void;
+  templateRouteBase?: string;
 }
 
-export default function TemplatesGrid({ openDropdown, setOpenDropdown }: TemplatesGridProps) {
+export default function TemplatesGrid({
+  openDropdown,
+  setOpenDropdown,
+  templateRouteBase,
+}: TemplatesGridProps) {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+  const resolvedTemplateRouteBase = templateRouteBase || `${orgPrefix}/proposals/template`;
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -86,7 +92,7 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
           onClick={async () => {
             try {
               const newTemplate = await templateApi.createTemplate({ name: 'New Template' });
-              navigate(`${orgPrefix}/proposals/template/${newTemplate.id}`, { state: { from: 'templates' } });
+              navigate(`${resolvedTemplateRouteBase}/${newTemplate.id}`, { state: { from: 'templates' } });
             } catch (error) {
               console.error('Error creating template:', error);
             }
@@ -103,7 +109,7 @@ export default function TemplatesGrid({ openDropdown, setOpenDropdown }: Templat
           <div 
             key={template.id} 
             className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate(`${orgPrefix}/proposals/template/${template.id}`, { state: { from: 'templates' } })}
+            onClick={() => navigate(`${resolvedTemplateRouteBase}/${template.id}`, { state: { from: 'templates' } })}
           >
             <div className="h-48 bg-gray-200 dark:bg-gray-600 overflow-hidden">
               {coverImage ? (
