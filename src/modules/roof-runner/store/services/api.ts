@@ -151,6 +151,16 @@ export const apiService = {
     return response.data;
   },
 
+  getGoogleSolarData: async (publicUrl: string, address: string) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/google-solar-data`, { address });
+    return response.data;
+  },
+
+  getGoogleSolarDataByCoords: async (publicUrl: string, lat: number, lng: number) => {
+    const response = await apiClient.post(`/instant-estimators/public/${publicUrl}/google-solar-data-by-coords`, { lat, lng });
+    return response.data;
+  },
+
   getPropertyDataResult: async (publicUrl: string, requestId: string) => {
     const response = await apiClient.get(`/instant-estimators/public/${publicUrl}/property-data/${requestId}`);
     return response.data;
