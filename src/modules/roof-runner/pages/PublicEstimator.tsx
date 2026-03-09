@@ -25,10 +25,13 @@ const PublicEstimator: React.FC = () => {
   const [showRoofOutline, setShowRoofOutline] = useState(false);
   const [propertyData, setPropertyData] = useState<any>(null);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
-  const [requestId, setRequestId] = useState<string | null>(null);
+  const [fetchingPropertyData, setFetchingPropertyData] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
+  const drawingManagerRef = useRef<any>(null);
+  const polygonRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Form data
@@ -123,49 +126,90 @@ const PublicEstimator: React.FC = () => {
     }
   };
 
-  // Polling function for property data
-  const pollPropertyData = async (requestId: string) => {
-    const MAX_RETRIES = 30; // 1 minute timeout approx (2s interval)
-    let retries = 0;
 
-    const poll = async () => {
-      try {
-        if (!publicUrl) return;
-        const response = await apiService.getPropertyDataResult(publicUrl, requestId);
-        const data = response.data || response;
+  const fetchSolarDataByCoords = async (lat: number, lng: number) => {
+    if (!publicUrl) return;
 
-        const status = (data?.status || data?.request?.status || '').toLowerCase();
-        if (status === 'completed' || status === 'complete' || status === 'success' || (data?.structures && data?.structures.length > 0)) {
-          console.log('Property Data Received:', data);
-          setPropertyData(data);
+    setFetchingPropertyData(true);
+    try {
+      const response = await apiService.getGoogleSolarDataByCoords(publicUrl, lat, lng);
+      console.log('Coordinate-based Solar Data received:', response);
+      const data = response.data || response;
+      setPropertyData(data);
 
-          // Handle Image
-          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
-          if (data?.imagery?.image_1?.image_token) {
-            const token = data.imagery.image_1.image_token;
-            const imageUrl = `${API_BASE_URL}/instant-estimators/public/${publicUrl}/image/${token}`;
-            setPropertyImage(imageUrl);
-          } else if (data?.property_images?.[0]) {
-            setPropertyImage(data.property_images[0]);
-          }
-        } else if (data?.status === 'failed' || data?.status === 'error') {
-          console.error('Property data processing failed.');
-        } else {
-          retries++;
-          if (retries < MAX_RETRIES) {
-            setTimeout(poll, 2000);
-          } else {
-            console.warn('Polling timeout for property data.');
-          }
-        }
-      } catch (error) {
-        console.error('Error polling property data:', error);
-        retries++;
-        if (retries < MAX_RETRIES) setTimeout(poll, 2000);
+      if (data?.property_images?.[0]) {
+        setPropertyImage(data.property_images[0]);
       }
-    };
 
-    poll();
+
+      setShowRoofOutline(true);
+
+      // Reverse geocode to update address
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+        if (status === 'OK' && results[0]) {
+          setAddress(results[0].formatted_address);
+        } else {
+          setAddress(`Selected Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+        }
+      });
+
+      console.log('Fetching data for location:', { lat, lng });
+    } catch (err) {
+      console.error('Failed to fetch coordinate-based solar data', err);
+    } finally {
+      setFetchingPropertyData(false);
+    }
+  };
+
+  const updateAreaFromPolygon = (polygon: any) => {
+    if (!polygon || !window.google?.maps?.geometry) return;
+    const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+    const areaSqFt = area * 10.7639;
+
+    // Update propertyData with the manual calculation for consistency
+    setPropertyData((prev: any) => ({
+      ...prev,
+      structures: [{
+        ...prev?.structures?.[0],
+        structure_footprint_sqft: { value: areaSqFt.toFixed(2), unit: 'sqft' }
+      }]
+    }));
+  };
+
+  const generateStaticMapUrl = () => {
+    if (!mapInstanceRef.current || !window.google?.maps) return;
+
+    // Get current map center and zoom level
+    const center = mapInstanceRef.current.getCenter();
+    const zoom = mapInstanceRef.current.getZoom();
+
+    // Base static map URL
+    let url = `https://maps.googleapis.com/maps/api/staticmap?center=${center.lat()},${center.lng()}&zoom=${zoom}&size=600x400&maptype=satellite&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+
+    // Add polygon path if it exists
+    if (polygonRef.current) {
+      const path = polygonRef.current.getPath();
+      let pathStr = '&path=color:0x3B82F6|weight:2|fillcolor:0x3B82F680';
+
+      const points: string[] = [];
+      path.forEach((latLng: any) => {
+        points.push(`${latLng.lat()},${latLng.lng()}`);
+      });
+
+      if (points.length > 0) {
+        // Close the path
+        points.push(points[0]);
+        url += pathStr + '|' + points.join('|');
+      }
+    } else if (markerRef.current) {
+      // Add marker if no polygon exists
+      const pos = markerRef.current.getPosition();
+      url += `&markers=color:0x3B82F6|${pos.lat()},${pos.lng()}`;
+    }
+
+    console.log('Generated Static Map URL:', url);
+    setPropertyImage(url);
   };
 
   const initMap = () => {
@@ -181,6 +225,66 @@ const PublicEstimator: React.FC = () => {
         }
       });
 
+      mapInstanceRef.current.addListener('click', (e: any) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+
+        if (markerRef.current) {
+          markerRef.current.setPosition(e.latLng);
+        } else {
+          markerRef.current = new window.google.maps.Marker({
+            position: e.latLng,
+            map: mapInstanceRef.current,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: "#3B82F6",
+              fillOpacity: 0.8,
+              strokeWeight: 2,
+              strokeColor: "#FFFFFF",
+            }
+          });
+        }
+
+        fetchSolarDataByCoords(lat, lng);
+      });
+
+      // Initialize Drawing Manager
+      drawingManagerRef.current = new window.google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: window.google.maps.ControlPosition.TOP_CENTER,
+          drawingModes: ['polygon']
+        },
+        polygonOptions: {
+          fillColor: '#3B82F6',
+          fillOpacity: 0.3,
+          strokeWeight: 2,
+          strokeColor: '#3B82F6',
+          clickable: true,
+          editable: true,
+          zIndex: 1
+        }
+      });
+
+      drawingManagerRef.current.setMap(mapInstanceRef.current);
+
+      window.google.maps.event.addListener(drawingManagerRef.current, 'polygoncomplete', (polygon: any) => {
+        // Remove existing polygon if any
+        if (polygonRef.current) polygonRef.current.setMap(null);
+        polygonRef.current = polygon;
+
+        // Reset drawing mode after completion
+        drawingManagerRef.current.setDrawingMode(null);
+
+        updateAreaFromPolygon(polygon);
+
+        // Listen for edits
+        window.google.maps.event.addListener(polygon.getPath(), 'set_at', () => updateAreaFromPolygon(polygon));
+        window.google.maps.event.addListener(polygon.getPath(), 'insert_at', () => updateAreaFromPolygon(polygon));
+      });
+
       if (inputRef.current) {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['address']
@@ -194,31 +298,40 @@ const PublicEstimator: React.FC = () => {
             const formattedAddress = place.formatted_address || '';
             setAddress(formattedAddress);
 
+            if (markerRef.current) {
+              markerRef.current.setPosition(place.geometry.location);
+            } else {
+              markerRef.current = new window.google.maps.Marker({
+                position: place.geometry.location,
+                map: mapInstanceRef.current,
+                icon: {
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: "#3B82F6",
+                  fillOpacity: 0.8,
+                  strokeWeight: 2,
+                  strokeColor: "#FFFFFF",
+                }
+              });
+            }
+
             if (publicUrl) {
-              const staticMapUrl = 'https://maps.googleapis.com/maps/api/staticmap?center=' +
-                place.geometry.location.lat() + ',' +
-                place.geometry.location.lng() +
-                '&zoom=20&size=600x400&maptype=satellite&key=' + import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-              setPropertyImage(staticMapUrl);
+              setFetchingPropertyData(true);
 
-              apiService.requestPropertyData(publicUrl, formattedAddress)
+              apiService.getGoogleSolarData(publicUrl, formattedAddress)
                 .then((response: any) => {
-                  console.log('Initial Property Request Response:', response);
-                  // Robust ID extraction from various possible response structures
-                  const d = response.data || response;
-                  const reqId = d.request?.id || d.requestId || d.RequestId || d.id || response.requestId || response.id;
+                  console.log('Synchronous Google Solar Data received:', response);
+                  const data = response.data || response;
+                  setPropertyData(data);
 
-                  if (reqId) {
-                    setRequestId(reqId);
-                    console.log('Step 2: Starting polling for Request ID:', reqId);
-                    pollPropertyData(reqId);
-                  } else if (response && response.data) {
-                    setPropertyData(response.data);
-                  } else if (response && (response.structures || response.imagery)) {
-                    setPropertyData(response);
+                  if (data?.property_images?.[0]) {
+                    setPropertyImage(data.property_images[0]);
                   }
+
+                  // No longer need to set requestId for polling since flow is synchronous
                 })
-                .catch((err: any) => console.error('Failed to initiate property data request', err));
+                .catch((err: any) => console.error('Failed to fetch synchronous Google Solar data', err))
+                .finally(() => setFetchingPropertyData(false));
             }
 
             setTimeout(() => {
@@ -227,9 +340,10 @@ const PublicEstimator: React.FC = () => {
           }
         });
       }
-    } else if (!window.google?.maps) {
+    } else if (!window.google?.maps && !document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
       script.async = true;
       script.onload = initMap;
       document.head.appendChild(script);
@@ -241,7 +355,10 @@ const PublicEstimator: React.FC = () => {
   };
 
   const handleContinue = () => {
-    setCurrentStep(3);
+    if (currentStep === 2) {
+      generateStaticMapUrl();
+    }
+    setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -257,34 +374,8 @@ const PublicEstimator: React.FC = () => {
       setSubmitting(true);
 
       let currentPropertyData = propertyData;
-      const effectiveRequestId = requestId || currentPropertyData?.request?.id || currentPropertyData?.id;
-
-      if (effectiveRequestId && (!currentPropertyData || !currentPropertyData.structures || currentPropertyData.structures.length === 0)) {
-        console.log('Last Step: Attempting final fetch from DB for RequestId:', effectiveRequestId);
-
-        // Try up to 3 times with a short delay if it's still "In Progress"
-        for (let i = 0; i < 3; i++) {
-          try {
-            const response = await apiService.getPropertyDataResult(publicUrl!, effectiveRequestId);
-            const data = response.data || response;
-
-            if (data && data.structures && data.structures.length > 0) {
-              console.log('Final fetch successful on attempt', i + 1, 'data:', data);
-              currentPropertyData = data;
-              setPropertyData(data);
-              break;
-            } else {
-              console.log(`Attempt ${i + 1}: Data still In Progress or incomplete...`);
-              if (i < 2) await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          } catch (e) {
-            console.error(`Final attempt ${i + 1} failed:`, e);
-          }
-        }
-      }
 
       console.log('Submitting Estimate. Property Data Context:', {
-        hasRequestId: !!effectiveRequestId,
         hasData: !!currentPropertyData,
         hasStructures: !!currentPropertyData?.structures?.length,
         status: currentPropertyData?.request?.status || currentPropertyData?.status
@@ -412,22 +503,36 @@ const PublicEstimator: React.FC = () => {
                     className="flex-1 text-lg border-none outline-none bg-transparent"
                   />
                 </div>
+                <div className="mt-2 text-xs text-gray-500 border-t pt-2 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  Pro-tip: Search for your address, then click your house on the satellite map to select it or use the tool below to draw the outline.
+                </div>
               </div>
             </div>
 
             <div ref={mapRef} className="w-full h-full" />
 
-            {propertyImage && (
-              <div className="absolute inset-0 z-0 bg-black">
-                <img src={propertyImage} alt="Property Roof" className="w-full h-full object-cover opacity-80" />
-                <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 text-xs rounded">
-                  Instant Estimate Imagery
+
+            {fetchingPropertyData && (
+              <div className="absolute inset-0 z-20 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                  <span className="font-medium">Calculating roof area...</span>
                 </div>
               </div>
             )}
 
-            {showRoofOutline && (
-              <div className="absolute bottom-4 right-4 z-10">
+            {showRoofOutline && !fetchingPropertyData && (
+              <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+                <button
+                  onClick={() => drawingManagerRef.current?.setDrawingMode(window.google.maps.drawing.OverlayType.POLYGON)}
+                  className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-3 rounded-full font-medium shadow-lg transition-colors flex items-center gap-2 border border-gray-200"
+                >
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Draw Manual Outline
+                </button>
                 <button
                   onClick={handleContinue}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium shadow-lg transition-colors"
@@ -441,6 +546,11 @@ const PublicEstimator: React.FC = () => {
               <div className="absolute top-20 left-4 z-10">
                 <div className="bg-white rounded-lg shadow-lg p-3 flex items-center gap-2">
                   <span className="text-gray-700">{address}</span>
+                  {propertyData?.structures?.[0]?.structure_footprint_sqft?.value && (
+                    <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-bold">
+                      {Math.round(Number(propertyData.structures[0].structure_footprint_sqft.value)).toLocaleString()} SqFt
+                    </div>
+                  )}
                   <button
                     onClick={() => {
                       setShowRoofOutline(false);
@@ -466,7 +576,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(2)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 3 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">How steep is your roof?</h1>
@@ -504,7 +614,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(3)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 4 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of building do you have?</h1>
@@ -538,7 +648,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(4)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 5 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What is currently on your roof?</h1>
@@ -575,7 +685,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(5)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 6 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of roof would you like?</h1>
@@ -610,7 +720,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(5)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 7 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">When would you like to start your project?</h1>
@@ -642,7 +752,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(7)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 8 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Are you interested in financing?</h1>
@@ -674,7 +784,7 @@ const PublicEstimator: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(8)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 9 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tell us about your project (optional)</h1>
