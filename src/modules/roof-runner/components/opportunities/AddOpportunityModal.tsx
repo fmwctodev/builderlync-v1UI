@@ -207,6 +207,10 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
       newErrors.stage_id = 'Stage is required';
     }
 
+    if (!selectedJobType) {
+      newErrors.jobType = 'Job type is required';
+    }
+
     if (formData.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
       newErrors.contact_email = 'Invalid email format';
     }
@@ -215,7 +219,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
     if (Object.keys(newErrors).length > 0) {
       // If there are errors in opportunity specific fields, tell the user
-      if (newErrors.opportunity_name || newErrors.stage_id) {
+      if (newErrors.opportunity_name || newErrors.stage_id || newErrors.jobType) {
         setToast({ message: 'Please complete the Opportunity Details section.', type: 'error' });
         // Optionally switch to the opportunity tab to show the errors
         setActiveTab('opportunity');
@@ -379,8 +383,8 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                   propertyState={formData.property_state || ''}
                   propertyZip={formData.property_zip || ''}
                   propertyCountry={formData.property_country || ''}
-                  onAddressChange={(field, value) => {
-                    setFormData({ ...formData, [field]: value });
+                  onAddressChange={(updates) => {
+                    setFormData(prev => ({ ...prev, ...updates }));
                   }}
                 />
               </div>
@@ -420,7 +424,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Opportunity Name <span className="text-red-600">*</span>
+                  Opportunity Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -436,7 +440,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Job Type <span className="text-red-600">*</span>
+                  Job Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedJobType}
@@ -450,11 +454,14 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                     </option>
                   ))}
                 </select>
+                {errors.jobType && (
+                  <p className="mt-1 text-xs text-red-500">{errors.jobType}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Stage
+                  Stage <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.stage_id}

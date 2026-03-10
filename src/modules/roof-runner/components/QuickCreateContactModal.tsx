@@ -169,7 +169,7 @@ const QuickCreateContactModal: React.FC<QuickCreateContactModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Phone
+              Phone <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"

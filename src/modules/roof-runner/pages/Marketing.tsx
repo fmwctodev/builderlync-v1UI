@@ -42,11 +42,10 @@ const Marketing: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-primary-600 text-white rounded-t-lg'
-                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                }`}
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${activeTab === tab.id
+                  ? 'bg-primary-600 text-white rounded-t-lg'
+                  : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                  }`}
               >
                 <Icon size={16} />
                 <span>{tab.label}</span>
@@ -71,13 +70,61 @@ const Marketing: React.FC = () => {
 const AnalyticsTab: React.FC = () => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
+  const [totalSpend, setTotalSpend] = useState<number>(0);
+  const [totalLeads, setTotalLeads] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSummaryStats();
+  }, []);
+
+  const fetchSummaryStats = async () => {
+    try {
+      setIsLoading(true);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      let spend = 0;
+      let leads = 0;
+
+      // Try to fetch from all connected platforms to aggregate
+      const platforms = ['google-ads', 'facebook-ads', 'tiktok-ads'];
+
+      for (const p of platforms) {
+        try {
+          const endpoint = p === 'google-ads' ? `${baseUrl}/google-ads/campaigns` : `${baseUrl}/social-ads/campaigns?platform=${p.split('-')[0]}`;
+          const res = await fetch(endpoint, { headers });
+          if (res.ok) {
+            const result = await res.json();
+            const campaignData = result.data || result;
+            if (Array.isArray(campaignData)) {
+              campaignData.forEach((c: any) => {
+                spend += parseFloat(c.metrics?.cost || c.metrics?.spend || 0);
+                leads += parseInt(c.metrics?.conversions || 0);
+              });
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to fetch summary for ${p}`, e);
+        }
+      }
+
+      setTotalSpend(spend);
+      setTotalLeads(leads);
+    } catch (error) {
+      console.error('Error fetching summary stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const platforms = [
     { id: 'all', label: 'All Platforms' },
     { id: 'google-analytics', label: 'Google Analytics' },
-    { id: 'meta', label: 'Meta/Facebook' },
+    { id: 'facebook-ads', label: 'Meta/Facebook' },
     { id: 'google-ads', label: 'Google Ads' },
-    { id: 'tiktok', label: 'TikTok Ads' },
+    { id: 'tiktok-ads', label: 'TikTok Ads' },
     { id: 'google-business', label: 'Google Business' },
   ];
 
@@ -87,7 +134,7 @@ const AnalyticsTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Platform Selector */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Platform Analytics</h3>
@@ -107,27 +154,27 @@ const AnalyticsTab: React.FC = () => {
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Leads</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">0</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
+          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Leads (Conversions)</h4>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{totalLeads.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{totalLeads > 0 ? 'Aggregated ads data' : 'Connecting platforms...'}</p>
         </div>
-        
+
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Marketing Spend</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$0</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">This month</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">This period</p>
         </div>
-        
+
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">True Acquisition Cost</h4>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">$0</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
+          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">CPL (Avg)</h4>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">${totalLeads > 0 ? (totalSpend / totalLeads).toFixed(2) : '0.00'}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cost per lead</p>
         </div>
-        
+
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Jobs Closed</h4>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">0</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No data yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manual tracking</p>
         </div>
       </div>
 
@@ -197,37 +244,37 @@ const CampaignsTab: React.FC = () => {
   const handleSaveCampaign = async (data: CampaignFormData, sendNow: boolean) => {
     try {
       setIsLoading(true);
-      
+
       // Check credentials before creating campaign
       const credentials = await campaignsApi.checkCredentials();
-      
+
       if (data.type === 'email' && !credentials.email) {
-        setToast({ 
-          show: true, 
-          message: 'Please configure your email credentials in settings before creating email campaigns.', 
-          type: 'error' 
+        setToast({
+          show: true,
+          message: 'Please configure your email credentials in settings before creating email campaigns.',
+          type: 'error'
         });
         return;
       }
-      
+
       if (data.type === 'sms' && !credentials.sms) {
-        setToast({ 
-          show: true, 
-          message: 'Please configure your SMS credentials in settings before creating SMS campaigns.', 
-          type: 'error' 
+        setToast({
+          show: true,
+          message: 'Please configure your SMS credentials in settings before creating SMS campaigns.',
+          type: 'error'
         });
         return;
       }
-      
+
       if (editingCampaign) {
         await campaignsApi.updateCampaign(editingCampaign.id, data);
         setToast({ show: true, message: 'Campaign updated successfully!', type: 'success' });
       } else {
         await campaignsApi.createCampaign(data, sendNow);
-        const message = sendNow 
-          ? 'Campaign sent successfully!' 
-          : data.scheduled_date 
-            ? 'Campaign scheduled successfully!' 
+        const message = sendNow
+          ? 'Campaign sent successfully!'
+          : data.scheduled_date
+            ? 'Campaign scheduled successfully!'
             : 'Campaign saved as draft';
         setToast({ show: true, message, type: 'success' });
       }
@@ -597,7 +644,7 @@ const CampaignsTab: React.FC = () => {
               <span className="text-gray-900 dark:text-white">SMS + Email</span>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => {
               setShowModal(true);
               setTimeout(() => {
@@ -627,7 +674,7 @@ const CampaignsTab: React.FC = () => {
               <span className="text-gray-900 dark:text-white">SMS Series</span>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => {
               setShowModal(true);
               setTimeout(() => {
@@ -663,7 +710,7 @@ const CampaignsTab: React.FC = () => {
               <span className="text-gray-900 dark:text-white">Email</span>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => {
               setShowModal(true);
               setTimeout(() => {
@@ -836,11 +883,10 @@ const SocialPlannerTab: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
-              className={`inline-flex items-center px-3 py-2 border rounded-md shadow-sm text-sm font-medium transition-colors ${
-                viewMode === 'calendar'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
+              className={`inline-flex items-center px-3 py-2 border rounded-md shadow-sm text-sm font-medium transition-colors ${viewMode === 'calendar'
+                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
               title={viewMode === 'list' ? 'Switch to calendar view' : 'Switch to list view'}
             >
               <Calendar className="h-4 w-4" />
@@ -886,11 +932,10 @@ const SocialPlannerTab: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`relative px-4 py-3 text-sm font-medium transition-all ${
-                activeSubTab === tab.id
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`relative px-4 py-3 text-sm font-medium transition-all ${activeSubTab === tab.id
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
               <span>{tab.label}</span>
               {tab.badge && (
@@ -908,405 +953,402 @@ const SocialPlannerTab: React.FC = () => {
 
       <div className="flex-1 overflow-auto">
         {activeSubTab === 'planner' && (
-        <div className="h-full flex flex-col lg:flex-row gap-6 p-6" id="post-creation-section">
-          {/* Left Panel - Post Creation */}
-          <div className="flex-1 space-y-6">
-            {/* Post To Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-semibold text-gray-900 dark:text-white">Post to</h4>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={customizePerChannel}
-                onChange={(e) => setCustomizePerChannel(e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Customize for each channel</span>
-            </label>
-          </div>
-
-          {/* Platform Selection */}
-          <div className="flex flex-wrap gap-3 mb-3">
-            {platforms.map((platform) => (
-              <button
-                key={platform.id}
-                onClick={() => platform.connected && togglePlatform(platform.id)}
-                disabled={!platform.connected}
-                className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-all ${
-                  selectedPlatforms.includes(platform.id)
-                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700'
-                } ${!platform.connected ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300 cursor-pointer'}`}
-              >
-                <div className={`w-3 h-3 rounded-full ${platform.connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">{platform.name}</span>
-                {selectedPlatforms.includes(platform.id) && (
-                  <X size={14} className="text-red-600" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {selectedPlatforms.length > 0 && (
-            <button
-              onClick={clearAllPlatforms}
-              className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
-
-        {/* Content Editor */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-base font-semibold text-gray-900 dark:text-white">Type content</h4>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Char limit: <span className={characterCount > MAX_CHARACTERS ? 'text-red-600' : ''}>{characterCount}</span> / {MAX_CHARACTERS}
-              </span>
-            </div>
-
-            <textarea
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              placeholder="Write your post here..."
-              rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
-            />
-          </div>
-
-          {/* Formatting Toolbar */}
-          <div className="flex items-center space-x-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
-            <button className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-              <Sparkles size={16} />
-              <span className="text-sm font-medium">AI</span>
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Bold">
-              <Bold size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Italic">
-              <Italic size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Emoji">
-              <Smile size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Image">
-              <Image size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Video">
-              <Video size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Document">
-              <FileText size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Hashtag">
-              <Hash size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Tag">
-              <Tag size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Link">
-              <Link2 size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Location">
-              <MapPin size={18} className="text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
-
-          {/* Advanced Options */}
-          <button
-            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          >
-            <span>Advanced options</span>
-            <ChevronDown size={16} className={`transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showAdvancedOptions && (
-            <div className="mt-4 space-y-4">
-              {/* Platform-Specific Options */}
-              {selectedPlatforms.includes('google_business') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                    <span>Google Business Profile options</span>
-                  </h5>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
-                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>Call to Action</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Select button label</label>
-                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>Select button label</option>
-                      </select>
-                    </div>
-                  </div>
+          <div className="h-full flex flex-col lg:flex-row gap-6 p-6" id="post-creation-section">
+            {/* Left Panel - Post Creation */}
+            <div className="flex-1 space-y-6">
+              {/* Post To Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-semibold text-gray-900 dark:text-white">Post to</h4>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizePerChannel}
+                      onChange={(e) => setCustomizePerChannel(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Customize for each channel</span>
+                  </label>
                 </div>
-              )}
 
-              {selectedPlatforms.includes('facebook') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-600"></div>
-                    <span>Facebook options</span>
-                  </h5>
-                  <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
-                    <div className="flex space-x-4">
-                      <label className="flex items-center">
-                        <input type="radio" name="fb-type" defaultChecked className="mr-2" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="radio" name="fb-type" className="mr-2" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="radio" name="fb-type" className="mr-2" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
-                      </label>
-                    </div>
-                  </div>
+                {/* Platform Selection */}
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {platforms.map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => platform.connected && togglePlatform(platform.id)}
+                      disabled={!platform.connected}
+                      className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg border-2 transition-all ${selectedPlatforms.includes(platform.id)
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700'
+                        } ${!platform.connected ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300 cursor-pointer'}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${platform.connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{platform.name}</span>
+                      {selectedPlatforms.includes(platform.id) && (
+                        <X size={14} className="text-red-600" />
+                      )}
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              {selectedPlatforms.includes('instagram') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-pink-600"></div>
-                    <span>Instagram options</span>
-                  </h5>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
-                      <div className="flex space-x-4">
-                        <label className="flex items-center">
-                          <input type="radio" name="ig-type" defaultChecked className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input type="radio" name="ig-type" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input type="radio" name="ig-type" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
-                        </label>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Invite collaborators</label>
-                      <input
-                        type="text"
-                        placeholder="Invite collaborators by entering their Instagram username here."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedPlatforms.includes('tiktok') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-black dark:bg-white"></div>
-                    <span>TikTok options</span>
-                  </h5>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Who can view this video?</label>
-                      <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option>Everyone</option>
-                        <option>Friends</option>
-                        <option>Only me</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Allow users to</label>
-                      <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center">
-                          <input type="checkbox" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Comment</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input type="checkbox" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Duet</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input type="checkbox" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Stitch</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedPlatforms.includes('youtube') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full bg-red-600"></div>
-                    <span>YouTube options</span>
-                  </h5>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
-                      <input
-                        type="text"
-                        placeholder="Add a title"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post Type</label>
-                      <div className="flex space-x-4">
-                        <label className="flex items-center">
-                          <input type="radio" name="yt-type" defaultChecked className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Video</span>
-                        </label>
-                        <label className="flex items-center">
-                          <input type="radio" name="yt-type" className="mr-2" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Short</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={handleSaveDraft}
-            className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Save for later
-          </button>
-          <div className="flex space-x-3">
-            <button className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-              Schedule Post
-            </button>
-            <button className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
-              <span>Post</span>
-              <ChevronDown size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Post Preview */}
-      <div className="lg:w-[480px] flex-shrink-0">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 sticky top-6">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Post Preview</h3>
-
-            {/* Platform Tabs */}
-            <div className="flex items-center space-x-2 overflow-x-auto">
-              <button
-                onClick={() => setActivePreviewTab('all')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  activePreviewTab === 'all'
-                    ? 'bg-red-600 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                All
-              </button>
-              {selectedPlatforms.map((platformId) => {
-                const platform = platforms.find(p => p.id === platformId);
-                return (
+                {selectedPlatforms.length > 0 && (
                   <button
-                    key={platformId}
-                    onClick={() => setActivePreviewTab(platformId)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
-                      activePreviewTab === platformId
-                        ? 'bg-red-600 text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                    onClick={clearAllPlatforms}
+                    className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
                   >
-                    {platform?.name}
+                    Clear all
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                )}
+              </div>
 
-          {/* Preview Content */}
-          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-4">
-            {(activePreviewTab === 'all' ? selectedPlatforms : [activePreviewTab as SocialPlatform]).map((platformId) => {
-              const platform = platforms.find(p => p.id === platformId);
-              return (
-                <div key={platformId} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
-                  {/* Mock Social Post Card */}
-                  <div className="flex items-start space-x-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-sm text-gray-900 dark:text-white">Your Business Name</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Just now</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: platform?.color }}></div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{platform?.name}</span>
-                      </div>
-                    </div>
+              {/* Content Editor */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-base font-semibold text-gray-900 dark:text-white">Type content</h4>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Char limit: <span className={characterCount > MAX_CHARACTERS ? 'text-red-600' : ''}>{characterCount}</span> / {MAX_CHARACTERS}
+                    </span>
                   </div>
 
-                  {/* Post Content */}
-                  <div className="mb-3">
-                    {postContent ? (
-                      <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{postContent}</p>
-                    ) : (
-                      <p className="text-sm text-gray-400 italic">Your post content will appear here...</p>
+                  <textarea
+                    value={postContent}
+                    onChange={(e) => setPostContent(e.target.value)}
+                    placeholder="Write your post here..."
+                    rows={8}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+                  />
+                </div>
+
+                {/* Formatting Toolbar */}
+                <div className="flex items-center space-x-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
+                  <button className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                    <Sparkles size={16} />
+                    <span className="text-sm font-medium">AI</span>
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Bold">
+                    <Bold size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Italic">
+                    <Italic size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Emoji">
+                    <Smile size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Image">
+                    <Image size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Video">
+                    <Video size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Document">
+                    <FileText size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Hashtag">
+                    <Hash size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Tag">
+                    <Tag size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Link">
+                    <Link2 size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Location">
+                    <MapPin size={18} className="text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Advanced Options */}
+                <button
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <span>Advanced options</span>
+                  <ChevronDown size={16} className={`transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showAdvancedOptions && (
+                  <div className="mt-4 space-y-4">
+                    {/* Platform-Specific Options */}
+                    {selectedPlatforms.includes('google_business') && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                          <span>Google Business Profile options</span>
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
+                            <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                              <option>Call to Action</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Select button label</label>
+                            <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                              <option>Select button label</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPlatforms.includes('facebook') && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-blue-600"></div>
+                          <span>Facebook options</span>
+                        </h5>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
+                          <div className="flex space-x-4">
+                            <label className="flex items-center">
+                              <input type="radio" name="fb-type" defaultChecked className="mr-2" />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input type="radio" name="fb-type" className="mr-2" />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input type="radio" name="fb-type" className="mr-2" />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPlatforms.includes('instagram') && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-pink-600"></div>
+                          <span>Instagram options</span>
+                        </h5>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post this as</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center">
+                                <input type="radio" name="ig-type" defaultChecked className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Feed</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="radio" name="ig-type" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Reel</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="radio" name="ig-type" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Story</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Invite collaborators</label>
+                            <input
+                              type="text"
+                              placeholder="Invite collaborators by entering their Instagram username here."
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPlatforms.includes('tiktok') && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-black dark:bg-white"></div>
+                          <span>TikTok options</span>
+                        </h5>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Who can view this video?</label>
+                            <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                              <option>Everyone</option>
+                              <option>Friends</option>
+                              <option>Only me</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Allow users to</label>
+                            <div className="flex flex-wrap gap-4">
+                              <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Comment</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Duet</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Stitch</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPlatforms.includes('youtube') && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                          <div className="w-4 h-4 rounded-full bg-red-600"></div>
+                          <span>YouTube options</span>
+                        </h5>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
+                            <input
+                              type="text"
+                              placeholder="Add a title"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">Post Type</label>
+                            <div className="flex space-x-4">
+                              <label className="flex items-center">
+                                <input type="radio" name="yt-type" defaultChecked className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Video</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="radio" name="yt-type" className="mr-2" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Short</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
+                )}
+              </div>
 
-                  {/* Media Placeholder */}
-                  <div className="bg-gray-200 dark:bg-gray-600 rounded-lg h-48 flex items-center justify-center mb-3">
-                    <div className="text-center">
-                      <Image size={32} className="mx-auto mb-2 text-gray-400" />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Make your post stand out with a photo</p>
-                    </div>
-                  </div>
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleSaveDraft}
+                  className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Save for later
+                </button>
+                <div className="flex space-x-3">
+                  <button className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    Schedule Post
+                  </button>
+                  <button className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+                    <span>Post</span>
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                  {/* Interaction Buttons */}
-                  <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400 text-sm">
-                    <button className="flex items-center space-x-1 hover:text-red-600">
-                      <span>👍</span>
-                      <span>Like</span>
+            {/* Right Panel - Post Preview */}
+            <div className="lg:w-[480px] flex-shrink-0">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 sticky top-6">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Post Preview</h3>
+
+                  {/* Platform Tabs */}
+                  <div className="flex items-center space-x-2 overflow-x-auto">
+                    <button
+                      onClick={() => setActivePreviewTab('all')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${activePreviewTab === 'all'
+                        ? 'bg-red-600 text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                      All
                     </button>
-                    <button className="flex items-center space-x-1 hover:text-red-600">
-                      <span>💬</span>
-                      <span>Comment</span>
-                    </button>
-                    <button className="flex items-center space-x-1 hover:text-red-600">
-                      <span>↗️</span>
-                      <span>Share</span>
-                    </button>
+                    {selectedPlatforms.map((platformId) => {
+                      const platform = platforms.find(p => p.id === platformId);
+                      return (
+                        <button
+                          key={platformId}
+                          onClick={() => setActivePreviewTab(platformId)}
+                          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${activePreviewTab === platformId
+                            ? 'bg-red-600 text-white'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                          {platform?.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
 
-            {selectedPlatforms.length === 0 && (
-              <div className="text-center py-12">
-                <Share2 size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <p className="text-gray-500 dark:text-gray-400">Select platforms to see preview</p>
+                {/* Preview Content */}
+                <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-4">
+                  {(activePreviewTab === 'all' ? selectedPlatforms : [activePreviewTab as SocialPlatform]).map((platformId) => {
+                    const platform = platforms.find(p => p.id === platformId);
+                    return (
+                      <div key={platformId} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                        {/* Mock Social Post Card */}
+                        <div className="flex items-start space-x-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-medium text-sm text-gray-900 dark:text-white">Your Business Name</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Just now</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: platform?.color }}></div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{platform?.name}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Post Content */}
+                        <div className="mb-3">
+                          {postContent ? (
+                            <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{postContent}</p>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">Your post content will appear here...</p>
+                          )}
+                        </div>
+
+                        {/* Media Placeholder */}
+                        <div className="bg-gray-200 dark:bg-gray-600 rounded-lg h-48 flex items-center justify-center mb-3">
+                          <div className="text-center">
+                            <Image size={32} className="mx-auto mb-2 text-gray-400" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Make your post stand out with a photo</p>
+                          </div>
+                        </div>
+
+                        {/* Interaction Buttons */}
+                        <div className="flex items-center space-x-6 text-gray-600 dark:text-gray-400 text-sm">
+                          <button className="flex items-center space-x-1 hover:text-red-600">
+                            <span>👍</span>
+                            <span>Like</span>
+                          </button>
+                          <button className="flex items-center space-x-1 hover:text-red-600">
+                            <span>💬</span>
+                            <span>Comment</span>
+                          </button>
+                          <button className="flex items-center space-x-1 hover:text-red-600">
+                            <span>↗️</span>
+                            <span>Share</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {selectedPlatforms.length === 0 && (
+                    <div className="text-center py-12">
+                      <Share2 size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                      <p className="text-gray-500 dark:text-gray-400">Select platforms to see preview</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
-      </div>
         )}
 
         {activeSubTab === 'comments' && (
@@ -1345,11 +1387,10 @@ const CommentsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
       <div className="w-64 flex-shrink-0 space-y-2">
         <button
           onClick={() => setSelectedPlatform('all')}
-          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-            selectedPlatform === 'all'
-              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-          }`}
+          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedPlatform === 'all'
+            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
         >
           All Platforms
         </button>
@@ -1358,13 +1399,12 @@ const CommentsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
             key={platform.id}
             onClick={() => setSelectedPlatform(platform.id)}
             disabled={!platform.connected}
-            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-              selectedPlatform === platform.id
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                : platform.connected
+            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedPlatform === platform.id
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : platform.connected
                 ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            }`}
+              }`}
           >
             {platform.name}
           </button>
@@ -1399,7 +1439,7 @@ const CommentsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
         <div className="flex flex-col items-center justify-center h-96">
           <div className="w-16 h-16 mb-4 text-blue-500 dark:text-blue-400">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 8L10.89 13.26C11.5833 13.7167 12.4167 13.7167 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3 8L10.89 13.26C11.5833 13.7167 12.4167 13.7167 13.11 13.26L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
           <p className="text-lg font-medium text-gray-900 dark:text-white">No comments yet</p>
@@ -1418,11 +1458,10 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
       <div className="w-64 flex-shrink-0 space-y-2">
         <button
           onClick={() => setSelectedPlatform('all')}
-          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-            selectedPlatform === 'all'
-              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-          }`}
+          className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedPlatform === 'all'
+            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
         >
           All
         </button>
@@ -1431,13 +1470,12 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
             key={platform.id}
             onClick={() => setSelectedPlatform(platform.id)}
             disabled={!platform.connected}
-            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-              selectedPlatform === platform.id
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                : platform.connected
+            className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedPlatform === platform.id
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : platform.connected
                 ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
-            }`}
+              }`}
           >
             {platform.name}
           </button>
@@ -1453,8 +1491,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <span className="text-sm text-gray-600 dark:text-gray-400">Number of Posts</span>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1466,8 +1504,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Likes</span>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1479,8 +1517,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Followers</span>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1492,8 +1530,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Impressions</span>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1505,8 +1543,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <span className="text-sm text-gray-600 dark:text-gray-400">Total Comments</span>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1522,8 +1560,8 @@ const StatisticsTabContent: React.FC<TabContentProps> = ({ platforms }) => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Social Post Performance</h3>
               <button className="text-gray-400 hover:text-gray-600">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4M12 8h.01" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -1603,9 +1641,9 @@ const SocialListeningTabContent: React.FC = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg viewBox="0 0 24 24" className="w-5 h-5">
-                <path fill="#4285F4" d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path fill="#34A853" d="M2 17l10 5 10-5-10-5-10 5z"/>
-                <path fill="#FBBC04" d="M2 12l10 5 10-5-10-5-10 5z"/>
+                <path fill="#4285F4" d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path fill="#34A853" d="M2 17l10 5 10-5-10-5-10 5z" />
+                <path fill="#FBBC04" d="M2 12l10 5 10-5-10-5-10 5z" />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Google Trends</h3>
@@ -1637,7 +1675,7 @@ const SocialListeningTabContent: React.FC = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#E60023">
-                <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/>
+                <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z" />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pinterest Keywords</h3>
@@ -1671,7 +1709,7 @@ const SocialListeningTabContent: React.FC = () => {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg viewBox="0 0 24 24" className="w-5 h-5">
-                <path fill="#000000" d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.911 0 4.746v-.382c0-.165.103-.287.28-.287.346 0 .763.02 1.243.02 1.273 0 2.328-.02 3.162-.02.214 0 .321.122.321.287v.382c0 .165-.107.287-.321.287-.481.03-.896.15-1.167.361-.138.121-.172.271-.172.421 0 .15.062.42.172.69 1.247 3.001 3.514 8.729 3.921 9.57.406-.841 2.674-6.569 3.921-9.57.11-.27.172-.54.172-.69 0-.15-.034-.3-.172-.421-.271-.211-.686-.331-1.167-.361-.214 0-.321-.122-.321-.287v-.382c0-.165.107-.287.321-.287.834 0 1.889.02 3.162.02.48 0 .897-.02 1.243-.02.177 0 .28.122.28.287v.382c0 .165-.103.287-.28.287-.568.031-.941.121-1.122.271-.178.152-.368.538-.619 1.139-1.358 3.265-4.245 9.088-5.651 12.409-.405.902-.916 1.045-1.532-.029-.636-1.18-1.917-3.796-2.853-5.728z"/>
+                <path fill="#000000" d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.911 0 4.746v-.382c0-.165.103-.287.28-.287.346 0 .763.02 1.243.02 1.273 0 2.328-.02 3.162-.02.214 0 .321.122.321.287v.382c0 .165-.107.287-.321.287-.481.03-.896.15-1.167.361-.138.121-.172.271-.172.421 0 .15.062.42.172.69 1.247 3.001 3.514 8.729 3.921 9.57.406-.841 2.674-6.569 3.921-9.57.11-.27.172-.54.172-.69 0-.15-.034-.3-.172-.421-.271-.211-.686-.331-1.167-.361-.214 0-.321-.122-.321-.287v-.382c0-.165.107-.287.321-.287.834 0 1.889.02 3.162.02.48 0 .897-.02 1.243-.02.177 0 .28.122.28.287v.382c0 .165-.103.287-.28.287-.568.031-.941.121-1.122.271-.178.152-.368.538-.619 1.139-1.358 3.265-4.245 9.088-5.651 12.409-.405.902-.916 1.045-1.532-.029-.636-1.18-1.917-3.796-2.853-5.728z" />
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Wikipedia Pageviews</h3>

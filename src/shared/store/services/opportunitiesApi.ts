@@ -172,6 +172,12 @@ class OpportunitiesApiService {
     });
     return result.data;
   }
+
+  async removeFollower(id: string, userId: string): Promise<void> {
+    await this.makeRequest(`/opportunities/${id}/followers/${userId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const opportunitiesBackendApi = new OpportunitiesApiService();

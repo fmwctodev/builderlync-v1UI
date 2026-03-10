@@ -15,6 +15,7 @@ const GoogleBusinessPage: React.FC = () => {
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
       handleCallback(code);
     } else {
       fetchLocations();
@@ -29,7 +30,7 @@ const GoogleBusinessPage: React.FC = () => {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }
       );
-      
+
       if (response.ok) {
         await fetchLocations();
       } else {
@@ -54,13 +55,23 @@ const GoogleBusinessPage: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setLocations(data.data || []);
-        if (data.data && data.data.length > 0) {
-          setSelectedLocation(data.data[0].name);
-          fetchInsights(data.data[0].name);
+        const locs = data.data?.locations || data.data || [];
+        setLocations(locs);
+        if (locs.length > 0) {
+          const firstLoc = locs[0].name;
+          setSelectedLocation(firstLoc);
+          fetchInsights(firstLoc);
         }
       } else {
-        setError('Not connected to Google Business');
+        const data = await response.json().catch(() => ({}));
+        const msg = data.message || '';
+        if (msg.toLowerCase().includes('quota exceeded') || response.status === 429) {
+          setError('Google API Limit Reached: ' + msg);
+        } else if (msg.toLowerCase().includes('not connected')) {
+          setError('Not connected');
+        } else {
+          setError(msg || 'Failed to fetch locations');
+        }
       }
     } catch (err) {
       setError('Failed to fetch locations');
@@ -117,28 +128,34 @@ const GoogleBusinessPage: React.FC = () => {
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{error}</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Business account to view insights</p>
-          <button
-            onClick={async () => {
-              try {
-                const response = await fetch(
-                  `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/google-analytics/connect`,
-                  {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                  }
-                );
-                const data = await response.json();
-                if (data.data?.authUrl) {
-                  window.location.href = data.data.authUrl;
-                }
-              } catch (err) {
-                alert('Failed to initiate connection');
-              }
-            }}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Connect Google Business
-          </button>
+
+          {error?.includes('Google API Limit') || error?.includes('Quota exceeded') || error?.includes('Quota') ? (
+            <>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Google's API is temporarily limiting requests. Your account is connected, but we cannot fetch locations right now.
+                Please wait a minute and try again.
+              </p>
+              <button
+                onClick={() => fetchLocations()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Retry Now
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Connect your Google Services from the Integrations tab to view insights</p>
+              <button
+                onClick={() => {
+                  const basePath = orgSlug ? `/org/${orgSlug}` : '';
+                  navigate(`${basePath}/settings/integrations`);
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Go to Integrations Settings
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

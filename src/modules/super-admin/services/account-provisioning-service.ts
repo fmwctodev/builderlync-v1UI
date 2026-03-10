@@ -1,4 +1,9 @@
-import { supabase, supabaseAdmin, handleSupabaseError, isServiceRoleConfigured, getServiceRoleErrorMessage } from './supabase-client';
+import {
+  supabaseAdmin,
+  handleSupabaseError,
+  isServiceRoleConfigured,
+  getServiceRoleErrorMessage
+} from './supabase-client';
 import type { EnterpriseAccount } from '../types';
 import { createStripeCustomer, type StripeCustomerData } from './stripe/stripe-customers-service';
 import { createStripeSubscription, type CreateSubscriptionData } from './stripe/stripe-subscriptions-service';

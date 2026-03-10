@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderPlus, Upload, Search, MoreHorizontal, ArrowUp, File, X } from 'lucide-react';
+import { Upload, Search, MoreHorizontal, ArrowUp, File, X, Download, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cloudDriveApi } from '../../../shared/services/cloudDriveApi';
 import { backendFilesApi, FileRecord } from '../../../shared/services/backendFilesApi';
@@ -20,8 +20,34 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [documentSearch, setDocumentSearch] = useState('');
-  const [attachmentsIds, setAttachmentsIds] = useState<number[]>([]);
+  const [attachmentsIds, setAttachmentsIds] = useState<(number | string)[]>([]);
   const [previewItem, setPreviewItem] = useState<FileRecord | null>(null);
+  const [attachingDocId, setAttachingDocId] = useState<number | string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<number | string | null>(null);
+  const [removingDocId, setRemovingDocId] = useState<number | string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const fetchJobAttachmentsIds = async () => {
+    if (!jobId) return;
+    try {
+      setLoading(true);
+      const response = await getJobById(jobId);
+      const job = response.data || response;
+      const ids = job?.attachmentsId || job?.attachments_id || [];
+      setAttachmentsIds(Array.isArray(ids) ? ids : []);
+      const docs = job?.attachmentsDocuments || [];
+      setAttachments(Array.isArray(docs) ? docs : []);
+    } catch (error) {
+      console.error('Error loading job attachments ids:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -38,23 +64,6 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   }, []);
 
   useEffect(() => {
-    const fetchJobAttachmentsIds = async () => {
-      if (!jobId) return;
-      try {
-        setLoading(true);
-        const response = await getJobById(jobId);
-        const job = response.data || response;
-        const ids = job?.attachmentsId || job?.attachments_id || [];
-        setAttachmentsIds(Array.isArray(ids) ? ids : []);
-        const docs = job?.attachmentsDocuments || [];
-        setAttachments(Array.isArray(docs) ? docs : []);
-      } catch (error) {
-        console.error('Error loading job attachments ids:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchJobAttachmentsIds();
   }, [jobId]);
 
@@ -66,12 +75,62 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const isImageFile = (mimeType?: string) => {
-    return !!mimeType && mimeType.startsWith('image/');
+  const getExtension = (filename: string) => {
+    return filename.split('.').pop()?.toLowerCase() || '';
   };
 
-  const isPdfFile = (mimeType?: string) => {
-    return !!mimeType && mimeType.includes('pdf');
+  const isImageFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+    return (!!mimeType && mimeType.startsWith('image/')) || imageExtensions.includes(ext);
+  };
+
+  const isPdfFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+    return (!!mimeType && mimeType.includes('pdf')) || ext === 'pdf';
+  };
+
+  const isOfficeFile = (attachment: any) => {
+    if (!attachment) return false;
+    const mimeType = attachment.mime_type;
+    const ext = getExtension(attachment.filename || '');
+
+    const officeMimes = [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/rtf',
+      'text/plain',
+      'text/csv'
+    ];
+
+    const officeExtensions = [
+      'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'ods', 'odt', 'msg'
+    ];
+
+    return (!!mimeType && officeMimes.some(m => mimeType.includes(m))) || officeExtensions.includes(ext);
+  };
+
+  const isCloudUrl = (url?: string) => {
+    if (!url) return false;
+    const cloudDomains = [
+      'onedrive.live.com',
+      '1drv.ms',
+      'google.com/drive',
+      'sharepoint.com',
+      'docs.google.com',
+      'drive.google.com',
+      'microsoft.com',
+      'live.com'
+    ];
+    return url.startsWith('http') && cloudDomains.some(domain => url.includes(domain));
   };
 
   const loadDocuments = async () => {
@@ -89,15 +148,33 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   };
 
   const handleAttachDocument = async (doc: FileRecord) => {
-    if (!jobId) return;
+    if (!jobId || attachingDocId !== null) return;
     try {
-      const nextIds = Array.from(new Set([...attachmentsIds, doc.id]));
-      setAttachmentsIds(nextIds);
+      setAttachingDocId(doc.id);
+      const nextIds = Array.from(new Set([...attachmentsIds, doc.id])).filter(id => id !== null && id !== undefined && id !== "") as (number | string)[];
       await updateJobAttachmentsIds(jobId, nextIds);
-      setAttachments([doc, ...attachments]);
+      // Re-fetch to get the imported versions with correct IDs and GCS paths
+      await fetchJobAttachmentsIds();
       setShowDocumentPicker(false);
     } catch (error) {
       console.error('Error attaching document:', error);
+    } finally {
+      setAttachingDocId(null);
+    }
+  };
+
+  const handleRemoveDocument = async (docId: number | string) => {
+    if (!jobId || removingDocId !== null) return;
+    try {
+      setRemovingDocId(docId);
+      const nextIds = attachmentsIds.filter(id => id !== docId);
+      await updateJobAttachmentsIds(jobId, nextIds);
+      await fetchJobAttachmentsIds();
+    } catch (error) {
+      console.error('Error removing document:', error);
+    } finally {
+      setRemovingDocId(null);
+      setActiveMenuId(null);
     }
   };
 
@@ -137,7 +214,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Search/Filter bar removed for now */}
 
       <div className="flex-1 p-6">
@@ -191,7 +268,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 hover:shadow-md transition-shadow"
               >
                 <div className="aspect-square w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  {isImageFile(attachment.mime_type) ? (
+                  {isImageFile(attachment) ? (
                     <img
                       src={attachment.file_path}
                       alt={attachment.filename}
@@ -211,14 +288,50 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <button
-                    onClick={() => setPreviewItem(attachment)}
+                    onClick={() => {
+                      if (isCloudUrl(attachment.file_path)) {
+                        window.open(attachment.file_path, '_blank');
+                      } else if (isImageFile(attachment) || isPdfFile(attachment) || isOfficeFile(attachment)) {
+                        setPreviewItem(attachment);
+                      } else {
+                        // For other types, try to open in new tab directly
+                        window.open(attachment.file_path, '_blank');
+                      }
+                    }}
                     className="text-xs text-primary-600 hover:text-primary-700"
                   >
                     Preview
                   </button>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      className="text-gray-400 hover:text-gray-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === attachment.id ? null : attachment.id);
+                      }}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                    {activeMenuId === attachment.id && (
+                      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-700 z-10 py-1 text-left">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveDocument(attachment.id);
+                          }}
+                          disabled={removingDocId === attachment.id}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors disabled:opacity-50"
+                        >
+                          {removingDocId === attachment.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                          <span className="font-medium">{removingDocId === attachment.id ? 'Removing...' : 'Remove document'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -288,9 +401,18 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                       </div>
                       <button
                         onClick={() => handleAttachDocument(doc)}
-                        className="text-sm text-primary-600 hover:text-primary-700"
+                        disabled={attachingDocId !== null}
+                        className={`text-sm flex items-center space-x-1 ${attachingDocId === doc.id
+                          ? 'text-primary-400 cursor-not-allowed'
+                          : attachingDocId !== null
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-primary-600 hover:text-primary-700'
+                          }`}
                       >
-                        Attach
+                        {attachingDocId === doc.id && (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                        )}
+                        <span>{attachingDocId === doc.id ? 'Attaching...' : 'Attach'}</span>
                       </button>
                     </div>
                   ))}
@@ -327,7 +449,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
               </button>
             </div>
             <div className="p-4">
-              {isImageFile(previewItem.mime_type) ? (
+              {isImageFile(previewItem) ? (
                 <div className="w-full max-h-[70vh] flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
                   <img
                     src={previewItem.file_path}
@@ -335,17 +457,42 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                     className="max-h-[70vh] w-auto object-contain"
                   />
                 </div>
-              ) : isPdfFile(previewItem.mime_type) ? (
+              ) : (isPdfFile(previewItem) && !isCloudUrl(previewItem.file_path)) ? (
                 <div className="w-full h-[70vh] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
                   <iframe
                     src={previewItem.file_path}
                     className="w-full h-full"
                     title={previewItem.filename}
+                    frameBorder="0"
+                  />
+                </div>
+              ) : (isOfficeFile(previewItem) && !isCloudUrl(previewItem.file_path)) ? (
+                <div className="w-full h-[70vh] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
+                  <iframe
+                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewItem.file_path)}&embedded=true`}
+                    className="w-full h-full"
+                    title={previewItem.filename}
+                    frameBorder="0"
                   />
                 </div>
               ) : (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Preview not available for this file type.
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <File className="w-16 h-16 text-primary-400 mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
+                    Preview not available for this file type
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mb-6 font-mono">
+                    {previewItem.mime_type}
+                  </p>
+                  <a
+                    href={previewItem.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Open in New Tab</span>
+                  </a>
                 </div>
               )}
             </div>

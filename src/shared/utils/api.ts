@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { logoutAndRedirect } from './auth';
 
 /**
  * API Utility - Replaces Supabase client for frontend
@@ -23,15 +24,15 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     const orgId = localStorage.getItem('organizationId');
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     if (orgId) {
       config.headers['x-organization-id'] = orgId;
     }
-    
+
     return config;
   },
   (error) => {
@@ -44,27 +45,26 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle 401 Unauthorized - redirect to login
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('organizationId');
-      window.location.href = '/login';
-    }
-    
+    // if (error.response?.status === 401) {
+    //   logoutAndRedirect();
+    // }
+
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       console.error('Access forbidden:', error.response.data);
+      logoutAndRedirect();
     }
-    
+
     // Handle 404 Not Found
     if (error.response?.status === 404) {
       console.error('Resource not found:', error.response.data);
     }
-    
+
     // Handle 500 Internal Server Error
     if (error.response?.status === 500) {
       console.error('Server error:', error.response.data);
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -119,19 +119,19 @@ export const apiClient = {
   upload: async <T = any>(url: string, file: File, additionalData?: Record<string, any>): Promise<T> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     if (additionalData) {
       Object.keys(additionalData).forEach(key => {
         formData.append(key, additionalData[key]);
       });
     }
-    
+
     const response = await api.post<T>(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
-    
+
     return response.data;
   }
 };
@@ -141,7 +141,7 @@ export const apiClient = {
  */
 export const buildQueryString = (params: Record<string, any>): string => {
   const searchParams = new URLSearchParams();
-  
+
   Object.keys(params).forEach(key => {
     const value = params[key];
     if (value !== undefined && value !== null) {
@@ -152,7 +152,7 @@ export const buildQueryString = (params: Record<string, any>): string => {
       }
     }
   });
-  
+
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : '';
 };

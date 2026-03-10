@@ -27,7 +27,7 @@ interface Integration {
 }
 
 const Integrations: React.FC = () => {
-  const {orgSlug} = useParams();
+  const { orgSlug } = useParams();
   const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
@@ -35,6 +35,10 @@ const Integrations: React.FC = () => {
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
+  const [oneDriveStatus, setOneDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
+  const [googleBusinessStatus, setGoogleBusinessStatus] = React.useState({ connected: false });
+  const [facebookAdsStatus, setFacebookAdsStatus] = React.useState({ connected: false });
+  const [tiktokAdsStatus, setTiktokAdsStatus] = React.useState({ connected: false });
   const [loading, setLoading] = React.useState<string | null>(null);
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
   const [showSrsModal, setShowSrsModal] = React.useState(false);
@@ -49,7 +53,40 @@ const Integrations: React.FC = () => {
     fetchSrsStatus();
     fetchEagleViewStatus();
     fetchGoogleDriveStatus();
+    fetchOneDriveStatus();
+    fetchGoogleBusinessStatus();
+    fetchSocialAdsStatus();
   }, []);
+
+  const fetchSocialAdsStatus = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFacebookAdsStatus({ connected: data.data?.some((i: any) => i.platform === 'facebook_ads') });
+        setTiktokAdsStatus({ connected: data.data?.some((i: any) => i.platform === 'tiktok_ads') });
+      }
+    } catch (error) {
+      console.error('Error fetching Social Ads status:', error);
+    }
+  };
+
+  const fetchGoogleBusinessStatus = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const googleIntegrations = data.data?.filter((i: any) => i.platform.startsWith('google_')) || [];
+        setGoogleBusinessStatus({ connected: googleIntegrations.length > 0 });
+      }
+    } catch (error) {
+      console.error('Error fetching Google services status:', error);
+    }
+  };
 
   const fetchQuickBooksStatus = async () => {
     try {
@@ -187,6 +224,23 @@ const Integrations: React.FC = () => {
     }
   };
 
+  const fetchOneDriveStatus = async () => {
+    try {
+      const connection = await cloudDriveApi.getCurrentUserConnection();
+      if (connection && (connection.provider === 'onedrive_personal' || connection.provider === 'onedrive_business')) {
+        setOneDriveStatus({
+          connected: true,
+          email: connection.provider_email
+        });
+      } else {
+        setOneDriveStatus({ connected: false });
+      }
+    } catch (error) {
+      console.error('Error fetching OneDrive status:', error);
+      setOneDriveStatus({ connected: false });
+    }
+  };
+
   const handleQuickBooksConnect = async () => {
     try {
       setLoading('quickbooks');
@@ -221,7 +275,7 @@ const Integrations: React.FC = () => {
     setTwilioStatus(status);
   };
 
-  const handleConnect = (integrationId: string) => {
+  const handleConnect = async (integrationId: string) => {
     if (integrationId === 'quickbooks') {
       handleQuickBooksConnect();
     } else if (integrationId === 'twilio') {
@@ -229,7 +283,7 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'srs-distribution') {
       setShowSrsModal(true);
     } else if (integrationId === 'google-business') {
-      googleBusinessApi.connect();
+      googleBusinessApi.connect("integrations");
     } else if (integrationId === 'abc-supply') {
       handleABCSupplyConnect();
     } else if (integrationId === 'eagleview') {
@@ -237,6 +291,27 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'google-drive') {
       // Redirect to File Manager to connect
       navigate(`/org/${orgSlug}/file-manager`);
+    } else if (integrationId === 'onedrive') {
+      // Redirect to File Manager to connect
+      navigate(`/org/${orgSlug}/file-manager`);
+    } else if (integrationId === 'meta') {
+      try {
+        setLoading('meta');
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/social-ads/facebook/connect`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data.data?.authUrl) window.location.href = data.data.authUrl;
+      } catch (err) { console.error(err); } finally { setLoading(null); }
+    } else if (integrationId === 'tiktok') {
+      try {
+        setLoading('tiktok');
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/social-ads/tiktok/connect`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data.data?.authUrl) window.location.href = data.data.authUrl;
+      } catch (err) { console.error(err); } finally { setLoading(null); }
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -272,6 +347,63 @@ const Integrations: React.FC = () => {
         setGoogleDriveStatus({ connected: false });
       } catch (error) {
         console.error('Error disconnecting Google Drive:', error);
+      } finally {
+        setLoading(null);
+      }
+    } else if (integrationId === 'onedrive') {
+      try {
+        setLoading('onedrive');
+        await cloudDriveApi.disconnectCurrentUser();
+        setOneDriveStatus({ connected: false });
+      } catch (error) {
+        console.error('Error disconnecting OneDrive:', error);
+      } finally {
+        setLoading(null);
+      }
+    } else if (integrationId === 'google-business') {
+      try {
+        setLoading('google-business');
+        // Get all integration IDs connected to google and delete them
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const allIntegrations = await response.json();
+        const googleIntegrations = allIntegrations.data?.filter((i: any) => i.platform.startsWith('google_'));
+
+        for (const i of googleIntegrations || []) {
+          await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations/${i.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+        }
+        setGoogleBusinessStatus({ connected: false });
+      } catch (error) {
+        console.error('Error disconnecting Google Services:', error);
+      } finally {
+        setLoading(null);
+      }
+    } else if (integrationId === 'meta' || integrationId === 'tiktok') {
+      try {
+        setLoading(integrationId);
+        const platform = integrationId === 'meta' ? 'facebook_ads' : 'tiktok_ads';
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const allIntegrations = await response.json();
+        const integration = allIntegrations.data?.find((i: any) => i.platform === platform);
+
+        if (integration) {
+          await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/integrations/${integration.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+        }
+
+        if (integrationId === 'meta') setFacebookAdsStatus({ connected: false });
+        if (integrationId === 'tiktok') setTiktokAdsStatus({ connected: false });
+
+      } catch (error) {
+        console.error(`Error disconnecting ${integrationId}:`, error);
       } finally {
         setLoading(null);
       }
@@ -349,27 +481,27 @@ const Integrations: React.FC = () => {
     },
     {
       id: 'meta',
-      name: 'Meta',
-      description: 'Auto-sync ad leads, manage DMs, and respond to reviews across Facebook and Instagram',
+      name: 'Facebook / Meta Ads',
+      description: 'Auto-sync ad leads, manage DMs, and respond to reviews across Facebook and Instagram.',
       category: 'Marketing',
-      connected: false,
-      hasManage: true,
+      connected: facebookAdsStatus.connected,
+      hasManage: false,
     },
     {
       id: 'tiktok',
-      name: 'TikTok',
-      description: 'Connect to get leads from your TikTok lead generation ads into your CRM',
+      name: 'TikTok Ads',
+      description: 'Connect to get leads from your TikTok lead generation ads into your CRM.',
       category: 'Marketing',
-      connected: false,
-      learnMoreUrl: '#',
+      connected: tiktokAdsStatus.connected,
+      hasManage: false,
     },
     {
       id: 'google-business',
-      name: 'Google Business',
-      description: 'Manage your Google Business Profile and sync customer reviews',
+      name: 'Google Services',
+      description: 'Connect Google Ads, Analytics, and Business Profile all at once.',
       category: 'Marketing',
-      connected: false,
-      hasManage: true,
+      connected: googleBusinessStatus.connected,
+      hasManage: false, // Managed on the Marketing page 
     },
     // {
     //   id: 'linkedin',
@@ -392,6 +524,14 @@ const Integrations: React.FC = () => {
       category: 'Productivity',
       connected: googleDriveStatus.connected,
       companyInfo: googleDriveStatus.email ? { Email: googleDriveStatus.email } : null,
+    },
+    {
+      id: 'onedrive',
+      name: 'OneDrive',
+      description: 'Microsoft cloud storage for documents and media',
+      category: 'Productivity',
+      connected: oneDriveStatus.connected,
+      companyInfo: oneDriveStatus.email ? { Email: oneDriveStatus.email } : null,
     },
   ];
 
@@ -458,6 +598,12 @@ const Integrations: React.FC = () => {
             )}
 
             {integration.id === 'google-drive' && integration.connected && integration.companyInfo && (
+              <p className="text-xs text-green-600 dark:text-green-400 mb-4">
+                Connected to: {integration.companyInfo.Email}
+              </p>
+            )}
+
+            {integration.id === 'onedrive' && integration.connected && integration.companyInfo && (
               <p className="text-xs text-green-600 dark:text-green-400 mb-4">
                 Connected to: {integration.companyInfo.Email}
               </p>

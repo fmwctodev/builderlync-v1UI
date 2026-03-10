@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Cable, Plus, RefreshCw, Building2, KeyRound, Webhook, Settings2 } from 'lucide-react';
-import { supabase } from '../services/supabase-client';
+import { Cable, RefreshCw, Building2, KeyRound, Webhook, Settings2 } from 'lucide-react';
+import { apiClient } from '../services/supabase-client';
 import {
   IntegrationProvider,
   AccountIntegration,
@@ -15,8 +15,6 @@ import {
   getCategoryColor,
   formatLastCheck,
   maskApiKey,
-  generateRandomKey,
-  validateWebhookUrl,
   formatScopes,
 } from '../utils/integration-utils';
 import { clsx } from 'clsx';
@@ -31,47 +29,32 @@ export const Integrations: React.FC = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
+
+  const [stats, setStats] = useState<IntegrationStats>({
+    total: 0,
+    healthy: 0,
+    warning: 0,
+    error: 0,
+    unknown: 0,
+    enabled: 0,
+    disabled: 0
+  });
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'overview') {
-        const { data, error } = await supabase
-          .from('integration_providers')
-          .select('*')
-          .order('name', { ascending: true });
-        if (error) throw error;
-        setProviders(data || []);
-      } else if (activeTab === 'accounts') {
-        const { data, error } = await supabase
-          .from('account_integrations')
-          .select(`
-            *,
-            enterprise_accounts:account_id (id, name, status, plan)
-          `)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setAccountIntegrations(data || []);
-      } else if (activeTab === 'api-keys') {
-        const { data, error } = await supabase
-          .from('api_keys')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setApiKeys(data || []);
-      } else if (activeTab === 'webhooks') {
-        const { data, error } = await supabase
-          .from('webhook_endpoints')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setWebhooks(data || []);
+      const response = await apiClient.get('/super-admin/integrations/config');
+      if (response && response.data) {
+        const { accounts, apiKeys: keys, webhooks: hooks, overview } = response.data;
+        setProviders(accounts || []);
+        setAccountIntegrations(accounts || []);
+        setApiKeys(keys || []);
+        setWebhooks(hooks || []);
+        if (overview) setStats(overview);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -80,22 +63,12 @@ export const Integrations: React.FC = () => {
     }
   };
 
-  const stats: IntegrationStats = {
-    total: providers.length,
-    healthy: providers.filter((p) => p.status === 'healthy').length,
-    warning: providers.filter((p) => p.status === 'warning').length,
-    error: providers.filter((p) => p.status === 'error').length,
-    unknown: providers.filter((p) => p.status === 'unknown').length,
-    enabled: providers.filter((p) => p.is_enabled).length,
-    disabled: providers.filter((p) => !p.is_enabled).length,
-  };
-
   const filteredProviders = providers.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredAccountIntegrations = accountIntegrations.filter((ai) => {
-    const accountName = (ai.enterprise_accounts as any)?.name || '';
+    const accountName = (ai as any).enterprise_accounts?.name || ai.provider || '';
     return accountName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -116,54 +89,30 @@ export const Integrations: React.FC = () => {
           <Cable className="w-8 h-8 text-red-600" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Integrations & API</h1>
-            <p className="text-gray-600 mt-1">Monitor provider health, account connections, and API access</p>
+            <p className="text-gray-600 mt-1">Monitor provider health, account connections, and API access (System Managed)</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors shadow-sm"
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin")} />
+            {loading ? 'Refreshing...' : 'Refresh Data'}
           </button>
-          {activeTab === 'api-keys' && (
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                setEditorOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              <Plus className="w-4 h-4" />
-              Create API Key
-            </button>
-          )}
-          {activeTab === 'webhooks' && (
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                setEditorOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              <Plus className="w-4 h-4" />
-              Add Webhook
-            </button>
-          )}
         </div>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200">
-        <div className="border-b border-gray-200">
-          <div className="flex">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <div className="flex min-w-max">
             <button
               onClick={() => setActiveTab('overview')}
               className={clsx(
                 'flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors',
                 activeTab === 'overview'
                   ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-900'
               )}
             >
               <Settings2 className="w-4 h-4" />
@@ -178,7 +127,7 @@ export const Integrations: React.FC = () => {
                 'flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors',
                 activeTab === 'accounts'
                   ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-900'
               )}
             >
               <Building2 className="w-4 h-4" />
@@ -193,7 +142,7 @@ export const Integrations: React.FC = () => {
                 'flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors',
                 activeTab === 'api-keys'
                   ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-900'
               )}
             >
               <KeyRound className="w-4 h-4" />
@@ -208,7 +157,7 @@ export const Integrations: React.FC = () => {
                 'flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors',
                 activeTab === 'webhooks'
                   ? 'border-red-600 text-red-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-900'
               )}
             >
               <Webhook className="w-4 h-4" />
@@ -227,20 +176,20 @@ export const Integrations: React.FC = () => {
               placeholder={`Search ${activeTab === 'overview' ? 'providers' : activeTab === 'accounts' ? 'accounts' : activeTab === 'api-keys' ? 'API keys' : 'webhooks'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
             />
           </div>
 
           {activeTab === 'overview' && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                <StatCard label="Total" value={stats.total} color="gray" />
-                <StatCard label="Healthy" value={stats.healthy} color="green" />
-                <StatCard label="Warning" value={stats.warning} color="amber" />
-                <StatCard label="Error" value={stats.error} color="red" />
-                <StatCard label="Unknown" value={stats.unknown} color="gray" />
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                <StatCard label="Total Integrations" value={stats.total} color="gray" />
+                <StatCard label="Healthy & Active" value={stats.healthy} color="green" />
+                <StatCard label="Warning / Issues" value={stats.warning} color="amber" />
+                <StatCard label="Not Configured" value={stats.error} color="red" />
+                <StatCard label="Unknown Status" value={stats.unknown} color="gray" />
               </div>
-              <ProvidersGrid providers={filteredProviders} loading={loading} onRefresh={loadData} />
+              <ProvidersGrid providers={filteredProviders} loading={loading} />
             </>
           )}
 
@@ -255,10 +204,6 @@ export const Integrations: React.FC = () => {
             <ApiKeysTable
               apiKeys={filteredApiKeys}
               loading={loading}
-              onEdit={(k) => {
-                setEditingItem(k);
-                setEditorOpen(true);
-              }}
             />
           )}
 
@@ -266,44 +211,10 @@ export const Integrations: React.FC = () => {
             <WebhooksTable
               webhooks={filteredWebhooks}
               loading={loading}
-              onEdit={(w) => {
-                setEditingItem(w);
-                setEditorOpen(true);
-              }}
             />
           )}
         </div>
       </div>
-
-      {editorOpen && activeTab === 'api-keys' && (
-        <ApiKeyEditor
-          apiKey={editingItem}
-          onClose={() => {
-            setEditorOpen(false);
-            setEditingItem(null);
-          }}
-          onSaved={() => {
-            setEditorOpen(false);
-            setEditingItem(null);
-            loadData();
-          }}
-        />
-      )}
-
-      {editorOpen && activeTab === 'webhooks' && (
-        <WebhookEditor
-          webhook={editingItem}
-          onClose={() => {
-            setEditorOpen(false);
-            setEditingItem(null);
-          }}
-          onSaved={() => {
-            setEditorOpen(false);
-            setEditingItem(null);
-            loadData();
-          }}
-        />
-      )}
     </div>
   );
 };
@@ -316,16 +227,16 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, color }) => {
   const colorClasses = {
-    gray: 'text-gray-600',
-    green: 'text-green-600',
-    amber: 'text-amber-600',
-    red: 'text-red-600',
+    gray: 'text-gray-900 bg-gray-50',
+    green: 'text-green-700 bg-green-50',
+    amber: 'text-amber-700 bg-amber-50',
+    red: 'text-red-700 bg-red-50',
   };
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
-      <div className="text-sm text-gray-600">{label}</div>
-      <div className={clsx('text-2xl font-bold mt-1', colorClasses[color])}>{value}</div>
+    <div className={clsx('rounded-xl p-5 border border-transparent shadow-sm transition-all hover:shadow-md', colorClasses[color])}>
+      <div className="text-sm font-medium opacity-70 mb-2 truncate">{label}</div>
+      <div className="text-3xl font-bold">{value}</div>
     </div>
   );
 };
@@ -333,42 +244,32 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, color }) => {
 interface ProvidersGridProps {
   providers: IntegrationProvider[];
   loading: boolean;
-  onRefresh: () => void;
 }
 
-const ProvidersGrid: React.FC<ProvidersGridProps> = ({ providers, loading, onRefresh }) => {
-  const handleToggle = async (provider: IntegrationProvider) => {
-    try {
-      const { error } = await supabase
-        .from('integration_providers')
-        .update({ is_enabled: !provider.is_enabled })
-        .eq('id', provider.id);
-      if (error) throw error;
-      onRefresh();
-    } catch (error) {
-      console.error('Failed to toggle provider:', error);
-    }
-  };
-
+const ProvidersGrid: React.FC<ProvidersGridProps> = ({ providers, loading }) => {
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium text-gray-500">Scanning integration status...</span>
+        </div>
       </div>
     );
   }
 
   if (providers.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <Cable className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-        <p>No providers found</p>
+      <div className="text-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <Cable className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-900">No integration providers found</h3>
+        <p className="text-gray-500 max-w-sm mx-auto mt-2">Create providers in the database to see them here.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {providers.map((provider) => {
         const Icon = getProviderIcon(provider.key);
         const StatusIcon = getStatusIcon(provider.status);
@@ -376,54 +277,37 @@ const ProvidersGrid: React.FC<ProvidersGridProps> = ({ providers, loading, onRef
         return (
           <div
             key={provider.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:border-red-300 transition-colors"
+            className="flex flex-col bg-white border border-gray-200 rounded-xl p-5 hover:border-red-500 transition-all shadow-sm hover:shadow-md group"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Icon className="w-5 h-5 text-gray-600" />
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-red-50 transition-colors">
+                  <Icon className="w-6 h-6 text-gray-700 group-hover:text-red-600 transition-colors" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{provider.name}</h3>
-                  <span className={clsx('inline-block px-2 py-0.5 rounded text-xs font-medium mt-1', getCategoryColor(provider.category))}>
+                  <h3 className="font-bold text-gray-900 leading-tight">{provider.name}</h3>
+                  <span className={clsx('inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider mt-1 border', getCategoryColor(provider.category))}>
                     {provider.category}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className={clsx('inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border', getStatusColor(provider.status))}>
-                <StatusIcon className="w-3 h-3" />
-                {provider.status}
+            <div className="flex items-center gap-2 mb-4">
+              <span className={clsx('inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border-2', getStatusColor(provider.status))}>
+                <StatusIcon className="w-3.5 h-3.5" />
+                {provider.status.toUpperCase()}
               </span>
-              <span className={clsx('px-2 py-0.5 rounded text-xs', provider.is_enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>
-                {provider.is_enabled ? 'Enabled' : 'Disabled'}
+              <span className={clsx('px-3 py-1 rounded-full text-xs font-bold border-2', provider.is_enabled ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-600 border-gray-100')}>
+                {provider.is_enabled ? 'ENABLED' : 'DISABLED'}
               </span>
             </div>
 
-            <div className="text-xs text-gray-500 mb-3">
-              Last check: {formatLastCheck(provider.last_check_at)}
-            </div>
-
-            {provider.last_error && (
-              <div className="text-xs text-red-600 mb-3 line-clamp-2" title={provider.last_error}>
-                {provider.last_error}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleToggle(provider)}
-                className={clsx(
-                  'flex-1 px-3 py-1.5 text-sm border rounded',
-                  provider.is_enabled
-                    ? 'text-gray-600 border-gray-300 hover:bg-gray-50'
-                    : 'text-green-600 border-green-600 hover:bg-green-50'
-                )}
-              >
-                {provider.is_enabled ? 'Disable' : 'Enable'}
-              </button>
+            <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Managed via Server .env</span>
+              <span className="text-[10px] font-medium text-gray-500">
+                Check: {formatLastCheck(provider.last_check_at)}
+              </span>
             </div>
           </div>
         );
@@ -448,51 +332,59 @@ const AccountIntegrationsTable: React.FC<AccountIntegrationsTableProps> = ({ int
 
   if (integrations.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-        <p>No account integrations found</p>
+      <div className="text-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-900">No connected accounts yet</h3>
+        <p className="text-gray-500 max-w-sm mx-auto mt-2">Connected third-party accounts will appear here.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Sync</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {integrations.map((integration) => {
-            const account = integration.enterprise_accounts as any;
-            return (
-              <tr key={integration.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="font-medium text-gray-900">{account?.name || 'Unknown'}</div>
-                    <div className="text-sm text-gray-500">{account?.plan || 'N/A'}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{integration.provider || integration.provider_key || 'N/A'}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={clsx('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', integration.connected ? 'bg-green-100 text-green-800' : integration.status === 'error' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')}>
-                    {integration.connected ? 'Connected' : integration.status || 'Disconnected'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-600">{formatLastCheck(integration.last_sync_at)}</div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50/80 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Target Account</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Integration Provider</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Connection Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Last Sync Event</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {integrations.map((integration) => {
+              const account = (integration as any).enterprise_accounts;
+              return (
+                <tr key={integration.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600 font-bold text-xs">
+                        {account?.name?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900">{account?.name || 'System Default'}</div>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{account?.plan || 'Enterprise'} Plan</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="font-semibold text-gray-700">{integration.provider || integration.provider_key || 'Global Config'}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={clsx('inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold border-2', integration.connected ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100')}>
+                      {integration.connected ? 'ACTIVE CONNECTION' : 'NOT CONNECTED'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="text-xs font-medium text-gray-600">{formatLastCheck(integration.last_sync_at)}</div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -500,10 +392,9 @@ const AccountIntegrationsTable: React.FC<AccountIntegrationsTableProps> = ({ int
 interface ApiKeysTableProps {
   apiKeys: ApiKey[];
   loading: boolean;
-  onEdit: (apiKey: ApiKey) => void;
 }
 
-const ApiKeysTable: React.FC<ApiKeysTableProps> = ({ apiKeys, loading, onEdit }) => {
+const ApiKeysTable: React.FC<ApiKeysTableProps> = ({ apiKeys, loading }) => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -514,57 +405,64 @@ const ApiKeysTable: React.FC<ApiKeysTableProps> = ({ apiKeys, loading, onEdit })
 
   if (apiKeys.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <KeyRound className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-        <p>No API keys found</p>
+      <div className="text-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <KeyRound className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-900">No system API keys found</h3>
+        <p className="text-gray-500 max-w-sm mx-auto mt-2">API keys defined in server environment will show here.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scopes</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {apiKeys.map((apiKey) => (
-            <tr key={apiKey.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4">
-                <div>
-                  <div className="font-medium text-gray-900">{apiKey.name}</div>
-                  <div className="text-sm text-gray-500 capitalize">{apiKey.owner_type}</div>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <code className="text-sm font-mono text-gray-600">{maskApiKey(apiKey.key)}</code>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-600">{formatScopes(apiKey.scopes)}</div>
-              </td>
-              <td className="px-6 py-4">
-                <span className={clsx('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', apiKey.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>
-                  {apiKey.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <button
-                  onClick={() => onEdit(apiKey)}
-                  className="px-3 py-1 text-sm text-red-600 hover:text-red-700"
-                >
-                  Edit
-                </button>
-              </td>
+    <div className="overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50/80 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Service Name / Owner</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Masked API Key</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Granted Scopes</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Access Level</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {apiKeys.map((apiKey) => (
+              <tr key={apiKey.id} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="font-bold text-gray-900">{apiKey.name}</div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{apiKey.owner_type}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="px-2 py-1 bg-gray-100 rounded text-[11px] font-mono text-gray-600 inline-block border border-gray-200">
+                    {maskApiKey(apiKey.key)}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1">
+                    {apiKey.scopes.map(scope => (
+                      <span key={scope} className="px-1.5 py-0.5 bg-gray-50 text-gray-500 text-[9px] font-bold uppercase border border-gray-200 rounded">
+                        {scope}
+                      </span>
+                    ))}
+                    {apiKey.scopes.length === 0 && <span className="text-xs text-gray-400">Default Access</span>}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={clsx('inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border', apiKey.is_active ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100')}>
+                    {apiKey.is_active ? 'ACTIVE' : 'DISABLED'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <span className="text-[10px] font-bold text-red-600/60 uppercase tracking-widest bg-red-50 px-2 py-1 rounded">System Read-Only</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -572,10 +470,9 @@ const ApiKeysTable: React.FC<ApiKeysTableProps> = ({ apiKeys, loading, onEdit })
 interface WebhooksTableProps {
   webhooks: WebhookEndpoint[];
   loading: boolean;
-  onEdit: (webhook: WebhookEndpoint) => void;
 }
 
-const WebhooksTable: React.FC<WebhooksTableProps> = ({ webhooks, loading, onEdit }) => {
+const WebhooksTable: React.FC<WebhooksTableProps> = ({ webhooks, loading }) => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -586,408 +483,63 @@ const WebhooksTable: React.FC<WebhooksTableProps> = ({ webhooks, loading, onEdit
 
   if (webhooks.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <Webhook className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-        <p>No webhooks found</p>
+      <div className="text-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <Webhook className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-900">No webhooks configured</h3>
+        <p className="text-gray-500 max-w-sm mx-auto mt-2">Webhooks listening for system events will appear here.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Events</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {webhooks.map((webhook) => (
-            <tr key={webhook.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4">
-                <div className="font-medium text-gray-900">{webhook.name}</div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-600 font-mono truncate max-w-xs">{webhook.url}</div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-600">{webhook.events.slice(0, 2).join(', ')}{webhook.events.length > 2 ? ` +${webhook.events.length - 2}` : ''}</div>
-              </td>
-              <td className="px-6 py-4">
-                <span className={clsx('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', webhook.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>
-                  {webhook.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <button
-                  onClick={() => onEdit(webhook)}
-                  className="px-3 py-1 text-sm text-red-600 hover:text-red-700"
-                >
-                  Edit
-                </button>
-              </td>
+    <div className="overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50/80 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Hook Destination</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Endpoint URL</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Subscribed Events</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Live Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Config Source</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-interface ApiKeyEditorProps {
-  apiKey: ApiKey | null;
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-const ApiKeyEditor: React.FC<ApiKeyEditorProps> = ({ apiKey, onClose, onSaved }) => {
-  const isEditing = !!apiKey;
-  const [formData, setFormData] = useState<any>(
-    apiKey || {
-      name: '',
-      key: '',
-      owner_type: 'internal',
-      owner_id: '',
-      scopes: [],
-      is_active: true,
-      rate_limit_per_min: null,
-    }
-  );
-  const [scopesText, setScopesText] = useState(apiKey?.scopes.join(', ') || '');
-  const [generatedKey, setGeneratedKey] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleGenerate = () => {
-    const newKey = generateRandomKey();
-    setGeneratedKey(newKey);
-    setFormData({ ...formData, key: newKey });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError('');
-
-    try {
-      const scopes = scopesText.split(',').map((s) => s.trim()).filter(Boolean);
-      const data: any = {
-        name: formData.name,
-        key: formData.key || generateRandomKey(),
-        owner_type: formData.owner_type,
-        owner_id: formData.owner_id || null,
-        scopes,
-        is_active: formData.is_active,
-        rate_limit_per_min: formData.rate_limit_per_min || null,
-      };
-
-      if (isEditing) {
-        const { error: updateError } = await supabase
-          .from('api_keys')
-          .update(data)
-          .eq('id', apiKey.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from('api_keys').insert(data);
-        if (insertError) throw insertError;
-      }
-
-      onSaved();
-    } catch (err: any) {
-      console.error('Save error:', err);
-      setError(err.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isEditing ? 'Edit API Key' : 'Create API Key'}
-          </h2>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {!isEditing && generatedKey && (
-            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="text-sm font-medium text-red-900 mb-2">Your API Key:</div>
-              <code className="block p-3 bg-white rounded text-sm font-mono break-all">{generatedKey}</code>
-              <div className="text-sm text-red-700 mt-2">Copy this key now. You won't be able to see it again.</div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="My API Key"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Owner Type</label>
-            <select
-              value={formData.owner_type}
-              onChange={(e) => setFormData({ ...formData, owner_type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="internal">Internal</option>
-              <option value="partner">Partner</option>
-            </select>
-          </div>
-
-          {formData.owner_type === 'partner' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Owner ID</label>
-              <input
-                type="text"
-                value={formData.owner_id || ''}
-                onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="partner_id"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Scopes (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={scopesText}
-              onChange={(e) => setScopesText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="accounts.read, jobs.write, contacts.read"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rate Limit (requests per minute)
-            </label>
-            <input
-              type="number"
-              value={formData.rate_limit_per_min || ''}
-              onChange={(e) => setFormData({ ...formData, rate_limit_per_min: parseInt(e.target.value) || null })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Leave empty for unlimited"
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Active</span>
-            </label>
-          </div>
-
-          {!isEditing && (
-            <button
-              onClick={handleGenerate}
-              type="button"
-              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
-              Generate Key
-            </button>
-          )}
-        </div>
-
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || (!isEditing && !formData.key)}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {webhooks.map((webhook) => (
+              <tr key={webhook.id} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="font-bold text-gray-900">{webhook.name}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-[11px] text-gray-600 font-mono truncate max-w-xs bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{webhook.url}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1 max-w-xs">
+                    {webhook.events.slice(0, 3).map(event => (
+                      <span key={event} className="px-1.5 py-0.5 bg-red-50/50 text-red-600 text-[9px] font-bold uppercase border border-red-100 rounded">
+                        {event}
+                      </span>
+                    ))}
+                    {webhook.events.length > 3 && (
+                      <span className="text-[10px] font-bold text-gray-400">+{webhook.events.length - 3} MORE</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={clsx('inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold border-2', webhook.is_active ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100')}>
+                    {webhook.is_active ? 'LISTENING' : 'INACTIVE'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Server ENV</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
 
-interface WebhookEditorProps {
-  webhook: WebhookEndpoint | null;
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-const WebhookEditor: React.FC<WebhookEditorProps> = ({ webhook, onClose, onSaved }) => {
-  const isEditing = !!webhook;
-  const [formData, setFormData] = useState<any>(
-    webhook || {
-      name: '',
-      url: '',
-      secret: '',
-      is_active: true,
-      events: [],
-    }
-  );
-  const [eventsText, setEventsText] = useState(webhook?.events.join(', ') || '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError('');
-
-    try {
-      if (!validateWebhookUrl(formData.url)) {
-        setError('URL must be HTTPS');
-        setSaving(false);
-        return;
-      }
-
-      const events = eventsText.split(',').map((e) => e.trim()).filter(Boolean);
-      const data: any = {
-        name: formData.name,
-        url: formData.url,
-        secret: formData.secret || null,
-        is_active: formData.is_active,
-        events,
-      };
-
-      if (isEditing) {
-        const { error: updateError } = await supabase
-          .from('webhook_endpoints')
-          .update(data)
-          .eq('id', webhook.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from('webhook_endpoints').insert(data);
-        if (insertError) throw insertError;
-      }
-
-      onSaved();
-    } catch (err: any) {
-      console.error('Save error:', err);
-      setError(err.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isEditing ? 'Edit Webhook' : 'Add Webhook'}
-          </h2>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="My Webhook"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL (HTTPS only)</label>
-            <input
-              type="url"
-              value={formData.url}
-              onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="https://example.com/webhook"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Events (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={eventsText}
-              onChange={(e) => setEventsText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="job.created, invoice.paid, customer.created"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Secret (optional)</label>
-            <input
-              type="text"
-              value={formData.secret || ''}
-              onChange={(e) => setFormData({ ...formData, secret: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="whsec_..."
-            />
-            <div className="text-sm text-gray-500 mt-1">Used for HMAC signature verification</div>
-          </div>
-
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Active</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+export default Integrations;

@@ -7,8 +7,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Mock supabase for compatibility
-export const supabase = null;
-export const supabaseAdmin = null;
+export const supabase = null as any;
+export const supabaseAdmin = null as any;
 
 // API client for super admin operations
 export const apiClient = {
