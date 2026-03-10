@@ -1,54 +1,57 @@
-// Mock Stripe client for super admin module
-let stripeInstance: any = null;
+import Stripe from 'stripe';
 
-export function getStripeClient(): any {
+let stripeInstance: Stripe | null = null;
+
+const getStripeApiKey = (): string => {
+  const key = import.meta.env.VITE_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('Stripe API key not configured');
+  }
+  return key;
+};
+
+export function getStripeClient(): Stripe {
   if (!stripeInstance) {
-    // Mock stripe instance
-    stripeInstance = {
-      customers: {
-        list: () => Promise.resolve({ data: [] }),
-        retrieve: () => Promise.resolve({}),
-        create: () => Promise.resolve({}),
-        update: () => Promise.resolve({})
-      },
-      subscriptions: {
-        list: () => Promise.resolve({ data: [] }),
-        retrieve: () => Promise.resolve({}),
-        create: () => Promise.resolve({}),
-        update: () => Promise.resolve({})
-      },
-      invoices: {
-        list: () => Promise.resolve({ data: [] }),
-        retrieve: () => Promise.resolve({})
-      },
-      products: {
-        list: () => Promise.resolve({ data: [] }),
-        retrieve: () => Promise.resolve({}),
-        create: () => Promise.resolve({}),
-        update: () => Promise.resolve({})
-      },
-      prices: {
-        list: () => Promise.resolve({ data: [] }),
-        retrieve: () => Promise.resolve({}),
-        create: () => Promise.resolve({}),
-        update: () => Promise.resolve({})
-      }
-    };
+    const apiKey = getStripeApiKey();
+    stripeInstance = new Stripe(apiKey, {
+      apiVersion: '2026-01-28.clover' as any,
+    });
   }
   return stripeInstance;
 }
 
 export function getStripeWebhookSecret(): string {
-  return 'mock-webhook-secret';
+  const secret = import.meta.env.VITE_STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error('Stripe webhook secret not configured');
+  }
+  return secret;
 }
 
 export function isStripeConfigured(): boolean {
-  return false; // Mock as not configured
+  try {
+    const apiKey = import.meta.env.VITE_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+    return !!apiKey && apiKey.startsWith('sk_');
+  } catch {
+    return false;
+  }
 }
 
 export async function testStripeConnection(): Promise<{ success: boolean; error?: string }> {
-  return {
-    success: false,
-    error: 'Stripe integration not configured in this environment'
-  };
+  try {
+    if (!isStripeConfigured()) {
+      return {
+        success: false,
+        error: 'Stripe API key not configured. Set VITE_STRIPE_SECRET_KEY environment variable.',
+      };
+    }
+    const stripe = getStripeClient();
+    await stripe.customers.list({ limit: 1 });
+    return { success: true };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to connect to Stripe',
+    };
+  }
 }

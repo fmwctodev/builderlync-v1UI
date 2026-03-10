@@ -4,7 +4,6 @@ import { getRoleTemplates, getSuperAdminRoles, deleteRole, countPermissions } fr
 import { SuperAdminRoleTemplate, SuperAdminRole } from '../../types/settings';
 import { CreateRoleModal } from './CreateRoleModal';
 import {
-  SUPER_ADMIN_ROLE_TEMPLATES,
   countSuperAdminPermissions,
   getSuperAdminRoleTemplateBadgeColor
 } from '../../constants/superAdminRoleTemplates';
@@ -31,9 +30,15 @@ export const RolesManagement: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      setTemplates(SUPER_ADMIN_ROLE_TEMPLATES as any);
+      const templatesRes = await getRoleTemplates();
+      if (templatesRes.success && templatesRes.data) {
+        setTemplates(templatesRes.data);
+      } else {
+        setTemplates([]);
+      }
 
       const rolesRes = await getSuperAdminRoles();
+      console.log(JSON.stringify(rolesRes, null, 2));
       if (rolesRes.success && rolesRes.data) {
         setRoles(rolesRes.data);
       }
@@ -109,6 +114,12 @@ export const RolesManagement: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {templates.map((template) => (
+            (() => {
+              const idealFor = Array.isArray((template as any).ideal_for)
+                ? (template as any).ideal_for
+                : ['General'];
+
+              return (
             <div
               key={template.id}
               className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border border-gray-200 hover:border-red-300 transition-colors"
@@ -119,11 +130,11 @@ export const RolesManagement: React.FC = () => {
                 </span>
               </div>
 
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">{template.name}</h4>
-              <p className="text-xs text-gray-600 mb-3">{template.description}</p>
+              <h4 className="text-sm font-semibold text-gray-900 mb-2 break-words">{template.name}</h4>
+              <p className="text-xs text-gray-600 mb-3 break-words">{template.description}</p>
 
-              <div className="text-xs text-gray-500 mb-3">
-                <strong>Ideal for:</strong> {template.ideal_for.join(', ')}
+              <div className="text-xs text-gray-500 mb-3 break-words">
+                <strong>Ideal for:</strong> {idealFor.join(', ')}
               </div>
 
               <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
@@ -138,6 +149,8 @@ export const RolesManagement: React.FC = () => {
                 Use Template
               </button>
             </div>
+              );
+            })()
           ))}
         </div>
       </div>
@@ -178,16 +191,16 @@ export const RolesManagement: React.FC = () => {
                 className="bg-white rounded-lg p-6 border border-gray-200 hover:border-gray-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{role.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 break-words">{role.name}</h3>
                       {!role.is_custom && (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getSuperAdminRoleTemplateBadgeColor(role.name)}`}>
                           Default
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">{role.description}</p>
+                    <p className="text-sm text-gray-600 mb-3 break-words">{role.description}</p>
                   </div>
                 </div>
 

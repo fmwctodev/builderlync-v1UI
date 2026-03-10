@@ -2,7 +2,7 @@ import React from 'react';
 import { Package, Users, FileText, TrendingUp } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export type BillingTab = 'plans' | 'accounts' | 'invoices' | 'metrics';
+export type BillingTab = 'plans' | 'subscription-plans' | 'subscriptions' | 'accounts' | 'invoices' | 'metrics';
 
 interface BillingTabsProps {
   activeTab: BillingTab;
@@ -11,6 +11,8 @@ interface BillingTabsProps {
 
 const tabs = [
   { id: 'plans' as BillingTab, label: 'Plans', icon: Package },
+  { id: 'subscription-plans' as BillingTab, label: 'Subscription Plans', icon: Package },
+  { id: 'subscriptions' as BillingTab, label: 'Subscriptions', icon: Users },
   { id: 'accounts' as BillingTab, label: 'Accounts', icon: Users },
   { id: 'invoices' as BillingTab, label: 'Invoices', icon: FileText },
   { id: 'metrics' as BillingTab, label: 'Metrics', icon: TrendingUp },

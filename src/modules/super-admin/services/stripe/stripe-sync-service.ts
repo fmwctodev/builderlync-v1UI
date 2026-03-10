@@ -1,44 +1,28 @@
-import { billingApi } from '../billing-api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-export interface SyncResult {
-  success: boolean;
-  totalProcessed: number;
-  created: number;
-  updated: number;
-  skipped: number;
-  errors: number;
-  errorMessages?: string[];
-}
+const getAuthToken = () => localStorage.getItem('adminToken') || localStorage.getItem('token');
 
 export async function syncAllStripeData(): Promise<{
-  customers: SyncResult;
-  products: SyncResult;
-  subscriptions: SyncResult;
-  invoices: SyncResult;
-  payments: SyncResult;
+  customers: { created: number; updated: number; errors: number };
+  products: { created: number; updated: number; errors: number };
+  subscriptions: { created: number; updated: number; errors: number };
+  invoices: { created: number; updated: number; errors: number };
+  payments: { created: number; updated: number; errors: number };
 }> {
-  try {
-    const result = await billingApi.syncStripeData();
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/stripe/sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+    },
+  });
 
-    // Map backend results to frontend expected structure
-    const mapResult = (res: any): SyncResult => ({
-      success: true,
-      totalProcessed: res.created + res.updated,
-      created: res.created,
-      updated: res.updated,
-      skipped: 0,
-      errors: 0
-    });
+  const result = await response.json();
 
-    return {
-      customers: mapResult(result.customers),
-      products: mapResult(result.products),
-      subscriptions: mapResult(result.subscriptions),
-      invoices: mapResult(result.invoices),
-      payments: mapResult(result.payments),
-    };
-  } catch (error: any) {
-    console.error('Failed to sync Stripe data:', error);
-    throw error;
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || 'Failed to sync Stripe data');
   }
+
+  return result.data;
 }
