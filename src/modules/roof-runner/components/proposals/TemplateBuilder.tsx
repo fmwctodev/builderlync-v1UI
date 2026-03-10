@@ -140,7 +140,13 @@ const getCatalogFinalUnitCost = (catalogItem: APICatalogItem): string => {
   return Number.isFinite(finalUnitCost) ? finalUnitCost.toFixed(2) : "0.00";
 };
 
-const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
+const getAccessToken = () => {
+  const isSuperAdminRoute = window.location.pathname.startsWith('/super-admin');
+  if (isSuperAdminRoute) {
+    return localStorage.getItem('adminToken') || localStorage.getItem('token');
+  }
+  return localStorage.getItem('token');
+};
 
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const MAX_OPTION_TITLE_CHARS = 100;

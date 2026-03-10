@@ -1,10 +1,10 @@
-import { supabase } from './supabase-client';
 import {
   SuperAdminStaff,
   CreateStaffRequest,
   UpdateStaffRequest,
   StaffFilters,
 } from '../types/settings';
+import { getSuperAdminRoles } from './settings-roles-service';
 
 export interface StaffListResponse {
   data: SuperAdminStaff[];
@@ -14,61 +14,82 @@ export interface StaffListResponse {
   totalPages: number;
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:3000/api';
+
+const getAuthToken = () => localStorage.getItem('adminToken') || localStorage.getItem('token');
+
+const request = async (path: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+      ...(options.headers || {}),
+    },
+  });
+
+  const payload = await response.json();
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.message || payload?.error || 'Request failed');
+  }
+
+  return payload;
+};
+
+const mapStaff = (item: any, roleById: Map<string, any>): SuperAdminStaff => {
+  const role = item?.role_id ? roleById.get(String(item.role_id)) : null;
+
+  return {
+    id: String(item.id),
+    email: item.email || '',
+    first_name: item.first_name || '',
+    last_name: item.last_name || '',
+    phone: item.phone || null,
+    status: item.status || 'active',
+    avatar_url: item.avatar_url || null,
+    last_login_at: item.last_login_at || null,
+    invited_at: item.invited_at || item.created_at || new Date().toISOString(),
+    invited_by: item.invited_by || null,
+    created_at: item.created_at || new Date().toISOString(),
+    updated_at: item.updated_at || item.created_at || new Date().toISOString(),
+    roles: role ? [role] : [],
+  };
+};
+
 export async function getSuperAdminStaff(
   filters: StaffFilters = {}
 ): Promise<{ success: boolean; data?: StaffListResponse; error?: string }> {
   try {
-    const {
-      search = '',
-      status,
-      role_id,
-      page = 1,
-      limit = 10,
-    } = filters;
+    const { search = '', status = '', page = 1, limit = 10 } = filters;
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
 
-    let query = supabase
-      .from('super_admin_staff')
-      .select('*, super_admin_staff_role_assignments(role_id, super_admin_roles(*))', {
-        count: 'exact',
-      });
+    const [staffRes, rolesRes] = await Promise.all([
+      request(`/super-admin/staff?${params.toString()}`, { method: 'GET' }),
+      getSuperAdminRoles(),
+    ]);
 
-    if (search) {
-      query = query.or(
-        `email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
-      );
-    }
+    const roles = rolesRes.success && rolesRes.data ? rolesRes.data : [];
+    const roleById = new Map(roles.map((role) => [String(role.id), role]));
 
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    if (role_id) {
-      query = query.eq('super_admin_staff_role_assignments.role_id', role_id);
-    }
-
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    query = query.range(from, to).order('created_at', { ascending: false });
-
-    const { data, error, count } = await query;
-
-    if (error) throw error;
-
-    const staffData: SuperAdminStaff[] = (data || []).map((staff: any) => ({
-      ...staff,
-      roles: staff.super_admin_staff_role_assignments?.map(
-        (assignment: any) => assignment.super_admin_roles
-      ),
-    }));
+    const raw = staffRes?.data || {};
+    const rows = Array.isArray(raw.data) ? raw.data : [];
 
     return {
       success: true,
       data: {
-        data: staffData,
-        total: count || 0,
-        page,
-        limit,
-        totalPages: Math.ceil((count || 0) / limit),
+        data: rows.map((item: any) => mapStaff(item, roleById)),
+        total: Number(raw.total || 0),
+        page: Number(raw.page || page),
+        limit: Number(raw.limit || limit),
+        totalPages: Number(raw.totalPages || 1),
       },
     };
   } catch (error: any) {
@@ -81,22 +102,18 @@ export async function getStaffById(
   id: string
 ): Promise<{ success: boolean; data?: SuperAdminStaff; error?: string }> {
   try {
-    const { data, error } = await supabase
-      .from('super_admin_staff')
-      .select('*, super_admin_staff_role_assignments(role_id, super_admin_roles(*))')
-      .eq('id', id)
-      .single();
+    const [staffRes, rolesRes] = await Promise.all([
+      request(`/super-admin/staff/${id}`, { method: 'GET' }),
+      getSuperAdminRoles(),
+    ]);
 
-    if (error) throw error;
+    const roleById = new Map(
+      (rolesRes.success && rolesRes.data ? rolesRes.data : []).map((role) => [String(role.id), role])
+    );
+    const item = staffRes?.data?.data || staffRes?.data || null;
+    if (!item) return { success: false, error: 'Staff not found' };
 
-    const staffData: SuperAdminStaff = {
-      ...data,
-      roles: data.super_admin_staff_role_assignments?.map(
-        (assignment: any) => assignment.super_admin_roles
-      ),
-    };
-
-    return { success: true, data: staffData };
+    return { success: true, data: mapStaff(item, roleById) };
   } catch (error: any) {
     console.error('Error fetching staff by ID:', error);
     return { success: false, error: error.message };
@@ -104,42 +121,16 @@ export async function getStaffById(
 }
 
 export async function createSuperAdminStaff(
-  request: CreateStaffRequest
+  requestBody: CreateStaffRequest
 ): Promise<{ success: boolean; data?: SuperAdminStaff; error?: string }> {
   try {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
-    const { data, error } = await supabase
-      .from('super_admin_staff')
-      .insert({
-        email: request.email,
-        first_name: request.first_name,
-        last_name: request.last_name,
-        phone: request.phone,
-        invited_by: userData.user?.id,
-        status: 'pending',
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    if (request.role_id) {
-      const { error: roleError } = await supabase
-        .from('super_admin_staff_role_assignments')
-        .insert({
-          staff_id: data.id,
-          role_id: request.role_id,
-          assigned_by: userData.user?.id,
-        });
-
-      if (roleError) {
-        console.error('Error assigning role:', roleError);
-      }
-    }
-
-    return { success: true, data };
+    const payload = await request('/super-admin/staff', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+    const item = payload?.data?.data || payload?.data || null;
+    if (!item) return { success: false, error: 'Failed to create staff member' };
+    return { success: true, data: item };
   } catch (error: any) {
     console.error('Error creating super admin staff:', error);
     return { success: false, error: error.message };
@@ -148,19 +139,16 @@ export async function createSuperAdminStaff(
 
 export async function updateSuperAdminStaff(
   id: string,
-  request: UpdateStaffRequest
+  requestBody: UpdateStaffRequest & { role_id?: string | null }
 ): Promise<{ success: boolean; data?: SuperAdminStaff; error?: string }> {
   try {
-    const { data, error } = await supabase
-      .from('super_admin_staff')
-      .update(request)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return { success: true, data };
+    const payload = await request(`/super-admin/staff/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(requestBody),
+    });
+    const item = payload?.data?.data || payload?.data || null;
+    if (!item) return { success: false, error: 'Failed to update staff member' };
+    return { success: true, data: item };
   } catch (error: any) {
     console.error('Error updating super admin staff:', error);
     return { success: false, error: error.message };
@@ -171,13 +159,7 @@ export async function deleteSuperAdminStaff(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('super_admin_staff')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-
+    await request(`/super-admin/staff/${id}`, { method: 'DELETE' });
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting super admin staff:', error);
@@ -190,19 +172,8 @@ export async function assignRoleToStaff(
   roleId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-
-    const { error } = await supabase
-      .from('super_admin_staff_role_assignments')
-      .insert({
-        staff_id: staffId,
-        role_id: roleId,
-        assigned_by: userData.user?.id,
-      });
-
-    if (error) throw error;
-
+    const response = await updateSuperAdminStaff(staffId, { role_id: roleId });
+    if (!response.success) throw new Error(response.error || 'Failed to assign role');
     return { success: true };
   } catch (error: any) {
     console.error('Error assigning role to staff:', error);
@@ -212,20 +183,15 @@ export async function assignRoleToStaff(
 
 export async function removeRoleFromStaff(
   staffId: string,
-  roleId: string
+  _roleId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .from('super_admin_staff_role_assignments')
-      .delete()
-      .eq('staff_id', staffId)
-      .eq('role_id', roleId);
-
-    if (error) throw error;
-
+    const response = await updateSuperAdminStaff(staffId, { role_id: null });
+    if (!response.success) throw new Error(response.error || 'Failed to remove role');
     return { success: true };
   } catch (error: any) {
     console.error('Error removing role from staff:', error);
     return { success: false, error: error.message };
   }
 }
+

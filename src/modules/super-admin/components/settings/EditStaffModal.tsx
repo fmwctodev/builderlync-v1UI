@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { updateSuperAdminStaff, assignRoleToStaff, removeRoleFromStaff } from '../../services/staff-service';
-import { getRoleTemplates, getSuperAdminRoles, createRoleFromTemplate } from '../../services/settings-roles-service';
-import { SuperAdminStaff, SuperAdminRoleTemplate, SuperAdminRole } from '../../types/settings';
+import { updateSuperAdminStaff } from '../../services/staff-service';
+import { getSuperAdminRoles } from '../../services/settings-roles-service';
+import { SuperAdminStaff } from '../../types/settings';
 
 interface EditStaffModalProps {
   staff: SuperAdminStaff;
@@ -16,26 +16,18 @@ export const EditStaffModal: React.FC<EditStaffModalProps> = ({ staff, onClose, 
     last_name: staff.last_name,
     phone: staff.phone || '',
     status: staff.status,
+    role_id: staff.role_id || '',
   });
-  const [selectedRoleId, setSelectedRoleId] = useState(staff.roles?.[0]?.id || '');
-  const [templates, setTemplates] = useState<SuperAdminRoleTemplate[]>([]);
-  const [roles, setRoles] = useState<SuperAdminRole[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadRolesAndTemplates();
+    loadRoles();
   }, []);
 
-  const loadRolesAndTemplates = async () => {
-    const [templatesRes, rolesRes] = await Promise.all([
-      getRoleTemplates(),
-      getSuperAdminRoles(),
-    ]);
-
-    if (templatesRes.success && templatesRes.data) {
-      setTemplates(templatesRes.data);
-    }
+  const loadRoles = async () => {
+    const rolesRes = await getSuperAdminRoles();
     if (rolesRes.success && rolesRes.data) {
       setRoles(rolesRes.data);
     }
@@ -47,31 +39,10 @@ export const EditStaffModal: React.FC<EditStaffModalProps> = ({ staff, onClose, 
     setError('');
 
     try {
-      const updateResponse = await updateSuperAdminStaff(staff.id, formData);
-      if (!updateResponse.success) {
-        throw new Error(updateResponse.error);
+      const response = await updateSuperAdminStaff(staff.id, formData);
+      if (!response.success) {
+        throw new Error(response.error);
       }
-
-      const currentRoleId = staff.roles?.[0]?.id;
-      if (selectedRoleId !== currentRoleId) {
-        if (currentRoleId) {
-          await removeRoleFromStaff(staff.id, currentRoleId);
-        }
-
-        if (selectedRoleId) {
-          let roleId = selectedRoleId;
-          if (selectedRoleId.startsWith('template:')) {
-            const templateId = selectedRoleId.replace('template:', '');
-            const roleResponse = await createRoleFromTemplate(templateId);
-            if (roleResponse.success && roleResponse.data) {
-              roleId = roleResponse.data.id;
-            }
-          }
-
-          await assignRoleToStaff(staff.id, roleId);
-        }
-      }
-
       onSuccess();
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -158,27 +129,16 @@ export const EditStaffModal: React.FC<EditStaffModalProps> = ({ staff, onClose, 
               User Role
             </label>
             <select
-              value={selectedRoleId}
-              onChange={(e) => setSelectedRoleId(e.target.value)}
+              value={formData.role_id}
+              onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
             >
               <option value="">No role assigned</option>
-              {roles.length > 0 && (
-                <optgroup label="Active Roles">
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              <optgroup label="Role Templates">
-                {templates.map((template) => (
-                  <option key={template.id} value={`template:${template.id}`}>
-                    {template.name}
-                  </option>
-                ))}
-              </optgroup>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
             </select>
           </div>
 
