@@ -26,6 +26,7 @@ import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
 import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
+import PitchTool from './modules/roof-runner/pages/PitchTool';
 
 function App() {
   const { user, token } = useAppSelector((state) => state.auth);
@@ -46,6 +47,7 @@ function App() {
             <IncomingCallNotification />
             <Routes>
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
+              <Route path="/pitch" element={<PitchTool />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
               <Route path="/auth/google/callback" element={<OAuthCallback />} />
               <Route path="/auth/gmail/callback" element={<OAuthOutlookCallback />} />
