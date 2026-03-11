@@ -132,10 +132,24 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
             // Auto-select if only one account
             HandleShipToSelect(accounts[0]);
           }
-        } else {
-          // SRS Logic (fallback to old generic logic for SRS)
-          // ... SRS logic can remain or be simplified
-          // For now, focusing on ABC Supply as per user request
+        } else if (supplier === 'SRS') {
+          // SRS Branch Logic
+          const response = await srsApi.getBranches();
+          const branches = response.data?.data || response.data || [];
+          setAvailableBranches(branches);
+          
+          const savedBranch = localStorage.getItem('srs_selected_branch');
+          if (savedBranch) {
+            try {
+              const parsedBranch = JSON.parse(savedBranch);
+              const matchedBranch = branches.find((b: any) => b.id === parsedBranch.id || b.branchCode === parsedBranch.id);
+              if (matchedBranch) {
+                setSelectedBranch(matchedBranch);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to load locator data", error);
@@ -159,15 +173,19 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
     // ABC 'ShipToBranch' has `number`, `name`.
     // Product Search needs `branch.number`.
     const branchData = {
-      id: branch.number,
-      number: branch.number,
-      name: branch.name,
-      // coordinates might differ or be missing in ShipToBranch vs Generic Branch
-      coordinates: branch.coordinates // if any
+      id: branch.number || branch.id || branch.branchCode,
+      number: branch.number || branch.branchCode,
+      name: branch.name || branch.branchName,
+      coordinates: branch.coordinates
     };
 
     setSelectedBranch(branchData);
-    localStorage.setItem('abc_selected_branch', JSON.stringify(branchData));
+    
+    if (supplier === 'ABC Supply') {
+      localStorage.setItem('abc_selected_branch', JSON.stringify(branchData));
+    } else {
+      localStorage.setItem('srs_selected_branch', JSON.stringify(branchData));
+    }
 
     // Delay to show selection
     setTimeout(onBack, 150);
@@ -241,7 +259,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-full">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">2. Select Branch</h2>
 
-            {!selectedShipTo ? (
+            {supplier === 'ABC Supply' && !selectedShipTo ? (
               <div className="text-center py-10 text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                 <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>Please select an account first</p>
@@ -265,28 +283,32 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2">
-                    {filteredBranches.map((branch: any) => (
-                      <div
-                        key={branch.number}
-                        className={`p-4 rounded-lg border flex flex-col justify-between ${selectedBranch?.number === branch.number ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'}`}
-                      >
-                        <div>
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-medium text-gray-900 dark:text-white">{branch.name}</h3>
-                            {selectedBranch?.number === branch.number && <Check className="h-4 w-4 text-primary-600" />}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Branch #{branch.number}</div>
-                          {/* Note: ShipToBranch might not have full address detail like standard API response, it varies */}
-                          {branch.phoneNumber && <div className="text-xs text-gray-500 mt-2 flex items-center gap-1"><Phone size={12} /> {branch.phoneNumber}</div>}
-                        </div>
-                        <button
-                          onClick={() => HandleBranchSelect(branch)}
-                          className={`mt-4 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${selectedBranch?.number === branch.number ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
+                    {filteredBranches.map((branch: any) => {
+                      // Compute a normalized key for this branch — same logic used in HandleBranchSelect
+                      const branchKey = branch.number || branch.branchCode || branch.id;
+                      const isSelected = !!(selectedBranch?.id && branchKey && selectedBranch.id === branchKey);
+                      return (
+                        <div
+                          key={branchKey || Math.random()}
+                          className={`p-4 rounded-lg border flex flex-col justify-between ${isSelected ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'}`}
                         >
-                          {selectedBranch?.number === branch.number ? 'Selected' : 'Select Branch'}
-                        </button>
-                      </div>
-                    ))}
+                          <div>
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-medium text-gray-900 dark:text-white">{branch.name || branch.branchName}</h3>
+                              {isSelected && <Check className="h-4 w-4 text-primary-600" />}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Branch #{branchKey}</div>
+                            {branch.phoneNumber && <div className="text-xs text-gray-500 mt-2 flex items-center gap-1"><Phone size={12} /> {branch.phoneNumber}</div>}
+                          </div>
+                          <button
+                            onClick={() => HandleBranchSelect(branch)}
+                            className={`mt-4 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
+                          >
+                            {isSelected ? 'Selected' : 'Select Branch'}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </>

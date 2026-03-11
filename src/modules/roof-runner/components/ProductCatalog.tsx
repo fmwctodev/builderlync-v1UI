@@ -59,8 +59,9 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
           status: "Active",
           productImageUrl: product.productImageUrl,
           productVariants: product.productVariants,
+          srsProductId: product.productId, // preserve numeric ID for price API
         }));
-        setProducts(mappedProducts);
+        setProducts(mappedProducts as any);
 
         // Set pagination info
         if (response.data?.pagination) {
@@ -114,8 +115,9 @@ const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC
           status: "Active",
           productImageUrl: product.productImageUrl,
           productVariants: product.productVariants,
+          srsProductId: product.productId, // preserve numeric ID for price API
         }));
-        setProducts(mappedProducts);
+        setProducts(mappedProducts as any);
       } else {
         // Pass branchId to filterItems
         const data = await abcSupplyApi.filterItems([query], 50, 1, branchId);

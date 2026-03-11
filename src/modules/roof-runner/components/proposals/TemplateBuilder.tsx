@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+﻿import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   X,
@@ -147,6 +147,485 @@ const getAccessToken = () => {
   }
   return localStorage.getItem('token');
 };
+
+  const escapeHtml = (text: string) =>
+    text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const sanitizeRichHtml = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html || "", "text/html");
+    const allowedTags = new Set([
+      "P", "BR", "DIV", "SPAN",
+      "B", "STRONG", "I", "EM", "U",
+      "UL", "OL", "LI",
+      "H1", "H2", "H3",
+      "A", "MARK"
+    ]);
+
+    const walk = (node: Node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          if (!allowedTags.has(el.tagName)) {
+            el.replaceWith(...Array.from(el.childNodes));
+            continue;
+          }
+
+          for (const attr of Array.from(el.attributes)) {
+            if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
+            el.removeAttribute(attr.name);
+          }
+
+          if (el.tagName === "A") {
+            const href = el.getAttribute("href") || "";
+            const safeHref =
+              href.startsWith("http://") ||
+              href.startsWith("https://") ||
+              href.startsWith("mailto:") ||
+              href.startsWith("tel:") ||
+              href.startsWith("#");
+            if (!safeHref) el.removeAttribute("href");
+            if (el.getAttribute("target") === "_blank") {
+              el.setAttribute("rel", "noopener noreferrer");
+            }
+          }
+        }
+        walk(child);
+      }
+    };
+
+    walk(doc.body);
+    return doc.body.innerHTML;
+  };
+
+  const toRichHtml = (value: string) => {
+    if (!value) return "";
+    if (/<[a-z][\s\S]*>/i.test(value)) return sanitizeRichHtml(value);
+    return escapeHtml(value)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/==(.+?)==/g, '<mark class="bg-yellow-200 dark:bg-yellow-700/40 px-0.5 rounded">$1</mark>')
+      .replace(/\n/g, "<br/>");
+  };
+  interface EditableTextProps {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+    multiline?: boolean;
+    richText?: boolean;
+    maxLength?: number;
+    triggerFocus?: boolean;
+    onFocusComplete?: () => void;
+  }
+
+  const EditableText = ({
+    value,
+    onChange,
+    placeholder = "",
+    className = "",
+    multiline = false,
+    richText = false,
+    maxLength,
+    triggerFocus = false,
+    onFocusComplete,
+  }: EditableTextProps) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempValue, setTempValue] = useState(value);
+    const [formatState, setFormatState] = useState({
+      bold: false,
+      italic: false,
+      underline: false,
+      unorderedList: false,
+      orderedList: false,
+      h2: false,
+      highlight: false,
+    });
+    const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+    const [showFontMenu, setShowFontMenu] = useState(false);
+    const [activeHeading, setActiveHeading] = useState("Normal");
+    const [activeFont, setActiveFont] = useState("Default");
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const editorRef = useRef<HTMLDivElement>(null);
+    const initializedRichEditorRef = useRef(false);
+
+    const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
+      let node = el?.parentElement || null;
+      while (node) {
+        const style = window.getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY)) return node;
+        node = node.parentElement;
+      }
+      return null;
+    };
+
+    const autoResizeTextarea = () => {
+      const el = textareaRef.current;
+      if (!el) return;
+
+      const scrollParent = getScrollParent(el);
+      const parentScrollTop = scrollParent?.scrollTop ?? null;
+      const winX = window.scrollX;
+      const winY = window.scrollY;
+
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+
+      if (scrollParent && parentScrollTop !== null) {
+        scrollParent.scrollTop = parentScrollTop;
+      }
+      window.scrollTo(winX, winY);
+    };
+
+    useEffect(() => {
+      if (triggerFocus) {
+        setIsEditing(true);
+        if (onFocusComplete) onFocusComplete();
+      }
+    }, [triggerFocus, onFocusComplete]);
+
+    useEffect(() => {
+      setTempValue(richText && multiline ? toRichHtml(value) : value);
+    }, [value]);
+
+    useEffect(() => {
+      if (!(isEditing && multiline && richText)) {
+        initializedRichEditorRef.current = false;
+        return;
+      }
+      const el = editorRef.current;
+      if (!el || initializedRichEditorRef.current) return;
+      el.innerHTML = richText && multiline ? toRichHtml(value) : value;
+      initializedRichEditorRef.current = true;
+      requestAnimationFrame(() => {
+        el.focus();
+        const selection = window.getSelection();
+        if (!selection) return;
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      });
+    }, [isEditing, multiline, richText, value]);
+
+    useEffect(() => {
+      if (isEditing && multiline) {
+        autoResizeTextarea();
+      }
+    }, [isEditing, multiline]);
+
+    const refreshToolbarState = () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const anchor = selection.anchorNode;
+      if (!anchor || !editor.contains(anchor)) return;
+
+      const blockValue = String(document.queryCommandValue("formatBlock") || "")
+        .replace(/[<>]/g, "")
+        .toLowerCase();
+      const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
+      const highlightActive =
+        !!highlightValue &&
+        highlightValue !== "transparent" &&
+        highlightValue !== "rgba(0, 0, 0, 0)" &&
+        highlightValue !== "none";
+
+      setFormatState({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        underline: document.queryCommandState("underline"),
+        unorderedList: document.queryCommandState("insertUnorderedList"),
+        orderedList: document.queryCommandState("insertOrderedList"),
+        h2: blockValue === "h2",
+        highlight: highlightActive,
+      });
+    };
+
+    useEffect(() => {
+      if (!(isEditing && multiline && richText)) return;
+      const handleSelectionChange = () => refreshToolbarState();
+      document.addEventListener("selectionchange", handleSelectionChange);
+      return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    }, [isEditing, multiline, richText]);
+
+    const handleBlur = () => {
+      setIsEditing(false);
+      onChange(richText && multiline ? sanitizeRichHtml(tempValue) : tempValue);
+    };
+
+    if (isEditing) {
+      if (multiline && richText) {
+        const runCmd = (command: string, val?: string) => {
+          editorRef.current?.focus();
+          document.execCommand(command, false, val);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          refreshToolbarState();
+        };
+
+        const normalizeUrl = (rawUrl: string) => {
+          const trimmed = rawUrl.trim();
+          if (!trimmed) return "";
+          if (/^(https?:\/\/|mailto:|tel:|#)/i.test(trimmed)) return trimmed;
+          return `https://${trimmed}`;
+        };
+
+        const insertLink = () => {
+          const rawUrl = window.prompt("Enter URL");
+          if (!rawUrl) return;
+          const url = normalizeUrl(rawUrl);
+          if (!url) return;
+
+          editorRef.current?.focus();
+          const selection = window.getSelection();
+          const selectedText = selection?.toString().trim() || "";
+
+          if (!selectedText) {
+            const safeUrl = url.replace(/"/g, "&quot;");
+            document.execCommand(
+              "insertHTML",
+              false,
+              `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`
+            );
+          } else {
+            document.execCommand("createLink", false, url);
+            document.execCommand("styleWithCSS", false, "false");
+            document.execCommand("foreColor", false, "inherit");
+          }
+
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+        };
+
+        const onEditorBlur = () => {
+          setIsEditing(false);
+          initializedRichEditorRef.current = false;
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          onChange(html);
+        };
+
+
+        const HEADINGS = [
+          { label: "Normal", tag: "<p>" },
+          { label: "H1", tag: "<h1>" },
+          { label: "H2", tag: "<h2>" },
+          { label: "H3", tag: "<h3>" },
+          { label: "H4", tag: "<h4>" },
+          { label: "H5", tag: "<h5>" },
+          { label: "H6", tag: "<h6>" },
+        ];
+
+        const FONTS = [
+          "Default",
+          "Arial",
+          "Georgia",
+          "Times New Roman",
+          "Courier New",
+          "Verdana",
+          "Trebuchet MS",
+          "Impact",
+        ];
+
+
+        const applyHeading = (tag: string, label: string) => {
+          editorRef.current?.focus();
+          document.execCommand("formatBlock", false, tag);
+          setActiveHeading(label);
+          setShowHeadingMenu(false);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+        };
+
+        const applyFont = (font: string) => {
+          editorRef.current?.focus();
+          if (font === "Default") {
+            document.execCommand("removeFormat", false);
+          } else {
+            document.execCommand("fontName", false, font);
+          }
+          setActiveFont(font);
+          setShowFontMenu(false);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+        };
+
+        const toolbarBtnClass = (isActive = false, extra = "") =>
+          `px-2 py-0.5 text-xs border rounded transition-colors ${
+            isActive
+              ? "border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300"
+              : "border-gray-300 dark:border-gray-600"
+          } ${extra}`;
+
+        return (
+          <div className="w-full">
+            {/* Floating formatting toolbar */}
+            <div
+              className="flex items-center gap-0.5 px-2 py-1.5 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md w-fit max-w-full flex-wrap"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {/* Font Family dropdown */}
+              <div className="relative">
+                <button type="button" onClick={() => { setShowFontMenu(p => !p); setShowHeadingMenu(false); }}
+                  className="flex items-center gap-1 px-2 h-7 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600 min-w-[90px] justify-between"
+                >
+                  <span style={{fontFamily: activeFont === "Default" ? undefined : activeFont}} className="truncate max-w-[70px]">{activeFont}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {showFontMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 min-w-[150px] overflow-hidden">
+                    {FONTS.map(font => (
+                      <button key={font} type="button"
+                        onClick={() => applyFont(font)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeFont === font ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300" : "text-gray-700 dark:text-gray-300"}`}
+                        style={{fontFamily: font === "Default" ? undefined : font}}
+                      >{font}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* Heading dropdown */}
+              <div className="relative">
+                <button type="button" onClick={() => { setShowHeadingMenu(p => !p); setShowFontMenu(false); }}
+                  className="flex items-center gap-1 px-2 h-7 rounded text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600 min-w-[64px] justify-between"
+                >
+                  {activeHeading}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {showHeadingMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 min-w-[110px] overflow-hidden">
+                    {HEADINGS.map(h => (
+                      <button key={h.label} type="button"
+                        onClick={() => applyHeading(h.tag, h.label)}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeHeading === h.label ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300" : "text-gray-700 dark:text-gray-300"}`}
+                        style={{
+                          fontSize: h.label === "H1" ? "1.3em" : h.label === "H2" ? "1.15em" : h.label === "H3" ? "1em" : "0.85em",
+                          fontWeight: h.label !== "Normal" ? 700 : 400,
+                        }}
+                      >{h.label === "Normal" ? "Normal Text" : h.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* Bold */}
+              <button type="button" onClick={() => runCmd("bold")} title="Bold"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-bold transition-colors ${formatState.bold ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >B</button>
+              {/* Italic */}
+              <button type="button" onClick={() => runCmd("italic")} title="Italic"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs italic font-semibold transition-colors ${formatState.italic ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >I</button>
+              {/* Underline */}
+              <button type="button" onClick={() => runCmd("underline")} title="Underline"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs underline font-semibold transition-colors ${formatState.underline ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >U</button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* UL */}
+              <button type="button" onClick={() => runCmd("insertUnorderedList")} title="Bullet list"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.unorderedList ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >UL</button>
+              {/* OL */}
+              <button type="button" onClick={() => runCmd("insertOrderedList")} title="Numbered list"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.orderedList ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >OL</button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* Highlight */}
+              <button type="button"
+                onClick={() => runCmd("hiliteColor", formatState.highlight ? "transparent" : "#fef08a")}
+                title="Highlight"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.highlight ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+              {/* Link */}
+              <button type="button" onClick={insertLink} title="Insert link"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* Undo */}
+              <button type="button" onClick={() => runCmd("undo")} title="Undo"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+              </button>
+              {/* Redo */}
+              <button type="button" onClick={() => runCmd("redo")} title="Redo"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+              </button>
+            </div>
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={() => setTempValue(sanitizeRichHtml(editorRef.current?.innerHTML || ""))}
+              onBlur={onEditorBlur}
+              className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus-within:border-primary-500 focus:outline-none px-0 py-1 min-h-[72px] whitespace-pre-wrap break-words`}
+            />
+            {!tempValue && (
+              <div className="text-gray-400 dark:text-gray-500 text-sm mt-1 pointer-events-none">{placeholder}</div>
+            )}
+          </div>
+        );
+      }
+
+      return multiline ? (
+        <textarea
+          ref={textareaRef}
+          value={tempValue}
+          onChange={(e) => {
+            setTempValue(e.target.value);
+            requestAnimationFrame(autoResizeTextarea);
+          }}
+          onInput={autoResizeTextarea}
+          onBlur={handleBlur}
+          autoFocus
+          placeholder={placeholder}
+          maxLength={maxLength}
+          rows={1}
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1 resize-none overflow-hidden`}
+        />
+      ) : (
+        <input
+          type="text"
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleBlur}
+          autoFocus
+          placeholder={placeholder}
+          maxLength={maxLength}
+          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
+        />
+      );
+    }
+
+    if (richText && multiline && value) {
+      return (
+        <div
+          onClick={() => setIsEditing(true)}
+          className={`${className} cursor-pointer inline-block w-full py-1`}
+          dangerouslySetInnerHTML={{ __html: toRichHtml(value) }}
+        />
+      );
+    }
+
+    return (
+      <span
+        onClick={() => setIsEditing(true)}
+        className={`${className} cursor-pointer inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
+      >
+        {value || placeholder}
+      </span>
+    );
+  };
 
 export default function TemplateBuilder({ templateId, onClose }: TemplateBuilderProps) {
   const MAX_OPTION_TITLE_CHARS = 100;
@@ -1044,368 +1523,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     setDraggedSectionIndex(null);
   };
 
-  const escapeHtml = (text: string) =>
-    text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-  const sanitizeRichHtml = (html: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html || "", "text/html");
-    const allowedTags = new Set([
-      "P", "BR", "DIV", "SPAN",
-      "B", "STRONG", "I", "EM", "U",
-      "UL", "OL", "LI",
-      "H1", "H2", "H3",
-      "A", "MARK"
-    ]);
-
-    const walk = (node: Node) => {
-      const children = Array.from(node.childNodes);
-      for (const child of children) {
-        if (child.nodeType === Node.ELEMENT_NODE) {
-          const el = child as HTMLElement;
-          if (!allowedTags.has(el.tagName)) {
-            el.replaceWith(...Array.from(el.childNodes));
-            continue;
-          }
-
-          for (const attr of Array.from(el.attributes)) {
-            if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
-            el.removeAttribute(attr.name);
-          }
-
-          if (el.tagName === "A") {
-            const href = el.getAttribute("href") || "";
-            const safeHref =
-              href.startsWith("http://") ||
-              href.startsWith("https://") ||
-              href.startsWith("mailto:") ||
-              href.startsWith("tel:") ||
-              href.startsWith("#");
-            if (!safeHref) el.removeAttribute("href");
-            if (el.getAttribute("target") === "_blank") {
-              el.setAttribute("rel", "noopener noreferrer");
-            }
-          }
-        }
-        walk(child);
-      }
-    };
-
-    walk(doc.body);
-    return doc.body.innerHTML;
-  };
-
-  const toRichHtml = (value: string) => {
-    if (!value) return "";
-    if (/<[a-z][\s\S]*>/i.test(value)) return sanitizeRichHtml(value);
-    return escapeHtml(value)
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/==(.+?)==/g, '<mark class="bg-yellow-200 dark:bg-yellow-700/40 px-0.5 rounded">$1</mark>')
-      .replace(/\n/g, "<br/>");
-  };
-
-  interface EditableTextProps {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    className?: string;
-    multiline?: boolean;
-    richText?: boolean;
-    maxLength?: number;
-    triggerFocus?: boolean;
-    onFocusComplete?: () => void;
-  }
-
-  const EditableText = ({
-    value,
-    onChange,
-    placeholder = "",
-    className = "",
-    multiline = false,
-    richText = false,
-    maxLength,
-    triggerFocus = false,
-    onFocusComplete,
-  }: EditableTextProps) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-    const [formatState, setFormatState] = useState({
-      bold: false,
-      italic: false,
-      underline: false,
-      unorderedList: false,
-      orderedList: false,
-      h2: false,
-      highlight: false,
-    });
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const editorRef = useRef<HTMLDivElement>(null);
-    const initializedRichEditorRef = useRef(false);
-
-    const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
-      let node = el?.parentElement || null;
-      while (node) {
-        const style = window.getComputedStyle(node);
-        if (/(auto|scroll)/.test(style.overflowY)) return node;
-        node = node.parentElement;
-      }
-      return null;
-    };
-
-    const autoResizeTextarea = () => {
-      const el = textareaRef.current;
-      if (!el) return;
-
-      const scrollParent = getScrollParent(el);
-      const parentScrollTop = scrollParent?.scrollTop ?? null;
-      const winX = window.scrollX;
-      const winY = window.scrollY;
-
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-
-      if (scrollParent && parentScrollTop !== null) {
-        scrollParent.scrollTop = parentScrollTop;
-      }
-      window.scrollTo(winX, winY);
-    };
-
-    useEffect(() => {
-      if (triggerFocus) {
-        setIsEditing(true);
-        if (onFocusComplete) onFocusComplete();
-      }
-    }, [triggerFocus, onFocusComplete]);
-
-    useEffect(() => {
-      setTempValue(richText && multiline ? toRichHtml(value) : value);
-    }, [value]);
-
-    useEffect(() => {
-      if (!(isEditing && multiline && richText)) {
-        initializedRichEditorRef.current = false;
-        return;
-      }
-      const el = editorRef.current;
-      if (!el || initializedRichEditorRef.current) return;
-      el.innerHTML = richText && multiline ? toRichHtml(value) : value;
-      initializedRichEditorRef.current = true;
-      requestAnimationFrame(() => {
-        el.focus();
-        const selection = window.getSelection();
-        if (!selection) return;
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      });
-    }, [isEditing, multiline, richText, value]);
-
-    useEffect(() => {
-      if (isEditing && multiline) {
-        autoResizeTextarea();
-      }
-    }, [isEditing, multiline]);
-
-    const refreshToolbarState = () => {
-      const editor = editorRef.current;
-      if (!editor) return;
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      const anchor = selection.anchorNode;
-      if (!anchor || !editor.contains(anchor)) return;
-
-      const blockValue = String(document.queryCommandValue("formatBlock") || "")
-        .replace(/[<>]/g, "")
-        .toLowerCase();
-      const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
-      const highlightActive =
-        !!highlightValue &&
-        highlightValue !== "transparent" &&
-        highlightValue !== "rgba(0, 0, 0, 0)" &&
-        highlightValue !== "none";
-
-      setFormatState({
-        bold: document.queryCommandState("bold"),
-        italic: document.queryCommandState("italic"),
-        underline: document.queryCommandState("underline"),
-        unorderedList: document.queryCommandState("insertUnorderedList"),
-        orderedList: document.queryCommandState("insertOrderedList"),
-        h2: blockValue === "h2",
-        highlight: highlightActive,
-      });
-    };
-
-    useEffect(() => {
-      if (!(isEditing && multiline && richText)) return;
-      const handleSelectionChange = () => refreshToolbarState();
-      document.addEventListener("selectionchange", handleSelectionChange);
-      return () => document.removeEventListener("selectionchange", handleSelectionChange);
-    }, [isEditing, multiline, richText]);
-
-    const handleBlur = () => {
-      setIsEditing(false);
-      onChange(richText && multiline ? sanitizeRichHtml(tempValue) : tempValue);
-    };
-
-    if (isEditing) {
-      if (multiline && richText) {
-        const runCmd = (command: string, val?: string) => {
-          editorRef.current?.focus();
-          document.execCommand(command, false, val);
-          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
-          setTempValue(html);
-          refreshToolbarState();
-        };
-
-        const normalizeUrl = (rawUrl: string) => {
-          const trimmed = rawUrl.trim();
-          if (!trimmed) return "";
-          if (/^(https?:\/\/|mailto:|tel:|#)/i.test(trimmed)) return trimmed;
-          return `https://${trimmed}`;
-        };
-
-        const insertLink = () => {
-          const rawUrl = window.prompt("Enter URL");
-          if (!rawUrl) return;
-          const url = normalizeUrl(rawUrl);
-          if (!url) return;
-
-          editorRef.current?.focus();
-          const selection = window.getSelection();
-          const selectedText = selection?.toString().trim() || "";
-
-          if (!selectedText) {
-            const safeUrl = url.replace(/"/g, "&quot;");
-            document.execCommand(
-              "insertHTML",
-              false,
-              `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`
-            );
-          } else {
-            document.execCommand("createLink", false, url);
-            document.execCommand("styleWithCSS", false, "false");
-            document.execCommand("foreColor", false, "inherit");
-          }
-
-          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
-          setTempValue(html);
-        };
-
-        const onEditorBlur = () => {
-          setIsEditing(false);
-          initializedRichEditorRef.current = false;
-          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
-          onChange(html);
-        };
-
-        const toggleHeading = () => {
-          runCmd("formatBlock", formatState.h2 ? "<p>" : "<h2>");
-        };
-
-        const toolbarBtnClass = (isActive = false, extra = "") =>
-          `px-2 py-0.5 text-xs border rounded transition-colors ${
-            isActive
-              ? "border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300"
-              : "border-gray-300 dark:border-gray-600"
-          } ${extra}`;
-
-        return (
-          <div className="w-full">
-            <div className="mb-1 flex flex-wrap items-center gap-1">
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("bold")} className={toolbarBtnClass(formatState.bold)}>B</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("italic")} className={toolbarBtnClass(formatState.italic, "italic")}>I</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("underline")} className={toolbarBtnClass(formatState.underline, "underline")}>U</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleHeading} className={toolbarBtnClass(formatState.h2)}>H2</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertUnorderedList")} className={toolbarBtnClass(formatState.unorderedList)}>UL</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertOrderedList")} className={toolbarBtnClass(formatState.orderedList)}>OL</button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => runCmd("hiliteColor", formatState.highlight ? "transparent" : "#fef08a")}
-                className={toolbarBtnClass(formatState.highlight)}
-              >
-                Highlight
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={insertLink}
-                className={toolbarBtnClass(false)}
-              >
-                Link
-              </button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("undo")} className={toolbarBtnClass(false)}>Undo</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("redo")} className={toolbarBtnClass(false)}>Redo</button>
-            </div>
-            <div
-              ref={editorRef}
-              contentEditable
-              suppressContentEditableWarning
-              onInput={() => setTempValue(sanitizeRichHtml(editorRef.current?.innerHTML || ""))}
-              onBlur={onEditorBlur}
-              className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus-within:border-primary-500 focus:outline-none px-0 py-1 min-h-[72px] whitespace-pre-wrap break-words`}
-            />
-            {!tempValue && (
-              <div className="text-gray-400 dark:text-gray-500 text-sm mt-1">{placeholder}</div>
-            )}
-          </div>
-        );
-      }
-
-      return multiline ? (
-        <textarea
-          ref={textareaRef}
-          value={tempValue}
-          onChange={(e) => {
-            setTempValue(e.target.value);
-            requestAnimationFrame(autoResizeTextarea);
-          }}
-          onInput={autoResizeTextarea}
-          onBlur={handleBlur}
-          autoFocus
-          placeholder={placeholder}
-          maxLength={maxLength}
-          rows={1}
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1 resize-none overflow-hidden`}
-        />
-      ) : (
-        <input
-          type="text"
-          value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
-          onBlur={handleBlur}
-          autoFocus
-          placeholder={placeholder}
-          maxLength={maxLength}
-          className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
-        />
-      );
-    }
-
-    if (richText && multiline && value) {
-      return (
-        <div
-          onClick={() => setIsEditing(true)}
-          className={`${className} cursor-pointer inline-block w-full py-1`}
-          dangerouslySetInnerHTML={{ __html: toRichHtml(value) }}
-        />
-      );
-    }
-
-    return (
-      <span
-        onClick={() => setIsEditing(true)}
-        className={`${className} cursor-pointer inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
-      >
-        {value || placeholder}
-      </span>
-    );
-  };
 
   const addOptions = [
     {

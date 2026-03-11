@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, Building } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
@@ -25,7 +26,46 @@ interface Branch {
 }
 
 const SRSSupplyView: React.FC = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('tab') || 'dashboard';
+  const [currentView, setCurrentViewLocal] = useState(initialView);
+
+  const setCurrentView = (view: string) => {
+    setCurrentViewLocal(view);
+    setSearchParams(prev => {
+      prev.set('tab', view);
+      return prev;
+    });
+  };
+
+  // Sync state if URL changes externally
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== currentView) {
+      setCurrentViewLocal(urlTab);
+    }
+  }, [searchParams]);
+
+  const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
+
+  useEffect(() => {
+    const loadSelection = () => {
+      const savedBranch = localStorage.getItem('srs_selected_branch');
+      if (savedBranch) {
+        try {
+          setSelectedBranch(JSON.parse(savedBranch));
+        } catch (e) { console.error(e); }
+      } else {
+        setSelectedBranch(null);
+      }
+    };
+    loadSelection();
+    
+    // Listen for changes from BranchLocator
+    window.addEventListener('storage', loadSelection);
+    return () => window.removeEventListener('storage', loadSelection);
+  }, [currentView]); // Re-check when view changes
+
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [nearestBranches, setNearestBranches] = useState<Branch[]>([]);
@@ -144,19 +184,47 @@ const SRSSupplyView: React.FC = () => {
     return 'Good evening';
   };
 
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
+  const renderDashboard = () => {
+    if (!selectedBranch) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-full mb-4">
+            <Building className="h-10 w-10 text-primary-600 dark:text-primary-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Connect to a Branch</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md text-center mb-8">
+            Please select your preferred SRS Distribution branch to view local product availability, access your custom pricing, and place material orders.
+          </p>
+          <button
+            onClick={() => setCurrentView('branches')}
+            className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <MapPin className="h-5 w-5" />
+            Find a Branch
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Welcome Section */}
+        <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-white">
               {getGreeting()}, Contractor
             </h1>
-            <p className="mt-2 text-gray-400">
-              Welcome to your SRS Distribution Portal. Here's what's happening with your account today.
+            <p className="mt-2 text-primary-100">
+              Connected to: <span className="font-semibold">{selectedBranch?.name || selectedBranch?.branchName || 'Selected Branch'}</span>
             </p>
           </div>
+          <button
+             onClick={() => setCurrentView('branches')}
+             className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-md text-sm font-medium transition"
+          >
+            Change Branch
+          </button>
         </div>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -384,9 +452,16 @@ const SRSSupplyView: React.FC = () => {
       </div>
     </div>
   );
+  }; // closing brace of renderDashboard
+
+  if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
+
+  if (!selectedBranch && currentView !== 'dashboard') {
+    // If no branch selected, show dashboard which prompts branch selection
+    return renderDashboard();
+  }
 
   if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
-  if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
   if (currentView === 'orders') return <OrderHistory onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
   return renderDashboard();
 };

@@ -73,15 +73,87 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     }
                 } catch (e) { console.error(e); }
             }
+        } else if (isOpen && supplier === 'SRS') {
+            const savedBranch = localStorage.getItem('srs_selected_branch');
+            if (savedBranch) {
+                try {
+                    const parsedBranch = JSON.parse(savedBranch);
+                    setSelectedBranch(parsedBranch);
+                    // Fetch SRS prices immediately
+                    if (items.length > 0) {
+                        fetchSrsPrices(parsedBranch.id || parsedBranch.number);
+                    }
+                } catch (e) { console.error(e); }
+            }
         }
-    }, [isOpen, supplier, items.length]); // Added dependency on items length to refresh prices if items change? Or separate effect?
+    }, [isOpen, supplier, items.length]); 
 
     // Effect to refresh prices when items change if we have branch/shipto
     useEffect(() => {
-        if (isOpen && supplier === 'ABC Supply' && selectedShipTo && selectedBranch && items.length > 0) {
-            fetchPrices(selectedShipTo.number, selectedBranch.number);
+        if (isOpen && items.length > 0) {
+            if (supplier === 'ABC Supply' && selectedShipTo && selectedBranch) {
+                fetchPrices(selectedShipTo.number, selectedBranch.number);
+            } else if (supplier === 'SRS' && selectedBranch) {
+                fetchSrsPrices(selectedBranch.id || selectedBranch.number);
+            }
         }
-    }, [items, selectedShipTo, selectedBranch, isOpen]);
+    }, [items, selectedShipTo, selectedBranch, isOpen, supplier]);
+
+    const fetchSrsPrices = async (branchCode: string) => {
+        if (!items.length || !branchCode) return;
+
+        try {
+            const requestBody = {
+                sourceSystem: "BUILDERLYNC",
+                customerCode: "S055053",
+                branchCode: branchCode,
+                transactionId: `SPR-${Date.now()}`,
+                jobAccountNumber: 1,
+                productList: items
+                    .filter((item: any) => item.srsProductId || !isNaN(parseInt(item.itemNumber)))
+                    .map((item: any) => ({
+                        productId: item.srsProductId || parseInt(item.itemNumber),
+                        productName: item.familyName || item.itemDescription || item.itemNumber,
+                        productOptions: ["N/A"],
+                        quantity: item.quantity || 1,
+                        uom: item.uoms?.[0]?.code || 'EA'
+                    }))
+            };
+
+            if (!requestBody.productList.length) return; // nothing to price
+
+            const response = await srsApi.getPrice(requestBody);
+            
+            const prices: Record<string, number> = {};
+            
+            // The SRS API returns an array directly, or sometimes nested in 'data'
+            const priceList = Array.isArray(response) ? response : (response.data || response.productList || []);
+
+            if (priceList && Array.isArray(priceList)) {
+                // Build a lookup from numeric productId -> price
+                const idToPrice: Record<string, number> = {};
+                priceList.forEach((priceItem: any) => {
+                    const numIdStr = priceItem.productId?.toString();
+                    const currentPrice = priceItem.price !== undefined ? priceItem.price : priceItem.unitPrice;
+                    if (numIdStr && currentPrice !== undefined) {
+                        idToPrice[numIdStr] = currentPrice;
+                    }
+                });
+
+                // Map prices back to cart items by their srsProductId OR itemNumber
+                items.forEach((item: any) => {
+                    const numId = (item.srsProductId || parseInt(item.itemNumber))?.toString();
+                    if (numId && idToPrice[numId] !== undefined) {
+                        prices[item.itemNumber] = idToPrice[numId]; // key by itemNumber for display lookup
+                    }
+                });
+
+                setItemPrices(prices);
+            }
+        } catch (error) {
+            console.error('Failed to fetch SRS prices:', error);
+        }
+    };
 
 
     const fetchPrices = async (shipToNumber: string, branchNumber: string) => {
@@ -132,40 +204,111 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             return;
         }
 
-        if (!selectedShipTo || !selectedShipTo.address) {
+        if (supplier === 'ABC Supply' && (!selectedShipTo || !selectedShipTo.address)) {
             alert("No valid Ship-To account selected. Please select an account with a valid address.");
             return;
         }
 
         try {
             setLoading(true);
-            const orderData = {
-                items: items.map(item => ({
-                    productId: item.itemNumber,
-                    sku: item.itemNumber,
-                    name: item.familyName || `Product ${item.itemNumber}`,
-                    quantity: item.quantity,
-                    unitPrice: item.price || getItemPrice(item.itemNumber) || 0,
-                    uom: item.uoms?.[0]?.code || 'EA'
-                })),
-                branchNumber: selectedBranch.number,
-                shipToAccountNumber: selectedShipTo.number, // Pass shipTo if API supports/needs it
-                deliveryAddress: {
-                    name: selectedShipTo.name,
-                    line1: selectedShipTo.address.line1 || "",
-                    line2: selectedShipTo.address.line2 || "",
-                    city: selectedShipTo.address.city || "",
-                    state: selectedShipTo.address.state || "",
-                    postal: selectedShipTo.address.postal || ""
-                },
-                contact: checkoutData.contact,
-                deliveryDate: checkoutData.deliveryDate,
-                instructions: checkoutData.instructions,
-                deliveryService: checkoutData.deliveryService
-            };
 
-            // @ts-ignore
-            const result = await abcSupplyApi.createOrder(orderData);
+            if (supplier === 'SRS') {
+                if (!checkoutData.customerCode) {
+                    alert('Customer code is required for SRS orders.');
+                    setLoading(false);
+                    return;
+                }
+
+                // Call SRS API for SRS
+                const orderData = {
+                    sourceSystem: "BUILDERLYNC",
+                    customerCode: checkoutData.customerCode,
+                    jobAccountNumber: 1,
+                    branchCode: selectedBranch.id || selectedBranch.number || 'BRRIV',
+                    accountNumber: checkoutData.customerCode || 'DEMO001',
+                    transactionID: `SRS-ORD-${Date.now()}`,
+                    transactionDate: new Date().toISOString(),
+                    notes: checkoutData.instructions || "",
+                    shipTo: {
+                        name: checkoutData.contact?.name || selectedShipTo?.name || "Customer",
+                        addressLine1: checkoutData.shippingAddress?.street || selectedShipTo?.address?.line1 || "123 Main St",
+                        addressLine2: selectedShipTo?.address?.line2 || "",
+                        addressLine3: "",
+                        city: checkoutData.shippingAddress?.city || selectedShipTo?.address?.city || "City",
+                        state: checkoutData.shippingAddress?.state || selectedShipTo?.address?.state || "ST",
+                        zipCode: checkoutData.shippingAddress?.zipCode || selectedShipTo?.address?.postal || "00000"
+                    },
+                    poDetails: {
+                        poNumber: `PO-${Date.now()}`,
+                        reference: "Builderlync Order",
+                        jobNumber: "",
+                        orderDate: new Date().toISOString().split('T')[0],
+                        expectedDeliveryDate: checkoutData.deliveryDate || new Date().toISOString().split('T')[0],
+                        expectedDeliveryTime: "Anytime",
+                        orderType: checkoutData.deliveryService === 'pickup' ? "PICKUP" : "WHSE",
+                        shippingMethod: checkoutData.deliveryService === 'pickup' ? "Will Call" : "Ground Drop"
+                    },
+                    orderLineItemDetails: items.map((item: any) => ({
+                        productId: parseInt(item.itemNumber) || parseInt(item.productId) || 0,
+                        productName: item.familyName || item.itemDescription || `Product ${item.itemNumber}`,
+                        option: "N/A",
+                        quantity: item.quantity,
+                        price: item.price || getItemPrice(item.itemNumber) || 0,
+                        customerItem: item.itemNumber || "XXXX",
+                        uom: item.uoms?.[0]?.code || 'EA'
+                    })),
+                    customerContactInfo: {
+                        customerContactName: checkoutData.contact?.name || "Builder",
+                        customerContactPhone: checkoutData.contact?.phone || "0000000000",
+                        customerContactEmail: checkoutData.contact?.email || "builder@example.com",
+                        customerContactAddress: {
+                            addressLine1: checkoutData.shippingAddress?.street || selectedShipTo?.address?.line1 || "123 Main St",
+                            city: checkoutData.shippingAddress?.city || selectedShipTo?.address?.city || "City",
+                            state: checkoutData.shippingAddress?.state || selectedShipTo?.address?.state || "ST",
+                            zipCode: checkoutData.shippingAddress?.zipCode || selectedShipTo?.address?.postal || "00000"
+                        },
+                        additionalContactEmails: []
+                    }
+                };
+                
+                const srsResponse = await srsApi.createOrder(orderData);
+                
+                if (srsResponse.success || srsResponse.transactionID || srsResponse.message === "Order Queued") {
+                    console.log("SRS Order Queued:", srsResponse);
+                } else {
+                    console.error("SRS Order failed:", srsResponse);
+                    throw new Error("Failed to queue order with SRS");
+                }
+            } else {
+                if (!selectedShipTo) return; // Add null check for TypeScript
+                // Call ABC Supply API
+                const orderData = {
+                    items: items.map(item => ({
+                        productId: item.itemNumber,
+                        sku: item.itemNumber,
+                        name: item.familyName || `Product ${item.itemNumber}`,
+                        quantity: item.quantity,
+                        unitPrice: item.price || getItemPrice(item.itemNumber) || 0,
+                        uom: item.uoms?.[0]?.code || 'EA'
+                    })),
+                    branchNumber: selectedBranch.number,
+                    shipToAccountNumber: selectedShipTo.number, // Pass shipTo if API supports/needs it
+                    deliveryAddress: {
+                        name: selectedShipTo.name,
+                        line1: selectedShipTo.address.line1 || "",
+                        line2: selectedShipTo.address.line2 || "",
+                        city: selectedShipTo.address.city || "",
+                        state: selectedShipTo.address.state || "",
+                        postal: selectedShipTo.address.postal || ""
+                    },
+                    contact: checkoutData.contact,
+                    deliveryDate: checkoutData.deliveryDate,
+                    deliveryService: checkoutData.deliveryService
+                };
+    
+                // @ts-ignore
+                await abcSupplyApi.createOrder(orderData);
+            }
 
             setShowCheckoutForm(false);
             setOrderSuccess(true);
@@ -241,6 +384,25 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">{selectedBranch.name}</div>
                                                 <div className="text-xs text-gray-500">Branch #{selectedBranch.number}</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-red-500">No Branch Selected</div>
+                                    )}
+                                </div>
+                            )}
+
+                            {supplier === 'SRS' && (
+                                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ordering From:</div>
+                                    {selectedBranch ? (
+                                        <div className="flex items-start gap-2">
+                                            <div className="h-4 w-4 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                                                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{selectedBranch.name}</div>
+                                                <div className="text-xs text-gray-500">Branch #{selectedBranch.number || selectedBranch.id}</div>
                                             </div>
                                         </div>
                                     ) : (
@@ -425,6 +587,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                 onClose={() => setShowCheckoutForm(false)}
                 onSubmit={handleCheckoutSubmit}
                 loading={loading}
+                supplier={supplier}
             />
         </div>
     );
