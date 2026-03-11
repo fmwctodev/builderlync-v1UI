@@ -59,6 +59,7 @@
     "react-textarea-autosize": "^8.5.3",
     "reactflow": "^11.10.1",
     "redux-saga": "^1.4.2",
+    "stripe": "^20.4.1",
     "tailwind-merge": "^2.2.1",
     "twilio": "^5.10.6",
     "xlsx": "^0.18.5",

@@ -96,6 +96,18 @@ export const srsApi = {
     return response.json();
   },
 
+  async getPrice(priceRequestData: any) {
+    const response = await fetch(`${API_BASE_URL}/srs/price`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(priceRequestData)
+    });
+    return response.json();
+  },
+
   async validateConnection() {
     const response = await fetch(`${API_BASE_URL}/srs/validate`);
     return response.json();

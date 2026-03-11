@@ -47,6 +47,8 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
     const [financingLink, setFinancingLink] = useState('');
     const [proposalTemplates, setProposalTemplates] = useState<any[]>([]);
     const [selectedProposalTemplateId, setSelectedProposalTemplateId] = useState('');
+    const [showQRModal, setShowQRModal] = useState(false);
+    const [showEmbedModal, setShowEmbedModal] = useState(false);
 
     useEffect(() => {
         if (isOpen && estimatorId) {
@@ -173,6 +175,40 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
         } catch (error) {
             console.error('Failed to save settings:', error);
             setToast({ message: 'Failed to save settings', type: 'error' });
+        }
+    };
+
+    const getEstimatorUrl = () => `${window.location.origin}/estimator/${publicUrl}`;
+
+    const generateQRCode = (url: string) => {
+        return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
+    };
+
+    const getEmbedCode = (url: string) => {
+        return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
+    };
+
+    const downloadQRCode = async () => {
+        try {
+            const url = generateQRCode(getEstimatorUrl());
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Failed to fetch QR image');
+            }
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = blobUrl;
+            anchor.download = `${(estimatorName || 'instant-estimator').toLowerCase().replace(/\s+/g, '-')}-qr.png`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(blobUrl);
+            setToast({ message: 'QR code downloaded successfully!', type: 'success' });
+        } catch (error) {
+            console.error('Failed to download QR code:', error);
+            setToast({ message: 'Failed to download QR code', type: 'error' });
         }
     };
 
@@ -309,9 +345,23 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                         </button>
 
                                     </div>
-                                    <div className="flex gap-4 mt-4 text-sm text-gray-500">
-                                        <span className="flex items-center gap-1"><QrCode className="w-4 h-4" /> QR code (coming soon)</span>
-                                        <span className="flex items-center gap-1"><Code className="w-4 h-4" /> Embed code (coming soon)</span>
+                                    <div className="flex flex-wrap gap-3 mt-4 text-sm">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowQRModal(true)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            <QrCode className="w-4 h-4" />
+                                            QR code
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEmbedModal(true)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            <Code className="w-4 h-4" />
+                                            Embed code
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -690,6 +740,86 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                     />
                 )
             }
+
+            {/* QR Code Modal */}
+            {showQRModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">QR Code</h3>
+                                <button
+                                    onClick={() => setShowQRModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="text-center">
+                                <img
+                                    src={generateQRCode(getEstimatorUrl())}
+                                    alt="Estimator QR Code"
+                                    className="mx-auto mb-4"
+                                />
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Scan to open this estimator</p>
+                                <button
+                                    type="button"
+                                    onClick={downloadQRCode}
+                                    className="mt-4 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm"
+                                >
+                                    Download QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Embed Code Modal */}
+            {showEmbedModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Embed Code</h3>
+                                <button
+                                    onClick={() => setShowEmbedModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="mb-4">
+                                <textarea
+                                    value={getEmbedCode(getEstimatorUrl())}
+                                    readOnly
+                                    className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                                />
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const embedCode = getEmbedCode(getEstimatorUrl());
+                                    try {
+                                        await navigator.clipboard.writeText(embedCode);
+                                    } catch (err) {
+                                        const textArea = document.createElement('textarea');
+                                        textArea.value = embedCode;
+                                        document.body.appendChild(textArea);
+                                        textArea.select();
+                                        document.execCommand('copy');
+                                        document.body.removeChild(textArea);
+                                    }
+                                    setToast({ message: 'Embed code copied to clipboard!', type: 'success' });
+                                    setShowEmbedModal(false);
+                                }}
+                                className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+                            >
+                                Copy Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Material Modal */}
             {

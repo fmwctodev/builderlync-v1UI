@@ -6,13 +6,29 @@ import OrderHistory from './OrderHistory';
 import OrderDetailsModal from './OrderDetailsModal';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { Product, Branch, ShipTo } from '../../abc-supply/types';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 const ABCSupplyView: React.FC = () => {
-  const [currentView, setCurrentView] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('view') || 'dashboard';
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('tab') || searchParams.get('view') || 'dashboard';
+  const [currentView, setCurrentViewLocal] = useState(initialView);
+
+  const setCurrentView = (view: string) => {
+    setCurrentViewLocal(view);
+    setSearchParams(prev => {
+      prev.set('tab', view);
+      return prev;
+    });
+  };
+
+  // Sync state if URL changes externally
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') || searchParams.get('view');
+    if (urlTab && urlTab !== currentView) {
+      setCurrentViewLocal(urlTab);
+    }
+  }, [searchParams]);
+
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);

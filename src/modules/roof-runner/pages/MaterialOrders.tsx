@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, ChevronDown } from 'lucide-react';
 import ABCSupplyView from '../components/ABCSupplyView';
 import SRSSupplyView from '../components/SRSSupplyView';
 
 export default function MaterialOrders() {
-  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSupplier = searchParams.get('supplier') === 'SRS' ? 'SRS' : 'ABC Supply';
+  const [selectedSupplier, setSelectedSupplier] = useState(initialSupplier);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Sync state if URL changes externally
+  useEffect(() => {
+    const urlSupplier = searchParams.get('supplier');
+    if (urlSupplier && (urlSupplier === 'SRS' || urlSupplier === 'ABC Supply')) {
+      setSelectedSupplier(urlSupplier);
+    }
+  }, [searchParams]);
+
+  const handleSupplierChange = (supplier: string) => {
+    setSelectedSupplier(supplier);
+    setSearchParams(prev => {
+      prev.set('supplier', supplier);
+      return prev;
+    });
+    setShowDropdown(false);
+  };
 
   const handleCreateOrder = () => {
     // Navigate to products view without reloading
@@ -40,10 +60,7 @@ export default function MaterialOrders() {
                   {['ABC Supply', 'SRS'].map((supplier) => (
                     <button
                       key={supplier}
-                      onClick={() => {
-                        setSelectedSupplier(supplier);
-                        setShowDropdown(false);
-                      }}
+                      onClick={() => handleSupplierChange(supplier)}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${selectedSupplier === supplier
                           ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20'
                           : 'text-gray-700 dark:text-gray-300'
