@@ -18,6 +18,7 @@ import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
+import DIYPage from './pages/DIYPage';
 import InstantEstimatorManage from './pages/InstantEstimatorManage';
 import ManageQuestions from './pages/ManageQuestions';
 import NewMaterial from './pages/NewMaterial';
@@ -129,6 +130,7 @@ export function RoofRunnerModule() {
           <Route path="measurements" element={<Measurements />} />
           <Route path="measurements/payment-success" element={<PaymentSuccess />} />
           <Route path="measurements/payment-cancel" element={<PaymentCancel />} />
+          <Route path="diy" element={<DIYPage />} />
           <Route path="proposals" element={<Proposals />} />
           <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
           <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Ruler, Plus, History, FileText, Camera, Pencil } from 'lucide-react';
 import { measurementsApi, MeasurementData } from '../services/measurementsApi';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
@@ -8,7 +9,7 @@ import EagleViewMeasurement from '../components/measurements/EagleViewMeasuremen
 import { eagleViewService } from '../services/eagleViewService';
 import { profileService } from '../../../shared/services/profileService';
 
-type ViewType = 'dashboard' | 'place-order' | 'order-summary' | 'order-history' | 'eagleview';
+type ViewType = 'Dashboard' | 'Order' | 'Order Summary' | 'Order History' | 'EagleView';
 
 interface OrderData {
   address: string;
@@ -30,7 +31,8 @@ interface BusinessInfo {
 }
 
 export default function Measurements() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<ViewType>('Dashboard');
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
@@ -423,6 +425,14 @@ export default function Measurements() {
                 Dashboard
               </button>
               <button
+                onClick={() => navigate('../diy')}
+                className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                title="Create DIY Drawing"
+              >
+                <Pencil className="inline-block mr-1" size={16} />
+                Create DIY
+              </button>
+              <button
                 onClick={() => setActiveTab('Order History')}
                 className={`flex items-center text-sm font-medium transition-colors ${activeTab === 'Order History'
                   ? 'text-primary-600 dark:text-primary-400'
@@ -472,7 +482,7 @@ export default function Measurements() {
       {activeTab === 'EagleView' && (
         <EagleViewMeasurement />
       )}
-      {activeTab === 'order-summary' && orderData && (
+      {activeTab === 'Order Summary' && orderData && (
         <OrderSummaryPage
           orderData={orderData}
           onBack={() => setActiveTab('Order')}
