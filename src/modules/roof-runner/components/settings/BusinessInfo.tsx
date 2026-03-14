@@ -549,8 +549,8 @@ const BusinessInfo: React.FC = () => {
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>United States</option>
-                <option>Canada</option>
-                <option>Mexico</option>
+                {/* <option>Canada</option>
+                <option>Mexico</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -589,8 +589,8 @@ const BusinessInfo: React.FC = () => {
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>English (United States)</option>
-                <option>Spanish (Spain)</option>
-                <option>French (France)</option>
+                {/* <option>Spanish (Spain)</option>
+                <option>French (France)</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -609,7 +609,7 @@ const BusinessInfo: React.FC = () => {
               >
                 <option>Select language</option>
                 <option>English</option>
-                <option>Spanish</option>
+                {/* <option>Spanish</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -660,8 +660,8 @@ const BusinessInfo: React.FC = () => {
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>CONSTRUCTION</option>
-                <option>Technology</option>
-                <option>Healthcare</option>
+                {/* <option>Technology</option>
+                <option>Healthcare</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -678,8 +678,8 @@ const BusinessInfo: React.FC = () => {
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>USA: Employer Identification Number (EIN)</option>
-                <option>Canada: Business Number (BN)</option>
-                <option>UK: Company Registration Number (CRN)</option>
+                {/* <option>Canada: Business Number (BN)</option>
+                <option>UK: Company Registration Number (CRN)</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -711,7 +711,7 @@ const BusinessInfo: React.FC = () => {
           </label>
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Business Regions of Operations
           </label>
@@ -737,7 +737,7 @@ const BusinessInfo: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         <div className="flex justify-end">
           <button

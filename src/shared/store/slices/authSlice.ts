@@ -147,7 +147,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    verifyRegistrationOtpRequest: (state) => {
+    verifyRegistrationOtpRequest: (state, action: PayloadAction<{ email: string; otp: string }>) => {
       state.loading = true;
       state.error = null;
     },
@@ -163,7 +163,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    resendRegistrationOtpRequest: (state) => {
+    resendRegistrationOtpRequest: (state, action: PayloadAction<string>) => {
       state.loading = true;
       state.error = null;
     },

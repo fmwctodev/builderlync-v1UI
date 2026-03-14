@@ -145,7 +145,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Registration failed');
+      throw new Error(result.message || 'Registration failed');
     }
 
     return result;

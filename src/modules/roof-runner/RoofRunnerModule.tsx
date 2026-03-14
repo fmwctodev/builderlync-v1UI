@@ -108,6 +108,7 @@ export function RoofRunnerModule() {
         <Route path="proposal/view" element={<PublicProposalView />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
         <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
+          <Route path="diy" element={<DIYPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
 
@@ -130,7 +131,6 @@ export function RoofRunnerModule() {
           <Route path="measurements" element={<Measurements />} />
           <Route path="measurements/payment-success" element={<PaymentSuccess />} />
           <Route path="measurements/payment-cancel" element={<PaymentCancel />} />
-          <Route path="diy" element={<DIYPage />} />
           <Route path="proposals" element={<Proposals />} />
           <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
           <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
