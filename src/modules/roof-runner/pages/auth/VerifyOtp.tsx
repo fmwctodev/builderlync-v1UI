@@ -16,7 +16,7 @@ const VerifyOtp: React.FC = () => {
   const email = location.state?.email;
   const from = location.state?.from || 'signup';
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!email) {
@@ -33,7 +33,7 @@ const VerifyOtp: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      setToast({message: error, type: 'error'});
+      setToast({ message: error, type: 'error' });
     }
   }, [error]);
 
@@ -55,15 +55,35 @@ const VerifyOtp: React.FC = () => {
   }, [timer]);
 
   const handleOtpChange = (index: number, value: string) => {
+    // Handle only single digit input here. For paste, handlePaste will take over.
     if (value.length > 1) return;
-    
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
+    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('');
+    if (pastedData.length > 0) {
+      const newOtp = [...otp];
+      pastedData.forEach((char, index) => {
+        if (index < 6 && /^[0-9]$/.test(char)) {
+          newOtp[index] = char;
+        }
+      });
+      setOtp(newOtp);
+
+      // Focus the last filled input or the next empty one
+      const lastIndex = Math.min(pastedData.length, 5);
+      inputRefs.current[lastIndex]?.focus();
+    }
+    e.preventDefault();
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -84,7 +104,7 @@ const VerifyOtp: React.FC = () => {
     dispatch(resendRegistrationOtpRequest(email));
     setTimer(60);
     setCanResend(false);
-    setToast({message: 'OTP resent successfully', type: 'success'});
+    setToast({ message: 'OTP resent successfully', type: 'success' });
   };
 
   return (
@@ -100,7 +120,7 @@ const VerifyOtp: React.FC = () => {
         >
           <ArrowLeft size={20} />
         </button>
-        
+
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mx-auto mb-4">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -129,8 +149,9 @@ const VerifyOtp: React.FC = () => {
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
                   className="w-12 h-12 text-center text-xl font-semibold border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
-                  style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
+                  style={{ '--tw-ring-color': '#dc2626' } as React.CSSProperties}
                   onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                   onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
                 />
@@ -142,7 +163,7 @@ const VerifyOtp: React.FC = () => {
             type="submit"
             disabled={loading || otp.join('').length !== 6}
             className="w-full text-white py-3 px-4 rounded-lg hover:opacity-90 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            style={{backgroundColor: '#dc2626', '--tw-ring-color': '#dc2626'} as React.CSSProperties}
+            style={{ backgroundColor: '#dc2626', '--tw-ring-color': '#dc2626' } as React.CSSProperties}
           >
             {loading ? 'Verifying...' : 'Verify Email'}
           </button>
@@ -155,7 +176,7 @@ const VerifyOtp: React.FC = () => {
               <button
                 onClick={handleResend}
                 className="font-medium hover:opacity-80"
-                style={{color: '#dc2626'}}
+                style={{ color: '#dc2626' }}
               >
                 Resend Code
               </button>
@@ -167,7 +188,7 @@ const VerifyOtp: React.FC = () => {
           </p>
         </div>
       </div>
-      
+
       {toast && (
         <Toast
           message={toast.message}

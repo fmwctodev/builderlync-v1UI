@@ -217,11 +217,11 @@ export function CreateAgentModal({
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="en">English</option>
-                <option value="es">Spanish</option>
+                {/* <option value="es">Spanish</option>
                 <option value="fr">French</option>
                 <option value="de">German</option>
                 <option value="it">Italian</option>
-                <option value="pt">Portuguese</option>
+                <option value="pt">Portuguese</option> */}
               </select>
             </div>
 

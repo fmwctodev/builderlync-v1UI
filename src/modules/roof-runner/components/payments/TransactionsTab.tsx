@@ -14,6 +14,9 @@ const TransactionsTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
   const handleSyncQuickBooks = async () => {
     try {
       setSyncing(true);
@@ -28,6 +31,19 @@ const TransactionsTab: React.FC = () => {
   };
 
   useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { getQuickBooksStatus } = await import('../../../../shared/store/services/quickbooksApi');
+        const response = await getQuickBooksStatus();
+        setIsQuickBooksConnected(response.data.connected);
+      } catch (error) {
+        console.error('Error checking QuickBooks status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
     loadData();
   }, [searchQuery]);
 
@@ -62,8 +78,9 @@ const TransactionsTab: React.FC = () => {
           <div className="flex items-center space-x-2">
             <button
               onClick={handleSyncQuickBooks}
-              disabled={syncing || loading}
+              disabled={syncing || loading || checkingStatus || !isQuickBooksConnected}
               className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+              title={!isQuickBooksConnected ? 'Connect QuickBooks in Settings to sync' : 'Sync payments with QuickBooks'}
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing...' : 'Sync QuickBooks'}</span>

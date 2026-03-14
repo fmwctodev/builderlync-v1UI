@@ -48,10 +48,19 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
     fetchJobs();
   }, []);
 
+  const today = new Date().toISOString().split('T')[0];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate dates are not in the past
+    if (formData.startDate < today) {
+      alert('Cannot create an event in the past.');
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
       const targetJobId = formData.jobId || jobId;
       if (editEvent) {
@@ -73,7 +82,7 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
       <Card className="w-full max-w-md mx-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-xl font-semibold">{editEvent ? 'Edit Event' : 'Create Event'}</h2>
-          
+
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -105,6 +114,7 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
               <input
                 type="date"
                 required
+                min={today}
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
@@ -128,6 +138,7 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
               <input
                 type="date"
                 required
+                min={formData.startDate || today}
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
