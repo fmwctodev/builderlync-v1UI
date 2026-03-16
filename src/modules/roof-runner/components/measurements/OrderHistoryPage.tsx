@@ -16,6 +16,58 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
   const [totalOrders, setTotalOrders] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
+  const productNameMap: { [key: string]: string } = {
+    "99": "Whole Home",
+    "31": "Premium - Residential",
+    "32": "Premium - Commercial",
+    "13": "Claims Ready - Residential",
+    "14": "Claims Ready - Commercial",
+    "84": "Bid Perfect™",
+    "102": "Bid Perfect™ - Commercial",
+    "46": "Gutter - Residential",
+    "47": "Gutter - Commercial",
+    "11": "EagleView Inform Essentials+ (for residential)",
+    "12": "EagleView Inform Essentials+ for Commercial",
+    "62": "EagleView Inform Advanced",
+    "63": "EagleView Inform Advanced for Commercial",
+    "90": "TrueDesign™ for Sales",
+    "91": "TrueDesign™ for Planning",
+    "85": "Walls, Windows, & Doors",
+    "86": "Walls",
+    "35": "Commercial - Walls Only",
+  };
+
+  const deliveryProductNameMap: { [key: string]: string } = {
+    "4": "ExpressDelivery",
+    "7": "ThreeHourDelivery",
+    "8": "RegularDelivery",
+    "45": "QuickDelivery"
+  };
+
+  const subStatusNameMap: { [key: string]: string } = {
+    "5": "UnderReview",
+    "6": "ProcessStarted",
+    "8": "NeedToID",
+    "9": "Duplicate",
+    "10": "CanceledByClient",
+    "11": "PoorImages",
+    "12": "NoID",
+    "14": "ReportTypeChange",
+    "15": "NoImages",
+    "16": "Other",
+    "18": "CardRejected",
+    "19": "Sent",
+    "20": "Sent",
+    "21": "CustomerResponse",
+    "24": "WrongHouse",
+    "27": "CreditCardFailure",
+    "31": "Processing",
+    "32": "MeasurementData",
+    "38": "UnsupportedStructure",
+    "43": "ReadyToCapturePayment",
+  };
+
+
   const getStatusInfo = (statusId: number) => {
     switch (statusId) {
       case 1: return { label: 'CREATED', color: 'bg-blue-100 text-blue-800' };
@@ -273,12 +325,14 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                           <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wider mb-3">Order Details</h4>
                           <div className="bg-white p-4 rounded-lg border border-gray-100 space-y-3 shadow-sm">
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-500">Product ID:</span>
-                              <span className="font-medium text-gray-900">{order.primary_product_id}</span>
+                              <span className="text-gray-500">Product:</span>
+                              <span className="font-medium text-gray-900">
+                                {productNameMap[order.primary_product_id] || order.primary_product_id || '-'}
+                              </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-500">Delivery Product ID:</span>
-                              <span className="font-medium text-gray-900">{order.delivery_product_id}</span>
+                              <span className="text-gray-500">Delivery Product:</span>
+                              <span className="font-medium text-gray-900">{deliveryProductNameMap[order.delivery_product_id] || order.delivery_product_id || '-'}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-500">Last Updated:</span>
@@ -309,8 +363,8 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewO
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-500">Sub-Status ID:</span>
-                              <span className="font-medium text-gray-900">{order.sub_status_id || '-'}</span>
+                              <span className="text-gray-500">Sub-Status:</span>
+                              <span className="font-medium text-gray-900">{subStatusNameMap[order.sub_status_id] || order.sub_status_id || '-'}</span>
                             </div>
                           </div>
                         </div>

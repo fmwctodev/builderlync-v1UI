@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Code, X } from 'lucide-react';
 import { getCalendars, getCalendarGroups, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
 import { format } from 'date-fns';
 
@@ -17,10 +17,16 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [selectedEmbedUrl, setSelectedEmbedUrl] = useState('');
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const getEmbedCode = (url: string) => {
+    return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,6 +80,31 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
       console.error('Failed to copy booking URL:', error);
       alert('Failed to copy booking URL');
     }
+  };
+
+  const handleOpenEmbedModal = (calendar: Calendar) => {
+    if (!calendar.cal_url) {
+      alert('No booking URL found for this calendar');
+      return;
+    }
+
+    setSelectedEmbedUrl(calendar.cal_url);
+    setShowEmbedModal(true);
+  };
+
+  const handleCopyEmbedCode = async () => {
+    const embedCode = getEmbedCode(selectedEmbedUrl);
+
+    try {
+      await navigator.clipboard.writeText(embedCode);
+      alert('Embed code copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy embed code:', error);
+      alert('Failed to copy embed code');
+      return;
+    }
+
+    setShowEmbedModal(false);
   };
 
   const filteredCalendars = calendars.filter(cal => {
@@ -343,6 +374,12 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                             </button>
                             <button
                               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleOpenEmbedModal(calendar)}
+                            >
+                              <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                               onClick={() => handleDeleteCalendar(calendar.id)}
                             >
                               <XIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -361,6 +398,37 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
           )}
         </div>
       </div>
+
+      {showEmbedModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Embed Code</h3>
+                <button
+                  onClick={() => setShowEmbedModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <textarea
+                  value={getEmbedCode(selectedEmbedUrl)}
+                  readOnly
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <button
+                onClick={handleCopyEmbedCode}
+                className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+              >
+                Copy Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
