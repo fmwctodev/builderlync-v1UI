@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Download } from "lucide-react";
 import { proposalsApi, Proposal } from "../services/proposalsApi";
 import { getBusinessInfo, BusinessInfo } from "../../../shared/store/services/businessInfoApi";
@@ -8,6 +8,7 @@ import { useOrgPath } from "../../../shared/hooks/useOrgPath";
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { getOrgPath } = useOrgPath();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
@@ -86,6 +87,18 @@ export default function ProposalPreview() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!proposal || loading || downloading) return;
+    if (searchParams.get("download") !== "1") return;
+
+    handleDownload();
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("download");
+      return next;
+    }, { replace: true });
+  }, [proposal, loading, downloading, searchParams, setSearchParams]);
+
   const loadProposal = async () => {
     try {
       setLoading(true);
@@ -119,6 +132,27 @@ export default function ProposalPreview() {
     return businessInfo?.representative_email || proposal?.sections?.settings?.companyEmail || "company@email.com";
   };
 
+  const getCompanyWebsite = () => {
+    const directWebsite =
+      (businessInfo as any)?.business_website ||
+      (businessInfo as any)?.website ||
+      proposal?.sections?.settings?.companyWebsite ||
+      "";
+
+    if (directWebsite) {
+      return String(directWebsite)
+        .replace(/^https?:\/\//, "")
+        .replace(/\/+$/, "");
+    }
+
+    const email = getCompanyEmail();
+    if (email.includes("@")) {
+      return email.split("@")[1];
+    }
+
+    return "company.com";
+  };
+
   const getCompanyLogo = () => {
     return businessInfo?.business_logo || proposal?.sections?.settings?.companyLogo || null;
   };
@@ -129,6 +163,113 @@ export default function ProposalPreview() {
     }
     return "Company representative name";
   };
+
+  const renderAcceptancePage = () => (
+    <div
+      className="bg-white dark:bg-gray-800 pdf-page"
+      style={{
+        width: "816px",
+        minHeight: "1056px",
+        padding: "32px",
+        position: "relative"
+      }}
+    >
+      <div className="flex h-full flex-col">
+        <div className="flex-1">
+          <h2 className="text-[30px] font-bold tracking-tight text-gray-900 dark:text-white">
+            Acceptance
+          </h2>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-400">
+            By signing below, both parties agree to the terms, scope, deliverables, timeline, and pricing outlined in this proposal.
+            This document shall serve as the binding agreement between both parties upon signature.
+          </p>
+
+          <div className="mt-10 grid gap-10 md:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                Client
+              </div>
+              <div className="space-y-5">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Printed Name
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
+                    {proposal?.sections?.settings?.customerName || "Client Name"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Title
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base text-gray-900 dark:border-gray-600 dark:text-white">
+                    &nbsp;
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Date
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
+                    {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                {getCompanyName()}
+              </div>
+              <div className="space-y-5">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Printed Name
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
+                    {getRepresentativeName() || getCompanyName()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Title
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base text-gray-900 dark:border-gray-600 dark:text-white">
+                    &nbsp;
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Date
+                  </div>
+                  <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
+                    {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 rounded-2xl bg-gray-50 px-6 py-5 dark:bg-gray-900/50">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
+              Questions about this proposal? We are happy to help.
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <span className="break-all">{getCompanyEmail()}</span>
+              <span>{getCompanyPhone()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 border-t border-gray-200 pt-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          <div>Confidential — Prepared exclusively for the Client</div>
+          <div className="mt-2 font-medium text-gray-700 dark:text-gray-300">
+            {getCompanyWebsite()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleDownload = async () => {
     if (!contentRef.current || downloading) return;
@@ -274,78 +415,79 @@ export default function ProposalPreview() {
           `}</style>
           <div ref={contentRef} className="max-w-4xl mx-auto">
             {/* Cover Section */}
-            {proposal.sections?.settings?.coverImage && (
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 pdf-page"
+              style={{ width: "816px", minHeight: "1056px", position: "relative", overflow: "hidden" }}
+            >
               <div
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 pdf-page"
+                className="relative h-[600px] bg-gray-100 dark:bg-gray-700 overflow-hidden"
               >
-                <div
-                  className="relative h-[600px] bg-gray-100 dark:bg-gray-700 overflow-hidden"
-                >
+                {proposal.sections?.settings?.coverImage ? (
                   <img
                     src={proposal.sections.settings.coverImage}
                     alt="Cover"
                     className="w-full h-full object-cover"
                   />
-                </div>
-                <div className="p-6 flex items-center justify-between">
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      {proposal.sections.settings.coverTitle ||
-                        "Project Proposal"}
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-slate-200 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800" />
+                )}
+              </div>
+              <div className="flex min-h-[456px] flex-col justify-between p-8">
+                <div className="flex items-start justify-between gap-8">
+                  <div className="max-w-[55%]">
+                    <h2 className="mb-3 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                      {proposal.sections.settings?.coverTitle || "Project Proposal"}
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {proposal.sections.settings.coverDate ||
-                        new Date().toLocaleDateString()}
+                      {proposal.sections.settings?.coverDate || new Date().toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right text-sm">
-                    <div className="font-medium text-gray-900 dark:text-white mb-1">
-                      {proposal.sections.settings.customerName ||
-                        "Customer Name"}
+                  <div className="max-w-[35%] text-right text-sm">
+                    <div className="mb-1 font-semibold text-gray-900 dark:text-white">
+                      {proposal.sections.settings?.customerName || "Customer Name"}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400 mb-1">
-                      {proposal.sections.settings.customerAddress ||
-                        "Customer Address"}
+                    <div className="mb-1 text-gray-600 dark:text-gray-400">
+                      {proposal.sections.settings?.customerAddress || "Customer Address"}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400 mb-1">
-                      {proposal.sections.settings.customerPhone ||
-                        "(000) 000-0000"}
+                    <div className="mb-1 text-gray-600 dark:text-gray-400">
+                      {proposal.sections.settings?.customerPhone || "(000) 000-0000"}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      {proposal.sections.settings.customerEmail ||
-                        "customer@email.com"}
+                    <div className="break-all text-gray-600 dark:text-gray-400">
+                      {proposal.sections.settings?.customerEmail || "customer@email.com"}
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 p-6" style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
-                  <div className="flex items-center justify-between">
-                    <div>
+                <div className="mt-auto border-t border-gray-200 pt-8 dark:border-gray-700">
+                  <div className="flex items-center justify-between gap-6">
+                    <div className="min-w-0">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         {getRepresentativeName()}
                       </div>
-                      <div className="font-medium text-gray-900 dark:text-white">
+                      <div className="font-semibold text-gray-900 dark:text-white">
                         {getCompanyName()}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
                         {getCompanyPhone()}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="break-all text-sm text-gray-600 dark:text-gray-400">
                         {getCompanyEmail()}
                       </div>
                     </div>
-                    {getCompanyLogo() && (
-                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-700">
+                      {getCompanyLogo() ? (
                         <img
                           src={getCompanyLogo()!}
                           alt="Logo"
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-cover"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">Logo</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Estimate Section - Page 1 (Demo) */}
             {proposal.sections?.items && (
@@ -481,34 +623,6 @@ export default function ProposalPreview() {
                         ))}
                       </div>
                     )}
-                </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {getRepresentativeName()}
-                      </div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {getCompanyName()}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getCompanyPhone()}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getCompanyEmail()}
-                      </div>
-                    </div>
-                    {getCompanyLogo() && (
-                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
-                        <img
-                          src={getCompanyLogo()!}
-                          alt="Logo"
-                          className="w-full h-full object-cover"
-                          
-                        />
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             )}
@@ -770,34 +884,6 @@ export default function ProposalPreview() {
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {getRepresentativeName()}
-                      </div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {getCompanyName()}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getCompanyPhone()}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getCompanyEmail()}
-                      </div>
-                    </div>
-                    {getCompanyLogo() && (
-                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
-                        <img
-                          src={getCompanyLogo()!}
-                          alt="Logo"
-                          className="w-full h-full object-cover"
-                          
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -873,36 +959,10 @@ export default function ProposalPreview() {
                       }}
                     />
                   )}
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-8" style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px" }}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {getRepresentativeName()}
-                        </div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {getCompanyName()}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {getCompanyPhone()}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {getCompanyEmail()}
-                        </div>
-                      </div>
-                      {getCompanyLogo() && (
-                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
-                          <img
-                            src={getCompanyLogo()!}
-                            alt="Logo"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
               ))
             }
+            {renderAcceptancePage()}
           </div>
         </div>
       )}

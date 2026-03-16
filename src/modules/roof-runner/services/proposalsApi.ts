@@ -29,6 +29,8 @@ export interface Proposal {
   type: string;
   title: string;
   status: 'incomplete' | 'complete' | 'sent' | 'signed';
+  signature_status?: 'not_sent' | 'pending_signature' | 'viewed' | 'signed' | 'declined' | 'expired' | 'voided';
+  signature_status_updated_at?: string;
   identifier: string;
   template_id?: string;
   sections: any;
