@@ -29,6 +29,7 @@ export interface UpdateStaffRequest {
   image?: string;
   password?: string;
   status?: 'active' | 'inactive' | 'on_leave';
+  role_id?: string;
 }
 
 export interface StaffMember {

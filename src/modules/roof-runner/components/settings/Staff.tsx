@@ -429,11 +429,9 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
           lastName: selectedMember.last_name,
           email: selectedMember.email,
           phone: selectedMember.phone,
-          countryCode: selectedMember.country_code,
+          countryCode: selectedMember.country_code || '+1',
           extension: selectedMember.extension,
           profileImage: selectedMember.image,
-          roleId: selectedMember.role_id
-          countryCode: selectedMember.country_code || '+1',
           roleId: selectedMember.role_id || selectedMember.role?.id || '',
         } : undefined}
         isEdit={true}
