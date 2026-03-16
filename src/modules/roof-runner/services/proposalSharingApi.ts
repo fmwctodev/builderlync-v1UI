@@ -14,6 +14,11 @@ export interface ShareTokenResponse {
   token: string;
   shareUrl: string;
   expiresAt: string;
+  sentAt?: string;
+  status?: string;
+  signatureStatus?: string;
+  requestId?: number;
+  emailSent?: boolean;
 }
 
 export interface SendEmailRequest {
@@ -53,9 +58,6 @@ export const validateBusinessInfo = async (): Promise<BusinessInfoValidation> =>
     if (!businessInfo.friendly_business_name) {
       missingFields.push('Company Name');
     }
-    if (!businessInfo.business_phone) {
-      missingFields.push('Company Phone');
-    }
     if (!businessInfo.representative_email) {
       missingFields.push('Company Representative Email');
     }
@@ -79,11 +81,6 @@ export const validateBusinessInfo = async (): Promise<BusinessInfoValidation> =>
 export const proposalSharingApi = {
   // Generate share token
   generateToken: async (proposalId: number, expiresInDays: number = 30): Promise<ShareTokenResponse> => {
-    const validation = await validateBusinessInfo();
-    if (!validation.isValid) {
-      throw new Error(`Missing required business information: ${validation.missingFields.join(', ')}`);
-    }
-
     const response = await axios.post(`${API_BASE_URL}/proposals/${proposalId}/generate-token`, {
       expiresInDays
     }, {
@@ -94,15 +91,15 @@ export const proposalSharingApi = {
 
   // Send proposal email
   sendEmail: async (proposalId: number, data: SendEmailRequest): Promise<ShareTokenResponse> => {
-    const validation = await validateBusinessInfo();
-    if (!validation.isValid) {
-      throw new Error(`Missing required business information: ${validation.missingFields.join(', ')}`);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/proposals/${proposalId}/send-email`, data, {
+        headers: getAuthHeaders(),
+      });
+      return response.data.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to send email';
+      throw new Error(errorMessage);
     }
-
-    const response = await axios.post(`${API_BASE_URL}/proposals/${proposalId}/send-email`, data, {
-      headers: getAuthHeaders(),
-    });
-    return response.data.data;
   },
 
   // Get proposal by token (public, no auth)

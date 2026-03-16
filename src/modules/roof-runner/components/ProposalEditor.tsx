@@ -64,11 +64,32 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
   };
 
   const getCompanyName = () => {
-    return businessInfo?.friendly_business_name || proposal?.sections?.settings?.companyName || "Company Name";
+    const name = proposal?.sections?.settings?.companyName || businessInfo?.friendly_business_name || businessInfo?.legal_business_name;
+    return name && name.trim() && name !== "Company Name" ? name : "Company Name";
   };
 
   const getCompanyLogo = () => {
-    return businessInfo?.business_logo || proposal?.sections?.settings?.companyLogo || null;
+    return proposal?.sections?.settings?.companyLogo || businessInfo?.business_logo || null;
+  };
+
+  const getCustomerName = () => {
+    const name = proposal?.sections?.settings?.customerName;
+    return name && name.trim() && name !== "Customer Name" ? name : "Customer Name";
+  };
+
+  const getCustomerEmail = () => {
+    const email = proposal?.sections?.settings?.customerEmail;
+    return email && email.trim() && email !== "customer@email.com" ? email : "";
+  };
+
+  const getCustomerPhone = () => {
+    const phone = proposal?.sections?.settings?.customerPhone;
+    return phone && phone.trim() && phone !== "(000) 000-0000" ? phone : "";
+  };
+
+  const getCustomerAddress = () => {
+    const address = proposal?.sections?.settings?.customerAddress || proposal?.address?.address;
+    return address && address.trim() && address !== "Customer Address" ? address : "";
   };
 
   if (!isOpen) return null;
@@ -137,15 +158,21 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Customer</h3>
             <div className="space-y-2">
-              <div className="font-semibold text-gray-900 dark:text-white">Michelle Evans</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span className="text-gray-400">✉</span>
-                michelle@mauroatx.com
+              <div className="font-semibold text-gray-900 dark:text-white">
+                {getCustomerName()}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                <span className="text-gray-400">☎</span>
-                (512) 220-0565
-              </div>
+              {getCustomerEmail() && (
+                <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <span className="text-gray-400">✉</span>
+                  {getCustomerEmail()}
+                </div>
+              )}
+              {getCustomerPhone() && (
+                <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <span className="text-gray-400">☎</span>
+                  {getCustomerPhone()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -364,21 +391,33 @@ const ProposalEditor: React.FC<ProposalEditorProps> = ({ isOpen, onClose, templa
               </button>
               <button
                 onClick={async () => {
-                  alert(`{1} ${JSON.stringify(emailData)}`)
-                  if (!emailData.recipientEmail || !emailData.recipientName) {
-                    alert('Please fill in recipient name and email');
+                  const finalCustomerName = customerName && customerName.trim() && customerName !== "Customer Name" ? customerName : "";
+                  const finalCustomerEmail = customerEmail && customerEmail.trim() && customerEmail !== "customer@email.com" ? customerEmail : "";
+                  
+                  if (!finalCustomerEmail || !finalCustomerName) {
+                    alert('Please fill in customer name and email before sending');
                     return;
                   }
+                  
                   try {
-                    setSending(true);
-                    await proposalSharingApi.sendEmail(Number(proposalId), emailData);
+                    setSendingEmail(true);
+                    const result = await proposalSharingApi.sendEmail(Number(proposalId), {
+                      recipientEmail: finalCustomerEmail,
+                      recipientName: finalCustomerName,
+                      subject: emailSubject || `Proposal for ${finalCustomerName}`,
+                      message: emailMessage || `Please review the attached proposal.`
+                    });
+                    if ((result as any)?.status === 'sent' && proposal) {
+                      setProposal({ ...proposal, status: 'sent' });
+                    }
                     alert('Proposal sent successfully!');
-                    setShowEmailModal(false);
-                    setEmailData({ recipientEmail: '', recipientName: '', subject: '', message: '' });
+                    setShowEmailSidebar(false);
+                    setEmailSubject('');
+                    setEmailMessage('');
                   } catch (error: any) {
                     alert(error.response?.data?.message || 'Failed to send proposal. Please check your email settings.');
                   } finally {
-                    setSending(false);
+                    setSendingEmail(false);
                   }
                 }}
                 disabled={sending}

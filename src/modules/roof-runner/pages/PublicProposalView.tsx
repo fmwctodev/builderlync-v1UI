@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, PenTool } from "lucide-react";
 import { proposalsApi, Proposal } from "../services/proposalsApi";
 
 export default function PublicProposalView() {
@@ -10,7 +10,9 @@ export default function PublicProposalView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [showSignatureForm, setShowSignatureForm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const signatureRef = useRef<HTMLDivElement>(null);
 
   const escapeHtml = (text: string) =>
     text
@@ -94,6 +96,13 @@ export default function PublicProposalView() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSignClick = () => {
+    setShowSignatureForm(true);
+    setTimeout(() => {
+      signatureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleDownload = async () => {
@@ -181,14 +190,23 @@ export default function PublicProposalView() {
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
           Proposal Review
         </h1>
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-        >
-          <Download size={16} />
-          {downloading ? "Generating..." : "Download PDF"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+          >
+            <Download size={16} />
+            {downloading ? "Generating..." : "Download PDF"}
+          </button>
+          <button
+            onClick={handleSignClick}
+            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium flex items-center gap-2"
+          >
+            <PenTool size={16} />
+            Sign
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
@@ -322,12 +340,12 @@ export default function PublicProposalView() {
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
                                     <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                              {item.description && (
-                                <div
-                                  className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                                  dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
-                                />
-                              )}
+                                    {item.description && (
+                                      <div
+                                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                        dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
+                                      />
+                                    )}
                                   </div>
                                   {item.unitCost && item.qty && (
                                     <div className="font-medium text-gray-900 dark:text-white">
@@ -424,12 +442,21 @@ export default function PublicProposalView() {
                         const margin = parseFloat(proposal.sections?.settings?.defaultMargin || "0");
                         const upgradeTotal = upgradeSubtotal * (1 + margin / 100);
                         return (
-                          <div key={upgrade.id} className="mb-2 pl-3 text-sm">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 dark:text-white">{upgrade.name}</div>
+                          <div key={upgrade.id} className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                            <div className="font-medium text-gray-900 dark:text-white mb-3">{upgrade.name}</div>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                                <span className="text-gray-900 dark:text-white">${upgradeSubtotal.toFixed(2)}</span>
                               </div>
-                              <div className="font-medium text-gray-900 dark:text-white">${upgradeTotal.toFixed(2)}</div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600 dark:text-gray-400">Margin ({margin}%)</span>
+                                <span className="text-gray-900 dark:text-white">${(upgradeSubtotal * margin / 100).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                                <span className="font-medium text-gray-900 dark:text-white">Total</span>
+                                <span className="font-medium text-gray-900 dark:text-white">${upgradeTotal.toFixed(2)}</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -483,6 +510,69 @@ export default function PublicProposalView() {
               </div>
             </div>
           )}
+
+          {/* Signature Page */}
+          <div ref={signatureRef} className="bg-white dark:bg-gray-800 pdf-page" style={{ width: "816px", display: "flex", flexDirection: "column", padding: "32px" }}>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Sign the Proposal</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+                  <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option>Draw</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Name</label>
+                  <input 
+                    type="text" 
+                    value={proposal.sections?.settings?.customerName || ""}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Signature</label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 bg-gray-50 dark:bg-gray-700 min-h-[200px] flex items-center justify-center">
+                    <p className="text-gray-500 dark:text-gray-400">Signature will appear here</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <button className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
+                Submit Signature
+              </button>
+              <button onClick={() => setShowSignatureForm(false)} className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
+                Cancel
+              </button>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    {proposal.sections?.settings?.companyName || "Company Name"}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {proposal.sections?.settings?.companyPhone || "(000) 000-0000"}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {proposal.sections?.settings?.companyEmail || "company@email.com"}
+                  </div>
+                </div>
+                {proposal.sections?.settings?.companyLogo && (
+                  <div className="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center overflow-hidden">
+                    <img src={proposal.sections.settings.companyLogo} alt="Logo" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
