@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client';
+import { apiClient } from './supabase-client';
 import { Role, RoleScope, RolePermissions } from '../types';
 
 export interface GetRolesParams {
@@ -7,29 +7,19 @@ export interface GetRolesParams {
 }
 
 export async function getRoles(params: GetRolesParams = {}): Promise<Role[]> {
-  const { scope, accountId } = params;
-
-  let query = supabase
-    .from('roles')
-    .select('*')
-    .order('created_at', { ascending: true });
-
-  if (scope && scope !== 'all') {
-    query = query.eq('scope', scope);
+  const result = await apiClient.get('/super-admin/roles');
+  
+  // Handle standard ResponseHandler wrapper
+  const data = result.success ? result.data : result;
+  // If backend returns { data: [...] } inside the wrapper
+  const roles = Array.isArray(data) ? data : (data?.data || []);
+  
+  // Filter by scope if needed
+  if (params.scope && params.scope !== 'all') {
+    return roles.filter((r: Role) => r.scope === params.scope);
   }
 
-  if (accountId) {
-    query = query.eq('account_id', accountId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching roles:', error);
-    throw new Error(`Failed to fetch roles: ${error.message}`);
-  }
-
-  return (data || []) as Role[];
+  return roles as Role[];
 }
 
 export async function getGlobalRoles(): Promise<Role[]> {
@@ -37,21 +27,9 @@ export async function getGlobalRoles(): Promise<Role[]> {
 }
 
 export async function getRoleById(roleId: string): Promise<Role | null> {
-  const { data, error } = await supabase
-    .from('roles')
-    .select('*')
-    .eq('id', roleId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    console.error('Error fetching role:', error);
-    throw new Error(`Failed to fetch role: ${error.message}`);
-  }
-
-  return data as Role;
+  const result = await apiClient.get(`/super-admin/roles/${roleId}`);
+  const data = result.success ? result.data : result;
+  return (data?.data || data) as Role;
 }
 
 export async function createRole(roleData: {
@@ -62,17 +40,13 @@ export async function createRole(roleData: {
   is_default?: boolean;
   permissions: RolePermissions;
 }): Promise<string> {
-  const { data, error } = await supabase
-    .from('roles')
-    .insert(roleData)
-    .select('id')
-    .single();
-
-  if (error) {
-    console.error('Error creating role:', error);
-    throw new Error(`Failed to create role: ${error.message}`);
+  const result = await apiClient.post('/super-admin/roles', roleData);
+  
+  if (!result.success && result.error) {
+    throw new Error(result.error);
   }
 
+  const data = result.data?.data || result.data || result;
   return data.id;
 }
 
@@ -80,37 +54,18 @@ export async function updateRole(
   roleId: string,
   updates: Partial<Role>
 ): Promise<void> {
-  const { error } = await supabase
-    .from('roles')
-    .update(updates)
-    .eq('id', roleId);
-
-  if (error) {
-    console.error('Error updating role:', error);
-    throw new Error(`Failed to update role: ${error.message}`);
+  const result = await apiClient.put(`/super-admin/roles/${roleId}`, updates);
+  
+  if (!result.success && result.error) {
+    throw new Error(result.error);
   }
 }
 
 export async function deleteRole(roleId: string): Promise<void> {
-  const usersWithRole = await supabase
-    .from('platform_users')
-    .select('id', { count: 'exact', head: true })
-    .eq('role_id', roleId);
-
-  if (usersWithRole.count && usersWithRole.count > 0) {
-    throw new Error(
-      `Cannot delete role: ${usersWithRole.count} user(s) are assigned to this role`
-    );
-  }
-
-  const { error } = await supabase
-    .from('roles')
-    .delete()
-    .eq('id', roleId);
-
-  if (error) {
-    console.error('Error deleting role:', error);
-    throw new Error(`Failed to delete role: ${error.message}`);
+  const result = await apiClient.delete(`/super-admin/roles/${roleId}`);
+  
+  if (!result.success && result.error) {
+    throw new Error(result.error);
   }
 }
 
@@ -133,50 +88,20 @@ export async function duplicateRole(roleId: string): Promise<string> {
   return createRole(newRoleData);
 }
 
-export async function getRoleUserCount(roleId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('platform_users')
-    .select('id', { count: 'exact', head: true })
-    .eq('role_id', roleId);
-
-  if (error) {
-    console.error('Error counting users for role:', error);
-    return 0;
-  }
-
-  return count || 0;
+export async function getRoleUserCount(_roleId: string): Promise<number> {
+  // TODO: Implement backend endpoint for user count by role
+  console.warn('getRoleUserCount not implemented via API yet');
+  return 0;
 }
 
 export async function checkRoleNameExists(
-  name: string,
-  scope: RoleScope,
-  accountId?: string | null,
-  excludeRoleId?: string
+  _name: string,
+  _scope: RoleScope,
+  _accountId?: string | null,
+  _excludeRoleId?: string
 ): Promise<boolean> {
-  let query = supabase
-    .from('roles')
-    .select('id')
-    .eq('name', name)
-    .eq('scope', scope);
-
-  if (scope === 'account') {
-    query = query.eq('account_id', accountId);
-  } else {
-    query = query.is('account_id', null);
-  }
-
-  if (excludeRoleId) {
-    query = query.neq('id', excludeRoleId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error checking role name:', error);
-    return false;
-  }
-
-  return (data && data.length > 0) || false;
+  // TODO: Implement backend endpoint for role name check
+  return false;
 }
 
 export const DEFAULT_PERMISSIONS: RolePermissions = {
