@@ -6,6 +6,7 @@ export interface RegisterRequest {
   email: string;
   companyName: string;
   password: string;
+  betaCode?: string;
 }
 
 export interface LoginRequest {
@@ -58,6 +59,7 @@ export interface User {
   };
   createdAt: string;
   updatedAt: string;
+  is_beta_user?: boolean;
   user_metadata?: {
     organization_id?: string | number;
     [key: string]: any;

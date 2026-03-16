@@ -21,6 +21,12 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
   } catch (error: any) {
     console.error('Registration error in saga:', error);
     const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
+    
+    if (errorMessage === 'INVALID_BETA_CODE') {
+      window.location.href = '/billing';
+      return;
+    }
+    
     yield put(registerFailure(errorMessage));
   }
 }

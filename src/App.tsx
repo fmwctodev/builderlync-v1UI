@@ -24,6 +24,8 @@ import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
 import PitchTool from './modules/roof-runner/pages/PitchTool';
 
+import PublicBilling from './modules/roof-runner/pages/PublicBilling';
+
 function App() {
   const { user, token } = useAppSelector((state) => state.auth);
 
@@ -42,6 +44,7 @@ function App() {
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <IncomingCallNotification />
             <Routes>
+              <Route path="/billing" element={<PublicBilling />} />
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
               <Route path="/pitch" element={<PitchTool />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
