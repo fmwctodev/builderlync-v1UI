@@ -41,10 +41,10 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
     setSending(true);
     setError(null);
     setShowSmtpError(false);
-    
+
     try {
       await smtpApi.sendEmailMessage(contactId, subject, message);
-      
+
       // Clear form
       setMessage('');
       setSubject('');
@@ -129,7 +129,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
           </div>
         </div>
       )}
-      
+
       {/* General Error Alert */}
       {error && !showSmtpError && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -150,7 +150,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To:</label>
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             {!showCc && (
               <button
                 onClick={() => setShowCc(true)}
@@ -167,7 +167,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
                 BCC
               </button>
             )}
-          </div>
+          </div> */}
         </div>
         <div className="flex items-center space-x-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
           {contactEmail && (
@@ -187,7 +187,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
       </div>
 
       {/* CC Field */}
-      {showCc && (
+      {/* {showCc && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CC:</label>
           <div className="flex flex-wrap gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
@@ -213,10 +213,10 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
             />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* BCC Field */}
-      {showBcc && (
+      {/* {showBcc && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">BCC:</label>
           <div className="flex flex-wrap gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
@@ -242,7 +242,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
             />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Subject Field */}
       <div>
@@ -272,14 +272,14 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
       <div className="flex items-center justify-between">
         {/* Left: Action Buttons */}
         <div className="flex items-center space-x-2">
-          <button 
+          <button
             onClick={() => setShowSnippetSelector(true)}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" 
+            className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             title="Insert snippet"
           >
             <FileText className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Text formatting">
+          {/* <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Text formatting">
             <Type className="w-5 h-5" />
           </button>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert link">
@@ -299,7 +299,7 @@ export function MessageInputEmail({ conversationId, contactEmail, contactName, c
           </button>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="More options">
             <Plus className="w-5 h-5" />
-          </button>
+          </button> */}
         </div>
 
         {/* Right: Word Counter and Actions */}

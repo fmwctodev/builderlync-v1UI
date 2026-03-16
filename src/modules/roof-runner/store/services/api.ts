@@ -24,6 +24,11 @@ export const apiService = {
     return response.data;
   },
 
+  getJob: async (id: number | string) => {
+    const response = await apiClient.get(`/jobs/${id}`);
+    return response.data;
+  },
+
   getOpportunities: async () => {
     const response = await apiClient.get('/opportunities');
     return response.data;
@@ -121,6 +126,11 @@ export const apiService = {
     return response.data;
   },
 
+  updateInstantEstimatorContactSettings: async (id: number, contactSettings: any) => {
+    const response = await apiClient.put(`/instant-estimators/${id}/contact-settings`, contactSettings);
+    return response.data;
+  },
+
   updateInstantEstimator: async (id: number, data: any) => {
     const response = await apiClient.put(`/instant-estimators/${id}`, data);
     return response.data;
@@ -206,6 +216,11 @@ export const apiService = {
   // Proposal Templates
   getProposalTemplates: async () => {
     const response = await apiClient.get('/templates');
+    return response.data;
+  },
+
+  updateLead: async (leadId: string, updates: any) => {
+    const response = await apiClient.put(`/instant-estimators/leads/${leadId}`, updates);
     return response.data;
   }
 };

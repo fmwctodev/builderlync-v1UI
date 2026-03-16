@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Globe, Search, Library, HelpCircle, Table, Trash2, File, Link } from 'lucide-react';
+import { Globe, Library, HelpCircle, Table, Trash2, File, Link } from 'lucide-react';
 import { useAppSelector } from '../../roof-runner/store/hooks';
 import { ImportFromUrlModal } from './ImportFromUrlModal';
 import { UploadFilesModal } from './UploadFilesModal';
@@ -67,6 +67,11 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
   };
 
   useEffect(() => {
+    setQaPairs([]);
+    setArticles([]);
+    setTables([]);
+    setDocuments([]);
+    setScrapedWebsites([]);
     fetchKnowledgeBaseData();
   }, [orgId, agentId]);
 

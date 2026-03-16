@@ -10,13 +10,13 @@ import {
   checkTwilioIntegration,
   type PhoneNumber,
 } from '../services/phoneNumbersService';
-import { elevenlabsApi } from '../services/elevenlabsApi';
 
 interface PhoneNumbersSectionProps {
   organizationId: string;
+  agentId?: string;
 }
 
-export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps) {
+export function PhoneNumbersSection({ organizationId, agentId }: PhoneNumbersSectionProps) {
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -30,7 +30,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   useEffect(() => {
     loadPhoneNumbers();
     checkIntegration();
-  }, [organizationId]);
+  }, [organizationId, agentId]);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const orgSlug = user.companySlug || 'default';
@@ -38,7 +38,12 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   const loadPhoneNumbers = async () => {
     setLoading(true);
     try {
-      const data = await fetchOrganizationPhoneNumbers(organizationId);
+      let data = await fetchOrganizationPhoneNumbers(organizationId);
+
+      if (agentId) {
+        data = data.filter(num => num.assigned_agent_id === agentId || (num.assigned_agent && num.assigned_agent.id === agentId));
+      }
+
       setPhoneNumbers(data);
     } catch (err) {
       console.error('Error loading phone numbers:', err);

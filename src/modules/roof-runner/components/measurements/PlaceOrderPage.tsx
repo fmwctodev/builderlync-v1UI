@@ -8,6 +8,8 @@ import { BuyCreditsModal } from './BuyCreditsModal';
 interface PlaceOrderPageProps {
   onOrderComplete: (orderData: any) => void;
   onBack: () => void;
+  initialJobId?: string;
+  initialAddress?: string;
 }
 
 const MEASUREMENT_INSTRUCTIONS_MAP: Record<number, string> = {
@@ -18,7 +20,12 @@ const MEASUREMENT_INSTRUCTIONS_MAP: Record<number, string> = {
   5: 'Other',
 };
 
-const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack }) => {
+const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({
+  onOrderComplete,
+  onBack,
+  initialJobId,
+  initialAddress
+}) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams();
   const [step, setStep] = useState<'payment-method' | 'product-selection' | 'options-selection' | 'breakdown'>('payment-method');
@@ -33,8 +40,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
   const [productsLoading, setProductsLoading] = useState(false);
 
   // Order Data State
-  const [address, setAddress] = useState('');
-  const [buildingId, setBuildingId] = useState('');
+  const [address, setAddress] = useState(initialAddress || '');
+  const [buildingId, setBuildingId] = useState(initialAddress || '');
   const [addressComponents, setAddressComponents] = useState<any>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'credits' | 'account' | null>(null);
@@ -310,6 +317,7 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
               onAddressSelect={handleAddressSelect}
               buildingId={buildingId || address}
               setBuildingId={setBuildingId}
+              initialAddress={initialAddress}
             />
           </div>
 
@@ -913,7 +921,8 @@ const PlaceOrderPage: React.FC<PlaceOrderPageProps> = ({ onOrderComplete, onBack
                     promoCode: promoCode.trim() || undefined,
                     placeOrderUser: 'BuilderLync User',
                     paymentMethod: paymentMethod,
-                    credits: totalCredits
+                    credits: totalCredits,
+                    referenceId: initialJobId || undefined
                   };
 
                   const submissionResult = await eagleViewService.submitOrder(orderData as any);

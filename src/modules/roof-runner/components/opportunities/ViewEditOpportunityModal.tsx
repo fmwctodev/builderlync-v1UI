@@ -48,7 +48,7 @@ export default function ViewEditOpportunityModal({
     pipeline_id: '',
     stage_id: '',
     status: 'open',
-    value: 0,
+    value: undefined,
     owner_id: undefined,
     business_name: '',
     source: '',
@@ -100,7 +100,9 @@ export default function ViewEditOpportunityModal({
         business_name: data.business_name || '',
         source: data.source || '',
         tags: data.tags || [],
-        appointment_time: data.appointment_time || '',
+        appointment_time: data.appointment_time
+          ? new Date(new Date(data.appointment_time).getTime() - new Date(data.appointment_time).getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+          : '',
         contact_name: primaryContact?.contact_name || '',
         contact_email: primaryContact?.contact_email || '',
         contact_phone: primaryContact?.contact_phone || '',
@@ -135,11 +137,11 @@ export default function ViewEditOpportunityModal({
     }
   };
 
-  const selectedPipeline = pipelines.find(p => p.id === formData.pipeline_id);
+  const selectedPipeline = pipelines.find(p => String(p.id) === String(formData.pipeline_id));
   const stages = selectedPipeline?.stages || [];
 
   const handlePipelineChange = (pipeline_id: string) => {
-    const pipeline = pipelines.find(p => p.id === pipeline_id);
+    const pipeline = pipelines.find(p => String(p.id) === String(pipeline_id));
     setFormData(prev => ({
       ...prev,
       pipeline_id,
@@ -186,7 +188,7 @@ export default function ViewEditOpportunityModal({
         pipeline_id: '',
         stage_id: '',
         status: 'open',
-        value: 0,
+        value: undefined,
         owner_id: undefined,
         business_name: '',
         source: '',
@@ -244,7 +246,7 @@ export default function ViewEditOpportunityModal({
       pipeline_id: '',
       stage_id: '',
       status: 'open',
-      value: 0,
+      value: undefined,
       owner_id: undefined,
       business_name: '',
       source: '',
@@ -530,8 +532,11 @@ export default function ViewEditOpportunityModal({
                             <span className="absolute left-3 top-2 text-gray-500">$</span>
                             <input
                               type="number"
-                              value={formData.value}
-                              onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                              value={formData.value ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData({ ...formData, value: val === '' ? undefined : parseFloat(val) });
+                              }}
                               className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             />
                           </div>
@@ -616,6 +621,7 @@ export default function ViewEditOpportunityModal({
                         <input
                           type="datetime-local"
                           value={formData.appointment_time}
+                          min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                           onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />

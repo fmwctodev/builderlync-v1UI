@@ -9,6 +9,7 @@ interface StaffMember {
   email: string;
   phone: string;
   countryCode: string;
+  extension?: string;
   password?: string;
   profileImage?: string;
   image?: File;
@@ -129,7 +130,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   const isFormValid = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{6,15}$/;
-    
+
     return (
       formData.firstName.trim() !== '' &&
       formData.lastName.trim() !== '' &&
@@ -322,11 +323,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             <Trash2 size={24} className="text-red-600 dark:text-red-400" />
           </div>
         </div>
-        
+
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
           Delete Member
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
           Are you sure you want to delete <strong>{memberName}</strong>? This action cannot be undone.
         </p>

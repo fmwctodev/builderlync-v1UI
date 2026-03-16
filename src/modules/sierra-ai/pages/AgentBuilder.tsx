@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -7,7 +7,6 @@ import {
   Globe,
   Settings,
   Zap,
-  Shield,
   Play,
   Pause,
   ArrowLeft,
@@ -17,8 +16,6 @@ import {
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { fetchAgentById, updateAgent, updateAgentStatus, AIAgent, VoiceConfig, LanguageConfig, SystemTool, DEFAULT_SYSTEM_TOOLS, SecurityOverrides, WebhookConfig, DEFAULT_SECURITY_OVERRIDES, DEFAULT_WEBHOOK_CONFIG } from '../services/agentsApi';
 import { SystemPromptSection } from '../components/SystemPromptSection';
-import { VoicesSection } from '../components/VoicesSection';
-import { LanguageSection } from '../components/LanguageSection';
 import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
@@ -33,7 +30,7 @@ type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'knowledge-base' | 'voi
 export function AgentBuilder() {
   const { agentId } = useParams();
   const navigate = useNavigate();
-  const { currentOrganizationSlug, currentOrganization } = useCurrentOrganization();
+  const { currentOrganization } = useCurrentOrganization();
   const [activeTab, setActiveTab] = useState<BuilderTab>('overview');
   const [agent, setAgent] = useState<AIAgent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -467,9 +464,9 @@ export function AgentBuilder() {
           </div>
         )}
 
-        {activeTab === 'voice-sms' && user?.id && (
+        {activeTab === 'voice-sms' && user?.id && agentId && (
           <div className="max-w-7xl">
-            <PhoneNumbersSection organizationId={String(user.id)} />
+            <PhoneNumbersSection organizationId={String(user.id)} agentId={agentId} />
           </div>
         )}
 

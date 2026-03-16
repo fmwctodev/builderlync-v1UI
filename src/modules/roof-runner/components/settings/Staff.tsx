@@ -33,7 +33,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
       const { getStaff } = await import('../../../../shared/store/services/staffApi');
       const response = await getStaff(page, 10);
       console.log('Fetch Staff Response:', response);
-      
+
       if (response.success) {
         setStaff(response.data || []);
         setCurrentPage(response.pagination?.page || page);
@@ -76,6 +76,12 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
   const handleEditMember = async (member: any) => {
     try {
+      // Parse phone number to extract country code
+      const phoneStr = member.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const { updateStaff } = await import('../../../../shared/store/services/staffApi');
       const updateResponse = await updateStaff(selectedMember.id, {
         firstName: member.firstName,
@@ -101,42 +107,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         }
       }
 
-      try {
-        const { getContacts, updateContact, createContact } = await import('../../../../shared/store/services/contactsApi');
-        const contactsResponse = await getContacts(selectedMember.email, 'staff', 1, 10);
-
-        if (contactsResponse.data?.data && contactsResponse.data.data.length > 0) {
-          const existingContact = contactsResponse.data.data[0];
-          await updateContact(existingContact.id, {
-            fullName: `${member.firstName} ${member.lastName}`,
-            type: 'staff',
-            labelOrRole: 'Staff Member',
-            email: member.email,
-            phone: member.phone || '',
-            company: existingContact.company || '',
-            address: existingContact.address || '',
-            latitude: existingContact.latitude || 0,
-            longitude: existingContact.longitude || 0
-          });
-          setToast({ message: 'Staff member and contact updated successfully!', type: 'success' });
-        } else {
-          await createContact({
-            fullName: `${member.firstName} ${member.lastName}`,
-            type: 'staff',
-            labelOrRole: 'Staff Member',
-            email: member.email,
-            phone: member.phone || '',
-            company: '',
-            address: '',
-            latitude: 0,
-            longitude: 0
-          });
-          setToast({ message: 'Staff member updated and contact created successfully!', type: 'success' });
-        }
-      } catch (contactError: any) {
-        console.error('Error updating contact for staff member:', contactError);
-        setToast({ message: 'Staff member updated but contact sync failed', type: 'success' });
-      }
+      setToast({ message: 'Staff member updated successfully!', type: 'success' });
 
       setShowEditModal(false);
       setSelectedMember(null);
@@ -458,8 +429,10 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
           lastName: selectedMember.last_name,
           email: selectedMember.email,
           phone: selectedMember.phone,
+          countryCode: selectedMember.country_code,
           extension: selectedMember.extension,
           profileImage: selectedMember.image,
+          roleId: selectedMember.role_id
           countryCode: selectedMember.country_code || '+1',
           roleId: selectedMember.role_id || selectedMember.role?.id || '',
         } : undefined}

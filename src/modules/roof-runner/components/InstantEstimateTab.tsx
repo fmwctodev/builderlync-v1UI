@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Settings, Edit, Copy, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Plus, X, Settings, Edit, Copy, Trash2, ChevronLeft, ChevronRight, MapPin, Ruler, Home, Layers, Calendar, DollarSign, Info, Save } from 'lucide-react';
 import { apiService } from '../store/services/api';
 import type { InstantEstimator } from '../types';
+import InstantEstimatorManageModal from './InstantEstimatorManageModal';
 import Toast from '../../../shared/components/Toast';
 
 interface InstantEstimateTabProps {
@@ -11,8 +11,6 @@ interface InstantEstimateTabProps {
 }
 
 const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddress }) => {
-  const navigate = useNavigate();
-  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [activeTab, setActiveTab] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -27,9 +25,14 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
   const limit = 10;
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [manageEstimatorId, setManageEstimatorId] = useState<number | null>(null);
   const [estimatorToDelete, setEstimatorToDelete] = useState<number | null>(null);
   const [materialTemplates, setMaterialTemplates] = useState([]);
   const [businessProfile, setBusinessProfile] = useState<{ friendly_business_name: string; business_logo: string | null } | null>(null);
+  const [linkedEstimatorId, setLinkedEstimatorId] = useState<number | null>(null);
+  const [linkedEstimator, setLinkedEstimator] = useState<InstantEstimator | null>(null);
+  const [loadingLinked, setLoadingLinked] = useState(false);
   const [showMaterialTemplateModal, setShowMaterialTemplateModal] = useState(false);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
@@ -41,6 +44,10 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
     flat: '',
     multiStorySurcharge: ''
   });
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [leadData, setLeadData] = useState<any>(null);
+  const [loadingLead, setLoadingLead] = useState(false);
+  const [isEditingLead, setIsEditingLead] = useState(false);
 
   // TODO: Use jobId and jobAddress for instant estimate functionality
   useEffect(() => {
@@ -48,12 +55,94 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
   }, [jobId, jobAddress]);
 
   useEffect(() => {
-    fetchEstimators();
+    fetchJobDetails();
+  }, [jobId]);
+
+  useEffect(() => {
+    if (linkedEstimatorId) {
+      fetchLinkedEstimator();
+    } else {
+      fetchEstimators();
+    }
+
     if (activeTab === 'settings') {
       fetchBusinessProfile();
       fetchMaterialTemplates();
     }
-  }, [currentPage, activeTab]);
+  }, [currentPage, activeTab, linkedEstimatorId]);
+
+  const fetchJobDetails = async () => {
+    try {
+      console.log('Fetching job details for jobId:', jobId);
+      const response = await apiService.getJob(jobId);
+      const job = response?.data || response;
+      console.log('Fetched job data:', job);
+
+      if (job?.instant_estimate_id || job?.instantEstimateId) {
+        setLinkedEstimatorId(job.instant_estimate_id || job.instantEstimateId);
+      } else {
+        setLinkedEstimatorId(null);
+      }
+
+      if (job?.instant_estimator_lead_id || job?.instantEstimatorLeadId) {
+        const id = job.instant_estimator_lead_id || job.instantEstimatorLeadId;
+        console.log('Found lead link, leadId:', id);
+        setLeadId(id);
+        fetchLeadDetails(id);
+      } else {
+        setLeadId(null);
+        setLeadData(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch job details:', error);
+    }
+  };
+
+  const fetchLinkedEstimator = async () => {
+    if (!linkedEstimatorId) return;
+    try {
+      setLoadingLinked(true);
+      const response = await apiService.getInstantEstimator(linkedEstimatorId);
+      setLinkedEstimator(response.data || response);
+    } catch (error) {
+      console.error('Failed to fetch linked estimator:', error);
+    } finally {
+      setLoadingLinked(false);
+    }
+  };
+
+  const fetchLeadDetails = async (id: string) => {
+    try {
+      console.log('Fetching lead details for leadId:', id);
+      setLoadingLead(true);
+      const response = await apiService.getGeneratedEstimate(id);
+      console.log('Fetched lead details response:', response);
+      setLeadData(response?.data || response);
+    } catch (error) {
+      console.error('Failed to fetch lead details:', error);
+    } finally {
+      setLoadingLead(false);
+    }
+  };
+
+  const handleSaveLead = async () => {
+    if (!leadId || !leadData) return;
+    try {
+      setLoadingLead(true);
+      await apiService.updateLead(leadId, {
+        project_details: leadData.estimate.project_details,
+        calculations: leadData.estimate.calculations
+      });
+      setToast({ message: 'Estimate details updated successfully', type: 'success' });
+      setIsEditingLead(false);
+      fetchLeadDetails(leadId);
+    } catch (error) {
+      console.error('Failed to update lead:', error);
+      setToast({ message: 'Failed to update estimate details', type: 'error' });
+    } finally {
+      setLoadingLead(false);
+    }
+  };
 
   const fetchBusinessProfile = async () => {
     try {
@@ -181,13 +270,15 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 flex-shrink-0">
         <div className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instant Estimator</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center space-x-2 bg-[#dc2626] hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Instant Estimator</span>
-          </button>
+          {!linkedEstimatorId && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center space-x-2 bg-[#dc2626] hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Instant Estimator</span>
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -201,130 +292,393 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
           >
             All Instant Estimators
           </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`px-6 py-3 font-medium transition-all ${activeTab === 'settings'
-              ? 'bg-primary-600 text-white rounded-t-lg'
-              : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-              }`}
-          >
-            Settings
-          </button>
+          {!linkedEstimatorId && (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-6 py-3 font-medium transition-all ${activeTab === 'settings'
+                ? 'bg-primary-600 text-white rounded-t-lg'
+                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
+            >
+              Settings
+            </button>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 p-6">
         {activeTab === 'all' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : estimators.length === 0 ? (
-                    <tr>
-                      <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No instant estimators found
-                      </td>
-                    </tr>
-                  ) : Array.isArray(estimators) && estimators.length > 0 ? (
-                    estimators.map((estimator) => (
-                      <tr key={estimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+          <div className="space-y-6">
+            {loadingLead ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400 font-medium">Loading estimate summary...</p>
+              </div>
+            ) : leadId ? (
+              leadData ? (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Info className="w-5 h-5 text-red-600" />
+                        Instant Estimate Summary
+                      </h2>
+                      {!isEditingLead ? (
+                        <button
+                          onClick={() => setIsEditingLead(true)}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-all font-medium"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit Details
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-3">
                           <button
-                            onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
-                            className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
+                            onClick={() => setIsEditingLead(false)}
+                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
                           >
-                            {estimator.name}
+                            Cancel
                           </button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => navigate(`/org/${orgSlug}/instant-estimator/${estimator.id}/manage`)}
-                              className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                            >
-                              <Settings className="w-3 h-3" />
-                              <span>Manage</span>
-                            </button>
-                            <button
-                              onClick={() => openRenameModal(estimator)}
-                              className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                            >
-                              <Edit className="w-3 h-3" />
-                              <span>Rename</span>
-                            </button>
-                            <button
-                              onClick={() => handleDuplicate(estimator.id)}
-                              className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                            >
-                              <Copy className="w-3 h-3" />
-                              <span>Duplicate</span>
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(estimator.id)}
-                              className="flex items-center space-x-1 px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No instant estimators found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          <button
+                            onClick={handleSaveLead}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all font-medium shadow-sm"
+                          >
+                            <Save className="w-4 h-4" />
+                            Save Changes
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, total)} of {total} results
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                      {/* Visual Section - Maps & Stats */}
+                      <div className="lg:col-span-3 space-y-6">
+                        {/* Property Image Overlay */}
+                        <div className="relative rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 group h-[300px]">
+                          {leadData?.estimate?.calculations?.screenshotUrl ? (
+                            <img
+                              src={leadData.estimate.calculations.screenshotUrl}
+                              alt="Property aerial view"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 dark:bg-gray-700/50 flex flex-col items-center justify-center text-gray-400 italic">
+                              <MapPin className="w-12 h-12 mb-2 opacity-20" />
+                              <p>No aerial view available</p>
+                            </div>
+                          )}
+                          <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Property Location</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[300px]">{leadData?.estimate?.customer_info?.address}</p>
+                          </div>
+                        </div>
+
+                        {/* Project Detail Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8 pt-4">
+                          {[
+                            { label: 'Building Type', key: 'buildingType', icon: <Home className="w-4 h-4" /> },
+                            { label: 'Stories', key: 'stories', icon: <Layers className="w-4 h-4" /> },
+                            { label: 'Current Roof', key: 'currentRoof', icon: <Info className="w-4 h-4" /> },
+                            { label: 'Age of roof', key: 'ageOfRoof', icon: <Calendar className="w-4 h-4" /> },
+                            { label: 'Leaks/Damages', key: 'leaksDamages', icon: <Info className="w-4 h-4" /> },
+                            { label: 'Insurance Claim', key: 'insuranceClaim', icon: <Info className="w-4 h-4" /> },
+                            { label: 'Desired material', key: 'desiredRoof', icon: <Info className="w-4 h-4" /> },
+                            { label: 'Solar', key: 'solar', icon: <Info className="w-4 h-4" /> },
+                            { label: 'Timeline', key: 'timeline', icon: <Calendar className="w-4 h-4" /> },
+                            { label: 'Financing', key: 'financing', icon: <DollarSign className="w-4 h-4" /> },
+                            { label: 'Lead Source', key: 'leadSource', icon: <Info className="w-4 h-4" /> },
+                          ].map((item) => (
+                            <div key={item.label} className="flex flex-col space-y-1">
+                              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                {item.icon}
+                                {item.label}
+                              </span>
+                              {isEditingLead ? (
+                                <input
+                                  type="text"
+                                  value={leadData?.estimate?.project_details?.[item.key] || '-'}
+                                  onChange={(e) => setLeadData({
+                                    ...leadData,
+                                    estimate: {
+                                      ...leadData?.estimate,
+                                      project_details: {
+                                        ...leadData?.estimate?.project_details,
+                                        [item.key]: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                                />
+                              ) : (
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {leadData?.estimate?.project_details?.[item.key] || '-'}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Notes Section */}
+                        <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2">Customer Note</span>
+                          {isEditingLead ? (
+                            <textarea
+                              value={leadData?.estimate?.project_details?.projectDetails || ''}
+                              onChange={(e) => setLeadData({
+                                ...leadData,
+                                estimate: {
+                                  ...leadData?.estimate,
+                                  project_details: {
+                                    ...leadData?.estimate?.project_details,
+                                    projectDetails: e.target.value
+                                  }
+                                }
+                              })}
+                              rows={3}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                              placeholder="Add customer requirements or notes..."
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl border border-gray-100 dark:border-gray-800 italic">
+                              "{leadData?.estimate?.project_details?.projectDetails || 'No specific requirements provided.'}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sidebar Stats */}
+                      <div className="lg:col-span-1 space-y-6">
+                        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                          <div className="flex items-center gap-2 mb-6">
+                            <Ruler className="w-4 h-4 text-red-600" />
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Total roof size</h3>
+                          </div>
+
+                          <div className="space-y-6">
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Footprint (sqft)</p>
+                              {isEditingLead ? (
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    value={leadData?.estimate?.calculations?.roofArea || 0}
+                                    onChange={(e) => setLeadData({
+                                      ...leadData,
+                                      estimate: {
+                                        ...leadData?.estimate,
+                                        calculations: {
+                                          ...leadData?.estimate?.calculations,
+                                          roofArea: Number(e.target.value)
+                                        }
+                                      }
+                                    })}
+                                    className="w-full px-2 py-1 text-base font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                                  />
+                                  <span className="absolute right-2 top-1.5 text-xs text-gray-400">SqFt</span>
+                                </div>
+                              ) : (
+                                <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                  {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
+                                  <span className="text-sm font-normal text-gray-400 ml-1">SqFt</span>
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Pitch</p>
+                              <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
+                                {leadData?.estimate?.project_details?.roofSteepness || 'N/A'}
+                              </p>
+                            </div>
+
+                            <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Adjusted footprint (sqft)</p>
+                              <p className="text-lg font-bold text-gray-400 dark:text-gray-600">
+                                {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Material Card */}
+                        <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-6 border border-red-100 dark:border-red-900/20">
+                          <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Target Price Estimate</p>
+                          <p className="text-3xl font-black text-red-600 dark:text-red-500">
+                            ${leadData?.estimate?.calculations?.basePrice?.toLocaleString() || '0'}
+                          </p>
+                          <div className="mt-4 pt-4 border-t border-red-200/50 dark:border-red-900/30">
+                            <p className="text-xs text-red-800 dark:text-red-300 font-medium">{leadData?.estimate?.project_details?.desiredRoof} Material</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <Info className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">Linked to estimate lead #{leadId}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">But could not load the specific estimate details.</p>
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => fetchLeadDetails(leadId!)}
+                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
-                  </button>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    Retry Loading
                   </button>
                 </div>
+              )
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {loading || loadingLinked ? (
+                        <tr>
+                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            Loading...
+                          </td>
+                        </tr>
+                      ) : linkedEstimatorId && linkedEstimator ? (
+                        <tr key={linkedEstimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            <div className="flex flex-col">
+                              <button
+                                onClick={() => {
+                                  setManageEstimatorId(linkedEstimator.id);
+                                  setShowManageModal(true);
+                                }}
+                                className="text-left font-semibold text-primary-600 dark:text-blue-400 hover:underline"
+                              >
+                                {linkedEstimator.name}
+                              </button>
+                              <span className="text-xs text-gray-500 mt-1">This job was created from this estimator.</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  setManageEstimatorId(linkedEstimator.id);
+                                  setShowManageModal(true);
+                                }}
+                                className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-primary-100 text-primary-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-primary-200 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                              >
+                                <Settings className="w-4 h-4" />
+                                <span>Manage Configuration</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : estimators.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            No instant estimators found
+                          </td>
+                        </tr>
+                      ) : Array.isArray(estimators) && estimators.length > 0 ? (
+                        estimators.map((estimator) => (
+                          <tr key={estimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                              <button
+                                onClick={() => {
+                                  setManageEstimatorId(estimator.id);
+                                  setShowManageModal(true);
+                                }}
+                                className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
+                              >
+                                {estimator.name}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setManageEstimatorId(estimator.id);
+                                    setShowManageModal(true);
+                                  }}
+                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                >
+                                  <Settings className="w-3 h-3" />
+                                  <span>Manage</span>
+                                </button>
+                                <button
+                                  onClick={() => openRenameModal(estimator)}
+                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  <span>Rename</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDuplicate(estimator.id)}
+                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  <span>Duplicate</span>
+                                </button>
+                                <button
+                                  onClick={() => openDeleteModal(estimator.id)}
+                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            No instant estimators found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, total)} of {total} results
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -812,6 +1166,19 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
             </div>
           </div>
         </div>
+      )}
+
+      {/* Manage Modal */}
+      {showManageModal && manageEstimatorId && (
+        <InstantEstimatorManageModal
+          isOpen={showManageModal}
+          onClose={() => {
+            setShowManageModal(false);
+            setManageEstimatorId(null);
+          }}
+          estimatorId={manageEstimatorId}
+          onSaved={fetchEstimators}
+        />
       )}
 
       {toast && (

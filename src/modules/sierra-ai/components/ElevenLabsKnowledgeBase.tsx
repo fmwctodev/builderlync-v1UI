@@ -11,6 +11,7 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setItems([]);
     loadKnowledgeBase();
   }, [agentId]);
 
