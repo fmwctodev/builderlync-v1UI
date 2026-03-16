@@ -13,7 +13,8 @@ export const setupGlobalInterceptors = () => {
             if (error.response?.status === 403) {
                 // Special check to avoid logout on login attempts that fail with 401
                 const isLoginPath = error.config?.url?.includes('/auth/login');
-                if (!isLoginPath) {
+                const isAdminPath = error.config?.url?.includes('/super-admin');
+                if (!isLoginPath && !isAdminPath) {
                     logoutAndRedirect();
                 }
             }
@@ -28,8 +29,8 @@ export const setupGlobalInterceptors = () => {
 
         if (response.status === 403) {
             const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
-            // Don't logout on login failures
-            if (!url.includes('/auth/login')) {
+            // Don't logout on login failures or super-admin requests
+            if (!url.includes('/auth/login') && !url.includes('/super-admin')) {
                 logoutAndRedirect();
             }
         }
