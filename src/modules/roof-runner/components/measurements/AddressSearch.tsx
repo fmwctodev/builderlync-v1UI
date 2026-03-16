@@ -11,12 +11,18 @@ interface AddressSearchProps {
   onAddressSelect: (address: string, addressComponents?: any) => void;
   buildingId: string;
   setBuildingId: React.Dispatch<React.SetStateAction<string>>;
+  initialAddress?: string;
 }
 
-const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, buildingId, setBuildingId }) => {
+const AddressSearch: React.FC<AddressSearchProps> = ({
+  onAddressSelect,
+  buildingId,
+  setBuildingId,
+  initialAddress
+}) => {
   const [country, setCountry] = useState('United States');
-  const [address, setAddress] = useState('');
-  const [isAddressSelected, setIsAddressSelected] = useState(false);
+  const [address, setAddress] = useState(initialAddress || '');
+  const [isAddressSelected, setIsAddressSelected] = useState(!!initialAddress);
   const [showAlert, setShowAlert] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [map, setMap] = useState<any>(null);

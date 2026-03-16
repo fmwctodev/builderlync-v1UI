@@ -13,6 +13,7 @@ export interface CreateContactRequest {
   latitude?: number;
   longitude?: number;
   conatct_id?: number;
+  timezone?: string;
 }
 
 export interface Contact {
@@ -27,6 +28,7 @@ export interface Contact {
   address: string;
   latitude: number;
   longitude: number;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
   createdBy: number;

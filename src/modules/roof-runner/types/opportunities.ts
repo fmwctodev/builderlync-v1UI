@@ -86,7 +86,7 @@ export interface OpportunityFormData {
   pipeline_id: string;
   stage_id: string;
   status: OpportunityStatus;
-  value: number;
+  value?: number;
   owner_id?: string;
   business_name?: string;
   source?: string;

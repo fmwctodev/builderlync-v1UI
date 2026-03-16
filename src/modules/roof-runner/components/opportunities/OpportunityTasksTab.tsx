@@ -210,6 +210,7 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
               <input
                 type="date"
                 value={formData.due_date}
+                min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
@@ -268,8 +269,8 @@ export default function OpportunityTasksTab({ opportunityId }: OpportunityTasksT
                   <div className="flex items-center space-x-2 mb-1">
                     <h4
                       className={`text-base font-medium ${task.status === 'completed'
-                          ? 'line-through text-gray-500 dark:text-gray-500'
-                          : 'text-gray-900 dark:text-white'
+                        ? 'line-through text-gray-500 dark:text-gray-500'
+                        : 'text-gray-900 dark:text-white'
                         }`}
                     >
                       {task.title}

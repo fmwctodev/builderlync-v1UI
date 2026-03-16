@@ -75,6 +75,8 @@ export interface Job {
   attachments_id?: number[] | null;
   instantEstimateId: number | null;
   instant_estimate_id?: number | null;
+  instantEstimatorLeadId?: string | null;
+  instant_estimator_lead_id?: string | null;
   integrationsId: number | null;
   integrations_id?: number | null;
   createdAt: string;
@@ -165,6 +167,7 @@ class JobsApiService {
     jobType?: string;
     workflowStage?: string;
     status?: string;
+    source?: string;
     search?: string;
     sortBy?: string;
     assignees?: number[];
@@ -183,6 +186,9 @@ class JobsApiService {
     }
     if (filters?.workflowStage) {
       params.append('workflowStage', filters.workflowStage);
+    }
+    if (filters?.source) {
+      params.append('source', filters.source);
     }
     if (filters?.status) {
       params.append('status', filters.status);

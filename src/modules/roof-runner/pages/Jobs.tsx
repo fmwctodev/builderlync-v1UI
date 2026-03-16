@@ -113,7 +113,8 @@ const Jobs: React.FC = () => {
       setLoading(true);
 
       const filters = {
-        jobType: selectedJobType !== 'all' ? selectedJobType : undefined,
+        jobType: (selectedJobType !== 'all' && selectedJobType !== 'instant-estimator') ? selectedJobType : undefined,
+        source: selectedJobType === 'instant-estimator' ? 'Instant Estimator' : undefined,
         search: searchQuery || undefined,
         sortBy: advancedFilters.sortBy,
         assignees: advancedFilters.assignees.length > 0 ? advancedFilters.assignees : undefined,

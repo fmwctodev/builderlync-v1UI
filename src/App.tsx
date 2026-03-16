@@ -22,6 +22,7 @@ import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
 import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
+import ProposalSigningPage from './modules/roof-runner/pages/ProposalSigningPage';
 import PitchTool from './modules/roof-runner/pages/PitchTool';
 
 import PublicBilling from './modules/roof-runner/pages/PublicBilling';
@@ -49,6 +50,8 @@ function App() {
               <Route path="/billing" element={<PublicBilling />} />
               <Route path="/billing/success" element={<PaymentSuccess />} />
               <Route path="/billing/cancel" element={<PaymentCancel />} />
+              <Route path="/proposal/sign" element={<ProposalSigningPage />} />
+              <Route path="/proposal/view" element={<ProposalSigningPage />} />
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
               <Route path="/pitch" element={<PitchTool />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />

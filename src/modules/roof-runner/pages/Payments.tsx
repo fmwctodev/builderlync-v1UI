@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { FileText, FileCheck, CreditCard, Tag, Settings, Link2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { FileText, CreditCard, Tag, Settings, AlertTriangle, ArrowRight } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import InvoicesEstimatesTab from '../components/payments/InvoicesEstimatesTab';
 import DocumentsContractsTab from '../components/payments/DocumentsContractsTab';
 import TransactionsTab from '../components/payments/TransactionsTab';
@@ -10,7 +11,27 @@ import IntegrationsTab from '../components/payments/IntegrationsTab';
 type TabType = 'invoices' | 'documents' | 'transactions' | 'coupons' | 'settings' | 'integrations';
 
 const Payments: React.FC = () => {
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [activeTab, setActiveTab] = useState<TabType>('invoices');
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const showQuickBooksAlert = (activeTab === 'invoices' || activeTab === 'transactions') && !checkingStatus && !isQuickBooksConnected;
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { getQuickBooksStatus } = await import('../../../shared/store/services/quickbooksApi');
+        const response = await getQuickBooksStatus();
+        setIsQuickBooksConnected(response.data.connected);
+      } catch (error) {
+        console.error('Error checking QuickBooks status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
+  }, []);
 
   const tabs = [
     {
@@ -106,6 +127,36 @@ const Payments: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
+        {showQuickBooksAlert && (
+          <div className="p-6 pb-6">
+            <div className="bg-[#1E293B] border border-gray-700 rounded-lg p-0 overflow-hidden shadow-sm">
+              <div className="p-4 bg-[#2C3344] bg-opacity-40 border-b border-gray-700/50 flex items-start gap-4">
+                <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-base font-bold text-yellow-500">
+                    Connect Your QuickBooks Account
+                  </h3>
+                  <p className="text-sm text-yellow-500/80 mt-1">
+                    To sync invoices and payments, you must first connect your QuickBooks account.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[#1E293B] flex flex-col md:flex-row gap-6 md:items-center text-sm text-gray-400">
+                <div className="flex items-center gap-2 text-red-400">
+                  <Settings className="h-4 w-4" />
+                  <span>No QuickBooks account configured</span>
+                  <a
+                    href={`/org/${orgSlug}/settings/integrations`}
+                    className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1"
+                  >
+                    Go to Settings <ArrowRight className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {renderTabContent()}
       </div>
     </div>

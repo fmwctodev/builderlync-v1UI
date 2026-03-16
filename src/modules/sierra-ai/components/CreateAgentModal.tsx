@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Bot, Loader2, Mic } from 'lucide-react';
 import { elevenlabsApi } from '../services/elevenlabsApi';
+import { useAppSelector } from '../../../shared/store/hooks';
 
 interface CreateAgentModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ export function CreateAgentModal({
   onClose,
   onSuccess,
 }: CreateAgentModalProps) {
+  const { user } = useAppSelector((state) => (state as any).auth);
+  const orgId = (user?.organization_id || user?.organizationId || localStorage.getItem('currentOrganizationId') || '').toString();
+
   const [loading, setLoading] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -36,6 +40,17 @@ export function CreateAgentModal({
 
   useEffect(() => {
     if (isOpen) {
+      setFormData({
+        name: '',
+        description: '',
+        agent_type: 'voice',
+        system_prompt: '',
+        first_message: 'Hello! How can I help you today?',
+        voice_id: '',
+        language: 'en',
+        temperature: 0.7,
+        max_tokens: 500,
+      });
       loadVoices();
     }
   }, [isOpen]);
@@ -60,7 +75,10 @@ export function CreateAgentModal({
     setLoading(true);
 
     try {
-      const response = await elevenlabsApi.createAgent(formData);
+      const response = await elevenlabsApi.createAgent({
+        ...formData,
+        organization_id: orgId
+      });
       onSuccess(response.data);
       onClose();
       setFormData({

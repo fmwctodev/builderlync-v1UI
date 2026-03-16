@@ -379,7 +379,7 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
               </div>
 
               {/* Social Media Links */}
-              {brandBoard && (brandBoard.facebook_url || brandBoard.instagram_url || brandBoard.youtube_url || brandBoard.tiktok_url || brandBoard.twitter_url || brandBoard.google_business_url || brandBoard.pinterest_url) && (
+              {estimator.additional_settings?.show_social_media && brandBoard && (brandBoard.facebook_url || brandBoard.instagram_url || brandBoard.youtube_url || brandBoard.tiktok_url || brandBoard.twitter_url || brandBoard.google_business_url || brandBoard.pinterest_url) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 mb-3 text-center">Connect With Us</p>
                   <div className="flex flex-wrap gap-2 justify-center">
