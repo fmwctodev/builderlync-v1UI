@@ -13,5 +13,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth/login" replace />;
   }
 
+  // Check if user is beta or has other access (oversmart user protection)
+  if (user && !user.is_beta_user && !window.location.pathname.includes('/settings/billing')) {
+    // For now, we allow access but this is where the strict redirect would go:
+    // navigate('/org/settings/billing'); 
+  }
+
   return <>{children}</>;
 };

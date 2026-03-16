@@ -14,7 +14,8 @@ const Signup: React.FC = () => {
     email: '',
     companyName: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    betaCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -245,6 +246,28 @@ const Signup: React.FC = () => {
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="betaCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Beta Code
+            </label>
+            <div className="relative">
+              <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                id="betaCode"
+                name="betaCode"
+                type="text"
+                value={formData.betaCode}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
+                style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
+                onFocus={(e) => e.target.style.borderColor = '#dc2626'}
+                onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
+                placeholder="Enter your beta code"
+              />
             </div>
           </div>
 

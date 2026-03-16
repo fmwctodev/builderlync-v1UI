@@ -98,15 +98,6 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         throw new Error(updateResponse.message || 'Failed to update staff member');
       }
 
-      if (member.roleId) {
-        try {
-          const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-          await assignRoleToStaffMember(selectedMember.user_id || selectedMember.id, member.roleId);
-        } catch (roleError: any) {
-          console.error('Error assigning role to staff member:', roleError);
-        }
-      }
-
       setToast({ message: 'Staff member updated successfully!', type: 'success' });
 
       setShowEditModal(false);
