@@ -9,3 +9,4 @@ export { MessageInputInternalComment } from './MessageInputInternalComment';
 export { ChannelTabs } from './ChannelTabs';
 export { default as Modal } from './Modal';
 export { default as ContentModal } from './ContentModal';
+export { SignatureCapture } from './SignatureCapture';

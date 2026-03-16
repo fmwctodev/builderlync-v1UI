@@ -22,6 +22,7 @@ import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
 import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
+import ProposalSigningPage from './modules/roof-runner/pages/ProposalSigningPage';
 import PitchTool from './modules/roof-runner/pages/PitchTool';
 
 function App() {
@@ -42,6 +43,8 @@ function App() {
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <IncomingCallNotification />
             <Routes>
+              <Route path="/proposal/sign" element={<ProposalSigningPage />} />
+              <Route path="/proposal/view" element={<ProposalSigningPage />} />
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
               <Route path="/pitch" element={<PitchTool />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />

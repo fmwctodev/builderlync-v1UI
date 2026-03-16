@@ -9,6 +9,7 @@ interface Proposal {
   time: string;
   amount: string;
   status: string;
+  signatureStatus?: string | null;
   image: string;
 }
 
@@ -23,6 +24,7 @@ interface ProposalsListProps {
   openDropdown: string | null;
   setOpenDropdown: (id: string | null) => void;
   getStatusColor: (status: string) => string;
+  getSignatureStatusColor: (status: string) => string;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onProposalClick: (id: string) => void;
@@ -41,6 +43,7 @@ export default function ProposalsList({
   openDropdown,
   setOpenDropdown,
   getStatusColor,
+  getSignatureStatusColor,
   onDelete,
   onDuplicate,
   onProposalClick,
@@ -188,11 +191,18 @@ export default function ProposalsList({
                     <span>{proposal.time}</span>
                   </div>
 
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-3">
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">{proposal.amount}</span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                      {proposal.status}
-                    </span>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
+                        {proposal.status}
+                      </span>
+                      {proposal.signatureStatus && (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSignatureStatusColor(proposal.signatureStatus)}`}>
+                          {proposal.signatureStatus}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -235,9 +245,16 @@ export default function ProposalsList({
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{proposal.assignedBy}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">{proposal.amount}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                      {proposal.status}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
+                        {proposal.status}
+                      </span>
+                      {proposal.signatureStatus && (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSignatureStatusColor(proposal.signatureStatus)}`}>
+                          {proposal.signatureStatus}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{proposal.time}</td>
                   <td className="px-6 py-4">

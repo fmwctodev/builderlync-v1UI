@@ -51,11 +51,8 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
 
   const handleAddMember = async (member: any) => {
     try {
-      // Parse phone number to extract country code
-      const phoneStr = member.phone || '';
-      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
-      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
-      const phone = phoneStr.replace(countryCode, '');
+      const countryCode = member.countryCode || '+1';
+      const phone = (member.phone || '').replace(/\D/g, '');
 
       const { createStaff } = await import('../../../../shared/store/services/staffApi');
       await createStaff({
@@ -86,21 +83,25 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
       const phone = phoneStr.replace(countryCode, '');
 
       const { updateStaff } = await import('../../../../shared/store/services/staffApi');
-      await updateStaff(selectedMember.id, {
+      const updateResponse = await updateStaff(selectedMember.id, {
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
-        phone: phone,
-        countryCode: countryCode,
+        phone: (member.phone || '').replace(/\D/g, ''),
+        countryCode: member.countryCode || '+1',
         extension: member.extension,
-        password: member.password,
+        role_id: member.roleId || undefined,
         image: member.image
       });
+
+      if (!updateResponse.success) {
+        throw new Error(updateResponse.message || 'Failed to update staff member');
+      }
 
       if (member.roleId) {
         try {
           const { assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-          await assignRoleToStaffMember(selectedMember.id, member.roleId);
+          await assignRoleToStaffMember(selectedMember.user_id || selectedMember.id, member.roleId);
         } catch (roleError: any) {
           console.error('Error assigning role to staff member:', roleError);
         }
@@ -363,13 +364,13 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                               <Trash2 size={16} />
                             </button>
                           )}
-                          {canViewStaff && (
+                          {/* {canViewStaff && (
                             <button
                               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             >
                               <Eye size={16} />
                             </button>
-                          )}
+                          )} */}
                         </div>
                       </td>
                     </tr>
@@ -432,6 +433,8 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
           extension: selectedMember.extension,
           profileImage: selectedMember.image,
           roleId: selectedMember.role_id
+          countryCode: selectedMember.country_code || '+1',
+          roleId: selectedMember.role_id || selectedMember.role?.id || '',
         } : undefined}
         isEdit={true}
       />

@@ -251,6 +251,32 @@ export default function Proposals() {
     }
   };
 
+  const formatSignatureStatus = (status?: string | null) => {
+    if (!status || status === 'not_sent') return null;
+
+    switch (status) {
+      case 'pending_signature': return 'Pending Signature';
+      case 'viewed': return 'Viewed';
+      case 'signed': return 'Signed';
+      case 'declined': return 'Declined';
+      case 'expired': return 'Expired';
+      case 'voided': return 'Voided';
+      default: return status;
+    }
+  };
+
+  const getSignatureStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending Signature': return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300';
+      case 'Viewed': return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'Signed': return 'bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-300';
+      case 'Declined': return 'bg-error-50 text-error-700 dark:bg-error-900/20 dark:text-error-300';
+      case 'Expired': return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300';
+      case 'Voided': return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+      default: return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
   const proposalsList = proposals.map(proposal => ({
     id: String(proposal.id),
     title: proposal.title,
@@ -259,6 +285,7 @@ export default function Proposals() {
     time: formatTimeAgo(proposal.created_at),
     amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
     status: mapStatusToProposalStatus(proposal.status),
+    signatureStatus: formatSignatureStatus(proposal.signature_status),
     image: getCoverImage(proposal.sections)
   }));
 
@@ -306,6 +333,7 @@ export default function Proposals() {
               openDropdown={openDropdown}
               setOpenDropdown={setOpenDropdown}
               getStatusColor={getStatusColor}
+              getSignatureStatusColor={getSignatureStatusColor}
               onDelete={(id) => {
                 setDeletingProposalId(id);
                 setShowDeleteModal(true);

@@ -54,16 +54,21 @@ const withOneSignal = async <T>(
   });
 };
 
+const requestBrowserPermission = async (): Promise<NotificationPermission | "unsupported"> => {
+  if (typeof Notification === "undefined") {
+    return "unsupported";
+  }
+
+  if (Notification.permission === "granted" || Notification.permission === "denied") {
+    return Notification.permission;
+  }
+
+  return await Notification.requestPermission();
+};
+
 const buildOneSignalExternalId = (user: User): string | null => {
   if (!user?.id) return null;
-
-  const orgPart = String(user.organizationId || user.organization_id || user.companySlug || "global")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "_");
-  const userPart = String(user.id).trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
-
-  return `builderlync:${orgPart}:${userPart}`;
+  return String(user.id).trim();
 };
 
 export const oneSignalService = {
@@ -96,8 +101,15 @@ export const oneSignalService = {
   clearAuthenticatedUser() {
     enqueueOneSignal(async (oneSignal) => {
       try {
+        if (!oneSignal?.logout || !oneSignal?.User) {
+          return;
+        }
         await oneSignal.logout();
       } catch (error) {
+        if (error instanceof TypeError) {
+          console.warn("Ignoring OneSignal logout teardown error:", error.message);
+          return;
+        }
         console.error("OneSignal logout failed:", error);
       }
     });
@@ -125,27 +137,43 @@ export const oneSignalService = {
   async requestPermission(): Promise<void> {
     if (typeof window === "undefined") return;
 
-    await withOneSignal(async (oneSignal) => {
-      if (oneSignal.Notifications?.requestPermission) {
-        await oneSignal.Notifications.requestPermission();
+    let permission = await requestBrowserPermission();
+
+    try {
+      await withOneSignal(async (oneSignal) => {
+        if (permission !== "granted" && oneSignal.Notifications?.requestPermission) {
+          await oneSignal.Notifications.requestPermission();
+          permission =
+            typeof Notification === "undefined" ? "unsupported" : Notification.permission;
+        }
+
+        if (permission === "granted" && oneSignal.User?.PushSubscription?.optIn) {
+          await oneSignal.User.PushSubscription.optIn();
+        }
+      }, 2500);
+    } catch (error) {
+      if (permission !== "granted") {
+        throw error;
       }
-      if (
-        Notification.permission === "granted" &&
-        oneSignal.User?.PushSubscription?.optIn
-      ) {
-        await oneSignal.User.PushSubscription.optIn();
-      }
-    });
+      console.warn("OneSignal was not ready after browser permission was granted.", error);
+    }
   },
 
   async setOptIn(enabled: boolean): Promise<void> {
     if (typeof window === "undefined") return;
 
-    await withOneSignal(async (oneSignal) => {
-      const sub = oneSignal.User?.PushSubscription;
-      if (!sub) return;
-      if (enabled && sub.optIn) await sub.optIn();
-      if (!enabled && sub.optOut) await sub.optOut();
-    });
+    try {
+      await withOneSignal(async (oneSignal) => {
+        const sub = oneSignal.User?.PushSubscription;
+        if (!sub) return;
+        if (enabled && sub.optIn) await sub.optIn();
+        if (!enabled && sub.optOut) await sub.optOut();
+      }, 2500);
+    } catch (error) {
+      console.warn("Unable to update OneSignal opt-in state.", error);
+      if (enabled && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+        throw error;
+      }
+    }
   },
 };

@@ -16,6 +16,8 @@ import {
   Settings,
   Send,
   ExternalLink,
+  Loader,
+  Download,
 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
@@ -27,10 +29,12 @@ import { getBusinessInfo } from "../../../../shared/store/services/businessInfoA
 import { proposalsApi } from "../../services/proposalsApi";
 import { getContacts, type Contact } from "../../../../shared/store/services/contactsApi";
 import { proposalSharingApi } from "../../services/proposalSharingApi";
+import { eSignatureApi } from "../../services/eSignatureApi";
 import { abcSupplyService, ABCSupplyOrderHistoryItem } from "../../services/abcSupplyService";
 import { getJobById, Job, CreateJobRequest, updateJob } from "../../../../shared/store/services/jobsApi";
 import { getStaff, StaffMember } from "../../../../shared/store/services/staffApi";
 import JobDetailsModal from "../JobDetailsModal";
+import { SendForSignatureModal } from "../SendForSignatureModal";
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -241,6 +245,11 @@ export default function ProposalBuilder({
   const [buttonLabel, setButtonLabel] = useState("View & Review Proposal");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [proposalStatus, setProposalStatus] = useState<string>('draft');
+  const [signatureStatus, setSignatureStatus] = useState<string>('not_sent');
+  const [latestSignatureRequest, setLatestSignatureRequest] = useState<any | null>(null);
+  const [loadingSignatureRequest, setLoadingSignatureRequest] = useState(false);
+  const [showResendModal, setShowResendModal] = useState(false);
+  const [voidingRequest, setVoidingRequest] = useState(false);
   const [orderHistory, setOrderHistory] = useState<ABCSupplyOrderHistoryItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
@@ -413,38 +422,40 @@ export default function ProposalBuilder({
         parseFloat(calculateEstimateSubtotal()) +
         parseFloat(calculateUpgradeSubtotal());
 
+      const sanitizedSettings = {
+        coverImage,
+        coverTitle: coverTitle && coverTitle.trim() && coverTitle !== "Project Proposal" ? coverTitle : "",
+        coverDate: coverDate && coverDate.trim() ? coverDate : "",
+        customerName: customerName && customerName.trim() && customerName !== "Customer Name" ? customerName : "",
+        customerAddress: customerAddress && customerAddress.trim() && customerAddress !== "Customer Address" ? customerAddress : "",
+        customerPhone: customerPhone && customerPhone.trim() && customerPhone !== "(000) 000-0000" ? customerPhone : "",
+        customerEmail: customerEmail && customerEmail.trim() && customerEmail !== "customer@email.com" ? customerEmail : "",
+        companyName: companyName && companyName.trim() && companyName !== "Terrylynn Roofing LLC" ? companyName : "",
+        companyPhone: companyPhone && companyPhone.trim() && companyPhone !== "(000) 000-0000" ? companyPhone : "",
+        companyEmail: companyEmail && companyEmail.trim() && companyEmail !== "Company representative email" ? companyEmail : "",
+        optionTitle: optionTitle && optionTitle.trim() ? optionTitle : "",
+        optionDescription: optionDescription && optionDescription.trim() ? optionDescription : "",
+        itemSectionTitle: itemSectionTitle && itemSectionTitle.trim() ? itemSectionTitle : "Item",
+        upgradesTitle: upgradesTitle && upgradesTitle.trim() ? upgradesTitle : "Upgrades",
+        defaultMargin: defaultMargin && defaultMargin.trim() ? defaultMargin : "0",
+        minimumMargin: minimumMargin && minimumMargin.trim() ? minimumMargin : "0",
+        coverContent: coverContent && coverContent.trim() ? coverContent : "",
+        companyLogo,
+        contactId: selectedContact?.id,
+      };
+
       await proposalsApi.updateProposal(Number(proposalId), {
         title: templateName,
         sections: {
           items,
           sections,
-          settings: {
-            coverImage,
-            coverTitle,
-            coverDate,
-            customerName,
-            customerAddress,
-            customerPhone,
-            customerEmail,
-            companyName,
-            companyPhone,
-            companyEmail,
-            optionTitle,
-            optionDescription,
-            itemSectionTitle,
-            upgradesTitle,
-            defaultMargin,
-            minimumMargin,
-            coverContent,
-            companyLogo,
-            contactId: selectedContact?.id,
-          },
+          settings: sanitizedSettings,
           upgrades,
           templateName,
         },
         total: estimateTotal,
         address: {
-          address: customerAddress,
+          address: sanitizedSettings.customerAddress,
         },
       });
       console.log("Proposal saved successfully!");
@@ -463,6 +474,10 @@ export default function ProposalBuilder({
         setProposalData(proposal);
 
         if (proposal.status) setProposalStatus(proposal.status);
+        if (proposal.signature_status) setSignatureStatus(proposal.signature_status);
+        if (proposal.signature_status && proposal.signature_status !== 'not_sent') {
+          loadLatestSignatureRequest();
+        }
         if (proposal.title) setTemplateName(proposal.title);
         if (proposal.address?.address) setCustomerAddress(proposal.address.address);
 
@@ -1281,6 +1296,87 @@ export default function ProposalBuilder({
     setDraggedSectionIndex(index);
   };
 
+  const formatSignatureStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_signature': return 'Pending Signature';
+      case 'viewed': return 'Viewed';
+      case 'signed': return 'Signed';
+      case 'declined': return 'Declined';
+      case 'expired': return 'Expired';
+      case 'voided': return 'Voided';
+      default: return '';
+    }
+  };
+
+  const getSignatureStatusClass = (status: string) => {
+    switch (status) {
+      case 'pending_signature': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200';
+      case 'viewed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+      case 'signed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
+      case 'declined': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
+      case 'expired': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200';
+      case 'voided': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
+  };
+
+  const loadLatestSignatureRequest = async () => {
+    try {
+      setLoadingSignatureRequest(true);
+      const requests = await eSignatureApi.getProposalSignatureRequests(Number(proposalId));
+      const latestRequest = [...requests].sort(
+        (a, b) =>
+          new Date(b.created_at || b.updated_at || 0).getTime() -
+          new Date(a.created_at || a.updated_at || 0).getTime()
+      )[0] || null;
+      setLatestSignatureRequest(latestRequest);
+      return latestRequest;
+    } catch (error) {
+      console.error('Error loading signature requests:', error);
+      return null;
+    } finally {
+      setLoadingSignatureRequest(false);
+    }
+  };
+
+  const getExpiryDaysFromRequest = (request: any) => {
+    const diffMs = new Date(request.expires_at).getTime() - Date.now();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (!Number.isFinite(diffDays)) return 30;
+    return Math.min(90, Math.max(1, diffDays));
+  };
+
+  const canVoidSignatureRequest =
+    latestSignatureRequest &&
+    (latestSignatureRequest.status === 'pending' || latestSignatureRequest.status === 'viewed');
+
+  const canResendSignatureRequest =
+    latestSignatureRequest &&
+    latestSignatureRequest.status !== 'signed';
+
+  const handleVoidSignatureRequest = async () => {
+    const request = latestSignatureRequest || await loadLatestSignatureRequest();
+    if (!request) {
+      window.alert('No signature request found to void.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Void the active signature request for ${request.signer_name}?`);
+    if (!confirmed) return;
+
+    try {
+      setVoidingRequest(true);
+      await eSignatureApi.voidSignatureRequest(request.id);
+      setSignatureStatus('voided');
+      await loadLatestSignatureRequest();
+    } catch (error) {
+      console.error('Error voiding signature request:', error);
+      window.alert('Failed to void signature request.');
+    } finally {
+      setVoidingRequest(false);
+    }
+  };
+
   const handleSectionDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (draggedSectionIndex === null || draggedSectionIndex === index)
@@ -1981,10 +2077,49 @@ export default function ProposalBuilder({
                   <Eye size={16} />
                   Preview
                 </button>
+                <button
+                  onClick={() => {
+                    window.open(`/proposals/preview/${proposalId}?download=1`, '_blank');
+                  }}
+                  className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium flex items-center gap-2"
+                >
+                  <Download size={16} />
+                  Download PDF
+                </button>
                 {proposalStatus === 'sent' ? (
-                  <div className="px-4 py-2 bg-gray-400 text-white rounded-md text-sm font-medium flex items-center gap-2 cursor-not-allowed">
-                    <Send size={16} />
-                    Sent
+                  <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 bg-gray-400 text-white rounded-md text-sm font-medium flex items-center gap-2 cursor-not-allowed">
+                      <Send size={16} />
+                      Sent
+                    </div>
+                    {signatureStatus !== 'not_sent' && (
+                      <div className={`px-4 py-2 rounded-md text-sm font-medium ${getSignatureStatusClass(signatureStatus)}`}>
+                        {formatSignatureStatusLabel(signatureStatus)}
+                      </div>
+                    )}
+                    {signatureStatus !== 'signed' && canResendSignatureRequest && (
+                      <button
+                        onClick={() => setShowResendModal(true)}
+                        className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium"
+                      >
+                        Resend
+                      </button>
+                    )}
+                    {canVoidSignatureRequest && (
+                      <button
+                        onClick={handleVoidSignatureRequest}
+                        disabled={voidingRequest}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {voidingRequest && <Loader size={16} className="animate-spin" />}
+                        {voidingRequest ? 'Voiding...' : 'Void'}
+                      </button>
+                    )}
+                    {loadingSignatureRequest && (
+                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                        Loading signature...
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <button
@@ -4625,12 +4760,19 @@ export default function ProposalBuilder({
 
                     try {
                       setSendingEmail(true);
-                      await proposalSharingApi.sendEmail(Number(proposalId), {
+                      const result = await proposalSharingApi.sendEmail(Number(proposalId), {
                         recipientEmail: customerEmail,
                         recipientName: customerName,
                         subject: emailSubject,
                         message: emailMessage
                       });
+                      if ((result as any)?.status === 'sent') {
+                        setProposalStatus('sent');
+                      }
+                      if ((result as any)?.signatureStatus) {
+                        setSignatureStatus((result as any).signatureStatus);
+                        await loadLatestSignatureRequest();
+                      }
                       alert('Proposal sent successfully!');
                       setShowEmailSidebar(false);
                       onClose();
@@ -4769,6 +4911,23 @@ export default function ProposalBuilder({
             </div>
           )}
         </div>
+      )}
+
+      {showResendModal && latestSignatureRequest && (
+        <SendForSignatureModal
+          proposalId={Number(proposalId)}
+          proposalTitle={templateName || 'Proposal'}
+          mode="resend"
+          initialSignerName={latestSignatureRequest.signer_name}
+          initialSignerEmail={latestSignatureRequest.signer_email}
+          initialExpiresInDays={getExpiryDaysFromRequest(latestSignatureRequest)}
+          onClose={() => setShowResendModal(false)}
+          onSuccess={async () => {
+            setShowResendModal(false);
+            setSignatureStatus('pending_signature');
+            await loadLatestSignatureRequest();
+          }}
+        />
       )}
 
       {/* Job Details Modal */}
