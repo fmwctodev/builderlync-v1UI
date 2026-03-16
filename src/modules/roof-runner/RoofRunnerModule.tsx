@@ -18,6 +18,7 @@ import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
 import Payments from './pages/Payments';
 import InstantEstimator from './pages/InstantEstimator';
+import DIYPage from './pages/DIYPage';
 import InstantEstimatorManage from './pages/InstantEstimatorManage';
 import ManageQuestions from './pages/ManageQuestions';
 import NewMaterial from './pages/NewMaterial';
@@ -107,6 +108,7 @@ export function RoofRunnerModule() {
         <Route path="proposal/view" element={<PublicProposalView />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
         <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
+          <Route path="diy" element={<DIYPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
 

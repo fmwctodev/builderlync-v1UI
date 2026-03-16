@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Navigation } from './shared/components/Navigation';
-import { Dashboard } from './shared/components/Dashboard';
 import { ThemeProvider } from './shared/context/ThemeContext';
 import { WidgetProvider } from './shared/context/WidgetContext';
 import IncomingCallNotification from './shared/components/IncomingCallNotification';
@@ -11,8 +9,6 @@ import { oneSignalService } from './shared/services/oneSignalService';
 // Module imports
 // import { ABCSupplyModule } from './modules/abc-supply/ABCSupplyModule';
 import { CRMModule } from './modules/crm/CRMModule';
-import { CRMModuleSimple } from './modules/crm/CRMModuleSimple';
-import { MarketingModule } from './modules/marketing/MarketingModule';
 import { ProjectManagementModule } from './modules/project-management/ProjectManagementModule';
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 // import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
@@ -20,13 +16,14 @@ import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 import { ReportingModule } from './modules/reporting/ReportingModule';
 import { SuperAdminModule } from './modules/super-admin/SuperAdminModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
+import DIYPage from './modules/roof-runner/pages/DIYPage';
 import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
-import { SierraAiModule } from './modules/sierra-ai/SierraAiModule';
 import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
 import OAuthOutlookCallback from './shared/components/OAuthOutlookCallback';
 import EmailSyncCallback from './shared/components/EmailSyncCallback';
 import ProposalSigningPage from './modules/roof-runner/pages/ProposalSigningPage';
+import PitchTool from './modules/roof-runner/pages/PitchTool';
 
 function App() {
   const { user, token } = useAppSelector((state) => state.auth);
@@ -49,6 +46,7 @@ function App() {
               <Route path="/proposal/sign" element={<ProposalSigningPage />} />
               <Route path="/proposal/view" element={<ProposalSigningPage />} />
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
+              <Route path="/pitch" element={<PitchTool />} />
               <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
               <Route path="/auth/google/callback" element={<OAuthCallback />} />
               <Route path="/auth/gmail/callback" element={<OAuthOutlookCallback />} />

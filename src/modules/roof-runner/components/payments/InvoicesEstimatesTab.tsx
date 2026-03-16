@@ -55,6 +55,8 @@ const InvoicesEstimatesTab: React.FC = () => {
   const [editInvoice, setEditInvoice] = useState<PaymentInvoice | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
   const handleSyncQuickBooks = async () => {
     try {
@@ -70,6 +72,19 @@ const InvoicesEstimatesTab: React.FC = () => {
 
 
   useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { getQuickBooksStatus } = await import('../../../../shared/store/services/quickbooksApi');
+        const response = await getQuickBooksStatus();
+        setIsQuickBooksConnected(response.data.connected);
+      } catch (error) {
+        console.error('Error checking QuickBooks status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
     loadData();
   }, []);
 
@@ -243,8 +258,9 @@ const InvoicesEstimatesTab: React.FC = () => {
             </button> */}
             <button
               onClick={handleSyncQuickBooks}
-              disabled={syncing || loading}
+              disabled={syncing || loading || checkingStatus || !isQuickBooksConnected}
               className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+              title={!isQuickBooksConnected ? 'Connect QuickBooks in Settings to sync' : 'Sync invoices with QuickBooks'}
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing...' : 'Sync QuickBooks'}</span>
@@ -506,7 +522,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const inv = invoice.rawData;
-                                    
+
                                     setEditInvoice({
                                       id: inv.id.toString(),
                                       invoice_number: inv.invoice_number,
@@ -551,7 +567,7 @@ const InvoicesEstimatesTab: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const inv = invoice.rawData;
-                                    
+
                                     setEditInvoice({
                                       id: inv.id.toString(),
                                       invoice_number: inv.invoice_number,
