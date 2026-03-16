@@ -1,6 +1,6 @@
 import { call, put, takeEvery } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { authApi, RegisterRequest, LoginRequest, ForgotPasswordRequest, VerifyOtpRequest, ResetPasswordRequest, VerifyRegistrationOtpRequest, ResendRegistrationOtpRequest, Verify2FARequest } from '../services/authApi';
+import { authApi, RegisterRequest, LoginRequest, ForgotPasswordRequest, VerifyOtpRequest, ResetPasswordRequest, VerifyRegistrationOtpRequest, Verify2FARequest } from '../services/authApi';
 import {
   registerRequest, registerSuccess, registerFailure,
   loginRequest, loginSuccess, loginRequires2FA, loginFailure,
@@ -16,17 +16,24 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
   try {
     const response = yield call(authApi.register, action.payload);
     console.log('Registration response:', response);
+
+    if (response.message === 'PENDING_PAYMENT') {
+      console.log('Redirecting to billing for payment');
+      window.location.href = '/billing';
+      return;
+    }
+
     console.log('Setting registration email:', action.payload.email);
     yield put(registerSuccess({ message: response.message, email: action.payload.email }));
   } catch (error: any) {
     console.error('Registration error in saga:', error);
     const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
-    
+
     if (errorMessage === 'INVALID_BETA_CODE') {
       window.location.href = '/billing';
       return;
     }
-    
+
     yield put(registerFailure(errorMessage));
   }
 }

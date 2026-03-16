@@ -64,13 +64,46 @@ const PublicBilling: React.FC = () => {
     { category: 'AI Tools', starter: 'Basic', pro: 'Advanced', enterprise: 'Custom' },
     { category: 'Support', starter: 'Email', pro: 'Email/Phone', enterprise: 'Dedicated' },
   ];
+  const handlePurchase = async (priceId: string) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+      console.log('Initiating checkout session...');
+
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/billing/checkout/create-session`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          priceId: priceId,
+          successUrl: `${window.location.origin}/billing/success`,
+          cancelUrl: `${window.location.origin}/billing/cancel`
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.data?.url) {
+        window.location.href = data.data.url;
+      } else {
+        throw new Error(data.message || 'Failed to create checkout session');
+      }
+    } catch (err: any) {
+      console.error('Purchase error:', err);
+      alert('Error initiating purchase. Please try again or contact support.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-red-500/30">
       {/* Red Alert Banner */}
       <div className="bg-red-600/10 border-b border-red-500/20 py-3 px-4 text-center">
         <p className="text-sm font-medium text-red-400">
-          Invalid Beta Code. Please choose a plan below to continue your registration.
+          Subscribe to the BuilderLync Starter Plan to unlock full access.
         </p>
       </div>
 
@@ -89,20 +122,19 @@ const PublicBilling: React.FC = () => {
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
           {plans.map((plan, idx) => (
-            <div 
+            <div
               key={idx}
-              className={`relative rounded-2xl p-8 border transition-all duration-300 ${
-                plan.highlight 
-                ? 'bg-[#151515] border-red-600 shadow-2xl shadow-red-900/10 scale-105 z-10' 
-                : 'bg-[#111111] border-gray-800 hover:border-gray-700'
-              }`}
+              className={`relative rounded-2xl p-8 border transition-all duration-300 ${plan.highlight
+                  ? 'bg-[#151515] border-red-600 shadow-2xl shadow-red-900/10 scale-105 z-10'
+                  : 'bg-[#111111] border-gray-800 hover:border-gray-700'
+                }`}
             >
               {plan.tag && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                   {plan.tag}
                 </div>
               )}
-              
+
               <div className="mb-6">
                 <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{plan.description}</p>
@@ -113,15 +145,14 @@ const PublicBilling: React.FC = () => {
                 <span className="text-gray-500 ml-1">{plan.period}</span>
               </div>
 
-              <button 
-                className={`w-full py-4 rounded-xl font-bold transition-all ${
-                  plan.highlight 
-                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20' 
-                  : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
-                }`}
+              <button
+                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.highlight
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
+                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                  }`}
                 onClick={() => {
                   if (plan.name === 'Enterprise') window.location.href = 'mailto:sales@builderlync.com';
-                  else navigate('/auth/signup'); // In real case, would go to stripe
+                  else handlePurchase('annual'); // We use annual by default as requested
                 }}
               >
                 {plan.buttonText}
@@ -177,26 +208,26 @@ const PublicBilling: React.FC = () => {
         {/* Usage Based Costs */}
         <div className="mt-24 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="p-6 rounded-2xl bg-[#111111] border border-gray-800 text-center">
-             <h4 className="text-red-500 font-bold mb-2">Marketplace</h4>
-             <p className="text-gray-500 text-xs">Included in all plans</p>
+            <h4 className="text-red-500 font-bold mb-2">Marketplace</h4>
+            <p className="text-gray-500 text-xs">Included in all plans</p>
           </div>
           <div className="p-6 rounded-2xl bg-[#111111] border border-gray-800 text-center">
-             <h4 className="text-white font-bold mb-1">Extra SMS</h4>
-             <p className="text-gray-400 text-sm">$0.02/message</p>
+            <h4 className="text-white font-bold mb-1">Extra SMS</h4>
+            <p className="text-gray-400 text-sm">$0.02/message</p>
           </div>
           <div className="p-6 rounded-2xl bg-[#111111] border border-gray-800 text-center">
-             <h4 className="text-white font-bold mb-1">Extra Phone</h4>
-             <p className="text-gray-400 text-sm">$1.00/month</p>
+            <h4 className="text-white font-bold mb-1">Extra Phone</h4>
+            <p className="text-gray-400 text-sm">$1.00/month</p>
           </div>
           <div className="p-6 rounded-2xl bg-[#111111] border border-gray-800 text-center">
-             <h4 className="text-red-500 font-bold mb-1 italic">Coming Soon</h4>
-             <p className="text-gray-500 text-xs text-uppercase">AI Credits</p>
+            <h4 className="text-red-500 font-bold mb-1 italic">Coming Soon</h4>
+            <p className="text-gray-500 text-xs text-uppercase">AI Credits</p>
           </div>
         </div>
 
         {/* Footer Text */}
         <div className="mt-24 text-center text-gray-500 text-sm">
-           <p>© 2024 BuildLync Platform. All rights reserved.</p>
+          <p>© 2024 BuildLync Platform. All rights reserved.</p>
         </div>
       </div>
     </div>
