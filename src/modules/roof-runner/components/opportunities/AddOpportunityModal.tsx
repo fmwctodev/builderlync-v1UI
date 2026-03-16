@@ -30,7 +30,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
     pipeline_id: '',
     stage_id: '',
     status: 'open',
-    value: 0,
+    value: undefined,
     owner_id: undefined,
     business_name: '',
     source: '',
@@ -60,7 +60,9 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
         contact_phone: linkedJobData.customer?.phone || '',
         property_address: linkedJobData.location || '',
         job_id: linkedJobData.id,
-        value: typeof linkedJobData.jobValue === 'number' ? linkedJobData.jobValue : parseFloat(linkedJobData.jobValue) || 0,
+        value: (linkedJobData.jobValue !== undefined && linkedJobData.jobValue !== null)
+          ? (typeof linkedJobData.jobValue === 'number' ? linkedJobData.jobValue : parseFloat(linkedJobData.jobValue) || 0)
+          : undefined,
         source: linkedJobData.source || '',
       }));
       if (linkedJobData.jobType) {
@@ -105,7 +107,9 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
       contact_phone: job.customer?.phone || '',
       property_address: job.location || '',
       job_id: job.id,
-      value: typeof job.jobValue === 'number' ? job.jobValue : parseFloat(job.jobValue) || 0,
+      value: (job.jobValue !== undefined && job.jobValue !== null)
+        ? (typeof job.jobValue === 'number' ? job.jobValue : parseFloat(job.jobValue) || 0)
+        : undefined,
       source: job.source || '',
     }));
     if (job.jobType) {
@@ -260,7 +264,7 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
       pipeline_id: '',
       stage_id: '',
       status: 'open',
-      value: 0,
+      value: undefined,
       owner_id: undefined,
       business_name: '',
       source: '',
@@ -503,8 +507,11 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
                     <span className="absolute left-3 top-2 text-gray-500">$</span>
                     <input
                       type="number"
-                      value={formData.value}
-                      onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                      value={formData.value ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, value: val === '' ? undefined : parseFloat(val) });
+                      }}
                       placeholder="0"
                       className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />

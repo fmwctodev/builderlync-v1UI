@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Ruler, Plus, History, FileText, Camera, Pencil } from 'lucide-react';
-import { measurementsApi, MeasurementData } from '../services/measurementsApi';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, History, Pencil } from 'lucide-react';
+import { measurementsApi } from '../services/measurementsApi';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
 import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
@@ -32,11 +32,13 @@ interface BusinessInfo {
 
 export default function Measurements() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<ViewType>('Dashboard');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<ViewType>(
+    searchParams.get('order') === 'true' ? 'Order' : 'Dashboard'
+  );
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -44,6 +46,9 @@ export default function Measurements() {
     completedYTD: 0,
     balance: 0
   });
+
+  const initialJobId = searchParams.get('jobId');
+  const initialAddress = searchParams.get('address');
 
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
@@ -477,6 +482,8 @@ export default function Measurements() {
         <PlaceOrderPage
           onOrderComplete={handleOrderComplete}
           onBack={() => setActiveTab('Dashboard')}
+          initialJobId={initialJobId || undefined}
+          initialAddress={initialAddress || undefined}
         />
       )}
       {activeTab === 'EagleView' && (

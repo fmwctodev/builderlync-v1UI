@@ -8,6 +8,7 @@ export interface CreateStaffRequest {
   email: string;
   phone: string;
   countryCode: string;
+  extension?: string;
   title?: string;
   department?: string;
   image?: string;
@@ -22,9 +23,11 @@ export interface UpdateStaffRequest {
   email: string;
   phone: string;
   countryCode: string;
+  extension?: string;
   title?: string;
   department?: string;
   image?: string;
+  password?: string;
   status?: 'active' | 'inactive' | 'on_leave';
 }
 
@@ -36,6 +39,7 @@ export interface StaffMember {
   email: string;
   phone: string;
   country_code: string;
+  extension?: string;
   image?: string;
   status: string;
   title?: string;
@@ -70,11 +74,11 @@ export interface StaffListResponse {
 class StaffApiService {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const token = getAuthToken();
-    
+
     console.log('=== API Request ===');
     console.log('Endpoint:', endpoint);
     console.log('Token:', token ? 'Present' : 'Missing');
-    
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
@@ -106,12 +110,12 @@ class StaffApiService {
       console.log('API URL:', `${API_BASE_URL}/staff?${params}`);
       const result = await this.makeRequest(`/staff?${params}`);
       console.log('Staff API Response:', result);
-      
+
       // Handle nested data structure: result.data.data
       const staffData = result.data?.data || result.data || result || [];
       const total = result.data?.total || result.total || staffData.length || 0;
       const pagination = result.data?.pagination || result.pagination;
-      
+
       return {
         success: true,
         data: Array.isArray(staffData) ? staffData : [],
