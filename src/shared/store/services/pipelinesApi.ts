@@ -32,6 +32,14 @@ export interface UpdatePipelineRequest {
   stages?: Partial<PipelineStage>[];
 }
 
+export interface CreatePipelineRequest {
+  name: string;
+  description?: string;
+  is_default: boolean;
+  job_type: 'Commercial' | 'Residential' | 'Insurance';
+  stages: Partial<PipelineStage>[];
+}
+
 export const pipelinesApi = createApi({
   reducerPath: 'pipelinesApi',
   baseQuery: fetchBaseQuery({
@@ -55,6 +63,15 @@ export const pipelinesApi = createApi({
       query: (id) => `/${id}`,
       transformResponse: (response: { data: Pipeline }) => response.data,
       providesTags: (_, __, id) => [{ type: 'Pipeline', id }],
+    }),
+    createPipeline: builder.mutation<Pipeline, CreatePipelineRequest>({
+      query: (data) => ({
+        url: '/',
+        method: 'POST',
+        body: data,
+      }),
+      transformResponse: (response: { data: Pipeline }) => response.data,
+      invalidatesTags: ['Pipeline'],
     }),
     updatePipeline: builder.mutation<Pipeline, { id: string; data: UpdatePipelineRequest }>({
       query: ({ id, data }) => ({
@@ -89,4 +106,5 @@ export const {
   useGetPipelinesQuery,
   useGetPipelineByIdQuery,
   useUpdatePipelineMutation,
+  useCreatePipelineMutation,
 } = pipelinesApi;

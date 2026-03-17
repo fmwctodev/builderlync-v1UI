@@ -1,7 +1,7 @@
 import { Plus, X, MoreHorizontal, Edit2, Star, Trash2, Home, Hammer, Shield } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGetPipelinesQuery, useUpdatePipelineMutation, Pipeline } from '../../../shared/store/services/pipelinesApi';
+import { useGetPipelinesQuery, useUpdatePipelineMutation, useCreatePipelineMutation, Pipeline } from '../../../shared/store/services/pipelinesApi';
 
 const JobsSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -9,6 +9,12 @@ const JobsSettings: React.FC = () => {
   
   const { data: pipelines, isLoading } = useGetPipelinesQuery();
   const [updatePipeline] = useUpdatePipelineMutation();
+  const [createPipeline] = useCreatePipelineMutation();
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [newWorkflowName, setNewWorkflowName] = useState('');
+  const [newWorkflowType, setNewWorkflowType] = useState<'Commercial' | 'Residential' | 'Insurance'>('Residential');
+  const [isSaving, setIsSaving] = useState(false);
 
   const getWorkflowIcon = (jobType: string) => {
     switch (jobType) {
@@ -51,6 +57,37 @@ const JobsSettings: React.FC = () => {
       } catch (error) {
         console.error('Failed to update pipeline:', error);
       }
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newWorkflowName.trim()) return;
+    
+    setIsSaving(true);
+    try {
+      const defaultStages = [
+        { name: 'New Lead', color: '#3b82f6', order_position: 0 },
+        { name: 'Inspection/Estimate Booked', color: '#8b5cf6', order_position: 1 },
+        { name: 'Job Qualified', color: '#10b981', order_position: 2 },
+        { name: 'Estimate Completed', color: '#f59e0b', order_position: 3 },
+        { name: 'Job Won', color: '#059669', order_position: 4 },
+        { name: 'Job Complete', color: '#111827', order_position: 5 },
+        { name: 'Job Lost', color: '#ef4444', order_position: 6 }
+      ];
+
+      await createPipeline({
+        name: newWorkflowName,
+        job_type: newWorkflowType,
+        is_default: (pipelines?.length || 0) === 0,
+        stages: defaultStages
+      }).unwrap();
+
+      setIsCreating(false);
+      setNewWorkflowName('');
+    } catch (error) {
+      console.error('Failed to create pipeline:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -139,17 +176,89 @@ const JobsSettings: React.FC = () => {
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500">
             <p className="flex items-center space-x-1 italic">
-              <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
-              You've reached the current maximum number of workflows
+              <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+              You can create multiple workflows for different job types
             </p>
           </div>
         </div>
 
-        <button className="mt-6 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex items-center space-x-2 opacity-50 cursor-not-allowed">
+        <button 
+          onClick={() => setIsCreating(true)}
+          className="mt-6 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex items-center space-x-2"
+        >
           <Plus className="w-4 h-4" />
           <span>Create a workflow</span>
         </button>
       </div>
+
+      {/* Create Modal */}
+      {isCreating && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Create new workflow</h3>
+              <button
+                onClick={() => setIsCreating(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                disabled={isSaving}
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Workflow Name</label>
+                <input
+                  type="text"
+                  value={newWorkflowName}
+                  onChange={(e) => setNewWorkflowName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  placeholder="e.g. Commercial Projects"
+                  maxLength={50}
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Job Type</label>
+                <select
+                  value={newWorkflowType}
+                  onChange={(e) => setNewWorkflowType(e.target.value as any)}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  disabled={isSaving}
+                >
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                  <option value="Insurance">Insurance</option>
+                </select>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                * This workflow will be created with default stages (New Lead, Job Won, etc.)
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 p-6 bg-gray-50 dark:bg-gray-700/50">
+              <button
+                onClick={() => setIsCreating(false)}
+                className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-semibold hover:text-gray-800 dark:hover:text-white transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={!newWorkflowName.trim() || isSaving}
+                className="px-8 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold shadow-lg shadow-primary-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isSaving && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                <span>{isSaving ? 'Creating...' : 'Create Workflow'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editingWorkflow && (
