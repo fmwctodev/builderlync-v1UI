@@ -25,15 +25,15 @@ const stripHtmlTags = (value?: string) =>
     .trim();
 
 const getEstimateItemHeight = (item: ProposalLineItem) => {
-  if (item.isHeading) return 52;
+  if (item.isHeading) return 44;
 
   const descriptionText = stripHtmlTags(item.description);
   const descriptionLines = descriptionText
-    ? Math.min(5, Math.max(1, Math.ceil(descriptionText.length / 80)))
+    ? Math.min(5, Math.max(1, Math.ceil(descriptionText.length / 90)))
     : 0;
-  const metaHeight = item.unitCost || item.qty ? 22 : 0;
+  const metaHeight = item.unitCost || item.qty ? 20 : 0;
 
-  return 54 + metaHeight + descriptionLines * 18;
+  return 44 + metaHeight + descriptionLines * 17;
 };
 
 const paginateEstimateItems = (
@@ -43,13 +43,13 @@ const paginateEstimateItems = (
   const descriptionPenalty =
     optionDescription && optionDescription !== "Add description"
       ? Math.min(
-          140,
-          28 + Math.ceil(stripHtmlTags(optionDescription).length / 80) * 18
+          126,
+          22 + Math.ceil(stripHtmlTags(optionDescription).length / 90) * 17
         )
       : 0;
 
-  const firstPageLimit = Math.max(520, 760 - descriptionPenalty);
-  const continuedPageLimit = 860;
+  const firstPageLimit = Math.max(590, 850 - descriptionPenalty);
+  const continuedPageLimit = 934;
   const pages: ProposalLineItem[][] = [];
   let currentPage: ProposalLineItem[] = [];
   let currentHeight = 0;
@@ -683,131 +683,141 @@ export default function ProposalPreview() {
                         />
                       )}
                     </div>
-                    <div className="space-y-8">
-                      <div>
-                        <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between gap-3">
-                          <div className="font-medium text-gray-900 dark:text-white">
-                            {estimateSectionTitle}
+                    <div>
+                      <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between gap-3">
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {estimateSectionTitle}
+                        </div>
+                        {!isFirstEstimatePage && (
+                          <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                            Continued
                           </div>
-                          {!isFirstEstimatePage && (
-                            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                              Continued
+                        )}
+                      </div>
+                      {pageItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="border-b border-gray-100 py-3 last:border-b-0 dark:border-gray-700"
+                        >
+                          {item.isHeading ? (
+                            <div className="font-semibold text-gray-900 dark:text-white">
+                              {item.name}
+                            </div>
+                          ) : (
+                            <div className="pl-3 text-sm">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 dark:text-white">
+                                    {item.name}
+                                  </div>
+                                  {item.description && (
+                                    <div
+                                      className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                      dangerouslySetInnerHTML={{
+                                        __html: toRichHtml(item.description),
+                                      }}
+                                    />
+                                  )}
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {item.unitCost && (
+                                      <span>Unit Cost: ${item.unitCost}</span>
+                                    )}
+                                    {item.qty && <span>Qty: {item.qty}</span>}
+                                  </div>
+                                </div>
+                                {item.unitCost && item.qty && (
+                                  <div className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                    $
+                                    {(
+                                      parseFloat(item.unitCost) *
+                                      parseFloat(item.qty)
+                                    ).toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
-                        {pageItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="border-b border-gray-100 py-3 last:border-b-0 dark:border-gray-700"
-                          >
-                            {item.isHeading ? (
-                              <div className="font-semibold text-gray-900 dark:text-white">
-                                {item.name}
-                              </div>
-                            ) : (
-                              <div className="pl-3 text-sm">
-                                <div className="flex justify-between items-start gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-gray-900 dark:text-white">
-                                      {item.name}
-                                    </div>
-                                    {item.description && (
-                                      <div
-                                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                                        dangerouslySetInnerHTML={{
-                                          __html: toRichHtml(item.description),
-                                        }}
-                                      />
-                                    )}
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                      {item.unitCost && (
-                                        <span>Unit Cost: ${item.unitCost}</span>
-                                      )}
-                                      {item.qty && <span>Qty: {item.qty}</span>}
-                                    </div>
-                                  </div>
-                                  {item.unitCost && item.qty && (
-                                    <div className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                      $
-                                      {(
-                                        parseFloat(item.unitCost) *
-                                        parseFloat(item.qty)
-                                      ).toFixed(2)}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {proposal.sections.upgrades &&
-                        proposal.sections.upgrades.length > 0 &&
-                        isFirstEstimatePage && (
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                              {proposal.sections.settings?.upgradesTitle ||
-                                "Upgrades"}
-                            </div>
-                            {proposal.sections.upgrades.map((upgrade: any) => (
-                              <div
-                                key={upgrade.id}
-                                className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
-                              >
-                                <div className="font-medium text-gray-900 dark:text-white mb-3">
-                                  {upgrade.name}
-                                </div>
-                                {upgrade.items
-                                  .filter((item: any) => item.visible)
-                                  .map((item: any) => (
-                                    <div key={item.id}>
-                                      {item.isHeading ? (
-                                        <>
-                                          <hr className="border-gray-300 dark:border-gray-600 my-3" />
-                                          <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
-                                            {item.name}
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <div className="mb-2 pl-3 text-sm">
-                                          <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                              <div className="font-medium text-gray-900 dark:text-white">
-                                                {item.name}
-                                              </div>
-                                              {item.description && (
-                                                <div
-                                                  className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                                                  dangerouslySetInnerHTML={{
-                                                    __html: toRichHtml(
-                                                      item.description
-                                                    ),
-                                                  }}
-                                                />
-                                              )}
-                                            </div>
-                                            {item.unitCost && item.qty && (
-                                              <div className="font-medium text-gray-900 dark:text-white">
-                                                $
-                                                {(
-                                                  parseFloat(item.unitCost) *
-                                                  parseFloat(item.qty)
-                                                ).toFixed(2)}
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                      ))}
                     </div>
                   </div>
                 );
               })}
+
+            {proposal.sections?.upgrades &&
+              proposal.sections.upgrades.length > 0 && (
+                <div
+                  className="bg-white dark:bg-gray-800 pdf-page"
+                  style={{
+                    width: "816px",
+                    position: "relative",
+                    padding: "32px",
+                    minHeight: "1056px"
+                  }}
+                >
+                  <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                      {proposal.sections.settings?.upgradesTitle || "Upgrades"}
+                    </h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Optional add-ons and alternate scope items.
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {proposal.sections.upgrades.map((upgrade: any) => (
+                      <div
+                        key={upgrade.id}
+                        className="border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white mb-3">
+                          {upgrade.name}
+                        </div>
+                        {upgrade.items
+                          .filter((item: any) => item.visible)
+                          .map((item: any) => (
+                            <div key={item.id}>
+                              {item.isHeading ? (
+                                <>
+                                  <hr className="border-gray-300 dark:border-gray-600 my-3" />
+                                  <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
+                                    {item.name}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="mb-2 pl-3 text-sm">
+                                  <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 dark:text-white">
+                                        {item.name}
+                                      </div>
+                                      {item.description && (
+                                        <div
+                                          className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                          dangerouslySetInnerHTML={{
+                                            __html: toRichHtml(item.description),
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+                                    {item.unitCost && item.qty && (
+                                      <div className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                        $
+                                        {(
+                                          parseFloat(item.unitCost) *
+                                          parseFloat(item.qty)
+                                        ).toFixed(2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Summary Section */}
             {proposal.sections?.items && (

@@ -3230,8 +3230,8 @@ export default function ProposalBuilder({
           {/* Edit Options Modal */}
           {showEditModal && (
             <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50">
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="h-full min-h-0 flex flex-col">
+                <div className="shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-2">
                     <EditableText
                       value={optionTitle}
@@ -3247,8 +3247,8 @@ export default function ProposalBuilder({
                   </button>
                 </div>
 
-                <div className="flex-1 flex flex-col">
-                  <div className="border-b border-gray-200 dark:border-gray-700">
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <div className="shrink-0 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex">
                       {["Estimate", "Upgrade", "Profitability"].map((tab) => (
                         <button
@@ -3265,7 +3265,7 @@ export default function ProposalBuilder({
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-auto">
+                  <div className="flex-1 min-h-0 overflow-auto">
                     {activeTab === "Estimate" && (
                       <div>
                         <div className="p-4">
@@ -4663,7 +4663,7 @@ export default function ProposalBuilder({
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="shrink-0 flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 backdrop-blur">
                     <button
                       onClick={() => setShowEditModal(false)}
                       className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
