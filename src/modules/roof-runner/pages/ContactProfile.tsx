@@ -180,13 +180,13 @@ const ContactProfile: React.FC = () => {
   };
 
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setContactFormData({ ...contactFormData, phone: formatted });
+    // const formatted = formatPhoneNumber(value);
+    setContactFormData({ ...contactFormData, phone: value });
   };
 
   const handleSecondaryPhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setSecondaryPhone({ ...secondaryPhone, phone: formatted });
+    // const formatted = formatPhoneNumber(value);
+    setSecondaryPhone({ ...secondaryPhone, phone: value });
   };
 
   const handleAddressChange = (
