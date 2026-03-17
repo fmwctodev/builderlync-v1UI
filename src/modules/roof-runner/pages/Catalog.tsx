@@ -654,7 +654,14 @@ export default function Catalog() {
                     </td>
                   )}
                   {columnVisibility.name && <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.name}</td>}
-                  {columnVisibility.description && <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.description || '-'}</td>}
+                  {columnVisibility.description && (
+                    <td
+                      className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate"
+                      title={item.description || '-'}
+                    >
+                      {item.description || '-'}
+                    </td>
+                  )}
                   {columnVisibility.measurements && <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.measurements || '-'}</td>}
                   {columnVisibility.coverage && <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.coverage}</td>}
                   {columnVisibility.supplier && (
