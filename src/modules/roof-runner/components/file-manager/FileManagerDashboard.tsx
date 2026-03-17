@@ -218,7 +218,9 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Files</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalFiles}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {stats.totalFiles}{stats.totalFiles >= 1000 ? '+' : ''}
+                </p>
               </div>
             </div>
           </div>
@@ -230,7 +232,9 @@ export default function FileManagerDashboard({ connection, onRefresh }: FileMana
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Folders</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalFolders}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {stats.totalFolders}{stats.totalFolders >= 1000 ? '+' : ''}
+                </p>
               </div>
             </div>
           </div>
