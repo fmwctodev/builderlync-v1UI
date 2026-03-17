@@ -19,6 +19,7 @@ interface EstimateReviewProps {
         timeline: string;
         financing: string;
         projectDetails: string;
+        stories?: string | number;
         financing_link?: string;
       };
       calculations: {
@@ -27,6 +28,7 @@ interface EstimateReviewProps {
         pricePerSqFt: number;
         basePrice: number;
         finalPrice: number;
+        screenshotUrl?: string;
       };
     };
     estimator: {
@@ -113,16 +115,33 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
     const areaSqFt = calculations.roofArea || 0;
     const pricing = material.pricing || {};
     let pricePerSqFt = 0;
+    const steepness = project_details.roofSteepness?.toLowerCase();
 
-    switch (project_details.roofSteepness?.toLowerCase()) {
-      case 'low': pricePerSqFt = parseFloat(pricing.lowPitch); break;
-      case 'moderate': pricePerSqFt = parseFloat(pricing.moderatePitch); break;
-      case 'steep': pricePerSqFt = parseFloat(pricing.steepPitch); break;
-      default: pricePerSqFt = parseFloat(pricing.moderatePitch);
+    if (steepness?.includes('low')) {
+      pricePerSqFt = parseFloat(pricing.lowPitch);
+    } else if (steepness?.includes('moderate')) {
+      pricePerSqFt = parseFloat(pricing.moderatePitch);
+    } else if (steepness?.includes('steep')) {
+      pricePerSqFt = parseFloat(pricing.steepPitch);
+    } else if (steepness?.includes('flat')) {
+      pricePerSqFt = parseFloat(pricing.flat);
+    } else {
+      pricePerSqFt = parseFloat(pricing.moderatePitch);
     }
 
     if (isNaN(pricePerSqFt)) pricePerSqFt = 0;
-    return areaSqFt * pricePerSqFt;
+
+    let totalPrice = areaSqFt * pricePerSqFt;
+
+    // Add multi-story surcharge if applicable
+    const storiesValue = project_details.stories;
+    const stories = typeof storiesValue === 'number' ? storiesValue : parseInt(storiesValue || '1');
+    if (project_details.buildingType?.toLowerCase().includes('multi') || stories > 1) {
+      const surcharge = parseFloat(pricing.multiStorySurcharge) || 0;
+      totalPrice += areaSqFt * surcharge;
+    }
+
+    return totalPrice;
   };
 
   const formatPrice = (price: number) => {
@@ -276,15 +295,20 @@ const EstimateReview: React.FC<EstimateReviewProps> = ({ estimateData, propertyI
 
                 <div className="flex items-center justify-center">
                   <div className="w-full h-64 bg-gray-700 rounded-lg relative overflow-hidden">
-                    {propertyImage ? (
-                      <img src={propertyImage} alt="Satellite View" className="w-full h-full object-cover opacity-90" />
+                    {(propertyImage || calculations.screenshotUrl) ? (
+                      <img
+                        src={propertyImage || (calculations as any).screenshotUrl}
+                        alt="Satellite View"
+                        className="w-full h-full object-cover opacity-90"
+                      />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-green-800 to-green-900"></div>
-                    )}
+                    )
+                    }
                     <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-800">
                       Satellite view
                     </div>
-                    {!propertyImage && (
+                    {!(propertyImage || calculations.screenshotUrl) && (
                       <>
                         <div className="absolute bottom-2 left-2 text-xs text-white opacity-75">
                           CNES / Airbus, Maxar Technologies | Terms | Report a map error

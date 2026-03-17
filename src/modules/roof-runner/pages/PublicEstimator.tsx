@@ -79,6 +79,11 @@ const PublicEstimator: React.FC = () => {
       setEstimateData(data);
       setLeadId(id);
 
+      // Restore property image if available
+      if (data.estimate?.calculations?.screenshotUrl) {
+        setPropertyImage(data.estimate.calculations.screenshotUrl);
+      }
+
       // Also set estimatorData for consistent branding if needed
       if (data.estimator) {
         console.log('[PublicEstimator] Setting estimator data for branding:', data.estimator);
@@ -410,7 +415,8 @@ const PublicEstimator: React.FC = () => {
       const submitData = {
         ...formData,
         address,
-        roofArea: calculatedRoofArea > 0 ? calculatedRoofArea : 2500
+        roofArea: calculatedRoofArea > 0 ? calculatedRoofArea : 2500,
+        screenshotUrl: propertyImage
       };
 
       console.log('Sending Submit Data:', submitData);

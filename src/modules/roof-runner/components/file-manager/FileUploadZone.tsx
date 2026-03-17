@@ -35,7 +35,7 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
       const file = acceptedFiles[i];
 
       try {
-        await backendFilesApi.uploadFile(file, folderId, (progress, fileName) => {
+        await backendFilesApi.uploadFile(file, folderId, 'google', (progress, fileName) => {
           setUploadingFiles(prev =>
             prev.map(uf =>
               uf.file.name === fileName
@@ -92,8 +92,8 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
                 }`}
             >
               <input {...getInputProps()} />

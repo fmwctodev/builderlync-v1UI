@@ -120,6 +120,7 @@ export default function FileManager() {
       const uploadedFile = await backendFilesApi.uploadFile(
         file,
         folderId,
+        'google',
         (progress) => {
           setUploadProgress({ loaded: 0, total: 0, percentage: progress });
         }
@@ -252,32 +253,6 @@ export default function FileManager() {
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    try {
-      setUploadFileName(file.name);
-      setUploadStatus('uploading');
-      setUploadError(null);
-
-      const uploadedFile = await backendFilesApi.uploadFile(
-        file,
-        currentFolderId,
-        (progress) => {
-          setUploadProgress({ loaded: 0, total: 0, percentage: progress });
-        }
-      );
-
-      setFiles([...files, uploadedFile]);
-      setUploadStatus('success');
-
-      setTimeout(() => {
-        setUploadStatus(null);
-      }, 2000);
-    } catch (err) {
-      console.error('Error uploading file:', err);
-      setUploadStatus('error');
-      setUploadError(err instanceof Error ? err.message : 'Failed to upload file');
-    }
-  };
 
   const handleDeleteFile = async (fileId: string | number) => {
     try {
