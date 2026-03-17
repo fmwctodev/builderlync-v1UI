@@ -405,37 +405,47 @@ const getAccessToken = () => {
         .replace(/[<>]/g, "")
         .toLowerCase();
       
-      // Check for highlight color (RGB for #fef08a is 254, 240, 138)
-      const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
+      // Robust highlight detection: walk up tree or check queryCommandValue
+      let isHighlighted = false;
+      const selRange = selection.getRangeAt(0);
+      let walkNode: Node | null = selRange.startContainer;
       
-      // Check if current selection is inside a <mark> tag
-      let isInsideMark = false;
-      if (selection.rangeCount > 0) {
-        let node: Node | null = selection.getRangeAt(0).startContainer;
-        while (node && node !== editor) {
-          if (node.nodeName === "MARK") {
-            isInsideMark = true;
+      while (walkNode && walkNode !== editor) {
+        if (walkNode.nodeName === "MARK") {
+          isHighlighted = true;
+          break;
+        }
+        if (walkNode.nodeType === Node.ELEMENT_NODE) {
+          const el = walkNode as HTMLElement;
+          const bg = el.style.backgroundColor;
+          if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+            isHighlighted = true;
             break;
           }
-          node = node.parentNode;
         }
+        walkNode = walkNode.parentNode;
       }
 
-      const highlightActive =
-        isInsideMark ||
-        (!!highlightValue &&
-        highlightValue !== "transparent" &&
-        highlightValue !== "rgba(0, 0, 0, 0)" &&
-        highlightValue !== "none" &&
-        highlightValue !== "inherit" &&
-        highlightValue !== "initial");
+      if (!isHighlighted) {
+        const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
+        isHighlighted =
+          !!highlightValue &&
+          highlightValue !== "transparent" &&
+          highlightValue !== "rgba(0, 0, 0, 0)" &&
+          highlightValue !== "none" &&
+          highlightValue !== "inherit" &&
+          highlightValue !== "initial" &&
+          highlightValue !== "white" &&
+          highlightValue !== "rgb(255, 255, 255)" &&
+          highlightValue !== "#ffffff";
+      }
 
       setFormatState({
         bold: document.queryCommandState("bold"),
         italic: document.queryCommandState("italic"),
         underline: document.queryCommandState("underline"),
         h2: blockValue === "h2",
-        highlight: highlightActive,
+        highlight: isHighlighted,
       });
     };
 
@@ -494,46 +504,36 @@ const getAccessToken = () => {
           setTempValue(html);
           refreshToolbarState();
         };
-
         const toggleHighlight = () => {
           editorRef.current?.focus();
 
           if (formatState.highlight) {
-            // To remove highlighting, we try a few things:
-            
-            // 1. Check if the selection is inside a <mark> tag and unwrap it
+            // 1. Try browser's standard remove highlight first
+            document.execCommand("hiliteColor", false, "transparent");
+            document.execCommand("hiliteColor", false, "inherit");
+
+            // 2. Surgical unwrap for MARK or colored SPAN
             const selection = window.getSelection();
             if (selection && selection.rangeCount > 0) {
               const range = selection.getRangeAt(0);
               let node: Node | null = range.startContainer;
               
-              // Move up to find the closest MARK or SPAN with background
               while (node && node !== editorRef.current) {
                 if (node.nodeName === "MARK" || (node.nodeName === "SPAN" && (node as HTMLElement).style.backgroundColor)) {
                   const el = node as HTMLElement;
                   const parent = el.parentNode;
                   if (parent) {
-                    // Replace element with its children
                     const fragment = document.createDocumentFragment();
                     while (el.firstChild) {
                       fragment.appendChild(el.firstChild);
                     }
                     parent.replaceChild(fragment, el);
-                    
-                    const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
-                    setTempValue(html);
-                    refreshToolbarState();
-                    return;
+                    break;
                   }
                 }
                 node = node.parentNode;
               }
             }
-
-            // 2. Fallback to execCommand for span-based highlighting
-            document.execCommand("hiliteColor", false, "transparent");
-            // Some browsers need 'inherit' or 'initial'
-            document.execCommand("hiliteColor", false, "inherit");
           } else {
             // Add highlighting
             document.execCommand("hiliteColor", false, "#fef08a");
@@ -541,7 +541,7 @@ const getAccessToken = () => {
 
           const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
           setTempValue(html);
-          refreshToolbarState();
+          setTimeout(refreshToolbarState, 10);
         };
 
         const insertHr = () => {
