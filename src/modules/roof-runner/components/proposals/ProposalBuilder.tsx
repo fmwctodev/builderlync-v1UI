@@ -1292,6 +1292,27 @@ export default function ProposalBuilder({
     setSelectedUpgradeItems(newMap);
   };
 
+  const addOptions = [
+    {
+      icon: Image,
+      title: "Photos",
+      description:
+        "Add images that can be annotated and accompanied by detailed descriptions",
+    },
+    {
+      icon: FileType,
+      title: "PDF",
+      description:
+        "Attach PDFs to complement your proposal, such as marketing or manufacturer documents",
+    },
+    {
+      icon: FileText,
+      title: "Text",
+      description:
+        "Customize your proposal with a text section that supports inline signatures and initials",
+    },
+  ];
+
   const handleSectionDragStart = (index: number) => {
     setDraggedSectionIndex(index);
   };
@@ -1422,7 +1443,16 @@ export default function ProposalBuilder({
 
           for (const attr of Array.from(el.attributes)) {
             if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
+            // Allow class on mark for highlighting
+            if (el.tagName === "MARK" && attr.name === "class") continue;
+            // Allow style for background-color on spans
+            if (el.tagName === "SPAN" && attr.name === "style" && attr.value.includes("background-color")) continue;
             el.removeAttribute(attr.name);
+          }
+
+          // Un-wrap spans with no attributes (cleaning up after un-highlighting)
+          if (el.tagName === "SPAN" && el.attributes.length === 0) {
+            el.replaceWith(...Array.from(el.childNodes));
           }
 
           if (el.tagName === "A") {
@@ -1463,6 +1493,7 @@ export default function ProposalBuilder({
     className?: string;
     multiline?: boolean;
     richText?: boolean;
+    maxLength?: number;
     triggerFocus?: boolean;
     onFocusComplete?: () => void;
   }
@@ -1474,6 +1505,7 @@ export default function ProposalBuilder({
     className = "",
     multiline = false,
     richText = false,
+    maxLength,
     triggerFocus = false,
     onFocusComplete,
   }: EditableTextProps) => {
@@ -1483,15 +1515,71 @@ export default function ProposalBuilder({
       bold: false,
       italic: false,
       underline: false,
-      unorderedList: false,
-      orderedList: false,
       h2: false,
       highlight: false,
     });
+    const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+    const [showFontMenu, setShowFontMenu] = useState(false);
+    const [activeHeading, setActiveHeading] = useState("Normal");
+    const [activeFont, setActiveFont] = useState("Default");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const editorRef = useRef<HTMLDivElement>(null);
     const initializedRichEditorRef = useRef(false);
+    const [clickOffset, setClickOffset] = useState<number | null>(null);
     const isDisabled = proposalStatus === 'sent';
+
+    const getCaretOffsetFromPoint = (e: React.MouseEvent, container: HTMLElement) => {
+      let offset = 0;
+      if (document.caretRangeFromPoint) {
+        const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+        if (range && container.contains(range.startContainer)) {
+          const preRange = range.cloneRange();
+          preRange.selectNodeContents(container);
+          preRange.setEnd(range.startContainer, range.startOffset);
+          offset = preRange.toString().length;
+        }
+      }
+      return offset;
+    };
+
+    const setCaretAtOffset = (element: HTMLElement, offset: number) => {
+      const selection = window.getSelection();
+      if (!selection) return;
+
+      const range = document.createRange();
+      let currentOffset = 0;
+      let foundNode = false;
+
+      const traverseNodes = (node: Node) => {
+        if (foundNode) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const textLength = node.textContent?.length || 0;
+          if (currentOffset + textLength >= offset) {
+            range.setStart(node, offset - currentOffset);
+            range.collapse(true);
+            foundNode = true;
+          } else {
+            currentOffset += textLength;
+          }
+        } else {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            traverseNodes(node.childNodes[i]);
+            if (foundNode) break;
+          }
+        }
+      };
+
+      traverseNodes(element);
+      if (foundNode) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    };
 
     const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
       let node = el?.parentElement || null;
@@ -1526,11 +1614,11 @@ export default function ProposalBuilder({
         setIsEditing(true);
         if (onFocusComplete) onFocusComplete();
       }
-    }, [triggerFocus, onFocusComplete]);
+    }, [triggerFocus, onFocusComplete, isDisabled]);
 
     useEffect(() => {
       setTempValue(richText && multiline ? toRichHtml(value) : value);
-    }, [value]);
+    }, [value, richText, multiline]);
 
     useEffect(() => {
       if (!(isEditing && multiline && richText) || isDisabled) {
@@ -1538,20 +1626,64 @@ export default function ProposalBuilder({
         return;
       }
       const el = editorRef.current;
-      if (!el || initializedRichEditorRef.current) return;
-      el.innerHTML = richText && multiline ? toRichHtml(value) : value;
-      initializedRichEditorRef.current = true;
-      requestAnimationFrame(() => {
+      if (!el) return;
+
+      if (!initializedRichEditorRef.current) {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+        el.innerHTML = richText && multiline ? toRichHtml(value) : value;
+        initializedRichEditorRef.current = true;
         el.focus();
+
+        if (clickOffset !== null) {
+          setCaretAtOffset(el, clickOffset);
+          setClickOffset(null);
+        } else {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+
+        setTimeout(() => {
+          window.scrollTo(scrollLeft, scrollTop);
+        }, 0);
+      }
+    }, [isEditing, multiline, richText, isDisabled]);
+
+    useEffect(() => {
+      if (isEditing && multiline && richText && initializedRichEditorRef.current && !isDisabled) {
+        const el = editorRef.current;
+        if (!el) return;
+
         const selection = window.getSelection();
-        if (!selection) return;
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      });
-    }, [isEditing, multiline, richText, isDisabled, value]);
+        let savedRange = null;
+        if (selection && selection.rangeCount > 0) {
+          savedRange = selection.getRangeAt(0).cloneRange();
+        }
+
+        el.innerHTML = richText && multiline ? toRichHtml(value) : value;
+
+        if (savedRange && el.contains(savedRange.startContainer)) {
+          requestAnimationFrame(() => {
+            try {
+              const currentSelection = window.getSelection();
+              if (currentSelection) {
+                currentSelection.removeAllRanges();
+                currentSelection.addRange(savedRange);
+              }
+            } catch (e) {
+              // Ignore range errors
+            }
+          });
+        }
+      }
+    }, [value, isEditing, multiline, richText, isDisabled]);
 
     useEffect(() => {
       if (isEditing && multiline) {
@@ -1570,19 +1702,34 @@ export default function ProposalBuilder({
       const blockValue = String(document.queryCommandValue("formatBlock") || "")
         .replace(/[<>]/g, "")
         .toLowerCase();
+      
       const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
+      
+      let isInsideMark = false;
+      if (selection.rangeCount > 0) {
+        let node: Node | null = selection.getRangeAt(0).startContainer;
+        while (node && node !== editor) {
+          if (node.nodeName === "MARK") {
+            isInsideMark = true;
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+
       const highlightActive =
-        !!highlightValue &&
+        isInsideMark ||
+        (!!highlightValue &&
         highlightValue !== "transparent" &&
         highlightValue !== "rgba(0, 0, 0, 0)" &&
-        highlightValue !== "none";
+        highlightValue !== "none" &&
+        highlightValue !== "inherit" &&
+        highlightValue !== "initial");
 
       setFormatState({
         bold: document.queryCommandState("bold"),
         italic: document.queryCommandState("italic"),
         underline: document.queryCommandState("underline"),
-        unorderedList: document.queryCommandState("insertUnorderedList"),
-        orderedList: document.queryCommandState("insertOrderedList"),
         h2: blockValue === "h2",
         highlight: highlightActive,
       });
@@ -1605,6 +1752,70 @@ export default function ProposalBuilder({
         const runCmd = (command: string, val?: string) => {
           editorRef.current?.focus();
           document.execCommand(command, false, val);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          refreshToolbarState();
+        };
+
+        const insertBullet = () => {
+          editorRef.current?.focus();
+          const selection = window.getSelection();
+          if (!selection || selection.rangeCount === 0) return;
+
+          const range = selection.getRangeAt(0);
+          const currentNode = range.startContainer;
+          const currentText = currentNode.textContent || "";
+          const startOffset = range.startOffset;
+
+          if (currentText.startsWith("• ") && startOffset >= 2) {
+            const newText = currentText.substring(2);
+            currentNode.textContent = newText;
+            const newRange = document.createRange();
+            newRange.setStart(currentNode, Math.max(0, startOffset - 2));
+            newRange.setEnd(currentNode, Math.max(0, startOffset - 2));
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          } else {
+            document.execCommand("insertText", false, "• ");
+          }
+
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          refreshToolbarState();
+        };
+
+        const toggleHighlight = () => {
+          editorRef.current?.focus();
+
+          if (formatState.highlight) {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              let node: Node | null = range.startContainer;
+              while (node && node !== editorRef.current) {
+                if (node.nodeName === "MARK") {
+                  const parent = node.parentNode;
+                  if (parent) {
+                    while (node.firstChild) {
+                      parent.insertBefore(node.firstChild, node);
+                    }
+                    parent.removeChild(node);
+                    
+                    const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+                    setTempValue(html);
+                    refreshToolbarState();
+                    return;
+                  }
+                }
+                node = node.parentNode;
+              }
+            }
+            document.execCommand("hiliteColor", false, "transparent");
+            document.execCommand("hiliteColor", false, "inherit");
+          } else {
+            document.execCommand("hiliteColor", false, "#fef08a");
+          }
+
           const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
           setTempValue(html);
           refreshToolbarState();
@@ -1651,55 +1862,151 @@ export default function ProposalBuilder({
           onChange(html);
         };
 
-        const toggleHeading = () => {
-          runCmd("formatBlock", formatState.h2 ? "<p>" : "<h2>");
+        const HEADINGS = [
+          { label: "Normal", tag: "<p>" },
+          { label: "H1", tag: "<h1>" },
+          { label: "H2", tag: "<h2>" },
+          { label: "H3", tag: "<h3>" },
+          { label: "H4", tag: "<h4>" },
+          { label: "H5", tag: "<h5>" },
+          { label: "H6", tag: "<h6>" },
+        ];
+
+        const FONTS = [
+          "Default",
+          "Arial",
+          "Georgia",
+          "Times New Roman",
+          "Courier New",
+          "Verdana",
+          "Trebuchet MS",
+          "Impact",
+        ];
+
+        const applyHeading = (tag: string, label: string) => {
+          editorRef.current?.focus();
+          document.execCommand("formatBlock", false, tag);
+          setActiveHeading(label);
+          setShowHeadingMenu(false);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
         };
 
-        const toolbarBtnClass = (isActive = false, extra = "") =>
-          `px-2 py-0.5 text-xs border rounded transition-colors ${
-            isActive
-              ? "border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-300"
-              : "border-gray-300 dark:border-gray-600"
-          } ${extra}`;
+        const applyFont = (font: string) => {
+          editorRef.current?.focus();
+          if (font === "Default") {
+            document.execCommand("removeFormat", false);
+          } else {
+            document.execCommand("fontName", false, font);
+          }
+          setActiveFont(font);
+          setShowFontMenu(false);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+        };
 
         return (
           <div className="w-full">
-            <div className="mb-1 flex flex-wrap items-center gap-1">
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("bold")} className={toolbarBtnClass(formatState.bold)}>B</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("italic")} className={toolbarBtnClass(formatState.italic, "italic")}>I</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("underline")} className={toolbarBtnClass(formatState.underline, "underline")}>U</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={toggleHeading} className={toolbarBtnClass(formatState.h2)}>H2</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertUnorderedList")} className={toolbarBtnClass(formatState.unorderedList)}>UL</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("insertOrderedList")} className={toolbarBtnClass(formatState.orderedList)}>OL</button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => runCmd("hiliteColor", formatState.highlight ? "transparent" : "#fef08a")}
-                className={toolbarBtnClass(formatState.highlight)}
+            <div
+              className="flex items-center gap-0.5 px-2 py-1.5 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md w-fit max-w-full flex-wrap"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <div className="relative">
+                <button type="button" onClick={() => { setShowFontMenu(p => !p); setShowHeadingMenu(false); }}
+                  className="flex items-center gap-1 px-2 h-7 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600 min-w-[90px] justify-between"
+                >
+                  <span style={{fontFamily: activeFont === "Default" ? undefined : activeFont}} className="truncate max-w-[70px]">{activeFont}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {showFontMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 min-w-[150px] overflow-hidden">
+                    {FONTS.map(font => (
+                      <button key={font} type="button"
+                        onClick={() => applyFont(font)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeFont === font ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300" : "text-gray-700 dark:text-gray-300"}`}
+                        style={{fontFamily: font === "Default" ? undefined : font}}
+                      >{font}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <div className="relative">
+                <button type="button" onClick={() => { setShowHeadingMenu(p => !p); setShowFontMenu(false); }}
+                  className="flex items-center gap-1 px-2 h-7 rounded text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600 min-w-[64px] justify-between"
+                >
+                  {activeHeading}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {showHeadingMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 min-w-[110px] overflow-hidden">
+                    {HEADINGS.map(h => (
+                      <button key={h.label} type="button"
+                        onClick={() => applyHeading(h.tag, h.label)}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeHeading === h.label ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300" : "text-gray-700 dark:text-gray-300"}`}
+                        style={{
+                          fontSize: h.label === "H1" ? "1.3em" : h.label === "H2" ? "1.15em" : h.label === "H3" ? "1em" : "0.85em",
+                          fontWeight: h.label !== "Normal" ? 700 : 400,
+                        }}
+                      >{h.label === "Normal" ? "Normal Text" : h.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <button type="button" onClick={() => runCmd("bold")} title="Bold"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-bold transition-colors ${formatState.bold ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >B</button>
+              <button type="button" onClick={() => runCmd("italic")} title="Italic"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs italic font-semibold transition-colors ${formatState.italic ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >I</button>
+              <button type="button" onClick={() => runCmd("underline")} title="Underline"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs underline font-semibold transition-colors ${formatState.underline ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >U</button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <button type="button" onClick={insertBullet} title="Insert bullet"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >•</button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <button type="button"
+                onClick={toggleHighlight}
+                title="Highlight"
+                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.highlight ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+              <button type="button" onClick={insertLink} title="Insert link"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                Highlight
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={insertLink}
-                className={toolbarBtnClass(false)}
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <button type="button" onClick={() => runCmd("undo")} title="Undo"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                Link
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
               </button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("undo")} className={toolbarBtnClass(false)}>Undo</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => runCmd("redo")} className={toolbarBtnClass(false)}>Redo</button>
+              <button type="button" onClick={() => runCmd("redo")} title="Redo"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+              </button>
             </div>
             <div
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              onInput={() => setTempValue(sanitizeRichHtml(editorRef.current?.innerHTML || ""))}
+              onInput={() => {
+                const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+                setTempValue(html);
+                setTimeout(refreshToolbarState, 0);
+              }}
+              onFocus={() => {
+                setTimeout(refreshToolbarState, 0);
+              }}
               onBlur={onEditorBlur}
               className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus-within:border-primary-500 focus:outline-none px-0 py-1 min-h-[72px] whitespace-pre-wrap break-words`}
             />
             {!tempValue && (
-              <div className="text-gray-400 dark:text-gray-500 text-sm mt-1">{placeholder}</div>
+              <div className="text-gray-400 dark:text-gray-500 text-sm mt-1 pointer-events-none">{placeholder}</div>
             )}
           </div>
         );
@@ -1717,6 +2024,7 @@ export default function ProposalBuilder({
           onBlur={handleBlur}
           autoFocus
           placeholder={placeholder}
+          maxLength={maxLength}
           rows={1}
           className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1 resize-none overflow-hidden`}
         />
@@ -1728,6 +2036,7 @@ export default function ProposalBuilder({
           onBlur={handleBlur}
           autoFocus
           placeholder={placeholder}
+          maxLength={maxLength}
           className={`${className} w-full bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:outline-none px-0 py-1`}
         />
       );
@@ -1736,7 +2045,12 @@ export default function ProposalBuilder({
     if (richText && multiline && value) {
       return (
         <div
-          onClick={() => !isDisabled && setIsEditing(true)}
+          onClick={(e) => {
+            if (isDisabled) return;
+            const offset = getCaretOffsetFromPoint(e, e.currentTarget);
+            setClickOffset(offset);
+            setIsEditing(true);
+          }}
           className={`${className} ${isDisabled ? "cursor-default" : "cursor-pointer"} inline-block w-full py-1`}
           dangerouslySetInnerHTML={{ __html: toRichHtml(value) }}
         />
@@ -1745,15 +2059,20 @@ export default function ProposalBuilder({
 
     return (
       <span
-        onClick={() => !isDisabled && setIsEditing(true)}
-        className={`${className} ${isDisabled ? 'cursor-default' : 'cursor-pointer'} inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
+        onClick={(e) => {
+          if (isDisabled) return;
+          const offset = getCaretOffsetFromPoint(e, e.currentTarget);
+          setClickOffset(offset);
+          setIsEditing(true);
+        }}
+        className={`${className} ${isDisabled ? "cursor-default" : "cursor-pointer"} inline-block w-full py-1 ${!value ? "text-gray-400 dark:text-gray-500" : ""}`}
       >
         {value || placeholder}
       </span>
     );
   };
 
-  const addOptions = [
+  const sectionTypes = [
     {
       icon: Image,
       title: "Photos",

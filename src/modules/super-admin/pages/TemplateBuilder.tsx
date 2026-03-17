@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   X,
@@ -14,12 +14,11 @@ import {
   Save,
   GripVertical,
   Upload,
+  Minus,
 } from "lucide-react";
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
-import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
-import { getBusinessInfo } from '../../../../shared/store/services/businessInfoApi';
-import { templateApi } from '../../services/templateApi';
+import { templateApi } from "@/modules/roof-runner/services/templateApi";
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -76,9 +75,6 @@ interface Item {
   checked: boolean;
   isHeading?: boolean;
   isCustom?: boolean;
-  catalogItemId?: string;
-  pricingSource?: "manual" | "catalog_live";
-  priceSyncedAt?: string;
 }
 
 interface Upgrade {
@@ -102,44 +98,6 @@ interface Section {
   };
 }
 
-const syncLiveCatalogPricing = (items: Item[], catalogItems: APICatalogItem[]): Item[] => {
-  if (!items.length || !catalogItems.length) return items;
-  const catalogMap = new Map(catalogItems.map((item) => [String(item.id), item]));
-  let changed = false;
-
-  const nextItems = items.map((item) => {
-    const isCatalogLinked =
-      Boolean(item.catalogItemId) &&
-      (item.pricingSource === "catalog_live" || item.pricingSource === undefined);
-    if (!isCatalogLinked || !item.catalogItemId) return item;
-    const catalogItem = catalogMap.get(String(item.catalogItemId));
-    if (!catalogItem) return item;
-
-    const nextUnitCost = getCatalogFinalUnitCost(catalogItem);
-    const nextSalesTax = catalogItem.salesTax?.toString() || "0";
-
-    if (item.unitCost === nextUnitCost && item.salesTax === nextSalesTax) return item;
-
-    changed = true;
-    return {
-      ...item,
-      unitCost: nextUnitCost,
-      salesTax: nextSalesTax,
-      pricingSource: "catalog_live",
-      priceSyncedAt: new Date().toISOString(),
-    };
-  });
-
-  return changed ? nextItems : items;
-};
-
-const getCatalogFinalUnitCost = (catalogItem: APICatalogItem): string => {
-  const preTaxCost = Number(catalogItem.preTaxCost || 0);
-  const materialPurchaseTax = Number(catalogItem.materialPurchaseTax || 0);
-  const finalUnitCost = preTaxCost + (preTaxCost * materialPurchaseTax) / 100;
-  return Number.isFinite(finalUnitCost) ? finalUnitCost.toFixed(2) : "0.00";
-};
-
 const getAccessToken = () => {
   const isSuperAdminRoute = window.location.pathname.startsWith('/super-admin');
   if (isSuperAdminRoute) {
@@ -162,7 +120,7 @@ const getAccessToken = () => {
       "B", "STRONG", "I", "EM", "U",
       "UL", "OL", "LI",
       "H1", "H2", "H3",
-      "A", "MARK"
+      "A", "MARK", "HR"
     ]);
 
     const walk = (node: Node) => {
@@ -177,7 +135,18 @@ const getAccessToken = () => {
 
           for (const attr of Array.from(el.attributes)) {
             if (el.tagName === "A" && ["href", "target", "rel"].includes(attr.name)) continue;
+            // Allow class on mark for highlighting
+            if (el.tagName === "MARK" && attr.name === "class") continue;
+            // Allow class on hr for styling
+            if (el.tagName === "HR" && attr.name === "class") continue;
+            // Allow style for background-color on spans
+            if (el.tagName === "SPAN" && attr.name === "style" && attr.value.includes("background-color")) continue;
             el.removeAttribute(attr.name);
+          }
+
+          // Un-wrap spans with no attributes (cleaning up after un-highlighting)
+          if (el.tagName === "SPAN" && el.attributes.length === 0) {
+            el.replaceWith(...Array.from(el.childNodes));
           }
 
           if (el.tagName === "A") {
@@ -251,6 +220,7 @@ const getAccessToken = () => {
     const initializedRichEditorRef = useRef(false);
     const [clickOffset, setClickOffset] = useState<number | null>(null);
 
+    // Helper to get character offset within an element from a point
     const getCaretOffsetFromPoint = (e: React.MouseEvent, container: HTMLElement) => {
       let offset = 0;
       if (document.caretRangeFromPoint) {
@@ -265,6 +235,7 @@ const getAccessToken = () => {
       return offset;
     };
 
+    // Helper to set caret to a specific character offset
     const setCaretAtOffset = (element: HTMLElement, offset: number) => {
       const selection = window.getSelection();
       if (!selection) return;
@@ -298,6 +269,7 @@ const getAccessToken = () => {
         selection.removeAllRanges();
         selection.addRange(range);
       } else {
+        // Fallback to end if offset not found
         range.selectNodeContents(element);
         range.collapse(false);
         selection.removeAllRanges();
@@ -352,19 +324,24 @@ const getAccessToken = () => {
       const el = editorRef.current;
       if (!el) return;
 
+      // Only initialize content if not already initialized
       if (!initializedRichEditorRef.current) {
+        // Save current scroll position
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
 
         el.innerHTML = richText && multiline ? toRichHtml(value) : value;
         initializedRichEditorRef.current = true;
 
+        // Focus immediately to make editor active
         el.focus();
 
+        // Restore cursor to click position if available
         if (clickOffset !== null) {
           setCaretAtOffset(el, clickOffset);
           setClickOffset(null);
         } else {
+          // Fallback to end
           const range = document.createRange();
           range.selectNodeContents(el);
           range.collapse(false);
@@ -373,25 +350,30 @@ const getAccessToken = () => {
           selection?.addRange(range);
         }
 
+        // Small delay to let focus settle, then restore scroll
         setTimeout(() => {
           window.scrollTo(scrollLeft, scrollTop);
         }, 0);
       }
-    }, [isEditing, multiline, richText]);
+    }, [isEditing, multiline, richText]); // Removed 'value' dependency to prevent re-initialization
 
+    // Handle value changes while editing (preserve cursor position)
     useEffect(() => {
       if (isEditing && multiline && richText && initializedRichEditorRef.current) {
         const el = editorRef.current;
         if (!el) return;
 
+        // Save current selection
         const selection = window.getSelection();
         let savedRange = null;
         if (selection && selection.rangeCount > 0) {
           savedRange = selection.getRangeAt(0).cloneRange();
         }
 
+        // Update content
         el.innerHTML = richText && multiline ? toRichHtml(value) : value;
 
+        // Restore selection if it was within the editor
         if (savedRange && el.contains(savedRange.startContainer)) {
           requestAnimationFrame(() => {
             try {
@@ -423,8 +405,10 @@ const getAccessToken = () => {
         .replace(/[<>]/g, "")
         .toLowerCase();
       
+      // Check for highlight color (RGB for #fef08a is 254, 240, 138)
       const highlightValue = String(document.queryCommandValue("hiliteColor") || "").toLowerCase();
       
+      // Check if current selection is inside a <mark> tag
       let isInsideMark = false;
       if (selection.rangeCount > 0) {
         let node: Node | null = selection.getRangeAt(0).startContainer;
@@ -483,20 +467,26 @@ const getAccessToken = () => {
           if (!selection || selection.rangeCount === 0) return;
 
           const range = selection.getRangeAt(0);
+
+          // Check if we're already at the start of a line with a bullet
           const currentNode = range.startContainer;
           const currentText = currentNode.textContent || "";
           const startOffset = range.startOffset;
 
+          // If cursor is right after a bullet, remove it
           if (currentText.startsWith("• ") && startOffset >= 2) {
+            // Remove the bullet and space
             const newText = currentText.substring(2);
             currentNode.textContent = newText;
 
+            // Adjust cursor position
             const newRange = document.createRange();
             newRange.setStart(currentNode, Math.max(0, startOffset - 2));
             newRange.setEnd(currentNode, Math.max(0, startOffset - 2));
             selection.removeAllRanges();
             selection.addRange(newRange);
           } else {
+            // Insert bullet at cursor position
             document.execCommand("insertText", false, "• ");
           }
 
@@ -509,18 +499,26 @@ const getAccessToken = () => {
           editorRef.current?.focus();
 
           if (formatState.highlight) {
+            // To remove highlighting, we try a few things:
+            
+            // 1. Check if the selection is inside a <mark> tag and unwrap it
             const selection = window.getSelection();
             if (selection && selection.rangeCount > 0) {
               const range = selection.getRangeAt(0);
               let node: Node | null = range.startContainer;
+              
+              // Move up to find the closest MARK or SPAN with background
               while (node && node !== editorRef.current) {
-                if (node.nodeName === "MARK") {
-                  const parent = node.parentNode;
+                if (node.nodeName === "MARK" || (node.nodeName === "SPAN" && (node as HTMLElement).style.backgroundColor)) {
+                  const el = node as HTMLElement;
+                  const parent = el.parentNode;
                   if (parent) {
-                    while (node.firstChild) {
-                      parent.insertBefore(node.firstChild, node);
+                    // Replace element with its children
+                    const fragment = document.createDocumentFragment();
+                    while (el.firstChild) {
+                      fragment.appendChild(el.firstChild);
                     }
-                    parent.removeChild(node);
+                    parent.replaceChild(fragment, el);
                     
                     const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
                     setTempValue(html);
@@ -532,12 +530,23 @@ const getAccessToken = () => {
               }
             }
 
+            // 2. Fallback to execCommand for span-based highlighting
             document.execCommand("hiliteColor", false, "transparent");
+            // Some browsers need 'inherit' or 'initial'
             document.execCommand("hiliteColor", false, "inherit");
           } else {
+            // Add highlighting
             document.execCommand("hiliteColor", false, "#fef08a");
           }
 
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          refreshToolbarState();
+        };
+
+        const insertHr = () => {
+          editorRef.current?.focus();
+          document.execCommand("insertHTML", false, '<hr class="border-t border-gray-900 dark:border-gray-100 mt-[2px] mb-1" />');
           const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
           setTempValue(html);
           refreshToolbarState();
@@ -701,17 +710,26 @@ const getAccessToken = () => {
                 className={`flex items-center justify-center w-7 h-7 rounded text-xs underline font-semibold transition-colors ${formatState.underline ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
               >U</button>
               <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
-              {/* Bullet */}
+              {/* UL */}
               <button type="button" onClick={insertBullet} title="Insert bullet"
                 className="flex items-center justify-center w-7 h-7 rounded text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >•</button>
               <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
-              {/* Highlight */}
-              <button type="button"
-                onClick={toggleHighlight}
-                title="Highlight"
-                className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.highlight ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-              ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+               {/* Highlight */}
+               <div className="flex items-center gap-1">
+                 <button type="button"
+                   onClick={toggleHighlight}
+                   title="Highlight"
+                   className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.highlight ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                 ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+                 {formatState.highlight && <span className="text-[10px] text-red-500 font-bold leading-none animate-pulse">Remove</span>}
+               </div>
+              {/* Horizontal Rule */}
+              <button type="button" onClick={insertHr} title="Horizontal Rule"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Minus size={14} />
+              </button>
               {/* Link */}
               <button type="button" onClick={insertLink} title="Insert link"
                 className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -739,9 +757,11 @@ const getAccessToken = () => {
               onInput={(e) => {
                 const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
                 setTempValue(html);
+                // Refresh toolbar state after input to catch any formatting changes
                 setTimeout(refreshToolbarState, 0);
               }}
               onFocus={() => {
+                // Just refresh toolbar state on focus
                 setTimeout(refreshToolbarState, 0);
               }}
               onBlur={onEditorBlur}
@@ -902,12 +922,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   // Items and upgrades
   const [items, setItems] = useState<Item[]>([]);
   const [upgrades, setUpgrades] = useState<Upgrade[]>([]);
-  const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const catalogInputRef = useRef<HTMLInputElement>(null);
-  const [showUpgradeCatalogDropdown, setShowUpgradeCatalogDropdown] = useState<string | null>(null);
-  const [upgradeCatalogSearch, setUpgradeCatalogSearch] = useState("");
-  const upgradeCatalogInputRef = useRef<HTMLInputElement>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingUpgradeItemId, setEditingUpgradeItemId] = useState<{upgradeId: string, itemId: string} | null>(null);
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
@@ -916,13 +930,10 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [selectedUpgradeItems, setSelectedUpgradeItems] = useState<Map<string, Set<string>>>(new Map());
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [catalogItems, setCatalogItems] = useState<APICatalogItem[]>([]);
-  const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTemplateLocked, setIsTemplateLocked] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<Set<string>>(new Set());
-  const catalogItemsRef = useRef<APICatalogItem[]>([]);
 
   const [sections, setSections] = useState<Section[]>([
     { id: 'cover', name: "Cover", active: true, order: 0 },
@@ -1009,10 +1020,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   };
 
   useEffect(() => {
-    catalogItemsRef.current = catalogItems;
-  }, [catalogItems]);
-
-  useEffect(() => {
     const loadTemplate = async () => {
       setLoading(true);
       try {
@@ -1026,14 +1033,13 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           const contentSections = data.content.sections || [];
           const contentItems = data.content.items || [];
           const contentUpgrades = data.content.upgrades || [];
-          const latestCatalogItems = catalogItemsRef.current || [];
 
           setSections(contentSections);
-          setItems(syncLiveCatalogPricing(contentItems, latestCatalogItems));
+          setItems(contentItems);
           setUpgrades(
             contentUpgrades.map((upgrade: Upgrade) => ({
               ...upgrade,
-              items: syncLiveCatalogPricing(upgrade.items || [], latestCatalogItems),
+              items: upgrade.items || [],
             }))
           );
           
@@ -1066,64 +1072,12 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       }
     };
 
-    const loadBusinessProfile = async () => {
-      try {
-        const response = await getBusinessInfo();
-        if (!response.success || !response.data) return;
-
-        const business = response.data;
-        const repName = [business.representative_first_name, business.representative_last_name]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
-
-        setCompanyName(business.legal_business_name || business.friendly_business_name || repName || "Terrylynn Roofing LLC");
-        setCompanyPhone(business.business_phone || business.representative_phone || "(000) 000-0000");
-        setCompanyEmail(business.business_email || business.representative_email || "Company representative email");
-        setRepresentativeName(repName || business.legal_business_name || business.friendly_business_name || "Company Representative");
-        setRepresentativePhone(business.representative_phone || business.business_phone || "(000) 000-0000");
-        setRepresentativeEmail(business.representative_email || business.business_email || "representative@email.com");
-        if (business.business_logo) {
-          setCompanyLogo(business.business_logo);
-        }
-      } catch (error) {
-        console.error('Failed to load business info:', error);
-      }
-    };
-
-    const loadCatalogItems = async () => {
-      setLoadingCatalog(true);
-      try {
-        const response = await getCatalogItems({});
-        if (response.success && response.data) {
-          setCatalogItems(response.data.items);
-        }
-      } catch (error) {
-        console.error('Failed to load catalog items:', error);
-      } finally {
-        setLoadingCatalog(false);
-      }
-    };
-
     const initialize = async () => {
       await loadTemplate();
-      await loadBusinessProfile();
     };
 
     initialize();
-    loadCatalogItems();
   }, [templateId]);
-
-  useEffect(() => {
-    if (!catalogItems.length) return;
-    setItems((prev) => syncLiveCatalogPricing(prev, catalogItems));
-    setUpgrades((prevUpgrades) =>
-      prevUpgrades.map((upgrade) => ({
-        ...upgrade,
-        items: syncLiveCatalogPricing(upgrade.items, catalogItems),
-      }))
-    );
-  }, [catalogItems]);
 
   // Removed blob URL cleanup since we're now using permanent URLs
 
@@ -1351,11 +1305,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
     );
   };
 
-  const addItem = () => {
-    setShowCatalogDropdown(true);
-    setTimeout(() => catalogInputRef.current?.focus(), 100);
-  };
-
   const addSectionHeading = () => {
     const newHeading: Item = {
       id: crypto.randomUUID(),
@@ -1436,94 +1385,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         u.id === upgradeId ? { ...u, items: [...u.items, newItem] } : u
       )
     );
-  };
-
-  const addItemFromCatalog = (catalogItem: APICatalogItem) => {
-    if (editingItemId) {
-      setItems(prevItems => prevItems.map(i => i.id === editingItemId ? {
-        ...i,
-        name: catalogItem.name,
-        description: catalogItem.description || "",
-        coverage: catalogItem.coverage?.toString() || "",
-        unitCost: getCatalogFinalUnitCost(catalogItem),
-        unit: catalogItem.unit || "square",
-        salesTax: catalogItem.salesTax?.toString() || "0",
-        catalogItemId: String(catalogItem.id),
-        pricingSource: "catalog_live",
-        priceSyncedAt: new Date().toISOString(),
-      } : i));
-      setEditingItemId(null);
-    } else {
-      const newItem: Item = {
-        id: crypto.randomUUID(),
-        name: catalogItem.name,
-        description: catalogItem.description || "",
-        mapping: "",
-        coverage: catalogItem.coverage?.toString() || "",
-        unitCost: getCatalogFinalUnitCost(catalogItem),
-        unit: catalogItem.unit || "square",
-        qty: "1",
-        salesTax: catalogItem.salesTax?.toString() || "0",
-        visible: true,
-        checked: false,
-        catalogItemId: String(catalogItem.id),
-        pricingSource: "catalog_live",
-        priceSyncedAt: new Date().toISOString(),
-      };
-      setItems(prevItems => [...prevItems, newItem]);
-    }
-    setShowCatalogDropdown(false);
-    setCatalogSearch("");
-  };
-
-  const addItemToUpgrade = (upgradeId: string) => {
-    setShowUpgradeCatalogDropdown(upgradeId);
-    setTimeout(() => upgradeCatalogInputRef.current?.focus(), 100);
-  };
-
-  const addItemToUpgradeFromCatalog = (upgradeId: string, catalogItem: APICatalogItem) => {
-    if (editingUpgradeItemId && editingUpgradeItemId.upgradeId === upgradeId) {
-      setUpgrades(prevUpgrades => prevUpgrades.map(u => u.id === upgradeId ? {
-        ...u,
-        items: u.items.map(i => i.id === editingUpgradeItemId.itemId ? {
-          ...i,
-          name: catalogItem.name,
-          description: catalogItem.description || "",
-          coverage: catalogItem.coverage?.toString() || "",
-          unitCost: getCatalogFinalUnitCost(catalogItem),
-          unit: catalogItem.unit || "square",
-          salesTax: catalogItem.salesTax?.toString() || "0",
-          catalogItemId: String(catalogItem.id),
-          pricingSource: "catalog_live",
-          priceSyncedAt: new Date().toISOString(),
-        } : i)
-      } : u));
-      setEditingUpgradeItemId(null);
-    } else {
-      const newItem: Item = {
-        id: crypto.randomUUID(),
-        name: catalogItem.name,
-        description: catalogItem.description || "",
-        mapping: "",
-        coverage: catalogItem.coverage?.toString() || "",
-        unitCost: getCatalogFinalUnitCost(catalogItem),
-        unit: catalogItem.unit || "square",
-        qty: "1",
-        salesTax: catalogItem.salesTax?.toString() || "0",
-        visible: true,
-        checked: false,
-        catalogItemId: String(catalogItem.id),
-        pricingSource: "catalog_live",
-        priceSyncedAt: new Date().toISOString(),
-      };
-      setUpgrades(prevUpgrades =>
-        prevUpgrades.map((u) =>
-          u.id === upgradeId ? { ...u, items: [...u.items, newItem] } : u
-        )
-      );
-    }
-    setShowUpgradeCatalogDropdown(null);
-    setUpgradeCatalogSearch("");
   };
 
   const addUpgrade = () => {
@@ -2360,16 +2221,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
                           >
                             <Plus size={14} />
-                            Add item from catalog
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveTab("Estimate");
-                              setShowEditModal(true);
-                            }}
-                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                          >
-                            <Plus size={14} />
                             Add section heading
                           </button>
                           <button
@@ -2782,44 +2633,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                     onFocus={() => {
                                       if (!item.isCustom) {
                                         setEditingItemId(item.id);
-                                        setShowCatalogDropdown(true);
-                                        setTimeout(() => catalogInputRef.current?.focus(), 100);
                                       }
                                     }}
                                     readOnly={!item.isCustom}
                                     className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
                                   />
-                                  {showCatalogDropdown && editingItemId === item.id && (
-                                    <div className="absolute top-full left-0 mt-1 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                      <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Editing: {item.name}</div>
-                                        <input
-                                          ref={catalogInputRef}
-                                          type="text"
-                                          value={catalogSearch}
-                                          onChange={(e) => setCatalogSearch(e.target.value)}
-                                          placeholder="Search catalog..."
-                                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                          onBlur={() => setTimeout(() => { setShowCatalogDropdown(false); setEditingItemId(null); }, 200)}
-                                        />
-                                      </div>
-                                      <div className="max-h-64 overflow-y-auto">
-                                        {catalogItems
-                                          .filter(item => item.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-                                          .map((item, idx) => (
-                                            <button
-                                              key={idx}
-                                              onClick={() => addItemFromCatalog(item)}
-                                              className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                            >
-                                              <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
-                                              <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
-                                            </button>
-                                          ))}
-                                      </div>
-                                    </div>
-                                  )}
                                 </td>
                                 <td className="px-3 py-2 text-sm">
                                   <input
@@ -2980,45 +2798,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                       </div>
 
                       <div className="flex gap-4 mt-4 text-sm relative">
-                        <div className="relative">
-                          <button
-                            onClick={addItem}
-                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                          >
-                            <Plus size={14} />
-                            Add item from catalog
-                          </button>
-                          {showCatalogDropdown && (
-                            <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                              <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                <input
-                                  ref={catalogInputRef}
-                                  type="text"
-                                  value={catalogSearch}
-                                  onChange={(e) => setCatalogSearch(e.target.value)}
-                                  placeholder="Search catalog..."
-                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  onBlur={() => setTimeout(() => setShowCatalogDropdown(false), 200)}
-                                />
-                              </div>
-                              <div className="max-h-64 overflow-y-auto">
-                                {catalogItems
-                                  .filter(item => item.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-                                  .map((item, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() => addItemFromCatalog(item)}
-                                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                    >
-                                      <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
-                                      <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
-                                    </button>
-                                  ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
                         <button
                           onClick={addCustomItem}
                           className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
@@ -3234,44 +3013,11 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                         onFocus={() => {
                                           if (!uItem.isCustom) {
                                             setEditingUpgradeItemId({upgradeId: upgrade.id, itemId: uItem.id});
-                                            setShowUpgradeCatalogDropdown(upgrade.id);
-                                            setTimeout(() => upgradeCatalogInputRef.current?.focus(), 100);
                                           }
                                         }}
                                         readOnly={!uItem.isCustom}
                                         className="bg-transparent border-0 w-full focus:outline-none focus:border-b border-gray-300 cursor-pointer"
                                       />
-                                      {showUpgradeCatalogDropdown === upgrade.id && editingUpgradeItemId?.itemId === uItem.id && (
-                                        <div className="absolute top-full left-0 mt-1 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                          <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Editing: {uItem.name}</div>
-                                            <input
-                                              ref={upgradeCatalogInputRef}
-                                              type="text"
-                                              value={upgradeCatalogSearch}
-                                              onChange={(e) => setUpgradeCatalogSearch(e.target.value)}
-                                              placeholder="Search catalog..."
-                                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                              onBlur={() => setTimeout(() => { setShowUpgradeCatalogDropdown(null); setEditingUpgradeItemId(null); }, 200)}
-                                            />
-                                          </div>
-                                          <div className="max-h-64 overflow-y-auto">
-                                            {catalogItems
-                                              .filter(item => item.name.toLowerCase().includes(upgradeCatalogSearch.toLowerCase()))
-                                              .map((item, idx) => (
-                                                <button
-                                                  key={idx}
-                                                  onClick={() => addItemToUpgradeFromCatalog(upgrade.id, item)}
-                                                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                                >
-                                                  <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
-                                                  <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
-                                                </button>
-                                              ))}
-                                          </div>
-                                        </div>
-                                      )}
                                     </td>
                                     <td className="px-3 py-2 text-sm">
                                       <input
@@ -3510,45 +3256,6 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                             </table>
 
                             <div className="flex gap-4 mt-4 text-sm relative">
-                              <div className="relative">
-                                <button
-                                  onClick={() => addItemToUpgrade(upgrade.id)}
-                                  className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                                >
-                                  <Plus size={14} />
-                                  Add item from catalog
-                                </button>
-                                {showUpgradeCatalogDropdown === upgrade.id && (
-                                  <div className="absolute top-full left-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                    <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                      <input
-                                        ref={upgradeCatalogInputRef}
-                                        type="text"
-                                        value={upgradeCatalogSearch}
-                                        onChange={(e) => setUpgradeCatalogSearch(e.target.value)}
-                                        placeholder="Search catalog..."
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        onBlur={() => setTimeout(() => setShowUpgradeCatalogDropdown(null), 200)}
-                                      />
-                                    </div>
-                                    <div className="max-h-64 overflow-y-auto">
-                                      {catalogItems
-                                        .filter(item => item.name.toLowerCase().includes(upgradeCatalogSearch.toLowerCase()))
-                                        .map((item, idx) => (
-                                          <button
-                                            key={idx}
-                                            onClick={() => addItemToUpgradeFromCatalog(upgrade.id, item)}
-                                            className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
-                                          >
-                                            <div className="font-medium text-gray-900 dark:text-white text-sm">{item.name}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
-                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">${getCatalogFinalUnitCost(item)} per {item.unit}</div>
-                                          </button>
-                                        ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
                               <button
                                 onClick={() => addCustomItemToUpgrade(upgrade.id)}
                                 className="text-primary-600 hover:text-primary-700 flex items-center gap-1"

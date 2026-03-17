@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TemplateBuilder } from '../../roof-runner/components/proposals';
+import TemplateBuilder from './TemplateBuilder';
 
 export const TemplateEditor: React.FC = () => {
   const navigate = useNavigate();
