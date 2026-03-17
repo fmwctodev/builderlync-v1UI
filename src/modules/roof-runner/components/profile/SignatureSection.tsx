@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import {
   Bold,
   Italic,
@@ -14,11 +12,8 @@ import {
   Redo,
   Link as LinkIcon,
   Smile,
-  Plus,
   Quote,
   Code,
-  Superscript,
-  Subscript,
   Loader2,
   ImageIcon
 } from 'lucide-react';
@@ -38,19 +33,8 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-    ],
-    content: '',
-    editorProps: {
-      attributes: {
-        class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
-      },
-    },
-  });
 
   useEffect(() => {
     loadSignature();
@@ -63,8 +47,8 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
       if (response.success && response.data) {
         setEnableSignature(response.data.enable_signature);
         setIncludeInReplies(response.data.include_in_replies);
-        if (editor && response.data.html_content) {
-          editor.commands.setContent(response.data.html_content);
+        if (editorRef.current && response.data.html_content) {
+          editorRef.current.innerHTML = response.data.html_content;
         }
       }
     } catch (err) {
@@ -74,19 +58,25 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
     }
   };
 
+  const execCommand = (command: string, value: string = '') => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && editor) {
-      // Check file size (max 5MB)
+    if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError('Image size must be less than 5MB');
         return;
       }
 
       try {
+        setSaving(true);
         setError(null);
-        
-        // Use profile upload API
+
         const formData = new FormData();
         formData.append('profile', file);
 
@@ -107,14 +97,27 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
         const result = await response.json();
         const imageUrl = result.data.profile;
 
-        // Insert image with HTML
-        editor.chain().focus().insertContent(
-          `<img src="${imageUrl}" alt="signature image" style="max-width: 200px; height: auto; display: inline-block;" />`
-        ).run();
-        
+        execCommand('insertImage', imageUrl);
+
+        // Add styling to the inserted image
+        setTimeout(() => {
+          if (editorRef.current) {
+            const images = editorRef.current.getElementsByTagName('img');
+            for (let i = 0; i < images.length; i++) {
+              if (images[i].src === imageUrl) {
+                images[i].style.maxWidth = '200px';
+                images[i].style.height = 'auto';
+                images[i].style.display = 'inline-block';
+              }
+            }
+          }
+        }, 100);
+
       } catch (error) {
         console.error('Image upload error:', error);
         setError('Failed to upload image');
+      } finally {
+        setSaving(false);
       }
     }
   };
@@ -127,7 +130,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
     try {
       setSaving(true);
       const response = await updateSignature({
-        htmlContent: editor?.getHTML() || '',
+        htmlContent: editorRef.current?.innerHTML || '',
         enableSignature: enableSignature,
         includeInReplies: includeInReplies,
       });
@@ -147,7 +150,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
     }
   };
 
-  if (loading || !editor) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-6 h-6 animate-spin text-red-600" />
@@ -189,11 +192,8 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
         <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden signature-editor">
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-2">
             <div className="flex flex-wrap gap-2">
-              <select 
-                onChange={(e) => {
-                  const value = e.target.value;
-                  editor.chain().focus().insertContent(`<span style="font-family: ${value};">`);
-                }}
+              <select
+                onChange={(e) => execCommand('fontName', e.target.value)}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
               >
                 <option value="">Font Family</option>
@@ -204,29 +204,19 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
                 <option value="Verdana, sans-serif">Verdana</option>
               </select>
 
-              <select 
-                onChange={(e) => {
-                  const value = e.target.value;
-                  editor.chain().focus().insertContent(`<span style="font-size: ${value};">`);
-                }}
+              <select
+                onChange={(e) => execCommand('fontSize', e.target.value)}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
               >
-                <option value="">Font Size</option>
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="24px">24px</option>
+                <option value="">FontSize</option>
+                <option value="1">Small</option>
+                <option value="3">Normal</option>
+                <option value="5">Large</option>
+                <option value="7">Huge</option>
               </select>
 
-              <select 
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
-                  else if (value === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
-                  else editor.chain().focus().setParagraph().run();
-                }}
+              <select
+                onChange={(e) => execCommand('formatBlock', e.target.value)}
                 className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white"
               >
                 <option value="p">Paragraph</option>
@@ -238,30 +228,24 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                  editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : ''
-                }`}
+                onClick={() => execCommand('bold')}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <Bold className="w-4 h-4" />
               </button>
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                  editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : ''
-                }`}
+                onClick={() => execCommand('italic')}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <Italic className="w-4 h-4" />
               </button>
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-                className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                  editor.isActive('strike') ? 'bg-gray-200 dark:bg-gray-700' : ''
-                }`}
+                onClick={() => execCommand('strikeThrough')}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <Strikethrough className="w-4 h-4" />
               </button>
@@ -270,12 +254,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => {
-                  const selection = editor.state.selection;
-                  if (!selection.empty) {
-                    editor.chain().focus().insertContent('<div style="text-align: left;">').run();
-                  }
-                }}
+                onClick={() => execCommand('justifyLeft')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignLeft className="w-4 h-4" />
@@ -283,12 +262,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => {
-                  const selection = editor.state.selection;
-                  if (!selection.empty) {
-                    editor.chain().focus().insertContent('<div style="text-align: center;">').run();
-                  }
-                }}
+                onClick={() => execCommand('justifyCenter')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignCenter className="w-4 h-4" />
@@ -296,12 +270,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => {
-                  const selection = editor.state.selection;
-                  if (!selection.empty) {
-                    editor.chain().focus().insertContent('<div style="text-align: right;">').run();
-                  }
-                }}
+                onClick={() => execCommand('justifyRight')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignRight className="w-4 h-4" />
@@ -309,12 +278,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => {
-                  const selection = editor.state.selection;
-                  if (!selection.empty) {
-                    editor.chain().focus().insertContent('<div style="text-align: justify;">').run();
-                  }
-                }}
+                onClick={() => execCommand('justifyFull')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <AlignJustify className="w-4 h-4" />
@@ -324,7 +288,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().undo().run()}
+                onClick={() => execCommand('undo')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <Undo className="w-4 h-4" />
@@ -332,7 +296,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <button
                 type="button"
-                onClick={() => editor.chain().focus().redo().run()}
+                onClick={() => execCommand('redo')}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <Redo className="w-4 h-4" />
@@ -340,12 +304,11 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
 
-              <button type="button" 
+              <button type="button"
                 onClick={() => {
                   const url = window.prompt('Enter URL:');
                   if (url) {
-                    const text = window.getSelection()?.toString() || 'Link';
-                    editor.chain().focus().insertContent(`<a href="${url}" style="color: #3b82f6; text-decoration: underline;">${text}</a>`).run();
+                    execCommand('createLink', url);
                   }
                 }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -353,12 +316,8 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
                 <LinkIcon className="w-4 h-4" />
               </button>
 
-              <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
-                <Smile className="w-4 h-4" />
-              </button>
-
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                 title="Insert image"
@@ -373,19 +332,22 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
                 className="hidden"
               />
 
-              <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
+              <button type="button" onClick={() => execCommand('formatBlock', 'blockquote')} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
                 <Quote className="w-4 h-4" />
               </button>
 
-              <button type="button" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
+              <button type="button" onClick={() => execCommand('formatBlock', 'pre')} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
                 <Code className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <EditorContent 
-            editor={editor} 
-            className="bg-white dark:bg-gray-800"
+          <div
+            ref={editorRef}
+            contentEditable
+            onInput={() => { }} // Handle change if needed
+            className="prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4 bg-white dark:bg-gray-800"
+            style={{ overflowY: 'auto' }}
           />
         </div>
 
@@ -419,4 +381,3 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
 };
 
 export default SignatureSection;
-
