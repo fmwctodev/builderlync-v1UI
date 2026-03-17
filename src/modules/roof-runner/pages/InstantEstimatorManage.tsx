@@ -31,18 +31,22 @@ const InstantEstimatorManage: React.FC = () => {
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
-  const [showEditLinkModal, setShowEditLinkModal] = useState(false);
   const [customSlug, setCustomSlug] = useState('');
   const [pipelines, setPipelines] = useState<any[]>([]);
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [proposalTemplates, setProposalTemplates] = useState<any[]>([]);
   const [selectedProposalTemplateId, setSelectedProposalTemplateId] = useState<string>('');
+  const [staff, setStaff] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [notificationEmail, setNotificationEmail] = useState<string>('');
+  const [schedulingLink, setSchedulingLink] = useState<string>('');
 
   useEffect(() => {
     fetchEstimatorData();
     fetchJobs();
     fetchPipelines();
     fetchProposalTemplates();
+    fetchStaff();
   }, [id]);
 
   const fetchEstimatorData = async () => {
@@ -75,6 +79,12 @@ const InstantEstimatorManage: React.FC = () => {
         setShowSocialMedia(additionalSettings.show_social_media || false);
         setSelectedStageId(additionalSettings.stage_id || '');
         setSelectedProposalTemplateId(additionalSettings.proposal_template_id || '');
+        setNotificationEmail(additionalSettings.notification_email || '');
+        setSchedulingLink(additionalSettings.scheduling_link || '');
+
+        // Load contact settings
+        const contactSettings = response.data.contact_settings || {};
+        setSelectedUserId(additionalSettings.default_job_owner_id?.toString() || contactSettings.user_id?.toString() || '');
       } else {
         setEstimatorName('Estimator Not Found');
       }
@@ -128,6 +138,35 @@ const InstantEstimatorManage: React.FC = () => {
     }
   };
 
+  const fetchStaff = async () => {
+    try {
+      const response = await apiService.getStaff();
+      const staffList = [...(response?.data || [])];
+
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const currentUser = JSON.parse(userStr);
+        const currentUserId = currentUser.id || currentUser.userId;
+
+        if (currentUserId) {
+          // Add current user if not already in list
+          if (!staffList.find((s: any) => (s.id?.toString() || s.userId?.toString()) === currentUserId.toString())) {
+            staffList.push({
+              id: currentUserId,
+              first_name: currentUser.first_name || 'Me',
+              last_name: currentUser.last_name ? `${currentUser.last_name} (Me)` : '(Me)',
+              email: currentUser.email
+            });
+          }
+        }
+      }
+      setStaff(staffList);
+    } catch (error) {
+      console.error('Failed to fetch staff:', error);
+    }
+  };
+
   const handleRename = async () => {
     if (!renameName.trim() || !id) return;
     try {
@@ -137,21 +176,6 @@ const InstantEstimatorManage: React.FC = () => {
       setRenameName('');
     } catch (error) {
       console.error('Failed to rename estimator:', error);
-    }
-  };
-
-  const updateCustomSlug = async () => {
-    if (!customSlug.trim() || !id) return;
-    try {
-      await apiService.updateInstantEstimator(parseInt(id), {
-        public_url: customSlug.trim()
-      });
-      setPublicUrl(customSlug.trim());
-      setShowEditLinkModal(false);
-      setToast({ message: 'Link updated successfully!', type: 'success' });
-    } catch (error) {
-      console.error('Failed to update link:', error);
-      setToast({ message: 'Failed to update link', type: 'error' });
     }
   };
 
@@ -193,7 +217,15 @@ const InstantEstimatorManage: React.FC = () => {
         show_social_media: showSocialMedia,
         stage_id: selectedStageId,
         pipeline_id: pipelineId,
-        proposal_template_id: selectedProposalTemplateId
+        proposal_template_id: selectedProposalTemplateId,
+        notification_email: notificationEmail,
+        default_job_owner_id: selectedUserId,
+        scheduling_link: schedulingLink
+      });
+
+      // Save contact settings
+      await apiService.updateInstantEstimatorContactSettings(parseInt(id), {
+        user_id: selectedUserId
       });
 
       // Save job association
@@ -596,10 +628,19 @@ const InstantEstimatorManage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contact Profile
+                Default Job Owner & Profile
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                <option>James Wolfgang Kuntz</option>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Select a team member</option>
+                {staff.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.first_name} {member.last_name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -619,6 +660,8 @@ const InstantEstimatorManage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  value={schedulingLink}
+                  onChange={(e) => setSchedulingLink(e.target.value)}
                   placeholder="Add a link from Calendly, Google Calendar, Doodle, etc"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
@@ -661,6 +704,22 @@ const InstantEstimatorManage: React.FC = () => {
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Manage social media links in <a href="#" className="text-primary-600 hover:text-primary-700">profile & branding settings</a>
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Notification Email
+                  </label>
+                  <input
+                    type="email"
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
+                    placeholder="Enter email to receive lead notifications"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    This email will be notified when a customer clicks "Get free proposal"
                   </p>
                 </div>
               </div>

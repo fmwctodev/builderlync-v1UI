@@ -160,7 +160,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
             <div className="p-4 space-y-2 overflow-y-auto flex-1">
               {[
                 'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals',
-                'Material orders', 'Invoices', 'Job Cost',
+                'Material orders', 'Invoices',
+                // 'Job Cost',
                 'Attachments', 'Instant Estimate'
               ].map((item) => (
                 <button
@@ -589,7 +590,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                 </div>
               ) : null}
 
-              {activeTab === 'Measurements' && <MeasurementsTab />}
+              {activeTab === 'Measurements' && (
+                <MeasurementsTab
+                  jobId={viewingJob?.id}
+                  jobAddress={viewingJob?.location}
+                />
+              )}
 
               {activeTab === 'Proposals' && (
                 <div>

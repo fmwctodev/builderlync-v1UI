@@ -9,6 +9,7 @@ interface StaffMember {
   email: string;
   phone: string;
   countryCode: string;
+  extension?: string;
   password?: string;
   profileImage?: string;
   image?: File;
@@ -43,7 +44,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '+1',
+    phone: '',
     countryCode: '+1',
     password: '',
     profileImage: '',
@@ -76,13 +77,21 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
 
   useEffect(() => {
     if (member && isEdit) {
-      const fullPhone = `${member.countryCode || '+1'}${member.phone || ''}`;
+      const countryCode = member.countryCode || '+1';
+      const rawPhone = member.phone || '';
+      const normalizedPhone = rawPhone.startsWith(countryCode)
+        ? rawPhone.slice(countryCode.length)
+        : rawPhone.startsWith('+1')
+          ? rawPhone.slice(2)
+          : rawPhone;
+      const digitsOnlyPhone = normalizedPhone.replace(/\D/g, '');
+
       setFormData({
         firstName: member.firstName || '',
         lastName: member.lastName || '',
         email: member.email || '',
-        phone: fullPhone,
-        countryCode: member.countryCode || '+1',
+        phone: digitsOnlyPhone,
+        countryCode,
         password: '',
         profileImage: member.profileImage || '',
         roleId: member.roleId || ''
@@ -92,7 +101,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '+1',
+        phone: '',
         countryCode: '+1',
         password: '',
         profileImage: '',
@@ -106,7 +115,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === 'phone') {
-      const cleaned = value.replace(/[^0-9+]/g, '');
+      const cleaned = value.replace(/\D/g, '');
       setFormData({ ...formData, [name]: cleaned });
     } else if (name === 'firstName' || name === 'lastName') {
       const cleaned = value.replace(/[^a-zA-Z\s]/g, '');
@@ -120,8 +129,8 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
 
   const isFormValid = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?[0-9]{10,15}$/;
-    
+    const phoneRegex = /^[0-9]{6,15}$/;
+
     return (
       formData.firstName.trim() !== '' &&
       formData.lastName.trim() !== '' &&
@@ -232,17 +241,22 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Phone Number <span className="text-red-500">*</span>
             </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              required
-              pattern="^\+?[0-9]{10,15}$"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="+1234567890"
-              title="Phone number must be 10-15 digits, optionally starting with +"
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+                +1
+              </span>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                required
+                pattern="^[0-9]{6,15}$"
+                className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="1234567890"
+                title="Phone number must be 6-15 digits"
+              />
+            </div>
           </div>
 
           {/* Role Selection */}
@@ -309,11 +323,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             <Trash2 size={24} className="text-red-600 dark:text-red-400" />
           </div>
         </div>
-        
+
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
           Delete Member
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
           Are you sure you want to delete <strong>{memberName}</strong>? This action cannot be undone.
         </p>

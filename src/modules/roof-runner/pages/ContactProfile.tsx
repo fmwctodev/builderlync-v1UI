@@ -241,7 +241,7 @@ const ContactProfile: React.FC = () => {
       address: currentContact.address || "",
       latitude: currentContact.latitude || 0,
       longitude: currentContact.longitude || 0,
-      timezone: "",
+      timezone: currentContact.timezone || "",
       dndAllChannels: false,
       dndChannels: {
         email: false,
@@ -271,6 +271,7 @@ const ContactProfile: React.FC = () => {
       phone: contactFormData.phone,
       company: contactFormData.company,
       address: contactFormData.address,
+      timezone: contactFormData.timezone,
       latitude: contactFormData.latitude,
       longitude: contactFormData.longitude
     };
@@ -307,15 +308,15 @@ const ContactProfile: React.FC = () => {
 
   const contact = currentContact
     ? {
-        id: currentContact.id.toString(),
-        fullName: currentContact.fullName,
-        email: currentContact.email,
-        phone: currentContact.phone,
-        address: currentContact.address,
-        company: currentContact.company,
-        type: currentContact.type,
-        labelOrRole: currentContact.labelOrRole,
-      }
+      id: currentContact.id.toString(),
+      fullName: currentContact.fullName,
+      email: currentContact.email,
+      phone: currentContact.phone,
+      address: currentContact.address,
+      company: currentContact.company,
+      type: currentContact.type,
+      labelOrRole: currentContact.labelOrRole,
+    }
     : null;
 
   if (isLoadingContact) {

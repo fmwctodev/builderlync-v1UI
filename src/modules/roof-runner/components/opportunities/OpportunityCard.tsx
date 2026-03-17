@@ -49,13 +49,13 @@ export default function OpportunityCard({ opportunity, onDragStart, onClick }: O
           </div>
         )}
       </div>
-      
+
       {opportunity.business && (
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 truncate">
           {opportunity.business}
         </p>
       )}
-      
+
       {opportunity.source && (
         <div className="mb-3">
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
@@ -63,7 +63,7 @@ export default function OpportunityCard({ opportunity, onDragStart, onClick }: O
           </span>
         </div>
       )}
-      
+
       <div className="flex items-center justify-between">
         <div className="flex items-center text-green-600 dark:text-green-400">
           <DollarSign className="h-3 w-3 mr-1" />
@@ -71,7 +71,7 @@ export default function OpportunityCard({ opportunity, onDragStart, onClick }: O
             {opportunity.value.toLocaleString()}
           </span>
         </div>
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="flex items-center space-x-1">
             <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded">
               <Phone className="h-3 w-3 text-gray-400" />
@@ -83,7 +83,7 @@ export default function OpportunityCard({ opportunity, onDragStart, onClick }: O
               <MessageSquare className="h-3 w-3 text-gray-400" />
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

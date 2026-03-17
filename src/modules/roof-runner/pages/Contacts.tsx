@@ -159,6 +159,7 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
+      timezone: formData.timezone,
       ...(formData.latitude !== 0 && formData.longitude !== 0 && {
         latitude: formData.latitude,
         longitude: formData.longitude
@@ -218,6 +219,7 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
+      timezone: formData.timezone,
       ...(formData.latitude !== 0 && formData.longitude !== 0 && {
         latitude: formData.latitude,
         longitude: formData.longitude

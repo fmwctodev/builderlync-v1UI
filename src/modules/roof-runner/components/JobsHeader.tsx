@@ -39,9 +39,9 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
 }) => {
   const dynamicFilters = useMemo(() => {
     const stages = [
-      'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted', 
-      'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract', 
-      'Invoice Sent', 'Invoice Paid', 'Job Scheduled', 'Materials Ordered', 
+      'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted',
+      'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract',
+      'Invoice Sent', 'Invoice Paid', 'Job Scheduled', 'Materials Ordered',
       'Job Started', 'Job Complete'
     ];
 
@@ -56,10 +56,10 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
     stages.forEach(stage => {
       const count = jobs.filter(j => (j.workflow_stages || j.workflowStages) === stage).length;
       if (count > 0) {
-        filters.push({ 
-          value: stage.toLowerCase().replace(/[^a-z0-9]/g, '-'), 
-          label: stage, 
-          count 
+        filters.push({
+          value: stage.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          label: stage,
+          count
         });
       }
     });
@@ -90,6 +90,7 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
             <option value="residential">Residential</option>
             <option value="commercial">Commercial</option>
             <option value="insurance">Insurance</option>
+            <option value="instant-estimator">Instant Estimates</option>
           </select>
           <Building2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
@@ -98,22 +99,20 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
 
         <button
           onClick={() => setActiveView('board')}
-          className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-            activeView === 'board'
+          className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${activeView === 'board'
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Grid className="w-4 h-4" />
           <span>Board View</span>
         </button>
         <button
           onClick={() => setActiveView('list')}
-          className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-            activeView === 'list'
+          className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${activeView === 'list'
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <List className="w-4 h-4" />
           <span>List View</span>
@@ -121,11 +120,10 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
         {(hasPermission('jobs', 'manage') || hasPermission('projects', 'manage')) && (
           <button
             onClick={() => setActiveView('settings')}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
-              activeView === 'settings'
+            className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${activeView === 'settings'
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+              }`}
           >
             <Settings className="w-4 h-4" />
             <span>Settings</span>

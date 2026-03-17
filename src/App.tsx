@@ -25,6 +25,10 @@ import EmailSyncCallback from './shared/components/EmailSyncCallback';
 import ProposalSigningPage from './modules/roof-runner/pages/ProposalSigningPage';
 import PitchTool from './modules/roof-runner/pages/PitchTool';
 
+import PublicBilling from './modules/roof-runner/pages/PublicBilling';
+import PaymentSuccess from './modules/roof-runner/pages/PaymentSuccess';
+import PaymentCancel from './modules/roof-runner/pages/PaymentCancel';
+
 function App() {
   const { user, token } = useAppSelector((state) => state.auth);
 
@@ -43,6 +47,9 @@ function App() {
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <IncomingCallNotification />
             <Routes>
+              <Route path="/billing" element={<PublicBilling />} />
+              <Route path="/billing/success" element={<PaymentSuccess />} />
+              <Route path="/billing/cancel" element={<PaymentCancel />} />
               <Route path="/proposal/sign" element={<ProposalSigningPage />} />
               <Route path="/proposal/view" element={<ProposalSigningPage />} />
               <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />

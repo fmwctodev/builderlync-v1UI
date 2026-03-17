@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Copy, QrCode, Code, Plus, X, Save } from 'lucide-react';
+import { ExternalLink, Copy, QrCode, Code, Plus, X, Save, Edit } from 'lucide-react';
 import { apiService } from '../store/services/api';
 import Toast from '../../../shared/components/Toast';
 
@@ -29,6 +29,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [activeTab, setActiveTab] = useState('share');
     const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+    const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
     const [materialName, setMaterialName] = useState('');
     const [materialType, setMaterialType] = useState('Asphalt');
     const [imageUrl, setImageUrl] = useState('');
@@ -47,6 +48,8 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
     const [financingLink, setFinancingLink] = useState('');
     const [proposalTemplates, setProposalTemplates] = useState<any[]>([]);
     const [selectedProposalTemplateId, setSelectedProposalTemplateId] = useState('');
+    const [contactSettings, setContactSettings] = useState<any>({});
+    const [schedulingLink, setSchedulingLink] = useState('');
     const [showQRModal, setShowQRModal] = useState(false);
     const [showEmbedModal, setShowEmbedModal] = useState(false);
 
@@ -59,6 +62,23 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
             fetchStaff();
         }
     }, [isOpen, estimatorId]);
+
+    const normalizeMaterial = (material: any) => {
+        const pricing = material?.pricing || {};
+
+        return {
+            ...material,
+            imageUrl: material?.imageUrl || material?.image_url || '',
+            pricing: {
+                ...pricing,
+                lowPitch: material?.lowPitch ?? pricing.lowPitch ?? '',
+                moderatePitch: material?.moderatePitch ?? pricing.moderatePitch ?? '',
+                steepPitch: material?.steepPitch ?? pricing.steepPitch ?? '',
+                flat: material?.flat ?? pricing.flat ?? '',
+                multiStorySurcharge: material?.multiStorySurcharge ?? pricing.multiStorySurcharge ?? ''
+            }
+        };
+    };
 
     const fetchPipelines = async () => {
         try {
@@ -115,7 +135,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                 const estimator = response.data || response;
                 setEstimatorName(estimator.name);
                 setPublicUrl(estimator.public_url);
-                setSelectedMaterials(estimator.materials || []);
+                setSelectedMaterials((estimator.materials || []).map(normalizeMaterial));
 
                 const pricingSettings = estimator.pricing_settings || {};
                 setRestrictMaterials(pricingSettings.restrict_materials || false);
@@ -129,6 +149,13 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                 setFinancingLink(pricingSettings.financing_link || '');
 
                 const additionalSettings = estimator.additional_settings || {};
+                const loadedContactSettings = estimator.contact_settings || {};
+                setContactSettings(loadedContactSettings);
+                setSchedulingLink(
+                    loadedContactSettings.scheduling_link ||
+                    loadedContactSettings.calendar_link ||
+                    ''
+                );
                 setShowProjectShowcase(additionalSettings.show_project_showcase || false);
                 setShowSocialMedia(additionalSettings.show_social_media || false);
                 setSelectedStageId(additionalSettings.stage_id || '');
@@ -170,6 +197,20 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                 notification_email: notificationEmail
             });
 
+            await apiService.updateInstantEstimator(estimatorId, {
+                contact_settings: {
+                    ...contactSettings,
+                    scheduling_link: schedulingLink,
+                    calendar_link: schedulingLink
+                }
+            });
+
+            setContactSettings((prev: any) => ({
+                ...prev,
+                scheduling_link: schedulingLink,
+                calendar_link: schedulingLink
+            }));
+
             setToast({ message: 'Settings saved successfully!', type: 'success' });
             if (onSaved) onSaved();
         } catch (error) {
@@ -187,6 +228,61 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
     const getEmbedCode = (url: string) => {
         return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
     };
+
+    const resetMaterialForm = () => {
+        setEditingMaterialId(null);
+        setSelectedTemplateId('');
+        setMaterialName('');
+        setMaterialType('Asphalt');
+        setImageUrl('');
+        setLowPitch('');
+        setModeratePitch('');
+        setSteepPitch('');
+        setFlat('');
+        setMultiStorySurcharge('');
+    };
+
+    const openAddMaterialModal = () => {
+        resetMaterialForm();
+        setShowAddMaterialModal(true);
+    };
+
+    const openEditMaterialModal = (material: any) => {
+        setEditingMaterialId(material.id);
+        setSelectedTemplateId('');
+        setMaterialName(material.name || '');
+        setMaterialType(material.materialType || 'Asphalt');
+        setImageUrl(material.imageUrl || '');
+        setLowPitch(material.pricing?.lowPitch?.toString() || '');
+        setModeratePitch(material.pricing?.moderatePitch?.toString() || '');
+        setSteepPitch(material.pricing?.steepPitch?.toString() || '');
+        setFlat(material.pricing?.flat?.toString() || '');
+        setMultiStorySurcharge(material.pricing?.multiStorySurcharge?.toString() || '');
+        setShowAddMaterialModal(true);
+    };
+
+    const buildMaterialPayload = () => ({
+        name: materialName,
+        materialType,
+        imageUrl,
+        lowPitch,
+        moderatePitch,
+        steepPitch,
+        flat,
+        multiStorySurcharge
+    });
+
+    const buildMaterialPreview = (materialId?: string | null) => normalizeMaterial({
+        id: materialId || editingMaterialId || `${Date.now()}`,
+        name: materialName,
+        materialType,
+        imageUrl,
+        lowPitch,
+        moderatePitch,
+        steepPitch,
+        flat,
+        multiStorySurcharge
+    });
 
     const downloadQRCode = async () => {
         try {
@@ -498,7 +594,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                         Configure materials and pricing for this estimator
                                     </p>
                                     <button
-                                        onClick={() => setShowAddMaterialModal(true)}
+                                        onClick={openAddMaterialModal}
                                         className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
                                     >
                                         <Plus className="w-4 h-4" />
@@ -534,23 +630,36 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <button
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => openEditMaterialModal(material)}
+                                                        className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white p-2"
+                                                        aria-label={`Edit ${material.name}`}
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </button>
+                                                    <button
                                                     onClick={async () => {
                                                         if (confirm('Are you sure you want to delete this material?')) {
                                                             try {
                                                                 await apiService.deleteInstantEstimatorMaterial(estimatorId, material.id);
-                                                                await fetchEstimatorData();
+                                                                setSelectedMaterials((prev: any[]) =>
+                                                                    prev.filter((currentMaterial: any) => currentMaterial.id !== material.id)
+                                                                );
                                                                 setToast({ message: 'Material deleted successfully!', type: 'success' });
+                                                                fetchEstimatorData();
                                                             } catch (error) {
                                                                 console.error('Error deleting material:', error);
                                                                 setToast({ message: 'Failed to delete material', type: 'error' });
+                                                                }
                                                             }
-                                                        }
-                                                    }}
-                                                    className="text-red-600 hover:text-red-700 p-2"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
+                                                        }}
+                                                        className="text-red-600 hover:text-red-700 p-2"
+                                                        aria-label={`Delete ${material.name}`}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -600,6 +709,8 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                         </label>
                                         <input
                                             type="text"
+                                            value={schedulingLink}
+                                            onChange={(e) => setSchedulingLink(e.target.value)}
                                             placeholder="Add a link from Calendly, Google Calendar, Doodle, etc"
                                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
@@ -828,9 +939,14 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                         <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Add Material</h3>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                        {editingMaterialId ? 'Edit Material' : 'Add Material'}
+                                    </h3>
                                     <button
-                                        onClick={() => setShowAddMaterialModal(false)}
+                                        onClick={() => {
+                                            setShowAddMaterialModal(false);
+                                            resetMaterialForm();
+                                        }}
                                         className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                     >
                                         <X className="w-6 h-6" />
@@ -849,7 +965,7 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                                 const tId = e.target.value;
                                                 setSelectedTemplateId(tId);
                                                 if (tId) {
-                                                    const t = materialTemplates.find((mt: any) => mt.id === tId);
+                                                    const t = materialTemplates.find((mt: any) => mt.id?.toString() === tId);
                                                     if (t) {
                                                         setMaterialName(t.name);
                                                         setMaterialType(t.material_type || 'Asphalt');
@@ -1019,7 +1135,10 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
 
                                 <div className="flex items-center justify-end gap-3 mt-6">
                                     <button
-                                        onClick={() => setShowAddMaterialModal(false)}
+                                        onClick={() => {
+                                            setShowAddMaterialModal(false);
+                                            resetMaterialForm();
+                                        }}
                                         className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                     >
                                         Cancel
@@ -1030,37 +1149,51 @@ const InstantEstimatorManageModal: React.FC<InstantEstimatorManageModalProps> = 
                                                 setToast({ message: 'Material name is required', type: 'error' });
                                                 return;
                                             }
+                                            const isEditing = Boolean(editingMaterialId);
+                                            const materialPayload = buildMaterialPayload();
                                             try {
-                                                await apiService.addInstantEstimatorMaterial(estimatorId, {
-                                                    name: materialName,
-                                                    materialType,
-                                                    imageUrl,
-                                                    lowPitch,
-                                                    moderatePitch,
-                                                    steepPitch,
-                                                    flat,
-                                                    multiStorySurcharge
-                                                });
+                                                if (isEditing && editingMaterialId) {
+                                                    await apiService.updateInstantEstimatorMaterial(estimatorId, editingMaterialId, materialPayload);
+                                                    setSelectedMaterials(prev =>
+                                                        prev.map((material: any) =>
+                                                            material.id === editingMaterialId
+                                                                ? { ...material, ...buildMaterialPreview(editingMaterialId) }
+                                                                : material
+                                                        )
+                                                    );
+                                                } else {
+                                                    const response = await apiService.addInstantEstimatorMaterial(estimatorId, materialPayload);
+                                                    const createdMaterial =
+                                                        response?.data ||
+                                                        response?.material ||
+                                                        response;
+
+                                                    setSelectedMaterials(prev => [
+                                                        ...prev,
+                                                        createdMaterial?.id
+                                                            ? normalizeMaterial(createdMaterial)
+                                                            : buildMaterialPreview(createdMaterial?.id)
+                                                    ]);
+                                                }
                                                 setShowAddMaterialModal(false);
-                                                setMaterialName('');
-                                                setMaterialType('Asphalt');
-                                                setImageUrl('');
-                                                setLowPitch('');
-                                                setModeratePitch('');
-                                                setSteepPitch('');
-                                                setFlat('');
-                                                setMultiStorySurcharge('');
-                                                await fetchEstimatorData();
-                                                setToast({ message: 'Material added successfully!', type: 'success' });
+                                                resetMaterialForm();
+                                                setToast({
+                                                    message: isEditing ? 'Material updated successfully!' : 'Material added successfully!',
+                                                    type: 'success'
+                                                });
+                                                fetchEstimatorData();
                                             } catch (error) {
-                                                console.error('Error adding material:', error);
-                                                setToast({ message: 'Failed to add material', type: 'error' });
+                                                console.error(`Error ${isEditing ? 'updating' : 'adding'} material:`, error);
+                                                setToast({
+                                                    message: isEditing ? 'Failed to update material' : 'Failed to add material',
+                                                    type: 'error'
+                                                });
                                             }
                                         }}
                                         disabled={!materialName.trim()}
                                         className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        Add Material
+                                        {editingMaterialId ? 'Save Changes' : 'Add Material'}
                                     </button>
                                 </div>
                             </div>

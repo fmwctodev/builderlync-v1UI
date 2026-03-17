@@ -517,17 +517,15 @@ const Calendars: React.FC = () => {
         <div
           key={day}
           onClick={() => handleDateClick(day)}
-          className={`min-h-[120px] border-r border-b border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-750 transition-all duration-200 group ${
-            isToday ? "bg-primary-50 dark:bg-primary-900/20" : ""
-          }`}
+          className={`min-h-[120px] border-r border-b border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-750 transition-all duration-200 group ${isToday ? "bg-primary-50 dark:bg-primary-900/20" : ""
+            }`}
         >
           <div className={`flex items-center justify-between mb-2`}>
             <span
-              className={`text-sm font-semibold ${
-                isToday
-                  ? "text-primary-600 dark:text-primary-400"
-                  : "text-gray-900 dark:text-white"
-              }`}
+              className={`text-sm font-semibold ${isToday
+                ? "text-primary-600 dark:text-primary-400"
+                : "text-gray-900 dark:text-white"
+                }`}
             >
               {day}
             </span>
@@ -777,9 +775,8 @@ const Calendars: React.FC = () => {
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
-            toast.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
+          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
         >
           {toast.message}
         </div>
@@ -839,11 +836,10 @@ const Calendars: React.FC = () => {
                           setViewType(view);
                           setShowViewDropdown(false);
                         }}
-                        className={`w-full text-left px-4 py-3 text-sm transition-colors capitalize ${
-                          viewType === view
-                            ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                        className={`w-full text-left px-4 py-3 text-sm transition-colors capitalize ${viewType === view
+                          ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          }`}
                       >
                         {view}
                       </button>
@@ -993,13 +989,13 @@ const Calendars: React.FC = () => {
                     value={formData.contactId || ""}
                     onChange={(e) => {
                       const selectedContact = contacts.find(
-                        (c) => c.id === parseInt(e.target.value),
+                        (c) => String(c.id) === e.target.value,
                       );
                       setFormData({
                         ...formData,
-                        contactId: selectedContact?.id,
+                        contactId: selectedContact ? Number(selectedContact.id) : undefined,
                         contactName: selectedContact
-                          ? `${selectedContact.first_name} ${selectedContact.last_name}`
+                          ? selectedContact.fullName || selectedContact.full_name
                           : "",
                       });
                     }}
@@ -1028,6 +1024,7 @@ const Calendars: React.FC = () => {
                       <input
                         type="date"
                         value={formData.startDate}
+                        min={new Date().toISOString().split('T')[0]}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -1072,6 +1069,7 @@ const Calendars: React.FC = () => {
                       <input
                         type="date"
                         value={formData.endDate}
+                        min={formData.startDate || new Date().toISOString().split('T')[0]}
                         onChange={(e) =>
                           setFormData({ ...formData, endDate: e.target.value })
                         }

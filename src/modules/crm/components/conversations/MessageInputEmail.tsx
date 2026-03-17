@@ -30,14 +30,14 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
 
   const handleSend = async () => {
     if (!message.trim() || !toEmail || !subject.trim() || !contactId) return;
-    
+
     setSending(true);
     setError(null);
     setShowSmtpError(false);
-    
+
     try {
       await smtpApi.sendEmailMessage(contactId, subject, message);
-      
+
       onSend(message, {
         to_emails: [toEmail],
         cc_emails: ccEmails.length > 0 ? ccEmails : undefined,
@@ -118,7 +118,7 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
           </div>
         </div>
       )}
-      
+
       {/* General Error Alert */}
       {error && !showSmtpError && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -140,22 +140,22 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
         <div className="flex items-center justify-between mb-1">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To:</label>
           <div className="flex items-center space-x-2">
-            {!showCc && (
+            {/* {!showCc && (
               <button
                 onClick={() => setShowCc(true)}
                 className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
               >
                 CC
               </button>
-            )}
-            {!showBcc && (
+            )} */}
+            {/* {!showBcc && (
               <button
                 onClick={() => setShowBcc(true)}
                 className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
               >
                 BCC
               </button>
-            )}
+            )} */}
           </div>
         </div>
         <div className="flex items-center space-x-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
@@ -176,7 +176,7 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
       </div>
 
       {/* CC Field */}
-      {showCc && (
+      {/* {showCc && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CC:</label>
           <div className="flex flex-wrap gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
@@ -202,10 +202,10 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
             />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* BCC Field */}
-      {showBcc && (
+      {/* {showBcc && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">BCC:</label>
           <div className="flex flex-wrap gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
@@ -231,7 +231,7 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
             />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Subject Field */}
       <div>

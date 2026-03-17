@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card } from '../components/Card';
 import { StatusChip } from '../components/StatusChip';
 import { ChannelBadge } from '../components/ChannelBadge';
@@ -18,24 +18,33 @@ import {
   Save,
   Rocket,
 } from 'lucide-react';
-import {
-  mockSierraConfig,
-  mockTwilioNumbers,
-  mockActivityStats,
-} from '../lib/mockData';
+import { AIAgent } from '../services/agentsApi';
 
 interface OverviewPageProps {
+  agent: AIAgent | null;
   agentStatus: 'active' | 'paused';
   onToggleStatus: () => void;
   onNavigate: (tab: string) => void;
 }
 
-export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: OverviewPageProps) {
+export function OverviewPage({ agent, agentStatus, onToggleStatus, onNavigate }: OverviewPageProps) {
   const [showTestCallDrawer, setShowTestCallDrawer] = useState(false);
   const [showTestSMSModal, setShowTestSMSModal] = useState(false);
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
-  const leadCaptureQuality = 87;
+  const stats = agent?.stats || {
+    callsHandled: 0,
+    appointmentsBooked: 0,
+    messagesHandled: 0,
+  };
+
+  const channels = agent?.channels || {
+    voice: { enabled: false, configured: false },
+    sms: { enabled: false, configured: false },
+    webchat: { enabled: false, configured: false },
+  };
+
+  const leadCaptureQuality = stats.successRate !== undefined ? Math.round(stats.successRate * 100) : 0;
 
   const handleSave = async () => {
     console.log('Saving changes...');
@@ -61,24 +70,24 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
               <Phone className="w-4 h-4 text-gray-500" />
               <span className="text-sm text-gray-700 dark:text-gray-300">Voice:</span>
               <StatusChip
-                label={mockSierraConfig.channels.voice.status === 'connected' ? 'Connected' : 'Not Connected'}
-                status={mockSierraConfig.channels.voice.status === 'connected' ? 'success' : 'error'}
+                label={channels.voice?.enabled ? 'Enabled' : 'Disabled'}
+                status={channels.voice?.enabled ? 'success' : 'neutral'}
               />
             </div>
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-gray-500" />
               <span className="text-sm text-gray-700 dark:text-gray-300">SMS:</span>
               <StatusChip
-                label={mockSierraConfig.channels.sms.status === 'connected' ? 'Connected' : 'Not Connected'}
-                status={mockSierraConfig.channels.sms.status === 'connected' ? 'success' : 'error'}
+                label={channels.sms?.enabled ? 'Enabled' : 'Disabled'}
+                status={channels.sms?.enabled ? 'success' : 'neutral'}
               />
             </div>
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-gray-500" />
               <span className="text-sm text-gray-700 dark:text-gray-300">Webchat:</span>
               <StatusChip
-                label={mockSierraConfig.channels.webchat.status === 'enabled' ? 'Enabled' : 'Disabled'}
-                status={mockSierraConfig.channels.webchat.status === 'enabled' ? 'info' : 'neutral'}
+                label={channels.webchat?.enabled ? 'Enabled' : 'Disabled'}
+                status={channels.webchat?.enabled ? 'info' : 'neutral'}
               />
             </div>
           </div>
@@ -95,11 +104,10 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
             <button
               onClick={handlePublish}
               disabled={!hasPendingChanges}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                hasPendingChanges
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-              }`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${hasPendingChanges
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+                }`}
             >
               <Rocket className="w-4 h-4" />
               Publish to Live
@@ -117,20 +125,18 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
             </div>
             <button
               onClick={onToggleStatus}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                agentStatus === 'active' ? 'bg-green-600' : 'bg-gray-400'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${agentStatus === 'active' ? 'bg-green-600' : 'bg-gray-400'
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  agentStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${agentStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>
           <div className="mt-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Sierra is {agentStatus === 'active' ? 'Active' : 'Paused'}
+              {agent?.name || 'Agent'} is {agentStatus === 'active' ? 'Active' : 'Paused'}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {agentStatus === 'active'
@@ -146,24 +152,25 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Phone className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
-            <StatusChip label={`${mockTwilioNumbers.length} Active`} status="success" />
+            <StatusChip label={agent?.phone_number ? 'Connected' : 'Not Connected'} status={agent?.phone_number ? 'success' : 'neutral'} />
           </div>
           <div className="mt-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connected Numbers</h3>
-            <div className="mt-3 space-y-2">
-              {mockTwilioNumbers.slice(0, 3).map((number) => (
-                <div key={number.id} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700 dark:text-gray-300 truncate">{number.label}</span>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connected Number</h3>
+            <div className="mt-3">
+              {agent?.phone_number ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">{agent.phone_number}</span>
                   <div className="flex gap-1">
-                    {number.channels.map((ch) => (
-                      <ChannelBadge key={ch} channel={ch} size="sm" />
-                    ))}
+                    <ChannelBadge channel="voice" size="sm" />
+                    <ChannelBadge channel="sms" size="sm" />
                   </div>
                 </div>
-              ))}
+              ) : (
+                <p className="text-sm text-gray-500 italic">No phone number assigned</p>
+              )}
             </div>
             <button
-              onClick={() => onNavigate('numbers-routing')}
+              onClick={() => onNavigate('voice-sms')}
               className="mt-3 text-sm text-red-600 dark:text-red-400 hover:underline"
             >
               Manage Numbers →
@@ -179,7 +186,7 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Today's Activity</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Lifetime Activity</h3>
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -187,16 +194,16 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
                   <span className="text-sm text-gray-600 dark:text-gray-400">Calls handled</span>
                 </div>
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {mockActivityStats.callsHandled}
+                  {stats.callsHandled || 0}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">SMS/Chats</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">SMS handled</span>
                 </div>
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {mockActivityStats.smsChatsHandled}
+                  {stats.messagesHandled || 0}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -205,14 +212,14 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
                   <span className="text-sm text-gray-600 dark:text-gray-400">Appointments</span>
                 </div>
                 <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {mockActivityStats.appointmentsBooked}
+                  {stats.appointmentsBooked || 0}
                 </span>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Lead Capture Quality Card */}
+        {/* Success Rate Card */}
         <Card>
           <div className="flex items-start justify-between">
             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
@@ -224,11 +231,10 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
             />
           </div>
           <div className="mt-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Lead Capture Quality</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Task Success Rate</h3>
             <div className="mt-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">{leadCaptureQuality}%</span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Name + Location</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
@@ -237,7 +243,7 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
                 />
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                % of conversations with name + location captured
+                % of successful goal completions
               </p>
             </div>
           </div>
@@ -274,7 +280,7 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
           </button>
 
           <button
-            onClick={() => {}}
+            onClick={() => { }}
             className="flex items-center gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all group"
           >
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/50">
@@ -319,7 +325,7 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
                   <Bot className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900 dark:text-white">Sierra</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{agent?.name || 'Sierra'}</div>
                   <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                     <span className="w-2 h-2 bg-green-600 rounded-full"></span>
                     Online now
@@ -335,7 +341,7 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
                   </div>
                   <div className="bg-gray-100 dark:bg-gray-700 rounded-lg rounded-tl-none p-3 max-w-[80%]">
                     <p className="text-sm text-gray-900 dark:text-white">
-                      Hi! I'm Sierra from Elite Roofing & Solar. How can I help you today?
+                      Hi! I'm {agent?.name || 'Sierra'} from Elite Roofing & Solar. How can I help you today?
                     </p>
                   </div>
                 </div>
@@ -382,11 +388,17 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Test Inbound Call</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              This would open a test console to simulate an inbound call scenario.
+              This will allow you to test {agent?.name || 'this agent'}'s voice behavior using a simulated call.
             </p>
             <button
               onClick={() => setShowTestCallDrawer(false)}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Start Simulator
+            </button>
+            <button
+              onClick={() => setShowTestCallDrawer(false)}
+              className="ml-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               Close
             </button>
@@ -400,14 +412,29 @@ export function OverviewPage({ agentStatus, onToggleStatus, onNavigate }: Overvi
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Send Test SMS</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              This would open a form to send a test SMS message.
+              Send a test SMS to your mobile phone to see {agent?.name || 'this agent'}'s SMS behavior.
             </p>
-            <button
-              onClick={() => setShowTestSMSModal(false)}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
-            >
-              Close
-            </button>
+            <div className="space-y-4 mb-4">
+              <input
+                type="tel"
+                placeholder="+1 (555) 000-0000"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowTestSMSModal(false)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowTestSMSModal(false)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Send Message
+              </button>
+            </div>
           </div>
         </div>
       )}
