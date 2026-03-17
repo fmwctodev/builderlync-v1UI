@@ -11,7 +11,7 @@ export interface FileRecord {
   file_path: string;
   file_size: number;
   mime_type: string;
-  cloud_provider: 'google' | 'onedrive';
+  cloud_provider: 'google' | 'onedrive' | 'local';
   cloud_file_id: string;
   description: string | null;
   created_at: string;
@@ -22,7 +22,7 @@ export interface FolderRecord {
   user_id: number;
   parent_id: string | number | null;
   name: string;
-  cloud_provider: 'google' | 'onedrive';
+  cloud_provider: 'google' | 'onedrive' | 'local';
   cloud_folder_id: string;
   created_at: string;
 }
@@ -108,12 +108,13 @@ class BackendFilesApiService {
   async uploadFile(
     file: File,
     folderId?: string | number | null,
+    cloudProvider: 'google' | 'onedrive' | 'local' = 'google',
     onProgress?: UploadProgressCallback
   ): Promise<FileRecord> {
-    const connection = await this.getConnectionTokens();
+    const connection = cloudProvider !== 'local' ? await this.getConnectionTokens() : null;
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('cloudProvider', 'google');
+    formData.append('cloudProvider', cloudProvider);
     formData.append('accessToken', connection?.access_token || '');
     formData.append('description', '');
     if (folderId) formData.append('folderId', folderId.toString());
@@ -161,9 +162,9 @@ class BackendFilesApiService {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        const uploadedFile = await this.uploadFile(file, folderId, (progress) => {
+        const uploadedFile = await this.uploadFile(file, folderId, 'google', (progress, fileName) => {
           const overallProgress = ((i / files.length) * 100) + ((progress / files.length));
-          onProgress?.(overallProgress, file.name);
+          onProgress?.(overallProgress, fileName);
         });
         uploadedFiles.push(uploadedFile);
       } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { contactModulesApi, Appointment } from '../../../../shared/store/services/contactModulesApi';
 import { getStaff, StaffMember } from '../../../../shared/store/services/staffApi';
+import GooglePlacesAutocomplete from '../../../../shared/components/GooglePlacesAutocomplete';
 
 interface AppointmentModalProps {
     isOpen: boolean;
@@ -180,12 +181,11 @@ export function AppointmentModal({ isOpen, onClose, onSuccess, contactId, editin
 
                     <div>
                         <label className="block text-sm font-medium mb-1 dark:text-gray-300">Location</label>
-                        <input
-                            type="text"
-                            value={formData.meetingLocation}
-                            onChange={(e) => setFormData({ ...formData, meetingLocation: e.target.value })}
-                            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        <GooglePlacesAutocomplete
+                            value={formData.meetingLocation || ''}
+                            onChange={(address: string) => setFormData({ ...formData, meetingLocation: address })}
                             placeholder="Physical address or meeting link"
+                            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                     </div>
 
