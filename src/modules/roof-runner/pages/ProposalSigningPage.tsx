@@ -215,7 +215,7 @@ export default function ProposalSigningPage() {
 
       const opt = {
         margin: 0,
-        filename: `proposal-${proposal?.sections?.settings?.customerName || 'document'}.pdf`,
+        filename: `proposal-${getClientDisplayName() || 'document'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, logging: false },
         jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
@@ -302,6 +302,17 @@ export default function ProposalSigningPage() {
     businessInfo?.business_logo ||
     settings.companyLogo ||
     null;
+
+  const getClientDisplayName = () =>
+    storedSignature?.signer_name ||
+    signatureRequest?.signer_name ||
+    settings.customerName ||
+    'Client Name';
+
+  const getClientPrintedName = () =>
+    storedSignature?.signature_type === 'typed' && storedSignature?.typed_text
+      ? storedSignature.typed_text
+      : getClientDisplayName();
 
   const getFooter = () => (
     <div className="mt-auto border-t border-gray-200 dark:border-gray-700 pt-8">
@@ -393,7 +404,7 @@ export default function ProposalSigningPage() {
                   Printed Name
                 </div>
                 <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
-                  {settings.customerName || 'Client Name'}
+                  {getClientPrintedName()}
                 </div>
               </div>
               <div>
@@ -509,7 +520,7 @@ export default function ProposalSigningPage() {
 
                 <div className="max-w-[35%] text-right text-sm">
                   <div className="font-semibold text-gray-900 dark:text-white mb-1">
-                    {settings.customerName || 'Customer Name'}
+                    {getClientDisplayName()}
                   </div>
                   <div className="text-gray-600 dark:text-gray-400 mb-1">
                     {settings.customerAddress || 'Customer Address'}
@@ -820,24 +831,6 @@ export default function ProposalSigningPage() {
     );
   }
 
-  if (signatureSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6 text-center">
-          <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Signature Submitted
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Thank you for signing the proposal. Your signature has been recorded.
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500">
-            You can close this window now.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
@@ -860,13 +853,28 @@ export default function ProposalSigningPage() {
           </button>
           <button
             onClick={handleSignClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2"
+            disabled={signatureSubmitted}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PenTool size={16} />
-            Sign
+            {signatureSubmitted ? 'Signed' : 'Sign'}
           </button>
         </div>
       </div>
+
+      {signatureSubmitted && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 rounded-lg px-6 py-4 mx-6 mt-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5" />
+            <div>
+              <div className="font-semibold">Signature received</div>
+              <div className="text-sm text-emerald-700 dark:text-emerald-200">
+                This proposal has already been signed. You can download a copy below.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
         <style>{`
@@ -888,7 +896,7 @@ export default function ProposalSigningPage() {
         <div ref={contentRef} className="max-w-4xl mx-auto">
           {renderProposalContent()}
 
-          {showSignatureForm && (
+          {showSignatureForm && !signatureSubmitted && (
             <div
               ref={signatureRef}
               data-pdf-exclude="signature-form"
@@ -914,7 +922,7 @@ export default function ProposalSigningPage() {
                 <div className="space-y-6">
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-6">
                     <SignatureCapture
-                      signerName={settings.customerName || 'Signer'}
+                      signerName={getClientDisplayName() || 'Signer'}
                       onSignatureChange={setSignature}
                     />
                   </div>
@@ -927,7 +935,7 @@ export default function ProposalSigningPage() {
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer Name</div>
                         <div className="font-medium text-gray-900 dark:text-white">
-                          {settings.customerName || 'Customer Name'}
+                          {getClientDisplayName()}
                         </div>
                       </div>
                       <div>

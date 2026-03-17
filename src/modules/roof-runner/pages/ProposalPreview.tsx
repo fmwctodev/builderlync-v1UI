@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Download } from "lucide-react";
 import { proposalsApi, Proposal } from "../services/proposalsApi";
 import { getBusinessInfo, BusinessInfo } from "../../../shared/store/services/businessInfoApi";
+import { Contact, getContactById } from "../../../shared/store/services/contactsApi";
 import { useOrgPath } from "../../../shared/hooks/useOrgPath";
 
 export default function ProposalPreview() {
@@ -12,6 +13,7 @@ export default function ProposalPreview() {
   const { getOrgPath } = useOrgPath();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
+  const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -88,6 +90,16 @@ export default function ProposalPreview() {
   }, [id]);
 
   useEffect(() => {
+    const contactId = proposal?.sections?.settings?.contactId;
+    if (!contactId) {
+      setContact(null);
+      return;
+    }
+
+    loadContact(contactId);
+  }, [proposal?.sections?.settings?.contactId]);
+
+  useEffect(() => {
     if (!proposal || loading || downloading) return;
     if (searchParams.get("download") !== "1") return;
 
@@ -117,6 +129,16 @@ export default function ProposalPreview() {
       setBusinessInfo(response.data);
     } catch (error) {
       console.error("Error loading business info:", error);
+    }
+  };
+
+  const loadContact = async (contactId: string | number) => {
+    try {
+      const response = await getContactById(String(contactId));
+      setContact(response.data || null);
+    } catch (error) {
+      console.error("Error loading contact:", error);
+      setContact(null);
     }
   };
 
@@ -157,6 +179,22 @@ export default function ProposalPreview() {
     return businessInfo?.business_logo || proposal?.sections?.settings?.companyLogo || null;
   };
 
+  const getClientDisplayName = () => {
+    return contact?.fullName || contact?.full_name || proposal?.sections?.settings?.customerName || "Client Name";
+  };
+
+  const getClientEmail = () => {
+    return contact?.email || proposal?.sections?.settings?.customerEmail || "customer@email.com";
+  };
+
+  const getClientPhone = () => {
+    return contact?.phone || proposal?.sections?.settings?.customerPhone || "(000) 000-0000";
+  };
+
+  const getClientAddress = () => {
+    return contact?.address || proposal?.sections?.settings?.customerAddress || "Customer Address";
+  };
+
   const getRepresentativeName = () => {
     if (businessInfo?.representative_first_name && businessInfo?.representative_last_name) {
       return `${businessInfo.representative_first_name} ${businessInfo.representative_last_name}`;
@@ -194,16 +232,8 @@ export default function ProposalPreview() {
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
                     Printed Name
                   </div>
-                  <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
-                    {proposal?.sections?.settings?.customerName || "Client Name"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    Title
-                  </div>
-                  <div className="mt-2 border-b border-gray-300 pb-2 text-base text-gray-900 dark:border-gray-600 dark:text-white">
-                    &nbsp;
+                  <div className="mt-2 min-h-[72px] border-b border-gray-300 pb-2 dark:border-gray-600 flex items-end">
+                    <div className="text-base text-gray-900 dark:text-white">&nbsp;</div>
                   </div>
                 </div>
                 <div>
@@ -228,14 +258,6 @@ export default function ProposalPreview() {
                   </div>
                   <div className="mt-2 border-b border-gray-300 pb-2 text-base font-medium text-gray-900 dark:border-gray-600 dark:text-white">
                     {getRepresentativeName() || getCompanyName()}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    Title
-                  </div>
-                  <div className="mt-2 border-b border-gray-300 pb-2 text-base text-gray-900 dark:border-gray-600 dark:text-white">
-                    &nbsp;
                   </div>
                 </div>
                 <div>
@@ -330,17 +352,17 @@ export default function ProposalPreview() {
 
       await Promise.all(imagePromises);
 
-      const opt = {
+      const opt: any = {
         margin: 0,
         filename: `proposal-${
-          proposal?.sections?.settings?.customerName || "document"
+          getClientDisplayName() || "document"
         }.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
           logging: false
         },
-        jsPDF: { unit: "pt", format: "letter", orientation: "portrait" },
+        jsPDF: { unit: "pt" as const, format: "letter" as const, orientation: "portrait" as const },
         pagebreak: {
           mode: "avoid",
           avoid: ["tr", "td", "li", "h1", "h2", "h3"],
@@ -362,10 +384,7 @@ export default function ProposalPreview() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Review and Sign
-        </h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowConfirm(true)}
@@ -444,16 +463,16 @@ export default function ProposalPreview() {
                   </div>
                   <div className="max-w-[35%] text-right text-sm">
                     <div className="mb-1 font-semibold text-gray-900 dark:text-white">
-                      {proposal.sections.settings?.customerName || "Customer Name"}
+                      {getClientDisplayName()}
                     </div>
                     <div className="mb-1 text-gray-600 dark:text-gray-400">
-                      {proposal.sections.settings?.customerAddress || "Customer Address"}
+                      {getClientAddress()}
                     </div>
                     <div className="mb-1 text-gray-600 dark:text-gray-400">
-                      {proposal.sections.settings?.customerPhone || "(000) 000-0000"}
+                      {getClientPhone()}
                     </div>
                     <div className="break-all text-gray-600 dark:text-gray-400">
-                      {proposal.sections.settings?.customerEmail || "customer@email.com"}
+                      {getClientEmail()}
                     </div>
                   </div>
                 </div>

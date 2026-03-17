@@ -1,7 +1,5 @@
 interface SRSCredentials {
-  username: string;
-  password: string;
-  branchId?: string;
+  customerCode: string;
 }
 
 interface SRSBranch {
@@ -19,27 +17,20 @@ interface SRSUser {
   isActive: boolean;
 }
 
-class SRSService {
-  private token: string | null = null;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
 
+class SRSService {
   async authenticate(credentials: SRSCredentials): Promise<{ success: boolean; user?: SRSUser; message?: string }> {
     try {
-      const response = await fetch('/api/srs/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        localStorage.setItem('srs_connected', 'true');
-        return { 
-          success: true, 
+      const result = await this.saveCustomerProfile(credentials.customerCode);
+      if (result.success && result.data?.connected) {
+        return {
+          success: true,
           user: { id: 'srs_user', username: 'SRS User', email: '', branchId: '', isActive: true }
         };
       }
-      
-      return { success: false, message: data.message || 'Connection failed' };
+
+      return { success: false, message: result.message || 'Connection failed' };
     } catch (error) {
       return { success: false, message: 'Connection error' };
     }
@@ -62,15 +53,8 @@ class SRSService {
 
   async validateConnection(): Promise<boolean> {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
-      const response = await fetch(`${baseUrl}/srs/validate`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.connected || false;
-      }
-      
-      return false;
+      const result = await this.getCustomerProfile();
+      return Boolean(result?.success && result.data?.connected);
     } catch (error) {
       return false;
     }
@@ -78,8 +62,7 @@ class SRSService {
 
   async searchProducts(query: string, page = 1, limit = 50): Promise<{ data: any[]; pagination?: any }> {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
-      const response = await fetch(`${baseUrl}/srs/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+      const response = await fetch(`${API_BASE_URL}/srs/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
       
       if (response.ok) {
         const result = await response.json();
@@ -100,12 +83,47 @@ class SRSService {
     }
   }
 
-  private getToken(): string | null {
-    return localStorage.getItem('srs_connected') === 'true' ? 'connected' : null;
+  async getCustomerProfile(): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/srs/customer`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Failed to load SRS customer profile' };
+    }
   }
 
-  logout(): void {
-    localStorage.removeItem('srs_connected');
+  async saveCustomerProfile(customerCode: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/srs/customer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ customerCode })
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Failed to save SRS customer profile' };
+    }
+  }
+
+  async deleteCustomerProfile(): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/srs/customer`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Failed to delete SRS customer profile' };
+    }
+  }
+
+  async logout(): Promise<void> {
+    await this.deleteCustomerProfile();
   }
 }
 
