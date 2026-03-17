@@ -67,9 +67,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 print:bg-white print:p-0 print:absolute print:inset-0">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:rounded-none">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col print:max-w-none print:max-h-none print:shadow-none print:rounded-none print:overflow-visible">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start sticky top-0 bg-white dark:bg-gray-800 z-10 print:static print:border-none">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start bg-white dark:bg-gray-800 print:border-none">
                     <div className="flex items-start gap-4">
                         <div className="h-12 w-12 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center print:hidden">
                             <FileText className="h-6 w-6 text-[#D71920]" />
@@ -92,7 +92,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                     </div>
                 </div>
 
-                <div className="p-6 space-y-8">
+                <div className="flex-1 overflow-y-auto print:overflow-visible">
+                    <div className="p-6 space-y-8">
                     {/* Error Message / Processing Status */}
                     {(orderDetails.errorMessage || orderDetails.processingStatus) && (
                         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
@@ -226,6 +227,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                         </div>
                     </div>
 
+                    </div>
                 </div>
 
                 {/* Modal Footer */}

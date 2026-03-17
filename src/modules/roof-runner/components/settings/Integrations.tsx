@@ -31,7 +31,7 @@ const Integrations: React.FC = () => {
   const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
-  const [srsStatus, setSrsStatus] = React.useState({ connected: false });
+  const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; customerCode?: string }>({ connected: false });
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
@@ -200,8 +200,13 @@ const Integrations: React.FC = () => {
 
   const fetchSrsStatus = async () => {
     try {
-      const isConnected = await srsService.validateConnection();
-      setSrsStatus({ connected: isConnected });
+      const result = await srsService.getCustomerProfile();
+      if (result?.success && result.data?.connected) {
+        const customerCode = result.data?.profile?.customer_code || result.data?.profile?.customerCode;
+        setSrsStatus({ connected: true, customerCode });
+        return;
+      }
+      setSrsStatus({ connected: false });
     } catch (error) {
       setSrsStatus({ connected: false });
     }
@@ -325,7 +330,7 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'abc-supply') {
       handleABCSupplyDisconnect();
     } else if (integrationId === 'srs-distribution') {
-      srsService.logout();
+      await srsService.logout();
       setSrsStatus({ connected: false });
     } else if (integrationId === 'eagleview') {
       try {
@@ -609,6 +614,12 @@ const Integrations: React.FC = () => {
               </p>
             )}
 
+            {integration.id === 'srs-distribution' && integration.connected && srsStatus.customerCode && (
+              <p className="text-xs text-green-600 dark:text-green-400 mb-4">
+                Customer Code: {srsStatus.customerCode}
+              </p>
+            )}
+
             <div className="flex flex-col space-y-2">
               {integration.connected ? (
                 <>
@@ -677,7 +688,7 @@ const Integrations: React.FC = () => {
       {showSrsModal && (
         <SRSConnection
           onConnectionSuccess={() => {
-            setSrsStatus({ connected: true });
+            fetchSrsStatus();
             setShowSrsModal(false);
           }}
           onClose={() => setShowSrsModal(false)}

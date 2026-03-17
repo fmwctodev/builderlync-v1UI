@@ -3,6 +3,7 @@ import { ShoppingCart, Plus, Minus, Trash2, X, ChevronDown, Search, Building } f
 import { Product, ShipTo } from '../../abc-supply/types';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { srsApi } from '../services/srsApi';
+import { srsService } from '../services/srsService';
 import CheckoutForm, { CheckoutFormData } from '../../abc-supply/components/CheckoutForm';
 
 interface CartItem extends Product {
@@ -38,6 +39,16 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     const [loading, setLoading] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
+    const [srsPriceStatus, setSrsPriceStatus] = useState<Record<string, {
+        price?: number;
+        message?: string;
+        messageCode?: number;
+        availableStatus?: string | null;
+        requestedUOM?: string | null;
+        priceUOM?: string | null;
+    }>>({});
+    const [srsCustomerProfile, setSrsCustomerProfile] = useState<any | null>(null);
+    const [srsCustomerLoading, setSrsCustomerLoading] = useState(false);
 
     const [shipToAddress, setShipToAddress] = useState({
         name: '',
@@ -46,6 +57,14 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         state: '',
         zipCode: ''
     });
+
+    const getSrsCustomerCode = (override?: string) => {
+        return override || srsCustomerProfile?.customer_code || srsCustomerProfile?.customerCode;
+    };
+
+    const getSrsHomeBranchCode = () => {
+        return srsCustomerProfile?.customer_details?.homeBranch || srsCustomerProfile?.customer_details?.homeBranchId;
+    };
 
     useEffect(() => {
         if (isOpen && supplier === 'ABC Supply') {
@@ -88,6 +107,51 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         }
     }, [isOpen, supplier, items.length]); 
 
+    useEffect(() => {
+        if (!isOpen || supplier !== 'SRS') return;
+        let isActive = true;
+
+        const loadSrsProfile = async () => {
+            setSrsCustomerLoading(true);
+            try {
+                const result = await srsService.getCustomerProfile();
+                if (!isActive) return;
+
+                if (result?.success && result.data?.connected && result.data?.profile) {
+                    const profile = result.data.profile;
+                    setSrsCustomerProfile(profile);
+
+                    const savedBranch = localStorage.getItem('srs_selected_branch');
+                    const homeBranchCode = profile.customer_details?.homeBranch;
+                    const homeBranchId = profile.customer_details?.homeBranchId;
+
+                    if (!savedBranch && homeBranchCode) {
+                        const fallbackBranch = {
+                            id: homeBranchCode,
+                            number: homeBranchId || homeBranchCode,
+                            name: `Home Branch (${homeBranchCode})`
+                        };
+                        setSelectedBranch(fallbackBranch);
+                        localStorage.setItem('srs_selected_branch', JSON.stringify(fallbackBranch));
+                    }
+                } else {
+                    setSrsCustomerProfile(null);
+                }
+            } catch (error) {
+                if (isActive) {
+                    setSrsCustomerProfile(null);
+                }
+            } finally {
+                if (isActive) {
+                    setSrsCustomerLoading(false);
+                }
+            }
+        };
+
+        loadSrsProfile();
+        return () => { isActive = false; };
+    }, [isOpen, supplier]);
+
     // Effect to refresh prices when items change if we have branch/shipto
     useEffect(() => {
         if (isOpen && items.length > 0) {
@@ -97,27 +161,49 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                 fetchSrsPrices(selectedBranch.id || selectedBranch.number);
             }
         }
-    }, [items, selectedShipTo, selectedBranch, isOpen, supplier]);
+    }, [items, selectedShipTo, selectedBranch, isOpen, supplier, srsCustomerProfile]);
+
+    const resolveSrsUom = (item: any) => {
+        return (
+            item.productVariants?.[0]?.unit ||
+            item.productVariants?.[0]?.uom ||
+            item.productVariants?.[0]?.priceUOM ||
+            item.productUOM?.[0]?.code ||
+            item.uoms?.[0]?.code ||
+            item.uom ||
+            'EA'
+        );
+    };
+
+    const resolveSrsProductId = (item: any) => {
+        const idFromCart = item.srsProductId || item.productId;
+        if (idFromCart) return parseInt(idFromCart);
+        const parsed = parseInt(item.itemNumber);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    };
 
     const fetchSrsPrices = async (branchCode: string) => {
         if (!items.length || !branchCode) return;
 
         try {
+            const customerCode = getSrsCustomerCode();
+            if (!customerCode) return;
+
             const requestBody = {
                 sourceSystem: "BUILDERLYNC",
-                customerCode: "S055053",
+                customerCode,
                 branchCode: branchCode,
                 transactionId: `SPR-${Date.now()}`,
                 jobAccountNumber: 1,
                 productList: items
-                    .filter((item: any) => item.srsProductId || !isNaN(parseInt(item.itemNumber)))
                     .map((item: any) => ({
-                        productId: item.srsProductId || parseInt(item.itemNumber),
+                        productId: resolveSrsProductId(item),
                         productName: item.familyName || item.itemDescription || item.itemNumber,
                         productOptions: ["N/A"],
                         quantity: item.quantity || 1,
-                        uom: item.uoms?.[0]?.code || 'EA'
+                        uom: resolveSrsUom(item)
                     }))
+                    .filter((item: any) => item.productId)
             };
 
             if (!requestBody.productList.length) return; // nothing to price
@@ -125,30 +211,55 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             const response = await srsApi.getPrice(requestBody);
             
             const prices: Record<string, number> = {};
+            const statusByItemNumber: Record<string, {
+                price?: number;
+                message?: string;
+                messageCode?: number;
+                availableStatus?: string | null;
+                requestedUOM?: string | null;
+                priceUOM?: string | null;
+            }> = {};
             
             // The SRS API returns an array directly, or sometimes nested in 'data'
-            const priceList = Array.isArray(response) ? response : (response.data || response.productList || []);
+            const priceList = Array.isArray(response)
+                ? response
+                : (Array.isArray(response.data) ? response.data : (response.data?.productList || response.productList || response.data?.data || []));
 
             if (priceList && Array.isArray(priceList)) {
                 // Build a lookup from numeric productId -> price
                 const idToPrice: Record<string, number> = {};
+                const idToStatus: Record<string, any> = {};
                 priceList.forEach((priceItem: any) => {
                     const numIdStr = priceItem.productId?.toString();
                     const currentPrice = priceItem.price !== undefined ? priceItem.price : priceItem.unitPrice;
                     if (numIdStr && currentPrice !== undefined) {
                         idToPrice[numIdStr] = currentPrice;
                     }
+                    if (numIdStr) {
+                        idToStatus[numIdStr] = priceItem;
+                    }
                 });
 
                 // Map prices back to cart items by their srsProductId OR itemNumber
                 items.forEach((item: any) => {
-                    const numId = (item.srsProductId || parseInt(item.itemNumber))?.toString();
+                    const numId = resolveSrsProductId(item)?.toString();
                     if (numId && idToPrice[numId] !== undefined) {
                         prices[item.itemNumber] = idToPrice[numId]; // key by itemNumber for display lookup
+                    }
+                    if (numId && idToStatus[numId]) {
+                        statusByItemNumber[item.itemNumber] = {
+                            price: idToPrice[numId],
+                            message: idToStatus[numId]?.message,
+                            messageCode: idToStatus[numId]?.messageCode,
+                            availableStatus: idToStatus[numId]?.availableStatus ?? null,
+                            requestedUOM: idToStatus[numId]?.requestedUOM ?? null,
+                            priceUOM: idToStatus[numId]?.priceUOM ?? null
+                        };
                     }
                 });
 
                 setItemPrices(prices);
+                setSrsPriceStatus(statusByItemNumber);
             }
         } catch (error) {
             console.error('Failed to fetch SRS prices:', error);
@@ -199,7 +310,13 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
 
     const handleCheckoutSubmit = async (checkoutData: CheckoutFormData) => {
         if (items.length === 0) return;
-        if (!selectedBranch) {
+        if (supplier === 'SRS') {
+            const fallbackBranch = getSrsHomeBranchCode();
+            if (!selectedBranch && !fallbackBranch) {
+                alert("Please select a branch first.");
+                return;
+            }
+        } else if (!selectedBranch) {
             alert("Please select a branch first.");
             return;
         }
@@ -213,8 +330,16 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             setLoading(true);
 
             if (supplier === 'SRS') {
-                if (!checkoutData.customerCode) {
-                    alert('Customer code is required for SRS orders.');
+                const resolvedCustomerCode = getSrsCustomerCode(checkoutData.customerCode);
+                if (!resolvedCustomerCode) {
+                    alert('Please connect SRS in Integrations to use your customer code.');
+                    setLoading(false);
+                    return;
+                }
+
+                const resolvedBranchCode = selectedBranch?.id || selectedBranch?.number || getSrsHomeBranchCode();
+                if (!resolvedBranchCode) {
+                    alert("Please select a branch first.");
                     setLoading(false);
                     return;
                 }
@@ -222,16 +347,16 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                 // Call SRS API for SRS
                 const orderData = {
                     sourceSystem: "BUILDERLYNC",
-                    customerCode: checkoutData.customerCode,
+                    customerCode: resolvedCustomerCode,
                     jobAccountNumber: 1,
-                    branchCode: selectedBranch.id || selectedBranch.number || 'BRRIV',
-                    accountNumber: checkoutData.customerCode || 'DEMO001',
+                    branchCode: resolvedBranchCode,
+                    accountNumber: resolvedCustomerCode || 'DEMO001',
                     transactionID: `SRS-ORD-${Date.now()}`,
                     transactionDate: new Date().toISOString(),
                     notes: checkoutData.instructions || "",
                     shipTo: {
                         name: checkoutData.contact?.name || selectedShipTo?.name || "Customer",
-                        addressLine1: checkoutData.shippingAddress?.street || selectedShipTo?.address?.line1 || "123 Main St",
+                        addressLine1: checkoutData.shippingAddress?.line1 || selectedShipTo?.address?.line1 || "123 Main St",
                         addressLine2: selectedShipTo?.address?.line2 || "",
                         addressLine3: "",
                         city: checkoutData.shippingAddress?.city || selectedShipTo?.address?.city || "City",
@@ -249,20 +374,20 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                         shippingMethod: checkoutData.deliveryService === 'pickup' ? "Will Call" : "Ground Drop"
                     },
                     orderLineItemDetails: items.map((item: any) => ({
-                        productId: parseInt(item.itemNumber) || parseInt(item.productId) || 0,
+                        productId: resolveSrsProductId(item),
                         productName: item.familyName || item.itemDescription || `Product ${item.itemNumber}`,
                         option: "N/A",
                         quantity: item.quantity,
                         price: item.price || getItemPrice(item.itemNumber) || 0,
                         customerItem: item.itemNumber || "XXXX",
-                        uom: item.uoms?.[0]?.code || 'EA'
+                        uom: resolveSrsUom(item)
                     })),
                     customerContactInfo: {
                         customerContactName: checkoutData.contact?.name || "Builder",
                         customerContactPhone: checkoutData.contact?.phone || "0000000000",
                         customerContactEmail: checkoutData.contact?.email || "builder@example.com",
                         customerContactAddress: {
-                            addressLine1: checkoutData.shippingAddress?.street || selectedShipTo?.address?.line1 || "123 Main St",
+                            addressLine1: checkoutData.shippingAddress?.line1 || selectedShipTo?.address?.line1 || "123 Main St",
                             city: checkoutData.shippingAddress?.city || selectedShipTo?.address?.city || "City",
                             state: checkoutData.shippingAddress?.state || selectedShipTo?.address?.state || "ST",
                             zipCode: checkoutData.shippingAddress?.zipCode || selectedShipTo?.address?.postal || "00000"
@@ -395,6 +520,21 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                             {supplier === 'SRS' && (
                                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ordering From:</div>
+                                    {srsCustomerProfile ? (
+                                        <div className="flex items-start gap-2 mb-2">
+                                            <Building className="h-4 w-4 text-gray-500 mt-0.5" />
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {srsCustomerProfile.customer_details?.customerName || srsCustomerProfile.customer_details?.addressLine1 || 'SRS Customer'}
+                                                </div>
+                                                <div className="text-xs text-gray-500">Customer #{getSrsCustomerCode()}</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-orange-600 dark:text-orange-400 mb-2">
+                                            {srsCustomerLoading ? 'Loading customer profile...' : 'Connect SRS in Integrations to use your saved customer code.'}
+                                        </div>
+                                    )}
                                     {selectedBranch ? (
                                         <div className="flex items-start gap-2">
                                             <div className="h-4 w-4 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
@@ -504,6 +644,8 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                             <div className="text-right">
                                                                 {(() => {
                                                                     const price = getItemPrice(item.itemNumber);
+                                                                    const status = srsPriceStatus[item.itemNumber];
+                                                                    const hasStatusMessage = Boolean(status?.message);
                                                                     return price > 0 ? (
                                                                         <div className="flex flex-col items-end">
                                                                             <span className="text-sm font-bold text-gray-900 dark:text-white">
@@ -512,10 +654,15 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                                             <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                                                                 ${price.toFixed(2)} / {item.uoms?.[0]?.code || 'EA'}
                                                                             </span>
+                                                                            {hasStatusMessage && (
+                                                                                <span className="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                                                                    {status?.message}
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                     ) : (
                                                                         <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded">
-                                                                            Call for Price
+                                                                            {hasStatusMessage ? status?.message : 'Call for Price'}
                                                                         </span>
                                                                     );
                                                                 })()}
@@ -588,6 +735,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                 onSubmit={handleCheckoutSubmit}
                 loading={loading}
                 supplier={supplier}
+                srsCustomerProfile={srsCustomerProfile}
             />
         </div>
     );

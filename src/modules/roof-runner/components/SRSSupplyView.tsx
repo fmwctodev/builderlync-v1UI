@@ -274,7 +274,10 @@ const SRSSupplyView: React.FC = () => {
         <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
-            <button className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition">
+            <button
+              onClick={() => setCurrentView('orders')}
+              className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
+            >
               View all <ChevronRight className="h-4 w-4 ml-1" />
             </button>
           </div>
@@ -345,7 +348,10 @@ const SRSSupplyView: React.FC = () => {
           <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
-              <button className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition">
+              <button
+                onClick={() => setCurrentView('products')}
+                className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
+              >
                 View all <ChevronRight className="h-4 w-4 ml-1" />
               </button>
             </div>
@@ -407,7 +413,7 @@ const SRSSupplyView: React.FC = () => {
           <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Nearest Branches</h2>
-              <button 
+              <button
                 onClick={() => setCurrentView('branches')}
                 className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
               >
