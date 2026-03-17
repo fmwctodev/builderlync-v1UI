@@ -34,6 +34,10 @@ export default function FileManager() {
   const [showDashboard, setShowDashboard] = useState(true);
   const [targetFolderId, setTargetFolderId] = useState<string | number | undefined>();
   const [folderPath, setFolderPath] = useState<Array<{ id: string | number, name: string }>>([]);
+  const [nextFilePageToken, setNextFilePageToken] = useState<string | undefined>();
+  const [nextFolderPageToken, setNextFolderPageToken] = useState<string | undefined>();
+  const [isLoadingMoreFiles, setIsLoadingMoreFiles] = useState(false);
+  const [isLoadingMoreFolders, setIsLoadingMoreFolders] = useState(false);
 
   const tabs = [
     { id: 'my-cloud' as const, label: 'My Cloud', icon: Cloud },
@@ -193,9 +197,11 @@ export default function FileManager() {
   const displayedFiles = getFilteredAndSortedFiles();
   const displayedFolders = getFilteredFolders();
 
-  const loadData = async () => {
+  const loadData = async (fileToken?: string, folderToken?: string, append = false) => {
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+      }
       setError(null);
 
       // Check cloud drive connection first
@@ -204,16 +210,45 @@ export default function FileManager() {
 
       if (conn) {
         // Load folders and files
-        const { folders: foldersData, files: filesData } = await backendFilesApi.getFolderContents(currentFolderId);
+        const result = await backendFilesApi.getFolderContents(currentFolderId, fileToken, folderToken);
 
-        setFolders(foldersData);
-        setFiles(filesData);
+        if (append) {
+          if (fileToken) {
+            setFiles(prev => [...prev, ...result.files]);
+            setNextFilePageToken(result.nextFilePageToken);
+          }
+          if (folderToken) {
+            setFolders(prev => [...prev, ...result.folders]);
+            setNextFolderPageToken(result.nextFolderPageToken);
+          }
+        } else {
+          setFolders(result.folders);
+          setFiles(result.files);
+          setNextFilePageToken(result.nextFilePageToken);
+          setNextFolderPageToken(result.nextFolderPageToken);
+        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load files and folders');
     } finally {
       setLoading(false);
+      setIsLoadingMoreFiles(false);
+      setIsLoadingMoreFolders(false);
+    }
+  };
+
+  const handleLoadMoreFiles = () => {
+    if (nextFilePageToken && !isLoadingMoreFiles) {
+      setIsLoadingMoreFiles(true);
+      loadData(nextFilePageToken, undefined, true);
+    }
+  };
+
+  const handleLoadMoreFolders = () => {
+    if (nextFolderPageToken && !isLoadingMoreFolders) {
+      setIsLoadingMoreFolders(true);
+      loadData(undefined, nextFolderPageToken, true);
     }
   };
 
@@ -424,6 +459,18 @@ export default function FileManager() {
                   onCreateSubfolder={handleCreateSubfolder}
                   onUploadToFolder={handleUploadToFolder}
                 />
+                {nextFolderPageToken && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={handleLoadMoreFolders}
+                      disabled={isLoadingMoreFolders}
+                      className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm disabled:opacity-50"
+                    >
+                      {isLoadingMoreFolders ? 'Loading...' : 'Load More Folders'}
+                    </button>
+                  </div>
+                )}
+
                 <FileGrid
                   files={displayedFiles.map(f => ({
                     id: f.id as any,
@@ -439,6 +486,17 @@ export default function FileManager() {
                   }))}
                   onDeleteFile={(id) => handleDeleteFile(id)}
                 />
+                {nextFilePageToken && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={handleLoadMoreFiles}
+                      disabled={isLoadingMoreFiles}
+                      className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm disabled:opacity-50"
+                    >
+                      {isLoadingMoreFiles ? 'Loading...' : 'Load More Files'}
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

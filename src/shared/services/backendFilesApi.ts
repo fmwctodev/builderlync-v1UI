@@ -79,16 +79,22 @@ class BackendFilesApiService {
     return response.json();
   }
 
-  async getFiles(folderId?: string | number | null): Promise<{ data: FileRecord[]; pagination: any }> {
+  async getFiles(folderId?: string | number | null, pageToken?: string, limit = 50): Promise<{ data: FileRecord[]; pagination: any }> {
     const params = new URLSearchParams();
     if (folderId !== null && folderId !== undefined) {
       params.append('folderId', folderId.toString());
     }
+    if (pageToken) params.append('pageToken', pageToken);
+    params.append('limit', limit.toString());
 
     console.log('Getting files with params:', params.toString());
     const result = await this.makeRequest(`/oauth/documents?${params}`);
     console.log('Files API response:', result);
-    return result.success ? result.data : { data: [], pagination: {} };
+
+    if (result.success) {
+      return result.data; // result.data contains { data: FileRecord[], pagination: ... }
+    }
+    return { data: [], pagination: {} };
   }
 
   async searchFiles(searchTerm: string): Promise<FileRecord[]> {
@@ -196,16 +202,25 @@ class BackendFilesApiService {
     });
   }
 
-  async getFolders(parentId?: string | number | null): Promise<FolderRecord[]> {
+  async getFolders(parentId?: string | number | null, pageToken?: string, limit = 50): Promise<{ data: FolderRecord[], nextPageToken?: string }> {
     const params = new URLSearchParams();
     if (parentId !== null && parentId !== undefined) {
       params.append('parentId', parentId.toString());
     }
+    if (pageToken) params.append('pageToken', pageToken);
+    params.append('limit', limit.toString());
 
     console.log('Getting folders with params:', params.toString());
     const result = await this.makeRequest(`/oauth/documents/folders?${params}`);
     console.log('Folders API response:', result);
-    return result.success ? result.data : [];
+
+    if (result.success) {
+      return {
+        data: result.data.data || [],
+        nextPageToken: result.data.nextPageToken
+      };
+    }
+    return { data: [] };
   }
 
   async createFolder(folderData: CreateFolderData): Promise<FolderRecord> {
@@ -252,17 +267,22 @@ class BackendFilesApiService {
     }
   }
 
-  async getFolderContents(folderId: string | number | null): Promise<{ folders: FolderRecord[]; files: FileRecord[] }> {
+  async getFolderContents(folderId: string | number | null, filePageToken?: string, folderPageToken?: string): Promise<{ folders: FolderRecord[]; files: FileRecord[]; nextFilePageToken?: string; nextFolderPageToken?: string }> {
     console.log('Getting folder contents for folderId:', folderId);
 
     try {
-      const [folders, filesResponse] = await Promise.all([
-        this.getFolders(folderId),
-        this.getFiles(folderId)
+      const [foldersResponse, filesResponse] = await Promise.all([
+        this.getFolders(folderId, folderPageToken),
+        this.getFiles(folderId, filePageToken)
       ]);
 
-      console.log('Folder contents result:', { folders, files: filesResponse.data });
-      return { folders, files: filesResponse.data };
+      console.log('Folder contents result:', { folders: foldersResponse.data, files: filesResponse.data });
+      return {
+        folders: foldersResponse.data,
+        files: filesResponse.data,
+        nextFilePageToken: filesResponse.pagination?.nextPageToken,
+        nextFolderPageToken: foldersResponse.nextPageToken
+      };
     } catch (error) {
       console.error('Error getting folder contents:', error);
       throw error;

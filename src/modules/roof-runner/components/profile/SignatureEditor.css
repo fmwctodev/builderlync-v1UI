@@ -6,42 +6,42 @@
   border-radius: 4px;
 }
 
-.signature-editor .ProseMirror {
+.signature-editor [contenteditable] {
   outline: none;
   padding: 16px;
   min-height: 300px;
 }
 
-.signature-editor .ProseMirror p {
+.signature-editor [contenteditable] p {
   margin: 0.5em 0;
 }
 
-.signature-editor .ProseMirror img {
+.signature-editor [contenteditable] img {
   max-width: 200px !important;
   height: auto !important;
   cursor: pointer;
 }
 
-.signature-editor .ProseMirror a {
+.signature-editor [contenteditable] a {
   color: #3b82f6;
   text-decoration: underline;
 }
 
-.signature-editor .ProseMirror strong {
+.signature-editor [contenteditable] strong {
   font-weight: bold;
 }
 
-.signature-editor .ProseMirror em {
+.signature-editor [contenteditable] em {
   font-style: italic;
 }
 
-.signature-editor .ProseMirror h1 {
+.signature-editor [contenteditable] h1 {
   font-size: 1.5em;
   font-weight: bold;
   margin: 0.5em 0;
 }
 
-.signature-editor .ProseMirror h2 {
+.signature-editor [contenteditable] h2 {
   font-size: 1.25em;
   font-weight: bold;
   margin: 0.5em 0;
