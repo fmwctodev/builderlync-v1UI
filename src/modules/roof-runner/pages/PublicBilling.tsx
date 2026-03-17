@@ -76,12 +76,16 @@ const PublicBilling: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const searchParams = new URLSearchParams(window.location.search);
+      const email = searchParams.get('email');
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/billing/checkout/create-session`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
           priceId: priceId,
-          successUrl: `${window.location.origin}/billing/success`,
+          email: email,
+          successUrl: `${window.location.origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${window.location.origin}/billing/cancel`
         })
       });
