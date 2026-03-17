@@ -60,6 +60,7 @@ import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
 import { useEffect } from 'react';
 import OutlookCallback from './pages/OutlookCallback';
 import EagleViewCallback from './pages/EagleViewCallback';
+import WorkflowStages from './pages/WorkflowStages';
 
 const RootRedirect = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -128,6 +129,7 @@ export function RoofRunnerModule() {
           <Route path="instant-estimator/:id/manage/materials/setup" element={<MaterialSetup />} />
           <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
           <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
+          <Route path="jobs/settings/stages" element={<WorkflowStages />} />
           <Route path="measurements" element={<Measurements />} />
           <Route path="measurements/payment-success" element={<PaymentSuccess />} />
           <Route path="measurements/payment-cancel" element={<PaymentCancel />} />

@@ -41,6 +41,10 @@ export function SignatureCapture({ signerName, onSignatureChange }: SignatureCap
   }, [onSignatureChange]);
 
   useEffect(() => {
+    setTypedName(signerName);
+  }, [signerName]);
+
+  useEffect(() => {
     if (mode === 'type') {
       renderTypedToCanvas(typedName);
     }
@@ -110,7 +114,7 @@ export function SignatureCapture({ signerName, onSignatureChange }: SignatureCap
     setIsDrawing(false);
     if (hasDrawn) {
       const imageDataUrl = canvas.toDataURL('image/png');
-      onSignatureChange({ type: 'drawn', imageDataUrl });
+      onSignatureChange({ type: 'drawn', text: typedName.trim(), imageDataUrl });
     }
   };
 
@@ -174,6 +178,13 @@ export function SignatureCapture({ signerName, onSignatureChange }: SignatureCap
         </div>
       ) : (
         <div className="space-y-2">
+          <input
+            type="text"
+            value={typedName}
+            onChange={(e) => setTypedName(e.target.value)}
+            placeholder="Enter your full name"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 bg-white"
+          />
           <div className="relative">
             <canvas
               ref={canvasRef}

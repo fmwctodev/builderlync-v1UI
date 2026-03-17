@@ -8,6 +8,7 @@ interface CheckoutFormProps {
   onSubmit: (formData: CheckoutFormData) => void;
   loading: boolean;
   supplier?: string;
+  srsCustomerProfile?: any | null;
 }
 
 export interface CheckoutFormData {
@@ -30,7 +31,7 @@ export interface CheckoutFormData {
   };
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, supplier }) => {
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, supplier, srsCustomerProfile }) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     jobId: null,
@@ -72,6 +73,17 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || supplier !== 'SRS') return;
+    const storedCode = srsCustomerProfile?.customer_code || srsCustomerProfile?.customerCode;
+    if (storedCode) {
+      setFormData(prev => ({
+        ...prev,
+        customerCode: storedCode
+      }));
+    }
+  }, [isOpen, supplier, srsCustomerProfile]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -87,6 +99,8 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   };
 
   if (!isOpen) return null;
+
+  const storedSrsCode = srsCustomerProfile?.customer_code || srsCustomerProfile?.customerCode;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -171,19 +185,29 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
 
           {supplier === 'SRS' && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Customer Code (Required for SRS)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your SRS Customer Code"
-                  value={formData.customerCode}
-                  onChange={(e) => updateField('customerCode', '', e.target.value)}
-                  required
-                  className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-                />
-              </div>
+              {storedSrsCode ? (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
+                  <div className="font-medium">SRS customer code connected</div>
+                  <div className="mt-1 text-gray-900 dark:text-white">{storedSrsCode}</div>
+                  <div className="mt-2 text-xs text-green-700/80 dark:text-green-200/80">
+                    Manage this in Integrations if you need to change it.
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Customer Code (Required for SRS)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter your SRS Customer Code"
+                    value={formData.customerCode}
+                    onChange={(e) => updateField('customerCode', '', e.target.value)}
+                    required
+                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              )}
 
               <div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Shipping Address</h3>
