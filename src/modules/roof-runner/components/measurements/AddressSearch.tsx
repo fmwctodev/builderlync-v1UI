@@ -101,7 +101,42 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
     };
 
     loadGoogleMaps();
-  }, [country, onAddressSelect, map, marker]);
+  }, [country, onAddressSelect]);
+
+  useEffect(() => {
+    if (map && initialAddress && !marker) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: initialAddress }, (results: any, status: any) => {
+        if (status === 'OK' && results[0]) {
+          const place = results[0];
+          const selectedAddress = place.formatted_address || initialAddress;
+          const addressComponents = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            components: place.address_components
+          };
+
+          setAddress(selectedAddress);
+          onAddressSelect(selectedAddress, addressComponents);
+          setBuildingId(selectedAddress);
+          setIsAddressSelected(true);
+          setShowAlert(true);
+
+          map.setCenter(place.geometry.location);
+          map.setZoom(21);
+          map.setMapTypeId('satellite');
+
+          const newMarker = new window.google.maps.Marker({
+            map: map,
+            position: place.geometry.location,
+            draggable: true,
+            animation: window.google.maps.Animation.DROP
+          });
+          setMarker(newMarker);
+        }
+      });
+    }
+  }, [map, initialAddress]);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

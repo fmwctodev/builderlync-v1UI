@@ -332,7 +332,16 @@ const Contacts: React.FC = () => {
   };
 
   const handleViewJob = (contact: any) => {
-    console.log('View job:', contact);
+    navigate(`/org/${orgSlug}/jobs`, {
+      state: {
+        createFromContact: true,
+        contactData: {
+          id: contact.id,
+          fullName: contact.fullName,
+          address: contact.address
+        }
+      }
+    });
     setActiveDropdown(null);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
     RotateCcw,
     RotateCw,
@@ -45,6 +45,9 @@ const PITCH_VALUES = ['0/12', '1/12', '2/12', '3/12', '4/12', '5/12', '6/12', '7
 const DIYPage: React.FC = () => {
     const navigate = useNavigate();
     const { orgSlug } = useParams();
+    const [searchParams] = useSearchParams();
+    const initialAddress = searchParams.get('address');
+    const initialJobId = searchParams.get('jobId');
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const autocompleteRef = useRef<any>(null);
@@ -870,6 +873,26 @@ const DIYPage: React.FC = () => {
             });
         }
 
+        // Handle initial address from URL
+        if (initialAddress && !currentProjectId) {
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ address: initialAddress }, (results: any, status: any) => {
+                if (status === 'OK' && results[0]) {
+                    const place = results[0];
+                    if (place.geometry?.location && mapInstanceRef.current) {
+                        mapInstanceRef.current.setCenter(place.geometry.location);
+                        mapInstanceRef.current.setZoom(20);
+                        mapInstanceRef.current.setTilt(45);
+                        setAddress(place.formatted_address || initialAddress);
+
+                        // Set drawing mode
+                        setIsDrawing(true);
+                        isDrawingRef.current = true;
+                    }
+                }
+            });
+        }
+
         // Map Mousedown (More responsive than drawing)
         mapInstanceRef.current.addListener('mousedown', handleMapInteraction);
 
@@ -1006,6 +1029,13 @@ const DIYPage: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (initialAddress) {
+            setIsInitialListOpen(false);
+            setAddress(initialAddress);
+        }
+    }, [initialAddress]);
 
     if (isInitialListOpen) {
         return (
