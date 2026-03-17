@@ -7,6 +7,81 @@ import { Contact, getContactById } from "../../../shared/store/services/contacts
 import { useOrgPath } from "../../../shared/hooks/useOrgPath";
 import { PdfPagesPreview } from "../components/proposals/PdfPagesPreview";
 
+type ProposalLineItem = {
+  id: string | number;
+  name?: string;
+  description?: string;
+  visible?: boolean;
+  isHeading?: boolean;
+  unitCost?: string;
+  qty?: string;
+};
+
+const stripHtmlTags = (value?: string) =>
+  (value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getEstimateItemHeight = (item: ProposalLineItem) => {
+  if (item.isHeading) return 52;
+
+  const descriptionText = stripHtmlTags(item.description);
+  const descriptionLines = descriptionText
+    ? Math.min(5, Math.max(1, Math.ceil(descriptionText.length / 80)))
+    : 0;
+  const metaHeight = item.unitCost || item.qty ? 22 : 0;
+
+  return 54 + metaHeight + descriptionLines * 18;
+};
+
+const paginateEstimateItems = (
+  items: ProposalLineItem[],
+  optionDescription?: string
+) => {
+  const descriptionPenalty =
+    optionDescription && optionDescription !== "Add description"
+      ? Math.min(
+          140,
+          28 + Math.ceil(stripHtmlTags(optionDescription).length / 80) * 18
+        )
+      : 0;
+
+  const firstPageLimit = Math.max(520, 760 - descriptionPenalty);
+  const continuedPageLimit = 860;
+  const pages: ProposalLineItem[][] = [];
+  let currentPage: ProposalLineItem[] = [];
+  let currentHeight = 0;
+  let currentPageLimit = firstPageLimit;
+
+  items.forEach((item) => {
+    const itemHeight = getEstimateItemHeight(item);
+    const shouldKeepHeadingWithNextRow =
+      item.isHeading &&
+      currentPage.length > 0 &&
+      currentHeight > currentPageLimit - 140;
+    const wouldOverflow =
+      currentPage.length > 0 && currentHeight + itemHeight > currentPageLimit;
+
+    if (shouldKeepHeadingWithNextRow || wouldOverflow) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentHeight = 0;
+      currentPageLimit = continuedPageLimit;
+    }
+
+    currentPage.push(item);
+    currentHeight += itemHeight;
+  });
+
+  if (currentPage.length > 0 || pages.length === 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+};
+
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -223,6 +298,20 @@ export default function ProposalPreview() {
     }
     return "Company representative name";
   };
+
+  const estimateOptionTitle =
+    proposal?.sections?.settings?.optionTitle || "Option 1";
+  const estimateOptionDescription =
+    proposal?.sections?.settings?.optionDescription;
+  const estimateSectionTitle =
+    proposal?.sections?.settings?.itemSectionTitle || "Item";
+  const visibleEstimateItems = (
+    (proposal?.sections?.items || []) as ProposalLineItem[]
+  ).filter((item) => item.visible);
+  const estimateItemPages = paginateEstimateItems(
+    visibleEstimateItems,
+    estimateOptionDescription
+  );
 
   const renderAcceptancePage = () => (
     <div
@@ -547,145 +636,180 @@ export default function ProposalPreview() {
               </div>
             </div>
 
-            {/* Estimate Section - Page 1 (Demo) */}
-            {proposal.sections?.items && (
-              <div
-                className="bg-white dark:bg-gray-800 pdf-page"
-                style={{
-                  width: "816px",
-                  position: "relative",
-                  padding: "32px",
-                  minHeight: "1056px"
-                }}
-              >
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {proposal.sections.settings?.optionTitle || "Option 1"}
-                  </h2>
-                  {proposal.sections.settings?.optionDescription && 
-                    proposal.sections.settings.optionDescription !== "Add description" && (
-                    <div
-                      className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words"
-                      dangerouslySetInnerHTML={{ __html: toRichHtml(proposal.sections.settings.optionDescription) }}
-                    />
-                  )}
-                </div>
-                <div className="space-y-8">
-                  <div>
-                    <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {proposal.sections.settings?.itemSectionTitle || "Item"}
-                      </div>
-                    </div>
-                    {proposal.sections.items
-                      .filter((item: any) => item.visible)
-                      .map((item: any) => (
-                        <div key={item.id}>
-                          {item.isHeading ? (
-                            <>
-                              <hr className="border-gray-300 dark:border-gray-600 my-3" />
-                              <div className="font-semibold text-gray-900 dark:text-white mb-2">
-                                {item.name}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="mb-2 pl-3 text-sm">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    {item.name}
-                                  </div>
-                                  {item.description && (
-                                    <div
-                                      className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                                      dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
-                                    />
-                                  )}
-                                  <div className="flex gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    {item.unitCost && (
-                                      <span>Unit Cost: ${item.unitCost}</span>
-                                    )}
-                                    {item.qty && <span>Qty: {item.qty}</span>}
-                                  </div>
-                                </div>
-                                {item.unitCost && item.qty && (
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    $
-                                    {(
-                                      parseFloat(item.unitCost) *
-                                      parseFloat(item.qty)
-                                    ).toFixed(2)}
-                                  </div>
-                                )}
-                              </div>
+            {/* Estimate Section */}
+            {proposal.sections?.items &&
+              estimateItemPages.map((pageItems, pageIndex) => {
+                const isFirstEstimatePage = pageIndex === 0;
+                const shouldShowOptionDescription =
+                  isFirstEstimatePage &&
+                  estimateOptionDescription &&
+                  estimateOptionDescription !== "Add description";
+
+                return (
+                  <div
+                    key={`estimate-page-${pageIndex}`}
+                    className="bg-white dark:bg-gray-800 pdf-page"
+                    style={{
+                      width: "816px",
+                      position: "relative",
+                      padding: "32px",
+                      minHeight: "1056px"
+                    }}
+                  >
+                    <div className="mb-8">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                            {estimateOptionTitle}
+                          </h2>
+                          {!isFirstEstimatePage && (
+                            <div className="text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                              Continued
                             </div>
                           )}
                         </div>
-                      ))}
-                  </div>
-                  {proposal.sections.upgrades &&
-                    proposal.sections.upgrades.length > 0 && (
+                        {estimateItemPages.length > 1 && (
+                          <div className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                            Page {pageIndex + 1} of {estimateItemPages.length}
+                          </div>
+                        )}
+                      </div>
+                      {shouldShowOptionDescription && (
+                        <div
+                          className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words"
+                          dangerouslySetInnerHTML={{
+                            __html: toRichHtml(estimateOptionDescription),
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div className="space-y-8">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                          {proposal.sections.settings?.upgradesTitle ||
-                            "Upgrades"}
-                        </div>
-                        {proposal.sections.upgrades.map((upgrade: any) => (
-                          <div
-                            key={upgrade.id}
-                            className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
-                          >
-                            <div className="font-medium text-gray-900 dark:text-white mb-3">
-                              {upgrade.name}
+                        <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between gap-3">
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {estimateSectionTitle}
+                          </div>
+                          {!isFirstEstimatePage && (
+                            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                              Continued
                             </div>
-                            {upgrade.items
-                              .filter((item: any) => item.visible)
-                              .map((item: any) => (
-                                <div key={item.id}>
-                                  {item.isHeading ? (
-                                    <>
-                                      <hr className="border-gray-300 dark:border-gray-600 my-3" />
-                                      <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
-                                        {item.name}
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <div className="mb-2 pl-3 text-sm">
-                                      <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                          <div className="font-medium text-gray-900 dark:text-white">
-                                            {item.name}
-                                          </div>
-                                          {item.description && (
-                                            <div
-                                              className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                                              dangerouslySetInnerHTML={{ __html: toRichHtml(item.description) }}
-                                            />
-                                          )}
-                                        </div>
-                                        {item.unitCost && item.qty && (
-                                          <div className="font-medium text-gray-900 dark:text-white">
-                                            $
-                                            {(
-                                              parseFloat(item.unitCost) *
-                                              parseFloat(item.qty)
-                                            ).toFixed(2)}
-                                          </div>
-                                        )}
-                                      </div>
+                          )}
+                        </div>
+                        {pageItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="border-b border-gray-100 py-3 last:border-b-0 dark:border-gray-700"
+                          >
+                            {item.isHeading ? (
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                {item.name}
+                              </div>
+                            ) : (
+                              <div className="pl-3 text-sm">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-gray-900 dark:text-white">
+                                      {item.name}
+                                    </div>
+                                    {item.description && (
+                                      <div
+                                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                        dangerouslySetInnerHTML={{
+                                          __html: toRichHtml(item.description),
+                                        }}
+                                      />
+                                    )}
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                      {item.unitCost && (
+                                        <span>Unit Cost: ${item.unitCost}</span>
+                                      )}
+                                      {item.qty && <span>Qty: {item.qty}</span>}
+                                    </div>
+                                  </div>
+                                  {item.unitCost && item.qty && (
+                                    <div className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                      $
+                                      {(
+                                        parseFloat(item.unitCost) *
+                                        parseFloat(item.qty)
+                                      ).toFixed(2)}
                                     </div>
                                   )}
                                 </div>
-                              ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                    )}
-                </div>
-              </div>
-            )}
+                      {proposal.sections.upgrades &&
+                        proposal.sections.upgrades.length > 0 &&
+                        isFirstEstimatePage && (
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                              {proposal.sections.settings?.upgradesTitle ||
+                                "Upgrades"}
+                            </div>
+                            {proposal.sections.upgrades.map((upgrade: any) => (
+                              <div
+                                key={upgrade.id}
+                                className="mb-4 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+                              >
+                                <div className="font-medium text-gray-900 dark:text-white mb-3">
+                                  {upgrade.name}
+                                </div>
+                                {upgrade.items
+                                  .filter((item: any) => item.visible)
+                                  .map((item: any) => (
+                                    <div key={item.id}>
+                                      {item.isHeading ? (
+                                        <>
+                                          <hr className="border-gray-300 dark:border-gray-600 my-3" />
+                                          <div className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
+                                            {item.name}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="mb-2 pl-3 text-sm">
+                                          <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                              <div className="font-medium text-gray-900 dark:text-white">
+                                                {item.name}
+                                              </div>
+                                              {item.description && (
+                                                <div
+                                                  className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                                                  dangerouslySetInnerHTML={{
+                                                    __html: toRichHtml(
+                                                      item.description
+                                                    ),
+                                                  }}
+                                                />
+                                              )}
+                                            </div>
+                                            {item.unitCost && item.qty && (
+                                              <div className="font-medium text-gray-900 dark:text-white">
+                                                $
+                                                {(
+                                                  parseFloat(item.unitCost) *
+                                                  parseFloat(item.qty)
+                                                ).toFixed(2)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                );
+              })}
 
-            {/* Summary Section - Page 2 */}
+            {/* Summary Section */}
             {proposal.sections?.items && (
               <div
                 className="bg-white dark:bg-gray-800 pdf-page"
@@ -719,53 +843,7 @@ export default function ProposalPreview() {
                           />
                         </div>
                       )} */}
-                      <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          Subtotal
-                        </span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          $
-                          {proposal.sections.items
-                            .filter(
-                              (item: any) => item.visible && !item.isHeading
-                            )
-                            .reduce(
-                              (sum: number, item: any) =>
-                                sum +
-                                parseFloat(item.unitCost || "0") *
-                                  parseFloat(item.qty || "0"),
-                              0
-                            )
-                            .toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          Margin (
-                          {proposal.sections.settings?.defaultMargin || "0"}%)
-                        </span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          $
-                          {(
-                            proposal.sections.items
-                              .filter(
-                                (item: any) => item.visible && !item.isHeading
-                              )
-                              .reduce(
-                                (sum: number, item: any) =>
-                                  sum +
-                                  parseFloat(item.unitCost || "0") *
-                                    parseFloat(item.qty || "0"),
-                                0
-                              ) *
-                            (parseFloat(
-                              proposal.sections.settings?.defaultMargin || "0"
-                            ) /
-                              100)
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                      <div className="mt-4 flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
                         <span className="font-medium text-gray-900 dark:text-white">
                           Total
                         </span>
