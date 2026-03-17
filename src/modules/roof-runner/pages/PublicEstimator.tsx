@@ -586,15 +586,14 @@ const PublicEstimator: React.FC = () => {
             <ArrowLeft className="w-4 h-4" /> Step 3 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">How steep is your roof?</h1>
-          <p className="text-gray-600 mb-8">Note: We do not currently offer flat roofing services</p>
 
           <div className="grid grid-cols-4 gap-4">
             {[
-              { id: 'flat', title: 'Flat', desc: 'Not offered', disabled: true },
+              { id: 'flat', title: 'Flat', desc: 'Flat roof surface' },
               { id: 'low', title: 'Low', desc: 'Easily walked on' },
               { id: 'moderate', title: 'Moderate', desc: 'Not easily walked on' },
               { id: 'steep', title: 'Steep', desc: "Can't be walked on" }
-            ].map((option) => (
+            ].map((option: { id: string; title: string; desc: string; disabled?: boolean }) => (
               <div
                 key={option.id}
                 onClick={() => !option.disabled && (setFormData({ ...formData, roofSteepness: option.id }), setCurrentStep(4))}
