@@ -5,6 +5,7 @@ import { proposalsApi, Proposal } from "../services/proposalsApi";
 import { getBusinessInfo, BusinessInfo } from "../../../shared/store/services/businessInfoApi";
 import { Contact, getContactById } from "../../../shared/store/services/contactsApi";
 import { useOrgPath } from "../../../shared/hooks/useOrgPath";
+import { PdfPagesPreview } from "../components/proposals/PdfPagesPreview";
 
 export default function ProposalPreview() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ export default function ProposalPreview() {
   const [downloading, setDownloading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-
+  
   const escapeHtml = (text: string) =>
     text
       .replace(/&/g, "&amp;")
@@ -80,6 +81,27 @@ export default function ProposalPreview() {
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/==(.+?)==/g, "<mark>$1</mark>")
       .replace(/\n/g, "<br/>");
+  };
+
+  const waitForImagesToLoad = async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll("img"));
+
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            const image = img as HTMLImageElement;
+
+            if (image.complete && image.naturalWidth > 0) {
+              resolve();
+              return;
+            }
+
+            image.onload = () => resolve();
+            image.onerror = () => resolve();
+          })
+      )
+    );
   };
 
   useEffect(() => {
@@ -298,20 +320,24 @@ export default function ProposalPreview() {
 
     setDownloading(true);
     
-    const pages = contentRef.current.querySelectorAll('.pdf-page');
+    const element = contentRef.current;
+    const pages = element.querySelectorAll('.pdf-page');
+    let originalImageSources: Array<{ img: HTMLImageElement; src: string }> = [];
     pages.forEach((page) => {
       (page as HTMLElement).style.marginBottom = '0';
     });
 
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      const element = contentRef.current.cloneNode(true) as HTMLElement;
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const imageElements = Array.from(element.querySelectorAll('img')) as HTMLImageElement[];
+      originalImageSources = imageElements.map((img) => ({
+        img,
+        src: img.src,
+      }));
 
-      // Convert images to base64 via backend proxy to avoid CORS
-      const images = element.querySelectorAll('img');
-      const imagePromises = Array.from(images).map(async (img) => {
+      const imagePromises = imageElements.map(async (imgElement) => {
         try {
-          const imgElement = img as HTMLImageElement;
           const originalSrc = imgElement.src;
           
           // Skip if already base64
@@ -351,29 +377,42 @@ export default function ProposalPreview() {
       });
 
       await Promise.all(imagePromises);
+      await waitForImagesToLoad(element);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "letter",
+      });
 
-      const opt: any = {
-        margin: 0,
-        filename: `proposal-${
-          getClientDisplayName() || "document"
-        }.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
+      const pdfPages = Array.from(element.querySelectorAll(".pdf-page")) as HTMLElement[];
+
+      for (let index = 0; index < pdfPages.length; index += 1) {
+        const page = pdfPages[index];
+        const canvas = await html2canvas(page, {
           scale: 2,
-          logging: false
-        },
-        jsPDF: { unit: "pt" as const, format: "letter" as const, orientation: "portrait" as const },
-        pagebreak: {
-          mode: "avoid",
-          avoid: ["tr", "td", "li", "h1", "h2", "h3"],
-        },
-      };
+          logging: false,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+        });
+        const imageData = canvas.toDataURL("image/jpeg", 0.98);
 
-      await html2pdf().set(opt).from(element).save();
+        if (index > 0) {
+          pdf.addPage("letter", "portrait");
+        }
+
+        pdf.addImage(imageData, "JPEG", 0, 0, 612, 792);
+      }
+
+      pdf.save(
+        `proposal-${proposal?.sections?.settings?.customerName || "document"}.pdf`
+      );
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert('Failed to generate PDF. Please try again.');
     } finally {
+      originalImageSources.forEach(({ img, src }) => {
+        img.src = src;
+      });
       pages.forEach((page) => {
         (page as HTMLElement).style.marginBottom = '';
       });
@@ -913,73 +952,76 @@ export default function ProposalPreview() {
                   s.name !== "Cover" && s.name !== "Estimate" && s.active
               )
               .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
-              .map((section: any) => (
-                <div
-                  key={section.id}
-                  className="bg-white dark:bg-gray-800 pdf-page"
-                  style={{
-                    width: "816px",
-                    minHeight: "1056px",
-                    padding: "32px",
-                    position: "relative"
-                  }}
-                >
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    {section.name}
-                  </h2>
-                  {section.type === "photos" && section.content?.photos && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {section.content.photos.map(
-                        (photo: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-                          >
-                            <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
-                              <img
-                                src={photo}
-                                alt={`Photo ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
-                              {`Photo ${idx + 1}`}
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-                  {section.type === "pdf" && section.content?.pdfs && (
-                    <div className="space-y-4">
+              .map((section: any) => {
+                if (section.type === "pdf" && section.content?.pdfs) {
+                  return (
+                    <React.Fragment key={section.id}>
                       {section.content.pdfs.map((pdf: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
-                        >
-                          <iframe
-                            src={pdf.url}
-                            className="w-full h-[600px]"
-                            title={pdf.name}
-                          />
-                        </div>
+                        <PdfPagesPreview
+                          key={`${section.id}-${idx}`}
+                          url={pdf.url}
+                          title={pdf.name}
+                          variant="proposal"
+                          sectionTitle={section.name}
+                          showSectionTitle={idx === 0}
+                        />
                       ))}
-                    </div>
-                  )}
-                  {section.type === "text" && (
-                    <div
-                      className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                      dangerouslySetInnerHTML={{
-                        __html: toRichHtml(
-                          section.content?.description ||
-                            section.content?.text ||
-                            "Section content"
-                        ),
-                      }}
-                    />
-                  )}
-                </div>
-              ))
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <div
+                    key={section.id}
+                    className="bg-white dark:bg-gray-800 pdf-page"
+                    style={{
+                      width: "816px",
+                      minHeight: "1056px",
+                      padding: "32px",
+                      position: "relative"
+                    }}
+                  >
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                      {section.name}
+                    </h2>
+                    {section.type === "photos" && section.content?.photos && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {section.content.photos.map(
+                          (photo: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                            >
+                              <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
+                                <img
+                                  src={photo}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                {`Photo ${idx + 1}`}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                    {section.type === "text" && (
+                      <div
+                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                        dangerouslySetInnerHTML={{
+                          __html: toRichHtml(
+                            section.content?.description ||
+                              section.content?.text ||
+                              "Section content"
+                          ),
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })
             }
             {renderAcceptancePage()}
           </div>

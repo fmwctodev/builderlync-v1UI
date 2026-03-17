@@ -425,10 +425,10 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
 
               {/* Sidebar Stats */}
               <div className="lg:col-span-1 space-y-6">
-                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Ruler className="w-4 h-4 text-red-600" />
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Total roof size</h3>
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 overflow-hidden">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Ruler className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight truncate">Total roof size</h3>
                   </div>
 
                   <div className="space-y-6">
@@ -468,23 +468,24 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
                       </p>
                     </div>
 
-                    <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
-                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Adjusted footprint (sqft)</p>
-                      <p className="text-lg font-bold text-gray-400 dark:text-gray-600">
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Adjusted footprint</p>
+                      <p className="text-lg font-bold text-gray-400 dark:text-gray-600 break-words">
                         {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
+                        <span className="text-xs ml-1">SqFt</span>
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Material Card */}
-                <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-6 border border-red-100 dark:border-red-900/20">
+                <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-5 border border-red-100 dark:border-red-900/20 overflow-hidden">
                   <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Target Price Estimate</p>
-                  <p className="text-3xl font-black text-red-600 dark:text-red-500">
+                  <p className="text-2xl md:text-3xl font-black text-red-600 dark:text-red-500 break-words">
                     ${leadData?.estimate?.calculations?.basePrice?.toLocaleString() || '0'}
                   </p>
                   <div className="mt-4 pt-4 border-t border-red-200/50 dark:border-red-900/30">
-                    <p className="text-xs text-red-800 dark:text-red-300 font-medium">{leadData?.estimate?.project_details?.desiredRoof} Material</p>
+                    <p className="text-xs text-red-800 dark:text-red-300 font-medium truncate">{leadData?.estimate?.project_details?.desiredRoof} Material</p>
                   </div>
                 </div>
               </div>

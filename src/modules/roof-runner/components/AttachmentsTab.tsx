@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, MoreHorizontal, ArrowUp, File, X, Download, Trash2 } from 'lucide-react';
+import { Upload, Search, MoreHorizontal, ArrowUp, File as FileIcon, X, Download, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cloudDriveApi } from '../../../shared/services/cloudDriveApi';
 import { backendFilesApi, FileRecord } from '../../../shared/services/backendFilesApi';
@@ -27,6 +27,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const [removingDocId, setRemovingDocId] = useState<number | string | null>(null);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -166,6 +167,47 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
     }
   };
 
+  const handleLocalFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleLocalFileUpload called');
+    const files = event.target.files;
+    console.log('Files object:', files);
+    console.log('Files count:', files?.length);
+    console.log('jobId value:', jobId);
+
+    if (!files || files.length === 0 || !jobId) {
+      const reason = !files ? 'no files object' : (files.length === 0 ? 'zero files' : 'missing jobId');
+      console.error('UPLOAD BAIL OUT:', reason, { files, jobId });
+      alert('Upload failed: ' + reason);
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const fileToUpload = files[0];
+      console.log('Starting upload for:', fileToUpload.name);
+
+      // 1. Upload to backend as 'local'
+      console.log('Prompting backend upload for local provider...');
+      const uploadedFile = await backendFilesApi.uploadFile(fileToUpload, null, 'local');
+      console.log('Backend upload successful:', uploadedFile);
+
+      // 2. Attach to job
+      const nextIds = Array.from(new Set([...attachmentsIds, uploadedFile.id])).filter(id => id !== null && id !== undefined && id !== "") as (number | string)[];
+      await updateJobAttachmentsIds(jobId, nextIds);
+
+      // 3. Re-fetch
+      await fetchJobAttachmentsIds();
+
+      // Clear input so same file can be selected again
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error uploading local file:', error);
+      alert('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleAttachDocument = async (doc: FileRecord) => {
     if (!jobId || attachingDocId !== null) return;
     try {
@@ -218,7 +260,23 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
               <FolderPlus className="w-4 h-4" />
               <span>Attach from existing</span>
             </button> */}
-            <div className="relative">
+            <div className="relative flex items-center space-x-2">
+              <label
+                className={`flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <input
+                  type="file"
+                  onChange={handleLocalFileUpload}
+                  className="hidden"
+                  disabled={isUploading}
+                />
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                ) : (
+                  <ArrowUp className="w-4 h-4" />
+                )}
+                <span>{isUploading ? 'Uploading...' : 'Upload Local'}</span>
+              </label>
               <button
                 onClick={() => {
                   setShowDocumentPicker(true);
@@ -227,7 +285,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm"
               >
                 <Upload className="w-4 h-4" />
-                <span>Attach</span>
+                <span>Attach Cloud</span>
               </button>
             </div>
           </div>
@@ -294,7 +352,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <File className="w-10 h-10 text-primary-500" />
+                    <FileIcon className="w-10 h-10 text-primary-500" />
                   )}
                 </div>
                 <div className="mt-3">
@@ -408,7 +466,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                       className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
                     >
                       <div className="flex items-center space-x-3">
-                        <File className="w-4 h-4 text-primary-500" />
+                        <FileIcon className="w-4 h-4 text-primary-500" />
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {doc.filename}
@@ -507,7 +565,7 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                  <File className="w-16 h-16 text-primary-400 mb-4" />
+                  <FileIcon className="w-16 h-16 text-primary-400 mb-4" />
                   <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
                     Preview not available for this file type
                   </p>

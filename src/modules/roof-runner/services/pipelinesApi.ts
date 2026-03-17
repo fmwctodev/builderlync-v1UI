@@ -202,6 +202,8 @@ class PipelinesApi {
         { name: 'Inspection/Estimate Booked', color: '#059669', order_position: 6 },
         { name: 'Job Qualified', color: '#6366f1', order_position: 7 },
         { name: 'Job Unqualified', color: '#dc2626', order_position: 8 },
+        { name: 'Job Won', color: '#16a34a', order_position: 9 },
+        { name: 'Job Lost', color: '#991b1b', order_position: 10 },
       ],
     };
 

@@ -178,6 +178,8 @@ export default function AddOpportunityModal({ isOpen, onClose, onSuccess, defaul
             { id: 'default-4', name: 'Follow-Up 3', order_position: 3, color: '#16a34a' },
             { id: 'default-5', name: 'Long Term Follow Up', order_position: 4, color: '#9333ea' },
             { id: 'default-6', name: 'In Convo', order_position: 5, color: '#10b981' },
+            { id: 'default-7', name: 'Job Won', order_position: 6, color: '#16a34a' },
+            { id: 'default-8', name: 'Job Lost', order_position: 7, color: '#991b1b' },
           ];
           setPipeline({ id: 'default', name: 'Default', stages: defaultStages } as any);
           setFormData(prev => ({

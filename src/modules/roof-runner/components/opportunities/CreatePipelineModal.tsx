@@ -23,6 +23,8 @@ const DEFAULT_OPPORTUNITY_STAGES: Stage[] = [
   { id: '7', name: 'Inspection/Estimate Booked (Creates Job)' },
   { id: '8', name: 'Job Qualified' },
   { id: '9', name: 'Job Unqualified' },
+  { id: '10', name: 'Job Won' },
+  { id: '11', name: 'Job Lost' },
 ];
 
 export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: CreatePipelineModalProps) {

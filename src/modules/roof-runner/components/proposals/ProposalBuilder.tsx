@@ -35,6 +35,7 @@ import { getJobById, Job, CreateJobRequest, updateJob } from "../../../../shared
 import { getStaff, StaffMember } from "../../../../shared/store/services/staffApi";
 import JobDetailsModal from "../JobDetailsModal";
 import { SendForSignatureModal } from "../SendForSignatureModal";
+import { PdfPagesPreview } from "./PdfPagesPreview";
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -2743,11 +2744,12 @@ export default function ProposalBuilder({
                                     )}
                                   </div>
                                 </div>
-                                <iframe
-                                  src={pdf.url}
-                                  className="w-full h-[600px]"
-                                  title={pdf.name}
-                                />
+                                <div className="p-4 bg-gray-50 dark:bg-gray-900/40">
+                                  <PdfPagesPreview
+                                    url={pdf.url}
+                                    title={pdf.name}
+                                  />
+                                </div>
                               </div>
                             ))}
                         </div>
@@ -4715,11 +4717,12 @@ export default function ProposalBuilder({
                 </button>
               </div>
               <div className="flex-1">
-                <iframe
-                  src={viewingPdf.url}
-                  className="w-full h-full"
-                  title={viewingPdf.name}
-                />
+                <div className="h-full overflow-y-auto p-6 bg-gray-100 dark:bg-gray-950">
+                  <PdfPagesPreview
+                    url={viewingPdf.url}
+                    title={viewingPdf.name}
+                  />
+                </div>
               </div>
             </div>
           )}
