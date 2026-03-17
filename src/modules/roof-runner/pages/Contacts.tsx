@@ -127,13 +127,13 @@ const Contacts: React.FC = () => {
   };
 
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setFormData({ ...formData, phone: formatted });
+    // const formatted = formatPhoneNumber(value);
+    setFormData({ ...formData, phone: value });
   };
 
   const handleSecondaryPhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setSecondaryPhone({ ...secondaryPhone, phone: formatted });
+    // const formatted = formatPhoneNumber(value);
+    setSecondaryPhone({ ...secondaryPhone, phone: value });
   };
 
   const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
