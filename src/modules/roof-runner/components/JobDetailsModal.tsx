@@ -61,6 +61,34 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [contactError, setContactError] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [initialContactName, setInitialContactName] = useState('');
+
+  const getDisplayContactName = () => {
+    if (formData.contactName) return formData.contactName;
+
+    // Fallbacks from viewingJob
+    if (viewingJob) {
+      if (viewingJob.contactName) return viewingJob.contactName;
+      if (viewingJob.customer) {
+        return viewingJob.customer.full_name ||
+          viewingJob.customer.fullName ||
+          viewingJob.customer.name ||
+          viewingJob.customer.company ||
+          'Contact';
+      }
+      if ((viewingJob as any).contact_name) return (viewingJob as any).contact_name;
+    }
+
+    return 'Selected Customer';
+  };
+
+  const getDisplayContactId = () => {
+    return formData.contactId ||
+      viewingJob?.customer?.id ||
+      viewingJob?.customerId ||
+      viewingJob?.contact_id ||
+      viewingJob?.contactId ||
+      null;
+  };
   const { user } = useAppSelector((state) => state.auth);
 
   const currentUserAsStaff = staff.find(member =>
@@ -207,6 +235,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                         {viewingJob ? `Job #${viewingJob.id}` : 'New Job'}
+                        {getDisplayContactId() && ` - ${getDisplayContactName()}`}
                       </h2>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                         <span>0/1</span>
@@ -290,9 +319,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         Customer/Lead <span className="text-red-500">*</span>
                       </label>
                       <ContactSearchDropdown
-                        selectedContact={formData.contactId && formData.contactName ? {
-                          id: formData.contactId.toString(),
-                          name: formData.contactName
+                        selectedContact={getDisplayContactId() ? {
+                          id: getDisplayContactId()?.toString() || '',
+                          name: getDisplayContactName()
                         } : null}
                         onSelectContact={(contact) => {
                           setFormData({
@@ -308,8 +337,18 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           setInitialContactName(name);
                           setShowCreateContactModal(true);
                         }}
-                        onViewProfile={() => setShowViewContactModal(true)}
-                        onEditContact={() => setShowEditContactModal(true)}
+                        onViewProfile={() => {
+                          const contactId = formData.contactId || viewingJob?.customer?.id || viewingJob?.customerId;
+                          if (contactId) {
+                            setShowViewContactModal(true);
+                          }
+                        }}
+                        onEditContact={() => {
+                          const contactId = formData.contactId || viewingJob?.customer?.id || viewingJob?.customerId;
+                          if (contactId) {
+                            setShowEditContactModal(true);
+                          }
+                        }}
                       />
                       {contactError && (
                         <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
