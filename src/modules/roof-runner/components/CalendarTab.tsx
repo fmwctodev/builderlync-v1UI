@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Calendar as CalendarIcon, X, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import { createJobEvent, getAllEvents, Event } from '../../../shared/store/services/eventsApi';
@@ -163,8 +163,11 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     }
   };
 
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+
   const handleViewCalendar = () => {
-    navigate('/calendars');
+    navigate(`${orgPrefix}/calendars`);
   };
 
   return (

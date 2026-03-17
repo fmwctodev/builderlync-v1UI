@@ -285,6 +285,7 @@ const Calendars: React.FC = () => {
     console.log("Event data:", event);
     console.log("Staff list:", staff);
     const selectedJob = jobs.find((job) => job.id === (event as any).job_id);
+    const selectedContact = contacts.find((c) => c.id === (event as any).contact_id);
     // Since event doesn't have createdBy/createdByName, use first staff member as default
     const defaultStaff = staff.length > 0 ? staff[0] : null;
     console.log("Default staff:", defaultStaff);
@@ -293,8 +294,8 @@ const Calendars: React.FC = () => {
     const formDataToSet = {
       type: event.type || "meeting",
       title: event.title,
-      contactId: undefined,
-      contactName: "",
+      contactId: selectedContact ? Number(selectedContact.id) : undefined,
+      contactName: selectedContact ? (selectedContact.fullName || selectedContact.full_name) : "",
       startDate: (event as any).start_date || event.startDate,
       startTime: (event as any).start_time || event.startTime,
       endDate: (event as any).end_date || event.endDate,
@@ -337,8 +338,7 @@ const Calendars: React.FC = () => {
     setLoading(true);
 
     try {
-      const selectedJob = jobs.find((job) => job.name === formData.job);
-      const jobId = selectedJob ? selectedJob.id : 1;
+      const jobId = formData.job ? parseInt(formData.job) : 1;
 
       // Get Google Calendar credentials
       const refreshToken = localStorage.getItem("google_refresh_token");
@@ -348,7 +348,7 @@ const Calendars: React.FC = () => {
         type: formData.type,
         title: formData.title,
         contactId: formData.contactId,
-        contactName: formData.contactName,
+        jobId: formData.job ? parseInt(formData.job) : undefined,
         startDate: formData.startDate,
         startTime: formData.allDay ? "00:00" : formData.startTime,
         endDate: formData.endDate,
@@ -364,18 +364,26 @@ const Calendars: React.FC = () => {
       };
 
       if (editingEvent) {
-        await updateJobEvent(jobId, editingEvent.id!, eventData);
+        const response = await updateJobEvent(jobId, editingEvent.id!, eventData);
+        console.log('Update response:', response);
+        // Update the event in state immediately
+        setEvents(prevEvents => 
+          prevEvents.map(evt => 
+            evt.id === editingEvent.id ? { ...evt, ...response.data } : evt
+          )
+        );
         setToast({ message: "Event updated successfully!", type: "success" });
       } else {
         await createJobEvent(jobId, eventData);
         setToast({ message: "Event created successfully!", type: "success" });
+        fetchEvents();
       }
 
       setShowModal(false);
       resetForm();
       setEditingEvent(null);
-      fetchEvents();
     } catch (error) {
+      console.error('Submit error:', error);
       setToast({
         message: editingEvent
           ? "Failed to update event"

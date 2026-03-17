@@ -3167,16 +3167,8 @@ export default function ProposalBuilder({
                                   {optionTitle}
                                 </div>
                               </div>
-                              <div className="space-y-2 py-2">
-                                <div className="flex justify-between items-center text-sm">
-                                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                                  <span className="text-gray-900 dark:text-white">${calculateEstimateSubtotal()}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                  <span className="text-gray-600 dark:text-gray-400">Margin ({defaultMargin}%)</span>
-                                  <span className="text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) * parseFloat(defaultMargin) / 100).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                              <div className="py-2">
+                                <div className="flex justify-between items-center">
                                   <span className="font-medium text-gray-900 dark:text-white">Total</span>
                                   <span className="font-medium text-gray-900 dark:text-white">${(parseFloat(calculateEstimateSubtotal()) * (1 + parseFloat(defaultMargin) / 100)).toFixed(2)}</span>
                                 </div>
@@ -3206,16 +3198,8 @@ export default function ProposalBuilder({
                                     </div>
                                   );
                                 })}
-                                <div className="space-y-2 py-2 border-t border-gray-200 dark:border-gray-700">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                                    <span className="text-gray-900 dark:text-white">${calculateUpgradeSubtotal()}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600 dark:text-gray-400">Margin ({defaultMargin}%)</span>
-                                    <span className="text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * parseFloat(defaultMargin) / 100).toFixed(2)}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div className="py-2 border-t border-gray-200 dark:border-gray-700">
+                                  <div className="flex justify-between items-center pt-2">
                                     <span className="font-medium text-gray-900 dark:text-white">Total</span>
                                     <span className="font-medium text-gray-900 dark:text-white">${(parseFloat(calculateUpgradeSubtotal()) * (1 + parseFloat(defaultMargin) / 100)).toFixed(2)}</span>
                                   </div>
