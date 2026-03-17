@@ -19,6 +19,12 @@ export const clearAuth = () => {
   localStorage.removeItem('auth');
   localStorage.removeItem('organizationId');
   localStorage.removeItem('currentOrganizationSlug');
+  
+  // Reset theme state to prevent dark mode style sticking on login pages
+  localStorage.removeItem('theme');
+  const root = window.document.documentElement;
+  root.classList.remove('dark');
+  root.classList.add('light');
 };
 
 export const logoutAndRedirect = () => {

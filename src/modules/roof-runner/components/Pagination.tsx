@@ -8,6 +8,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  itemName?: string;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -17,6 +18,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   onPreviousPage,
   onNextPage,
+  itemName = 'contacts',
 }) => {
   if (totalPages <= 1) return null;
 
@@ -24,7 +26,7 @@ const Pagination: React.FC<PaginationProps> = ({
     <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-700 dark:text-gray-300">
-          Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalContacts)} of {totalContacts} contacts
+          Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalContacts)} of {totalContacts} {itemName}
         </div>
         <div className="flex items-center gap-2">
           <button

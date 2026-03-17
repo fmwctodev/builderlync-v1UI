@@ -37,6 +37,8 @@ export const DEFAULT_PIPELINE_STAGES = [
   { name: 'Inspection/Estimate Booked (Creates Job)', order_position: 6, color: '#059669', include_in_funnel: true, include_in_distribution: true },
   { name: 'Job Qualified', order_position: 7, color: '#6366f1', include_in_funnel: true, include_in_distribution: true },
   { name: 'Job Unqualified', order_position: 8, color: '#ef4444', include_in_funnel: true, include_in_distribution: true },
+  { name: 'Job Won', order_position: 9, color: '#16a34a', include_in_funnel: true, include_in_distribution: true },
+  { name: 'Job Lost', order_position: 10, color: '#991b1b', include_in_funnel: true, include_in_distribution: true },
 ];
 
 export function getEmbeddedPipelineId(jobType: JobType): string {
