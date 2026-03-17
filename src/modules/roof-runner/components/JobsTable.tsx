@@ -13,7 +13,7 @@ interface JobsTableProps {
 
 const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, onDelete }) => {
   const headers = [
-    'Last updated', 'Time in stage', 'Address', 'Contact', 'Value',
+    'Job ID', 'Last updated', 'Time in stage', 'Address', 'Contact', 'Value',
     'Workflow', 'Stage', 'Close date', 'Lead source', 'Assignees',
     'Job owner', 'Tasks', 'Reports', 'Proposals', 'Actions'
   ];
@@ -35,13 +35,13 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={15} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={16} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading jobs...
                   </td>
                 </tr>
               ) : jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={16} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No jobs found
                   </td>
                 </tr>
@@ -52,6 +52,9 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, loading, onView, onEdit, on
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={() => onEdit(job)}
                   >
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      #{job.id ?? 'N/A'}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {job.updatedAt ? new Date(job.updatedAt).toLocaleDateString() : 'N/A'}
                     </td>
