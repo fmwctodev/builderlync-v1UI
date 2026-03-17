@@ -5,6 +5,7 @@ import { proposalSharingApi } from '../services/proposalSharingApi';
 import { eSignatureApi } from '../services/eSignatureApi';
 import { SignatureCapture } from '@/shared/components';
 import type { ProposalSignature, SignatureRequest, VerifyTokenResponse } from '../types/eSignature';
+import { PdfPagesPreview } from '../components/proposals/PdfPagesPreview';
 
 const PAGE_WIDTH = 816;
 const PDF_PAGE_HEIGHT = 1028;
@@ -97,6 +98,27 @@ export default function ProposalSigningPage() {
       .replace(/\n/g, '<br/>');
   };
 
+  const waitForImagesToLoad = async (root: HTMLElement) => {
+    const images = Array.from(root.querySelectorAll('img'));
+
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            const image = img as HTMLImageElement;
+
+            if (image.complete && image.naturalWidth > 0) {
+              resolve();
+              return;
+            }
+
+            image.onload = () => resolve();
+            image.onerror = () => resolve();
+          })
+      )
+    );
+  };
+
   useEffect(() => {
     if (token) {
       loadProposal();
@@ -170,16 +192,34 @@ export default function ProposalSigningPage() {
   const handleDownload = async () => {
     if (!contentRef.current) return;
 
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const element = contentRef.current.cloneNode(true) as HTMLElement;
-      const signatureForm = element.querySelector('[data-pdf-exclude="signature-form"]');
-      if (signatureForm) {
-        signatureForm.remove();
-      }
-      const images = element.querySelectorAll<HTMLImageElement>('img');
+    const element = contentRef.current;
+    let originalImageSources: Array<{ img: HTMLImageElement; src: string }> = [];
+    let originalPageStyles: Array<{
+      page: HTMLElement;
+      width: string;
+      minHeight: string;
+      height: string;
+      boxSizing: string;
+      overflow: string;
+      marginBottom: string;
+    }> = [];
+    let hiddenSignatureDisplay = '';
+    const signatureForm = element.querySelector<HTMLElement>('[data-pdf-exclude="signature-form"]');
 
-      const imagePromises = Array.from(images).map(async (img) => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      if (signatureForm) {
+        hiddenSignatureDisplay = signatureForm.style.display;
+        signatureForm.style.display = 'none';
+      }
+      const images = Array.from(element.querySelectorAll<HTMLImageElement>('img'));
+      originalImageSources = images.map((img) => ({
+        img,
+        src: img.src,
+      }));
+
+      const imagePromises = images.map(async (img) => {
         try {
           const originalSrc = img.src;
           if (!originalSrc || originalSrc.startsWith('data:')) return;
@@ -202,7 +242,17 @@ export default function ProposalSigningPage() {
       });
 
       await Promise.all(imagePromises);
+      await waitForImagesToLoad(element);
       const pdfPages = element.querySelectorAll<HTMLElement>('.pdf-page');
+      originalPageStyles = Array.from(pdfPages).map((page) => ({
+        page,
+        width: page.style.width,
+        minHeight: page.style.minHeight,
+        height: page.style.height,
+        boxSizing: page.style.boxSizing,
+        overflow: page.style.overflow,
+        marginBottom: page.style.marginBottom,
+      }));
 
       pdfPages.forEach((page) => {
         page.style.width = `${PAGE_WIDTH}px`;
@@ -213,18 +263,51 @@ export default function ProposalSigningPage() {
         page.style.marginBottom = '0';
       });
 
-      const opt = {
-        margin: 0,
-        filename: `proposal-${proposal?.sections?.settings?.customerName || 'document'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: false },
-        jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: 'avoid', avoid: ['tr', 'td', 'li', 'h1', 'h2', 'h3'] },
-      };
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'letter',
+      });
 
-      await html2pdf().set(opt).from(element).save();
+      for (let index = 0; index < pdfPages.length; index += 1) {
+        const page = pdfPages[index];
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          logging: false,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+        });
+        const imageData = canvas.toDataURL('image/jpeg', 0.98);
+
+        if (index > 0) {
+          pdf.addPage('letter', 'portrait');
+        }
+
+        pdf.addImage(imageData, 'JPEG', 0, 0, 612, 792);
+      }
+
+      pdf.save(`proposal-${proposal?.sections?.settings?.customerName || 'document'}.pdf`);
     } catch (err) {
       console.error('Error generating PDF:', err);
+    } finally {
+      const pdfPages = element.querySelectorAll<HTMLElement>('.pdf-page');
+      Array.from(pdfPages).forEach((page) => {
+        const original = originalPageStyles.find((entry) => entry.page === page);
+        if (!original) return;
+        page.style.width = original.width;
+        page.style.minHeight = original.minHeight;
+        page.style.height = original.height;
+        page.style.boxSizing = original.boxSizing;
+        page.style.overflow = original.overflow;
+        page.style.marginBottom = original.marginBottom;
+      });
+      originalImageSources.forEach(({ img, src }) => {
+        img.src = src;
+      });
+
+      if (signatureForm) {
+        signatureForm.style.display = hiddenSignatureDisplay;
+      }
     }
   };
 
@@ -735,54 +818,60 @@ export default function ProposalSigningPage() {
         {sectionsList
           .filter((section: any) => section.active && section.type !== 'cover' && section.type !== 'estimate')
           .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
-          .map((section: any) => (
-            <div key={section.id} className={getPageClassName()} style={getPageStyle()}>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{section.name}</h2>
+          .map((section: any) => {
+            if (section.type === 'pdf' && section.content?.pdfs) {
+              return (
+                <React.Fragment key={section.id}>
+                  {section.content.pdfs.map((pdf: any, idx: number) => (
+                    <PdfPagesPreview
+                      key={`${section.id}-${idx}`}
+                      url={pdf.url}
+                      title={pdf.name}
+                      variant="proposal"
+                      sectionTitle={section.name}
+                      showSectionTitle={idx === 0}
+                    />
+                  ))}
+                </React.Fragment>
+              );
+            }
 
-                {section.type === 'photos' && section.content?.photos && (
-                  <div className="grid grid-cols-3 gap-3">
-                    {section.content.photos.map((photo: string, idx: number) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-                      >
-                        <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
-                          <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+            return (
+              <div key={section.id} className={getPageClassName()} style={getPageStyle()}>
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{section.name}</h2>
+
+                  {section.type === 'photos' && section.content?.photos && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {section.content.photos.map((photo: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                        >
+                          <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
+                            <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
+                            {`Photo ${idx + 1}`}
+                          </div>
                         </div>
-                        <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
-                          {`Photo ${idx + 1}`}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
 
-                {section.type === 'pdf' && section.content?.pdfs && (
-                  <div className="space-y-4">
-                    {section.content.pdfs.map((pdf: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
-                      >
-                        <iframe src={pdf.url} className="w-full h-[600px]" title={pdf.name} />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {(section.type === 'text' || !section.type) && (
+                    <div
+                      className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                      dangerouslySetInnerHTML={{
+                        __html: toRichHtml(section.content?.description || section.content?.text || 'Section content'),
+                      }}
+                    />
+                  )}
+                </div>
 
-                {(section.type === 'text' || !section.type) && (
-                  <div
-                    className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{
-                      __html: toRichHtml(section.content?.description || section.content?.text || 'Section content'),
-                    }}
-                  />
-                )}
               </div>
-
-            </div>
-          ))}
+            );
+          })}
 
         {renderAcceptancePage()}
       </>

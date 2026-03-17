@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye
 import { getCatalogItems, getCatalogItemById, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
+import Pagination from '../components/Pagination';
 import { srsService } from '../services/srsService';
 
 interface ColumnVisibility {
@@ -23,6 +24,7 @@ export default function Catalog() {
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showColumnModal, setShowColumnModal] = useState(false);
   const [showFilterSortModal, setShowFilterSortModal] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -37,6 +39,10 @@ export default function Catalog() {
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
     itemType: true,
@@ -70,10 +76,21 @@ export default function Catalog() {
   };
 
   useEffect(() => {
-    loadItems();
     fetchABCSupplyStatus();
     checkSrsIntegration();
-  }, [searchQuery, filterTypes, sortOption]);
+  }, [])
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    loadItems();
+  }, [debouncedSearchQuery, filterTypes, sortOption, currentPage]);
 
   const fetchABCSupplyStatus = async () => {
     try {
@@ -103,13 +120,20 @@ export default function Catalog() {
     setLoading(true);
     try {
       const response = await getCatalogItems({
-        search: searchQuery || undefined,
+        search: debouncedSearchQuery || undefined,
         itemTypes: filterTypes.length > 0 ? filterTypes.join(',') : undefined,
         sortBy: sortOption,
+        page: currentPage,
+        limit: 10,
       });
       
       if (response.success && response.data) {
         setItems(response.data.items);
+        if (response.data.pagination) {
+          setCurrentPage(response.data.pagination.currentPage);
+          setTotalPages(response.data.pagination.totalPages);
+          setTotalItems(response.data.pagination.totalItems);
+        }
       } else {
         setToast({ message: response.message || 'Failed to load items', type: 'error' });
       }
@@ -322,6 +346,7 @@ export default function Catalog() {
   const applyFilterSort = () => {
     setFilterTypes(tempFilterTypes);
     setSortOption(tempSortOption);
+    setCurrentPage(1);
     setShowFilterSortModal(false);
   };
 
@@ -330,6 +355,7 @@ export default function Catalog() {
     setTempFilterTypes([]);
     setSortOption('name-asc');
     setTempSortOption('name-asc');
+    setCurrentPage(1);
   };
 
   const toggleFilterType = (type: string) => {
@@ -518,7 +544,10 @@ export default function Catalog() {
                 type="text"
                 placeholder="Search items..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -591,7 +620,7 @@ export default function Catalog() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {items.map((item, index) => (
+              {!loading && items.map((item, index) => (
                 <tr
                   key={item.id}
                   draggable
@@ -677,6 +706,17 @@ export default function Catalog() {
             </div>
           )}
         </div>
+        {!loading && items.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalContacts={totalItems}
+            onPageChange={setCurrentPage}
+            onPreviousPage={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onNextPage={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            itemName="catalog items"
+          />
+        )}
       </div>
 
       {/* Column Visibility Modal */}
