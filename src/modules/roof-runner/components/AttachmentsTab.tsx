@@ -25,6 +25,8 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
   const [attachingDocId, setAttachingDocId] = useState<number | string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | string | null>(null);
   const [removingDocId, setRemovingDocId] = useState<number | string | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -133,17 +135,34 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
     return url.startsWith('http') && cloudDomains.some(domain => url.includes(domain));
   };
 
-  const loadDocuments = async () => {
+  const loadDocuments = async (pageToken?: string, append = false) => {
     try {
-      setDocumentsLoading(true);
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setDocumentsLoading(true);
+      }
       setDocumentsError(null);
-      const result = await backendFilesApi.getFiles(null);
-      setDocuments(result.data || []);
+      const result = await backendFilesApi.getFiles(null, pageToken);
+
+      if (append) {
+        setDocuments(prev => [...prev, ...result.data]);
+      } else {
+        setDocuments(result.data || []);
+      }
+      setNextPageToken(result.pagination?.nextPageToken);
     } catch (error) {
       console.error('Error loading documents:', error);
       setDocumentsError('Failed to load documents');
     } finally {
       setDocumentsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (nextPageToken && !isLoadingMore) {
+      loadDocuments(nextPageToken, true);
     }
   };
 
@@ -416,6 +435,17 @@ const AttachmentsTab: React.FC<AttachmentsTabProps> = ({ jobId }) => {
                       </button>
                     </div>
                   ))}
+                  {nextPageToken && (
+                    <div className="flex justify-center pt-2">
+                      <button
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="text-sm font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                      >
+                        {isLoadingMore ? 'Loading...' : 'Load more'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

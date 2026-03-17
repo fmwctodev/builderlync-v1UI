@@ -25,6 +25,10 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
   const [filters, setFilters] = useState<{ pdf: boolean; image: boolean }>({ pdf: false, image: false });
   const [sortBy, setSortBy] = useState('uploadDateNewest');
   const [showUploadZone, setShowUploadZone] = useState(false);
+  const [nextFilePageToken, setNextFilePageToken] = useState<string | undefined>();
+  const [nextFolderPageToken, setNextFolderPageToken] = useState<string | undefined>();
+  const [isLoadingMoreFiles, setIsLoadingMoreFiles] = useState(false);
+  const [isLoadingMoreFolders, setIsLoadingMoreFolders] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(propIsCloudConnected || false);
 
   useEffect(() => {
@@ -54,16 +58,49 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
     }
   }, [currentFolderId]);
 
-  const loadFolderContents = async () => {
+  const loadFolderContents = async (fileToken?: string, folderToken?: string, append = false) => {
     try {
-      setIsLoading(true);
-      const { folders: loadedFolders, files: loadedFiles } = await backendFilesApi.getFolderContents(currentFolderId);
-      setFolders(loadedFolders);
-      setFiles(loadedFiles);
+      if (!append) {
+        setIsLoading(true);
+      }
+
+      const result = await backendFilesApi.getFolderContents(currentFolderId, fileToken, folderToken);
+
+      if (append) {
+        if (fileToken) {
+          setFiles(prev => [...prev, ...result.files]);
+          setNextFilePageToken(result.nextFilePageToken);
+        }
+        if (folderToken) {
+          setFolders(prev => [...prev, ...result.folders]);
+          setNextFolderPageToken(result.nextFolderPageToken);
+        }
+      } else {
+        setFolders(result.folders);
+        setFiles(result.files);
+        setNextFilePageToken(result.nextFilePageToken);
+        setNextFolderPageToken(result.nextFolderPageToken);
+      }
     } catch (error) {
       console.error('Error loading folder contents:', error);
     } finally {
       setIsLoading(false);
+      setIsLoadingMoreFiles(false);
+      setIsLoadingMoreFolders(false);
+    }
+  };
+
+  const handleLoadMoreFiles = () => {
+    if (nextFilePageToken && !isLoadingMoreFiles) {
+      setIsLoadingMoreFiles(true);
+      loadFolderContents(nextFilePageToken, undefined, true);
+    }
+  };
+
+  const handleLoadMoreFolders = () => {
+    if (nextFolderPageToken && !isLoadingMoreFolders) {
+      setIsLoadingMoreFolders(true);
+      loadFolderContents(undefined, nextFolderPageToken, true);
     }
   };
 
@@ -286,6 +323,17 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
               input.click();
             }}
           />
+          {nextFolderPageToken && (
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={handleLoadMoreFolders}
+                disabled={isLoadingMoreFolders}
+                className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm disabled:opacity-50"
+              >
+                {isLoadingMoreFolders ? 'Loading...' : 'Load More Folders'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -314,6 +362,17 @@ export default function LocalFilesTab({ isCloudConnected: propIsCloudConnected }
               }
             }}
           />
+          {nextFilePageToken && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleLoadMoreFiles}
+                disabled={isLoadingMoreFiles}
+                className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm disabled:opacity-50"
+              >
+                {isLoadingMoreFiles ? 'Loading...' : 'Load More Files'}
+              </button>
+            </div>
+          )}
         </div>
       ) : !isLoading && folders.length === 0 && (
         <div className="text-center py-12">

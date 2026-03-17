@@ -226,8 +226,13 @@ export const cloudDriveApi = {
     }
   },
 
-  async listFiles(rootFolderId?: string): Promise<any[]> {
-    const response = await request(`${API_BASE_URL}/file-manager/tree?rootFolderId=${rootFolderId || ''}`, {
+  async listFiles(rootFolderId?: string, pageToken?: string, pageSize = 50): Promise<{ items: any[], nextPageToken?: string }> {
+    const params = new URLSearchParams();
+    if (rootFolderId) params.append('rootFolderId', rootFolderId);
+    if (pageToken) params.append('pageToken', pageToken);
+    params.append('pageSize', pageSize.toString());
+
+    const response = await request(`${API_BASE_URL}/file-manager/tree?${params.toString()}`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json'
@@ -239,11 +244,17 @@ export const cloudDriveApi = {
     }
 
     const data = await response.json();
-    return data.data || [];
+    return {
+      items: data.data?.tree || [],
+      nextPageToken: data.data?.nextPageToken
+    };
   },
 
-  async listFolders(rootFolderId?: string): Promise<any[]> {
-    const items = await this.listFiles(rootFolderId);
-    return items.filter(item => item.type === 'folder');
+  async listFolders(rootFolderId?: string, pageToken?: string, pageSize = 50): Promise<{ items: any[], nextPageToken?: string }> {
+    const result = await this.listFiles(rootFolderId, pageToken, pageSize);
+    return {
+      items: result.items.filter(item => item.type === 'folder'),
+      nextPageToken: result.nextPageToken
+    };
   },
 };

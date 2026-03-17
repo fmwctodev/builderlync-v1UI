@@ -13,6 +13,7 @@ interface PhoneNumber {
   callTimeout?: string;
   isDefault?: boolean;
   countryCode: string;
+  phoneNumber: string;
 }
 
 type MainTab = 'phone-numbers' | 'voice' | 'additional-settings';
@@ -55,14 +56,16 @@ const Communications: React.FC = () => {
     try {
       const response = await getTwilioPhoneNumbers();
       if (response.success && response.data) {
-        const formattedNumbers = response.data.map((number, index) => ({
+        const formattedNumbers = response.data.map((item: any, index: number) => ({
           id: index + 1,
-          number: number,
-          friendlyName: number.startsWith('+1800') || number.startsWith('+1888') || number.startsWith('+1877') || number.startsWith('+1866') ? 'Toll Free' : 'Local',
-          forwardingNumber: '',
-          callTimeout: '',
+          number: item.phoneNumber,
+          sid: item.sid,
+          friendlyName: item.phoneNumber.startsWith('+1800') || item.phoneNumber.startsWith('+1888') || item.phoneNumber.startsWith('+1877') || item.phoneNumber.startsWith('+1866') ? 'Toll Free' : 'Local',
+          forwardingNumber: item.forwardingNumber || '',
+          callTimeout: item.callTimeout || '',
           isDefault: index === 0,
-          countryCode: 'US'
+          countryCode: 'US',
+          phoneNumber: item.phoneNumber
         }));
         setPhoneNumbers(formattedNumbers);
       }
@@ -102,11 +105,10 @@ const Communications: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mr-8">Phone System</h3>
           <button
             onClick={() => setMainTab('phone-numbers')}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              mainTab === 'phone-numbers'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${mainTab === 'phone-numbers'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
           >
             Phone Numbers
             {mainTab === 'phone-numbers' && (
@@ -115,11 +117,10 @@ const Communications: React.FC = () => {
           </button>
           <button
             onClick={() => setMainTab('voice')}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              mainTab === 'voice'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${mainTab === 'voice'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
           >
             Voice
             {mainTab === 'voice' && (
@@ -128,11 +129,10 @@ const Communications: React.FC = () => {
           </button>
           <button
             onClick={() => setMainTab('additional-settings')}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              mainTab === 'additional-settings'
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${mainTab === 'additional-settings'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
           >
             Additional Settings
             {mainTab === 'additional-settings' && (
@@ -156,7 +156,7 @@ const Communications: React.FC = () => {
                     Manage your Twilio phone numbers. Purchase new numbers or configure existing ones.
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowPurchaseModal(true)}
                   disabled={!twilioConnected}
                   className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
@@ -171,11 +171,10 @@ const Communications: React.FC = () => {
                 <div className="flex items-center space-x-1 border-b border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => setPhoneNumberTab('phone-numbers')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                      phoneNumberTab === 'phone-numbers'
-                        ? 'text-gray-900 dark:text-white'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${phoneNumberTab === 'phone-numbers'
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
                   >
                     Phone Numbers
                     {phoneNumberTab === 'phone-numbers' && (
@@ -184,11 +183,10 @@ const Communications: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setPhoneNumberTab('number-pools')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                      phoneNumberTab === 'number-pools'
-                        ? 'text-gray-900 dark:text-white'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${phoneNumberTab === 'number-pools'
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
                   >
                     Number Pools
                     {phoneNumberTab === 'number-pools' && (
@@ -208,7 +206,7 @@ const Communications: React.FC = () => {
                     />
                     <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                   </div>
-                  <button 
+                  <button
                     onClick={fetchPhoneNumbers}
                     disabled={loading || !twilioConnected}
                     className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50"
@@ -237,9 +235,9 @@ const Communications: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Call Timeout
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Action
-                        </th>
+                        </th> */}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -274,14 +272,14 @@ const Communications: React.FC = () => {
                               <div className="flex items-center space-x-3">
                                 <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
                                   <svg viewBox="0 0 32 32" className="w-full h-full">
-                                    <rect width="32" height="32" fill="#fff"/>
-                                    <path d="M0 0h32v2.462H0zm0 4.923h32v2.462H0zm0 4.924h32v2.461H0zm0 4.923h32v2.462H0zm0 4.923h32v2.462H0zm0 4.923h32v2.462H0zm0 4.924h32V32H0z" fill="#B22234"/>
-                                    <path fill="#3C3B6E" d="M0 0h12.8v17.231H0z"/>
+                                    <rect width="32" height="32" fill="#fff" />
+                                    <path d="M0 0h32v2.462H0zm0 4.923h32v2.462H0zm0 4.924h32v2.461H0zm0 4.923h32v2.462H0zm0 4.923h32v2.462H0zm0 4.923h32v2.462H0zm0 4.924h32V32H0z" fill="#B22234" />
+                                    <path fill="#3C3B6E" d="M0 0h12.8v17.231H0z" />
                                   </svg>
                                 </div>
                                 <div>
                                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {phone.number}
+                                    {phone.phoneNumber}
                                   </div>
                                   {phone.isDefault && (
                                     <span className="inline-block mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
@@ -295,12 +293,12 @@ const Communications: React.FC = () => {
                               {phone.friendlyName}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                              {phone.forwardingNumber ? formatPhoneNumber(phone.forwardingNumber) : '-'}
+                              {phone?.forwardingNumber ? formatPhoneNumber(phone.forwardingNumber) : '-'}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                               {phone.callTimeout || '-'}
                             </td>
-                            <td className="px-6 py-4">
+                            {/* <td className="px-6 py-4">
                               <div className="flex items-center justify-end space-x-2">
                                 <button 
                                   onClick={() => {
@@ -323,7 +321,7 @@ const Communications: React.FC = () => {
                                   </button>
                                 )}
                               </div>
-                            </td>
+                            </td> */}
                           </tr>
                         ))
                       )}
@@ -383,51 +381,46 @@ const Communications: React.FC = () => {
                   <nav className="space-y-1">
                     <button
                       onClick={() => setVoiceTab('call-recording')}
-                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        voiceTab === 'call-recording'
-                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${voiceTab === 'call-recording'
+                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                        }`}
                     >
                       Call Recording
                     </button>
                     <button
                       onClick={() => setVoiceTab('voicemail')}
-                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        voiceTab === 'voicemail'
-                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${voiceTab === 'voicemail'
+                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                        }`}
                     >
                       Voicemail & Missed Call TextBack
                     </button>
                     <button
                       onClick={() => setVoiceTab('call-scripts')}
-                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        voiceTab === 'call-scripts'
-                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${voiceTab === 'call-scripts'
+                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                        }`}
                     >
                       Call Scripts
                     </button>
                     <button
                       onClick={() => setVoiceTab('voip')}
-                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        voiceTab === 'voip'
-                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${voiceTab === 'voip'
+                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                        }`}
                     >
                       VoIP deskphone (SIP)
                     </button>
                     <button
                       onClick={() => setVoiceTab('other-settings')}
-                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        voiceTab === 'other-settings'
-                          ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${voiceTab === 'other-settings'
+                        ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                        }`}
                     >
                       Other Settings
                     </button>
@@ -445,14 +438,12 @@ const Communications: React.FC = () => {
                       <div className="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                         <button
                           onClick={() => setAutoDeleteRecordings(!autoDeleteRecordings)}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                            autoDeleteRecordings ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${autoDeleteRecordings ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              autoDeleteRecordings ? 'translate-x-5' : 'translate-x-0'
-                            }`}
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${autoDeleteRecordings ? 'translate-x-5' : 'translate-x-0'
+                              }`}
                           />
                         </button>
                         <div className="flex-1">
@@ -539,22 +530,21 @@ const Communications: React.FC = () => {
                 <div className="lg:col-span-2">
                   <button
                     onClick={() => setSelectedProvider('twilio')}
-                    className={`w-full p-6 rounded-lg border-2 transition-colors text-left ${
-                      selectedProvider === 'twilio'
-                        ? 'border-red-500 dark:border-red-400 bg-red-50/50 dark:bg-red-900/10'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                    }`}
+                    className={`w-full p-6 rounded-lg border-2 transition-colors text-left ${selectedProvider === 'twilio'
+                      ? 'border-red-500 dark:border-red-400 bg-red-50/50 dark:bg-red-900/10'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
                           <svg className="w-8 h-8" viewBox="0 0 30 30" fill="none">
-                            <circle cx="15" cy="15" r="15" fill="#F22F46"/>
-                            <circle cx="10" cy="10" r="2.5" fill="white"/>
-                            <circle cx="20" cy="10" r="2.5" fill="white"/>
-                            <circle cx="10" cy="20" r="2.5" fill="white"/>
-                            <circle cx="20" cy="20" r="2.5" fill="white"/>
-                            <circle cx="15" cy="15" r="2.5" fill="white"/>
+                            <circle cx="15" cy="15" r="15" fill="#F22F46" />
+                            <circle cx="10" cy="10" r="2.5" fill="white" />
+                            <circle cx="20" cy="10" r="2.5" fill="white" />
+                            <circle cx="10" cy="20" r="2.5" fill="white" />
+                            <circle cx="20" cy="20" r="2.5" fill="white" />
+                            <circle cx="15" cy="15" r="2.5" fill="white" />
                           </svg>
                         </div>
                         <div>
@@ -563,11 +553,10 @@ const Communications: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex-shrink-0">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selectedProvider === 'twilio'
-                            ? 'border-red-500 dark:border-red-400'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedProvider === 'twilio'
+                          ? 'border-red-500 dark:border-red-400'
+                          : 'border-gray-300 dark:border-gray-600'
+                          }`}>
                           {selectedProvider === 'twilio' && (
                             <div className="w-3 h-3 rounded-full bg-red-600 dark:bg-red-400"></div>
                           )}

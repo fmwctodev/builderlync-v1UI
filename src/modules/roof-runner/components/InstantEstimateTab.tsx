@@ -49,7 +49,6 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
   const [loadingLead, setLoadingLead] = useState(false);
   const [isEditingLead, setIsEditingLead] = useState(false);
 
-  // TODO: Use jobId and jobAddress for instant estimate functionality
   useEffect(() => {
     console.log('InstantEstimateTab loaded for job:', jobId, jobAddress);
   }, [jobId, jobAddress]);
@@ -264,423 +263,267 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
     setShowRenameModal(true);
   };
 
+  const renderAllTabContent = () => {
+    if (loadingLead) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading estimate summary...</p>
+        </div>
+      );
+    }
+
+    if (leadId) {
+      if (!leadData) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <Info className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">Linked to estimate lead #{leadId}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">But could not load the specific estimate details.</p>
+            <button
+              onClick={() => fetchLeadDetails(leadId!)}
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              Retry Loading
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Info className="w-5 h-5 text-red-600" />
+                Instant Estimate Summary
+              </h2>
+              {!isEditingLead ? (
+                <button
+                  onClick={() => setIsEditingLead(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-all font-medium"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Details
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsEditingLead(false)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveLead}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all font-medium shadow-sm"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Visual Section - Maps & Stats */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Property Image Overlay */}
+                <div className="relative rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 group h-[300px]">
+                  {leadData?.estimate?.calculations?.screenshotUrl ? (
+                    <img
+                      src={leadData.estimate.calculations.screenshotUrl}
+                      alt="Property aerial view"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 dark:bg-gray-700/50 flex flex-col items-center justify-center text-gray-400 italic">
+                      <MapPin className="w-12 h-12 mb-2 opacity-20" />
+                      <p>No aerial view available</p>
+                    </div>
+                  )}
+                  <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                    <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Property Location</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[300px]">{leadData?.estimate?.customer_info?.address}</p>
+                  </div>
+                </div>
+
+                {/* Project Detail Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8 pt-4">
+                  {[
+                    { label: 'Building Type', key: 'buildingType', icon: <Home className="w-4 h-4" /> },
+                    { label: 'Stories', key: 'stories', icon: <Layers className="w-4 h-4" /> },
+                    { label: 'Current Roof', key: 'currentRoof', icon: <Info className="w-4 h-4" /> },
+                    { label: 'Age of roof', key: 'ageOfRoof', icon: <Calendar className="w-4 h-4" /> },
+                    { label: 'Leaks/Damages', key: 'leaksDamages', icon: <Info className="w-4 h-4" /> },
+                    { label: 'Insurance Claim', key: 'insuranceClaim', icon: <Info className="w-4 h-4" /> },
+                    { label: 'Desired material', key: 'desiredRoof', icon: <Info className="w-4 h-4" /> },
+                    { label: 'Solar', key: 'solar', icon: <Info className="w-4 h-4" /> },
+                    { label: 'Timeline', key: 'timeline', icon: <Calendar className="w-4 h-4" /> },
+                    { label: 'Financing', key: 'financing', icon: <DollarSign className="w-4 h-4" /> },
+                    { label: 'Lead Source', key: 'leadSource', icon: <Info className="w-4 h-4" /> },
+                  ].map((item) => (
+                    <div key={item.label} className="flex flex-col space-y-1">
+                      <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                        {item.icon}
+                        {item.label}
+                      </span>
+                      {isEditingLead ? (
+                        <input
+                          type="text"
+                          value={leadData?.estimate?.project_details?.[item.key] || '-'}
+                          onChange={(e) => setLeadData({
+                            ...leadData,
+                            estimate: {
+                              ...leadData?.estimate,
+                              project_details: {
+                                ...leadData?.estimate?.project_details,
+                                [item.key]: e.target.value
+                              }
+                            }
+                          })}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {leadData?.estimate?.project_details?.[item.key] || '-'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Notes Section */}
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2">Customer Note</span>
+                  {isEditingLead ? (
+                    <textarea
+                      value={leadData?.estimate?.project_details?.projectDetails || ''}
+                      onChange={(e) => setLeadData({
+                        ...leadData,
+                        estimate: {
+                          ...leadData?.estimate,
+                          project_details: {
+                            ...leadData?.estimate?.project_details,
+                            projectDetails: e.target.value
+                          }
+                        }
+                      })}
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                      placeholder="Add customer requirements or notes..."
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl border border-gray-100 dark:border-gray-800 italic">
+                      "{leadData?.estimate?.project_details?.projectDetails || 'No specific requirements provided.'}"
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sidebar Stats */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Ruler className="w-4 h-4 text-red-600" />
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Total roof size</h3>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Footprint (sqft)</p>
+                      {isEditingLead ? (
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={leadData?.estimate?.calculations?.roofArea || 0}
+                            onChange={(e) => setLeadData({
+                              ...leadData,
+                              estimate: {
+                                ...leadData?.estimate,
+                                calculations: {
+                                  ...leadData?.estimate?.calculations,
+                                  roofArea: Number(e.target.value)
+                                }
+                              }
+                            })}
+                            className="w-full px-2 py-1 text-base font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
+                          />
+                          <span className="absolute right-2 top-1.5 text-xs text-gray-400">SqFt</span>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">
+                          {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
+                          <span className="text-sm font-normal text-gray-400 ml-1">SqFt</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Pitch</p>
+                      <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
+                        {leadData?.estimate?.project_details?.roofSteepness || 'N/A'}
+                      </p>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Adjusted footprint (sqft)</p>
+                      <p className="text-lg font-bold text-gray-400 dark:text-gray-600">
+                        {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Material Card */}
+                <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-6 border border-red-100 dark:border-red-900/20">
+                  <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Target Price Estimate</p>
+                  <p className="text-3xl font-black text-red-600 dark:text-red-500">
+                    ${leadData?.estimate?.calculations?.basePrice?.toLocaleString() || '0'}
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-red-200/50 dark:border-red-900/30">
+                    <p className="text-xs text-red-800 dark:text-red-300 font-medium">{leadData?.estimate?.project_details?.desiredRoof} Material</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+          <Info className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Estimate Summary</h3>
+        <p className="text-gray-500 dark:text-gray-400 text-center max-w-sm">
+          This job doesn't have an instant estimate summary linked yet. Results from customer-generated estimates will appear here.
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 flex-shrink-0">
         <div className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instant Estimator</h1>
-          {!linkedEstimatorId && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center space-x-2 bg-[#dc2626] hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Instant Estimator</span>
-            </button>
-          )}
+          {/* Hide Add button in job details */}
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-6 py-3 font-medium transition-all ${activeTab === 'all'
-              ? 'bg-primary-600 text-white rounded-t-lg'
-              : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-              }`}
-          >
-            All Instant Estimators
-          </button>
-          {!linkedEstimatorId && (
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`px-6 py-3 font-medium transition-all ${activeTab === 'settings'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                }`}
-            >
-              Settings
-            </button>
-          )}
-        </div>
+        {/* Hide Tabs in job details block */}
       </div>
 
       {/* Content */}
       <div className="flex-1 p-6">
         {activeTab === 'all' && (
           <div className="space-y-6">
-            {loadingLead ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400 font-medium">Loading estimate summary...</p>
-              </div>
-            ) : leadId ? (
-              leadData ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                  <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Info className="w-5 h-5 text-red-600" />
-                        Instant Estimate Summary
-                      </h2>
-                      {!isEditingLead ? (
-                        <button
-                          onClick={() => setIsEditingLead(true)}
-                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-all font-medium"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit Details
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setIsEditingLead(false)}
-                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleSaveLead}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all font-medium shadow-sm"
-                          >
-                            <Save className="w-4 h-4" />
-                            Save Changes
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Main Content Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                      {/* Visual Section - Maps & Stats */}
-                      <div className="lg:col-span-3 space-y-6">
-                        {/* Property Image Overlay */}
-                        <div className="relative rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 group h-[300px]">
-                          {leadData?.estimate?.calculations?.screenshotUrl ? (
-                            <img
-                              src={leadData.estimate.calculations.screenshotUrl}
-                              alt="Property aerial view"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 dark:bg-gray-700/50 flex flex-col items-center justify-center text-gray-400 italic">
-                              <MapPin className="w-12 h-12 mb-2 opacity-20" />
-                              <p>No aerial view available</p>
-                            </div>
-                          )}
-                          <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Property Location</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[300px]">{leadData?.estimate?.customer_info?.address}</p>
-                          </div>
-                        </div>
-
-                        {/* Project Detail Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8 pt-4">
-                          {[
-                            { label: 'Building Type', key: 'buildingType', icon: <Home className="w-4 h-4" /> },
-                            { label: 'Stories', key: 'stories', icon: <Layers className="w-4 h-4" /> },
-                            { label: 'Current Roof', key: 'currentRoof', icon: <Info className="w-4 h-4" /> },
-                            { label: 'Age of roof', key: 'ageOfRoof', icon: <Calendar className="w-4 h-4" /> },
-                            { label: 'Leaks/Damages', key: 'leaksDamages', icon: <Info className="w-4 h-4" /> },
-                            { label: 'Insurance Claim', key: 'insuranceClaim', icon: <Info className="w-4 h-4" /> },
-                            { label: 'Desired material', key: 'desiredRoof', icon: <Info className="w-4 h-4" /> },
-                            { label: 'Solar', key: 'solar', icon: <Info className="w-4 h-4" /> },
-                            { label: 'Timeline', key: 'timeline', icon: <Calendar className="w-4 h-4" /> },
-                            { label: 'Financing', key: 'financing', icon: <DollarSign className="w-4 h-4" /> },
-                            { label: 'Lead Source', key: 'leadSource', icon: <Info className="w-4 h-4" /> },
-                          ].map((item) => (
-                            <div key={item.label} className="flex flex-col space-y-1">
-                              <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                                {item.icon}
-                                {item.label}
-                              </span>
-                              {isEditingLead ? (
-                                <input
-                                  type="text"
-                                  value={leadData?.estimate?.project_details?.[item.key] || '-'}
-                                  onChange={(e) => setLeadData({
-                                    ...leadData,
-                                    estimate: {
-                                      ...leadData?.estimate,
-                                      project_details: {
-                                        ...leadData?.estimate?.project_details,
-                                        [item.key]: e.target.value
-                                      }
-                                    }
-                                  })}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {leadData?.estimate?.project_details?.[item.key] || '-'}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Notes Section */}
-                        <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-                          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-2">Customer Note</span>
-                          {isEditingLead ? (
-                            <textarea
-                              value={leadData?.estimate?.project_details?.projectDetails || ''}
-                              onChange={(e) => setLeadData({
-                                ...leadData,
-                                estimate: {
-                                  ...leadData?.estimate,
-                                  project_details: {
-                                    ...leadData?.estimate?.project_details,
-                                    projectDetails: e.target.value
-                                  }
-                                }
-                              })}
-                              rows={3}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
-                              placeholder="Add customer requirements or notes..."
-                            />
-                          ) : (
-                            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl border border-gray-100 dark:border-gray-800 italic">
-                              "{leadData?.estimate?.project_details?.projectDetails || 'No specific requirements provided.'}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Sidebar Stats */}
-                      <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                          <div className="flex items-center gap-2 mb-6">
-                            <Ruler className="w-4 h-4 text-red-600" />
-                            <h3 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Total roof size</h3>
-                          </div>
-
-                          <div className="space-y-6">
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Footprint (sqft)</p>
-                              {isEditingLead ? (
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    value={leadData?.estimate?.calculations?.roofArea || 0}
-                                    onChange={(e) => setLeadData({
-                                      ...leadData,
-                                      estimate: {
-                                        ...leadData?.estimate,
-                                        calculations: {
-                                          ...leadData?.estimate?.calculations,
-                                          roofArea: Number(e.target.value)
-                                        }
-                                      }
-                                    })}
-                                    className="w-full px-2 py-1 text-base font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-red-500 outline-none"
-                                  />
-                                  <span className="absolute right-2 top-1.5 text-xs text-gray-400">SqFt</span>
-                                </div>
-                              ) : (
-                                <p className="text-2xl font-black text-gray-900 dark:text-white">
-                                  {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
-                                  <span className="text-sm font-normal text-gray-400 ml-1">SqFt</span>
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Pitch</p>
-                              <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
-                                {leadData?.estimate?.project_details?.roofSteepness || 'N/A'}
-                              </p>
-                            </div>
-
-                            <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
-                              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Adjusted footprint (sqft)</p>
-                              <p className="text-lg font-bold text-gray-400 dark:text-gray-600">
-                                {leadData?.estimate?.calculations?.roofArea?.toLocaleString() || '-'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Material Card */}
-                        <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-6 border border-red-100 dark:border-red-900/20">
-                          <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Target Price Estimate</p>
-                          <p className="text-3xl font-black text-red-600 dark:text-red-500">
-                            ${leadData?.estimate?.calculations?.basePrice?.toLocaleString() || '0'}
-                          </p>
-                          <div className="mt-4 pt-4 border-t border-red-200/50 dark:border-red-900/30">
-                            <p className="text-xs text-red-800 dark:text-red-300 font-medium">{leadData?.estimate?.project_details?.desiredRoof} Material</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <Info className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">Linked to estimate lead #{leadId}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">But could not load the specific estimate details.</p>
-                  <button
-                    onClick={() => fetchLeadDetails(leadId!)}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Retry Loading
-                  </button>
-                </div>
-              )
-            ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {loading || loadingLinked ? (
-                        <tr>
-                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                            Loading...
-                          </td>
-                        </tr>
-                      ) : linkedEstimatorId && linkedEstimator ? (
-                        <tr key={linkedEstimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                            <div className="flex flex-col">
-                              <button
-                                onClick={() => {
-                                  setManageEstimatorId(linkedEstimator.id);
-                                  setShowManageModal(true);
-                                }}
-                                className="text-left font-semibold text-primary-600 dark:text-blue-400 hover:underline"
-                              >
-                                {linkedEstimator.name}
-                              </button>
-                              <span className="text-xs text-gray-500 mt-1">This job was created from this estimator.</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => {
-                                  setManageEstimatorId(linkedEstimator.id);
-                                  setShowManageModal(true);
-                                }}
-                                className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-primary-100 text-primary-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-primary-200 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
-                              >
-                                <Settings className="w-4 h-4" />
-                                <span>Manage Configuration</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : estimators.length === 0 ? (
-                        <tr>
-                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                            No instant estimators found
-                          </td>
-                        </tr>
-                      ) : Array.isArray(estimators) && estimators.length > 0 ? (
-                        estimators.map((estimator) => (
-                          <tr key={estimator.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                              <button
-                                onClick={() => {
-                                  setManageEstimatorId(estimator.id);
-                                  setShowManageModal(true);
-                                }}
-                                className="hover:text-primary-600 dark:hover:text-blue-400 hover:underline"
-                              >
-                                {estimator.name}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => {
-                                    setManageEstimatorId(estimator.id);
-                                    setShowManageModal(true);
-                                  }}
-                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                >
-                                  <Settings className="w-3 h-3" />
-                                  <span>Manage</span>
-                                </button>
-                                <button
-                                  onClick={() => openRenameModal(estimator)}
-                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                  <span>Rename</span>
-                                </button>
-                                <button
-                                  onClick={() => handleDuplicate(estimator.id)}
-                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                                >
-                                  <Copy className="w-3 h-3" />
-                                  <span>Duplicate</span>
-                                </button>
-                                <button
-                                  onClick={() => openDeleteModal(estimator.id)}
-                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                            No instant estimators found
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, total)} of {total} results
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="flex items-center px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {renderAllTabContent()}
           </div>
         )}
         {activeTab === 'settings' && (
@@ -859,336 +702,348 @@ const InstantEstimateTab: React.FC<InstantEstimateTabProps> = ({ jobId, jobAddre
       </div>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Instant Estimator</h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Choose a name that describes how this estimator will be used (e.g., "Website homepage" or "Direct mailer")
-              </p>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#dc2626] focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter estimator name"
-                  onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
-                />
-              </div>
-
-              <div className="flex items-center justify-end space-x-3">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreate}
-                  disabled={!name.trim()}
-                  className="px-4 py-2 bg-[#dc2626] hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Rename Modal */}
-      {showRenameModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rename Instant Estimator</h3>
-                <button
-                  onClick={() => {
-                    setShowRenameModal(false);
-                    setSelectedEstimator(null);
-                    setRenameName('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={renameName}
-                  onChange={(e) => setRenameName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#dc2626] focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter new name"
-                  onKeyPress={(e) => e.key === 'Enter' && handleRename()}
-                />
-              </div>
-
-              <div className="flex items-center justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowRenameModal(false);
-                    setSelectedEstimator(null);
-                    setRenameName('');
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRename}
-                  disabled={!renameName.trim()}
-                  className="px-4 py-2 bg-[#dc2626] hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Rename
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Delete Estimator</h3>
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setEstimatorToDelete(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete this estimator? This action cannot be undone.
-              </p>
-
-              <div className="flex items-center justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setEstimatorToDelete(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Material Template Modal */}
-      {showMaterialTemplateModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Add Material Template</h3>
-                <button
-                  onClick={() => setShowMaterialTemplateModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Material Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newTemplate.name}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                      placeholder="e.g., GAF Timberline HDZ"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Material Type
-                    </label>
-                    <select
-                      value={newTemplate.material_type}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, material_type: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option>Asphalt</option>
-                      <option>Metal</option>
-                      <option>Tile</option>
-                      <option>Slate</option>
-                      <option>Wood Shake</option>
-                      <option>Synthetic</option>
-                      <option>Flat/TPO</option>
-                      <option>EPDM</option>
-                      <option>Modified Bitumen</option>
-                    </select>
-                  </div>
+      {
+        showModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Instant Estimator</h3>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                <div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Choose a name that describes how this estimator will be used (e.g., "Website homepage" or "Direct mailer")
+                </p>
+
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Image URL (optional)
+                    Name
                   </label>
                   <input
                     type="text"
-                    value={newTemplate.image_url}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#dc2626] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter estimator name"
+                    onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Pricing (per sqft)
-                  </label>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Low Pitch</label>
-                      <input
-                        type="text"
-                        value={newTemplate.lowPitch}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, lowPitch: e.target.value })}
-                        placeholder="-"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Moderate Pitch</label>
-                      <input
-                        type="text"
-                        value={newTemplate.moderatePitch}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, moderatePitch: e.target.value })}
-                        placeholder="-"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Steep Pitch</label>
-                      <input
-                        type="text"
-                        value={newTemplate.steepPitch}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, steepPitch: e.target.value })}
-                        placeholder="-"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Flat</label>
-                      <input
-                        type="text"
-                        value={newTemplate.flat}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, flat: e.target.value })}
-                        placeholder="-"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Multi-story Surcharge</label>
-                      <input
-                        type="text"
-                        value={newTemplate.multiStorySurcharge}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, multiStorySurcharge: e.target.value })}
-                        placeholder="-"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 mt-6">
+                <div className="flex items-center justify-end space-x-3">
                   <button
-                    onClick={() => setShowMaterialTemplateModal(false)}
+                    onClick={() => setShowModal(false)}
                     className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleAddTemplate({
-                      name: newTemplate.name,
-                      material_type: newTemplate.material_type,
-                      image_url: newTemplate.image_url,
-                      pricing: {
-                        lowPitch: newTemplate.lowPitch,
-                        moderatePitch: newTemplate.moderatePitch,
-                        steepPitch: newTemplate.steepPitch,
-                        flat: newTemplate.flat,
-                        multiStorySurcharge: newTemplate.multiStorySurcharge
-                      }
-                    })}
-                    disabled={!newTemplate.name.trim()}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleCreate}
+                    disabled={!name.trim()}
+                    className="px-4 py-2 bg-[#dc2626] hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add Template
+                    Create
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
+
+      {/* Rename Modal */}
+      {
+        showRenameModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rename Instant Estimator</h3>
+                  <button
+                    onClick={() => {
+                      setShowRenameModal(false);
+                      setSelectedEstimator(null);
+                      setRenameName('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={renameName}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#dc2626] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter new name"
+                    onKeyPress={(e) => e.key === 'Enter' && handleRename()}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowRenameModal(false);
+                      setSelectedEstimator(null);
+                      setRenameName('');
+                    }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRename}
+                    disabled={!renameName.trim()}
+                    className="px-4 py-2 bg-[#dc2626] hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Rename
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete Confirmation Modal */}
+      {
+        showDeleteModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Delete Estimator</h3>
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setEstimatorToDelete(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Are you sure you want to delete this estimator? This action cannot be undone.
+                </p>
+
+                <div className="flex items-center justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setEstimatorToDelete(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Add Material Template Modal */}
+      {
+        showMaterialTemplateModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Add Material Template</h3>
+                  <button
+                    onClick={() => setShowMaterialTemplateModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Material Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newTemplate.name}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                        placeholder="e.g., GAF Timberline HDZ"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Material Type
+                      </label>
+                      <select
+                        value={newTemplate.material_type}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, material_type: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option>Asphalt</option>
+                        <option>Metal</option>
+                        <option>Tile</option>
+                        <option>Slate</option>
+                        <option>Wood Shake</option>
+                        <option>Synthetic</option>
+                        <option>Flat/TPO</option>
+                        <option>EPDM</option>
+                        <option>Modified Bitumen</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Image URL (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newTemplate.image_url}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, image_url: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Pricing (per sqft)
+                    </label>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Low Pitch</label>
+                        <input
+                          type="text"
+                          value={newTemplate.lowPitch}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, lowPitch: e.target.value })}
+                          placeholder="-"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Moderate Pitch</label>
+                        <input
+                          type="text"
+                          value={newTemplate.moderatePitch}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, moderatePitch: e.target.value })}
+                          placeholder="-"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Steep Pitch</label>
+                        <input
+                          type="text"
+                          value={newTemplate.steepPitch}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, steepPitch: e.target.value })}
+                          placeholder="-"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Flat</label>
+                        <input
+                          type="text"
+                          value={newTemplate.flat}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, flat: e.target.value })}
+                          placeholder="-"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Multi-story Surcharge</label>
+                        <input
+                          type="text"
+                          value={newTemplate.multiStorySurcharge}
+                          onChange={(e) => setNewTemplate({ ...newTemplate, multiStorySurcharge: e.target.value })}
+                          placeholder="-"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 mt-6">
+                    <button
+                      onClick={() => setShowMaterialTemplateModal(false)}
+                      className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleAddTemplate({
+                        name: newTemplate.name,
+                        material_type: newTemplate.material_type,
+                        image_url: newTemplate.image_url,
+                        pricing: {
+                          lowPitch: newTemplate.lowPitch,
+                          moderatePitch: newTemplate.moderatePitch,
+                          steepPitch: newTemplate.steepPitch,
+                          flat: newTemplate.flat,
+                          multiStorySurcharge: newTemplate.multiStorySurcharge
+                        }
+                      })}
+                      disabled={!newTemplate.name.trim()}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Manage Modal */}
-      {showManageModal && manageEstimatorId && (
-        <InstantEstimatorManageModal
-          isOpen={showManageModal}
-          onClose={() => {
-            setShowManageModal(false);
-            setManageEstimatorId(null);
-          }}
-          estimatorId={manageEstimatorId}
-          onSaved={fetchEstimators}
-        />
-      )}
+      {
+        showManageModal && manageEstimatorId && (
+          <InstantEstimatorManageModal
+            isOpen={showManageModal}
+            onClose={() => {
+              setShowManageModal(false);
+              setManageEstimatorId(null);
+            }}
+            estimatorId={manageEstimatorId}
+            onSaved={fetchEstimators}
+          />
+        )
+      }
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+      {
+        toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )
+      }
+    </div >
   );
 };
 
