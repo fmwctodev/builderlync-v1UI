@@ -90,6 +90,18 @@ export interface CatalogImportResponse {
   };
 }
 
+export interface CatalogSettings {
+  salesTax: number;
+  materialPurchaseTax: number;
+  wasteFactor: number;
+}
+
+export interface CatalogSettingsResponse {
+  success: boolean;
+  message?: string;
+  data?: CatalogSettings;
+}
+
 // Get catalog items with filters
 export const getCatalogItems = async (filters: CatalogFilters = {}): Promise<CatalogResponse> => {
   try {
@@ -260,6 +272,37 @@ export const importCatalogCsv = async (csv: string): Promise<CatalogImportRespon
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to import catalog CSV'
+    };
+  }
+};
+
+export const getCatalogSettings = async (): Promise<CatalogSettingsResponse> => {
+  try {
+    const response = await axios.get<CatalogSettingsResponse>(
+      `${API_BASE_URL}/catalog/settings`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch catalog settings'
+    };
+  }
+};
+
+export const saveCatalogSettings = async (settings: CatalogSettings): Promise<CatalogSettingsResponse> => {
+  try {
+    const response = await axios.put<CatalogSettingsResponse>(
+      `${API_BASE_URL}/catalog/settings`,
+      settings,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to save catalog settings'
     };
   }
 };

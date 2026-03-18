@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link, Download, Upload } from 'lucide-react';
-import { getCatalogItems, getCatalogItemById, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv } from '../../../shared/store/services/catalogApi';
+import { Plus, Edit2, Trash2, Copy, Search, SlidersHorizontal, GripVertical, Eye, X, RotateCcw, ChevronDown, Link, Download, Upload, Lightbulb } from 'lucide-react';
+import { getCatalogItems, getCatalogItemById, createCatalogItem, updateCatalogItemType, deleteCatalogItem, bulkDeleteCatalogItems, duplicateCatalogItem, updateCatalogItem, CatalogItem, exportCatalogCsv, importCatalogCsv, getCatalogSettings, saveCatalogSettings } from '../../../shared/store/services/catalogApi';
 import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
 import Pagination from '../components/Pagination';
@@ -39,6 +39,15 @@ export default function Catalog() {
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
+  const [settings, setSettings] = useState({
+    salesTax: 0,
+    materialPurchaseTax: 0,
+    wasteFactor: 0
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -78,7 +87,19 @@ export default function Catalog() {
   useEffect(() => {
     fetchABCSupplyStatus();
     checkSrsIntegration();
+    loadSettings();
   }, [])
+
+  const loadSettings = async () => {
+    try {
+      const response = await getCatalogSettings();
+      if (response.success && response.data) {
+        setSettings(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading catalog settings:', error);
+    }
+  };
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -150,6 +171,9 @@ export default function Catalog() {
       createdAt: '',
       updatedAt: '',
       ...newItemDefaults,
+      salesTax: settings.salesTax,
+      materialPurchaseTax: settings.materialPurchaseTax,
+      waste: settings.wasteFactor,
     });
     setIsCreatingNew(true);
     setSidebarOpen(true);
@@ -466,12 +490,31 @@ export default function Catalog() {
     }
   };
 
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const response = await saveCatalogSettings(settings);
+      if (response.success) {
+        setToast({ message: 'Settings saved successfully', type: 'success' });
+        setIsEditingSettings(false);
+      } else {
+        setToast({ message: response.message || 'Failed to save settings', type: 'error' });
+      }
+    } catch (error) {
+      setToast({ message: 'Error saving settings', type: 'error' });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Catalog</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your catalog items</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            {activeTab === 'items' ? 'Manage your catalog items' : 'Configure global default settings'}
+          </p>
           
           {/* Connect Section */}
           <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -535,8 +578,34 @@ export default function Catalog() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center px-4">
+            <button
+              onClick={() => setActiveTab('items')}
+              className={`py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'items'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              All items
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'settings'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Settings
+            </button>
+          </div>
+        </div>
+        {activeTab === 'items' ? (
+          <>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -724,7 +793,110 @@ export default function Catalog() {
             itemName="catalog items"
           />
         )}
-      </div>
+      </>
+      ) : (
+        <div className="p-8 max-w-2xl text-gray-900 dark:text-white">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8 flex items-start gap-3">
+            <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold">Universal Defaults</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Apply your tax and waste factor settings automatically to all new records. These values can still be overridden individually.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Sales Tax (%)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">The tax customer pays to you</p>
+                <div className="relative">
+                    <input
+                      type="number"
+                      disabled={!isEditingSettings}
+                      value={settings.salesTax === 0 && isEditingSettings ? '' : settings.salesTax}
+                      placeholder="0"
+                      onChange={(e) => setSettings({ ...settings, salesTax: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                      className="w-full pr-10 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
+                    />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Material Purchase Tax (%)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">The tax you pay when purchasing materials</p>
+                <div className="relative">
+                    <input
+                      type="number"
+                      disabled={!isEditingSettings}
+                      value={settings.materialPurchaseTax === 0 && isEditingSettings ? '' : settings.materialPurchaseTax}
+                      placeholder="0"
+                      onChange={(e) => setSettings({ ...settings, materialPurchaseTax: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                      className="w-full pr-10 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
+                    />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Waste Factor (%)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">Default percentage added for material waste</p>
+                <div className="relative">
+                    <input
+                      type="number"
+                      disabled={!isEditingSettings}
+                      value={settings.wasteFactor === 0 && isEditingSettings ? '' : settings.wasteFactor}
+                      placeholder="0"
+                      onChange={(e) => setSettings({ ...settings, wasteFactor: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                      className="w-full pr-10 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
+                    />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              {!isEditingSettings ? (
+                <button
+                  onClick={() => setIsEditingSettings(true)}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+                >
+                  <Edit2 size={16} />
+                  Edit Settings
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={isSavingSettings}
+                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  >
+                    {isSavingSettings ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingSettings(false);
+                      loadSettings();
+                    }}
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
 
       {/* Column Visibility Modal */}
       {showColumnModal && (
