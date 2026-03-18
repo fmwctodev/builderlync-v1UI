@@ -2,12 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, User, Plus, Eye, Edit2 } from 'lucide-react';
 import { searchContactsByTypeAndName, Contact } from '../../../shared/store/services/contactsApi';
 
+const DEFAULT_CONTACT_TYPES = ['customer', 'lead'];
+
 interface ContactSearchDropdownProps {
   selectedContact: { id: string; name: string } | null;
   onSelectContact: (contact: { id: string; name: string } | null) => void;
   disabled?: boolean;
   required?: boolean;
   hasError?: boolean;
+  contactTypes?: string[];
+  placeholder?: string;
   onCreateNew?: (name: string) => void;
   onViewProfile?: (contactId: string) => void;
   onEditContact?: (contactId: string) => void;
@@ -19,6 +23,8 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   disabled = false,
   required = false,
   hasError = false,
+  contactTypes = DEFAULT_CONTACT_TYPES,
+  placeholder = 'Search for customer or lead...',
   onCreateNew,
   onViewProfile,
   onEditContact
@@ -30,6 +36,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const contactTypesKey = contactTypes.join('|');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,7 +58,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchContactsByTypeAndName(searchTerm, ['customer', 'lead']);
+        const results = await searchContactsByTypeAndName(searchTerm, contactTypes);
         setContacts(results);
         setHighlightedIndex(-1);
       } catch (error) {
@@ -64,7 +71,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
 
     const debounce = setTimeout(searchContacts, 300);
     return () => clearTimeout(debounce);
-  }, [searchTerm]);
+  }, [contactTypesKey, searchTerm]);
 
   const handleSelectContact = (contact: Contact) => {
     onSelectContact({
@@ -182,7 +189,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           required={required}
-          placeholder="Search for customer or lead..."
+          placeholder={placeholder}
           className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${hasError
             ? 'border-red-500 dark:border-red-500 focus:border-red-500'
             : 'border-gray-300 dark:border-gray-600 focus:border-primary-500'
