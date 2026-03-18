@@ -5,6 +5,7 @@ import Toast from '../../../shared/components/Toast';
 import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
 import Pagination from '../components/Pagination';
 import { srsService } from '../services/srsService';
+import { proposalsApi, Proposal } from '../services/proposalsApi';
 
 interface ColumnVisibility {
   itemType: boolean;
@@ -19,6 +20,15 @@ interface ColumnVisibility {
   salesTax: boolean;
   materialPurchaseTax: boolean;
 }
+
+const LOCKED_PROPOSAL_STATUSES = new Set(['sent', 'signed', 'lost']);
+const getProposalStatusLabel = (status: Proposal['status']) => {
+  if (status === 'incomplete') return 'Draft';
+  if (status === 'complete') return 'Complete';
+  if (status === 'signed') return 'Won';
+  if (status === 'lost') return 'Lost';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
 
 export default function Catalog() {
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -36,6 +46,11 @@ export default function Catalog() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [showAddToProposalModal, setShowAddToProposalModal] = useState(false);
+  const [availableProposals, setAvailableProposals] = useState<Proposal[]>([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const [proposalSearch, setProposalSearch] = useState('');
+  const [addingToProposalId, setAddingToProposalId] = useState<number | null>(null);
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +106,25 @@ export default function Catalog() {
   useEffect(() => {
     loadItems();
   }, [debouncedSearchQuery, filterTypes, sortOption, currentPage]);
+
+  useEffect(() => {
+    if (!showAddToProposalModal) return;
+
+    const loadProposals = async () => {
+      setLoadingProposals(true);
+      try {
+        const proposals = await proposalsApi.getProposals();
+        setAvailableProposals(proposals);
+      } catch (error) {
+        console.error('Failed to load proposals:', error);
+        setToast({ message: 'Failed to load proposals', type: 'error' });
+      } finally {
+        setLoadingProposals(false);
+      }
+    };
+
+    loadProposals();
+  }, [showAddToProposalModal]);
 
   const fetchABCSupplyStatus = async () => {
     try {
@@ -323,6 +357,90 @@ export default function Catalog() {
       setToast({ message: 'Failed to delete items', type: 'error' });
     }
   };
+
+  const openAddToProposalModal = () => {
+    if (selectedItems.size === 0) return;
+    setProposalSearch('');
+    setShowAddToProposalModal(true);
+  };
+
+  const closeAddToProposalModal = () => {
+    if (addingToProposalId) return;
+    setShowAddToProposalModal(false);
+    setProposalSearch('');
+  };
+
+  const resolveSelectedCatalogItems = async (): Promise<CatalogItem[]> => {
+    const selectedIds = Array.from(selectedItems);
+    const currentPageItemsById = new Map(items.map((item) => [item.id, item]));
+
+    const resolvedItems = await Promise.all(
+      selectedIds.map(async (id) => {
+        const existingItem = currentPageItemsById.get(id);
+        if (existingItem) {
+          return existingItem;
+        }
+
+        const response = await getCatalogItemById(id);
+        return response.success && response.data ? response.data : null;
+      })
+    );
+
+    return resolvedItems.filter((item): item is CatalogItem => Boolean(item));
+  };
+
+  const handleAddSelectedToProposal = async (proposal: Proposal) => {
+    if (LOCKED_PROPOSAL_STATUSES.has(proposal.status)) {
+      return;
+    }
+
+    setAddingToProposalId(proposal.id);
+    try {
+      const catalogItemsToAdd = await resolveSelectedCatalogItems();
+
+      if (!catalogItemsToAdd.length) {
+        setToast({ message: 'No catalog items were available to add', type: 'error' });
+        return;
+      }
+
+      await proposalsApi.addCatalogItemsToProposal(proposal.id, catalogItemsToAdd);
+      setToast({
+        message: `${catalogItemsToAdd.length} item(s) added to "${proposal.title}"`,
+        type: 'success',
+      });
+      setSelectedItems(new Set());
+      setShowAddToProposalModal(false);
+      setProposalSearch('');
+    } catch (error: any) {
+      console.error('Failed to add catalog items to proposal:', error);
+      setToast({
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          'Failed to add selected catalog items to proposal',
+        type: 'error',
+      });
+    } finally {
+      setAddingToProposalId(null);
+    }
+  };
+
+  const filteredProposals = availableProposals.filter((proposal) => {
+    if (proposal.status === 'sent') {
+      return false;
+    }
+
+    const query = proposalSearch.trim().toLowerCase();
+    if (!query) return true;
+
+    const customerName = proposal.sections?.settings?.customerName || '';
+    const address = proposal.address?.address || '';
+
+    return [proposal.title, customerName, address]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(query));
+  });
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -581,6 +699,13 @@ export default function Catalog() {
               {selectedItems.size} item(s) selected
             </span>
             <div className="flex gap-2">
+              <button
+                onClick={openAddToProposalModal}
+                className="px-3 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 flex items-center gap-1"
+              >
+                <Link size={14} />
+                Add to Proposal
+              </button>
               <button onClick={bulkDelete} className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600">
                 Delete Selected
               </button>
@@ -882,6 +1007,119 @@ export default function Catalog() {
                 className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
               >
                 Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddToProposalModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-3xl max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add Catalog Items to Proposal</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Select a proposal to receive {selectedItems.size} catalog item(s).
+                </p>
+              </div>
+              <button
+                onClick={closeAddToProposalModal}
+                disabled={Boolean(addingToProposalId)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={proposalSearch}
+                  onChange={(e) => setProposalSearch(e.target.value)}
+                  placeholder="Search proposals by title, customer, or address..."
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[55vh] space-y-3">
+              {loadingProposals ? (
+                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                  Loading proposals...
+                </div>
+              ) : filteredProposals.length === 0 ? (
+                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                  {proposalSearch ? 'No proposals matched your search.' : 'No proposals found.'}
+                </div>
+              ) : (
+                filteredProposals.map((proposal) => {
+                  const isLocked = LOCKED_PROPOSAL_STATUSES.has(proposal.status);
+                  const isSaving = addingToProposalId === proposal.id;
+                  const customerName = proposal.sections?.settings?.customerName || 'No customer';
+                  const subtitle = proposal.address?.address || proposal.sections?.settings?.customerAddress || 'No address';
+
+                  return (
+                    <div
+                      key={proposal.id}
+                      className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                              {proposal.title || 'Untitled Proposal'}
+                            </h3>
+                            <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 uppercase">
+                              {getProposalStatusLabel(proposal.status)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {customerName}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {subtitle}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                            Total: ${Number(proposal.total || 0).toFixed(2)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <button
+                            onClick={() => handleAddSelectedToProposal(proposal)}
+                            disabled={isLocked || Boolean(addingToProposalId)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${
+                              isLocked || addingToProposalId
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'bg-primary-600 text-white hover:bg-primary-700'
+                            }`}
+                          >
+                            {isSaving ? 'Adding...' : 'Add Here'}
+                          </button>
+                          {isLocked && (
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                              Locked proposal
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex justify-end px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={closeAddToProposalModal}
+                disabled={Boolean(addingToProposalId)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                Close
               </button>
             </div>
           </div>
