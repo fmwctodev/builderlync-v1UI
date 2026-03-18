@@ -178,6 +178,13 @@ class OpportunitiesApiService {
       method: 'DELETE',
     });
   }
+
+  async createJobFromOpportunity(id: string, stage_id: string): Promise<any> {
+    return this.makeRequest(`/jobs/create-job-from-opportunity/${id}`, {
+      method: 'POST',
+      body: JSON.stringify({ stage_id }),
+    });
+  }
 }
 
 export const opportunitiesBackendApi = new OpportunitiesApiService();

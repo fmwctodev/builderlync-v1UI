@@ -101,7 +101,7 @@ export const formsApi = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(metadata?.ip && { 'X-User-IP': metadata.ip }),
+          // ...(metadata?.ip && { 'X-User-IP': metadata.ip }),
         },
         body: JSON.stringify(payload),
       });
@@ -198,7 +198,7 @@ export const formsApi = {
     requireOrganizationId(organizationId, 'generateEmbedCode');
 
     const baseUrl = window.location.origin;
-    const formUrl = `${baseUrl}/f/${publicId}`;
+    const formUrl = `${baseUrl}/forms/public/${publicId}`;
 
     const embedCode = `<!-- BuilderLynk Form Embed -->
 <div id="builderlynk-form-${publicId}"></div>

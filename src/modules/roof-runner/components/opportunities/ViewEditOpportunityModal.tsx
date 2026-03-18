@@ -218,6 +218,23 @@ export default function ViewEditOpportunityModal({
     }
   };
 
+  const handleConvertToJob = async () => {
+    if (!opportunityId || !formData.stage_id) return;
+
+    setSaving(true);
+    try {
+      await opportunitiesApi.createJobFromOpportunity(opportunityId, formData.stage_id);
+      alert('Opportunity converted to job successfully!');
+      onUpdate();
+      handleClose();
+    } catch (error) {
+      console.error('Error converting opportunity to job:', error);
+      alert('Failed to convert opportunity to job. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!opportunityId) return;
 
@@ -659,6 +676,16 @@ export default function ViewEditOpportunityModal({
                     className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors shadow-sm"
                   >
                     Create Job
+                  </button>
+                )}
+                {!opportunity?.job_id && (
+                  <button
+                    onClick={handleConvertToJob}
+                    disabled={saving}
+                    className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                    title="Convert to Job"
+                  >
+                    Convert to Job
                   </button>
                 )}
                 <button

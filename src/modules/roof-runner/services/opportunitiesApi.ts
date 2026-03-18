@@ -79,4 +79,13 @@ export const opportunitiesApi = {
       throw error;
     }
   },
+  
+  async createJobFromOpportunity(id: string, stage_id: string): Promise<any> {
+    try {
+      return await opportunitiesBackendApi.createJobFromOpportunity(id, stage_id);
+    } catch (error) {
+      console.error('Error creating job from opportunity:', error);
+      throw error;
+    }
+  },
 };
