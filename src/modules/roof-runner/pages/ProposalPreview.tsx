@@ -92,6 +92,8 @@ export default function ProposalPreview() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStage, setDownloadStage] = useState("Preparing PDF...");
   const [showConfirm, setShowConfirm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -404,10 +406,23 @@ export default function ProposalPreview() {
     </div>
   );
 
+  const waitForNextPaint = () =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+
+  const updateDownloadStatus = async (progress: number, stage: string) => {
+    setDownloadProgress(Math.max(0, Math.min(100, progress)));
+    setDownloadStage(stage);
+    await waitForNextPaint();
+  };
+
   const handleDownload = async () => {
     if (!contentRef.current || downloading) return;
 
     setDownloading(true);
+    setDownloadProgress(2);
+    setDownloadStage("Preparing PDF...");
     
     const element = contentRef.current;
     const pages = element.querySelectorAll('.pdf-page');
@@ -417,6 +432,7 @@ export default function ProposalPreview() {
     });
 
     try {
+      await updateDownloadStatus(5, "Loading PDF tools...");
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
       const imageElements = Array.from(element.querySelectorAll('img')) as HTMLImageElement[];
@@ -425,48 +441,83 @@ export default function ProposalPreview() {
         src: img.src,
       }));
 
-      const imagePromises = imageElements.map(async (imgElement) => {
-        try {
-          const originalSrc = imgElement.src;
-          
-          // Skip if already base64
-          if (originalSrc.startsWith('data:')) {
-            return true;
-          }
-          
-          // Use backend proxy to fetch image
-          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
-          const token = localStorage.getItem('token');
-          
-          const response = await fetch(`${API_BASE_URL}/proposals/proxy-image`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ imageUrl: originalSrc })
-          });
-          
-          if (!response.ok) {
-            console.warn('Failed to proxy image:', originalSrc);
-            return false;
-          }
-          
-          const data = await response.json();
-          if (data.success && data.data.base64) {
-            imgElement.src = data.data.base64;
-            return true;
-          }
-          
-          return false;
-        } catch (e) {
-          console.warn('Could not convert image:', e);
-          return false;
-        }
-      });
+      const uniqueImageSources = Array.from(
+        new Set(
+          originalImageSources
+            .map(({ src }) => src)
+            .filter((src) => !src.startsWith("data:"))
+        )
+      );
+      const proxiedImageMap = new Map<string, string>();
 
-      await Promise.all(imagePromises);
+      if (uniqueImageSources.length > 0) {
+        let completedImages = 0;
+        await updateDownloadStatus(
+          10,
+          `Preparing images (0/${uniqueImageSources.length})...`
+        );
+
+        const imagePromises = uniqueImageSources.map(async (originalSrc) => {
+          try {
+            const API_BASE_URL =
+              import.meta.env.VITE_API_BASE_URL ||
+              "https://builderlyncapi.testenvapp.com/api";
+            const token = localStorage.getItem("token");
+
+            const response = await fetch(
+              `${API_BASE_URL}/proposals/proxy-image`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ imageUrl: originalSrc }),
+              }
+            );
+
+            if (!response.ok) {
+              console.warn("Failed to proxy image:", originalSrc);
+              return false;
+            }
+
+            const data = await response.json();
+            if (data.success && data.data.base64) {
+              proxiedImageMap.set(originalSrc, data.data.base64);
+              return true;
+            }
+
+            return false;
+          } catch (e) {
+            console.warn("Could not convert image:", e);
+            return false;
+          } finally {
+            completedImages += 1;
+            const imageProgress =
+              10 + Math.round((completedImages / uniqueImageSources.length) * 20);
+            setDownloadProgress(imageProgress);
+            setDownloadStage(
+              `Preparing images (${completedImages}/${uniqueImageSources.length})...`
+            );
+          }
+        });
+
+        await Promise.all(imagePromises);
+
+        originalImageSources.forEach(({ img, src }) => {
+          const proxiedSource = proxiedImageMap.get(src);
+          if (proxiedSource) {
+            img.src = proxiedSource;
+          }
+        });
+      } else {
+        await updateDownloadStatus(22, "No external images to prepare");
+      }
+
+      await updateDownloadStatus(32, "Finalizing images...");
       await waitForImagesToLoad(element);
+      await updateDownloadStatus(38, "Building PDF...");
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "pt",
@@ -474,16 +525,24 @@ export default function ProposalPreview() {
       });
 
       const pdfPages = Array.from(element.querySelectorAll(".pdf-page")) as HTMLElement[];
+      const totalPages = pdfPages.length;
+      const canvasScale = 1.6;
 
       for (let index = 0; index < pdfPages.length; index += 1) {
         const page = pdfPages[index];
+        const pageProgress =
+          40 + Math.round((index / Math.max(totalPages, 1)) * 52);
+        await updateDownloadStatus(
+          pageProgress,
+          `Rendering page ${index + 1} of ${totalPages}...`
+        );
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: canvasScale,
           logging: false,
           backgroundColor: "#ffffff",
           useCORS: true,
         });
-        const imageData = canvas.toDataURL("image/jpeg", 0.98);
+        const imageData = canvas.toDataURL("image/jpeg", 0.92);
 
         if (index > 0) {
           pdf.addPage("letter", "portrait");
@@ -492,9 +551,12 @@ export default function ProposalPreview() {
         pdf.addImage(imageData, "JPEG", 0, 0, 612, 792);
       }
 
+      await updateDownloadStatus(96, "Saving PDF...");
       pdf.save(
         `proposal-${proposal?.sections?.settings?.customerName || "document"}.pdf`
       );
+      setDownloadProgress(100);
+      setDownloadStage("Download ready");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert('Failed to generate PDF. Please try again.');
@@ -506,6 +568,8 @@ export default function ProposalPreview() {
         (page as HTMLElement).style.marginBottom = '';
       });
       setDownloading(false);
+      setDownloadProgress(0);
+      setDownloadStage("Preparing PDF...");
       setShowConfirm(false);
     }
   };
@@ -1087,9 +1151,9 @@ export default function ProposalPreview() {
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
+                              {/* <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
                                 {`Photo ${idx + 1}`}
-                              </div>
+                              </div> */}
                             </div>
                           )
                         )}
@@ -1123,9 +1187,25 @@ export default function ProposalPreview() {
               Download PDF
             </h3>
             {downloading ? (
-              <div className="text-center py-4">
+              <div className="py-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Generating PDF...</p>
+                <div className="text-center">
+                  <div className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {downloadProgress}%
+                  </div>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    {downloadStage}
+                  </p>
+                </div>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="h-full rounded-full bg-primary-600 transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                  Large proposals with many photos or pages can take a little longer.
+                </p>
               </div>
             ) : (
               <>

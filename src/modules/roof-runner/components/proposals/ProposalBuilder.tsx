@@ -4689,7 +4689,7 @@ export default function ProposalBuilder({
           {/* Fullscreen PDF Viewer */}
           {viewingPdf && (
             <div className="fixed inset-0 bg-white dark:bg-gray-900 z-[60] flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              {/* <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-gray-900 dark:text-white font-medium">
                   {viewingPdf.name}
                 </h3>
@@ -4699,7 +4699,7 @@ export default function ProposalBuilder({
                 >
                   <X size={24} />
                 </button>
-              </div>
+              </div> */}
               <div className="flex-1">
                 <div className="h-full overflow-y-auto p-6 bg-gray-100 dark:bg-gray-950">
                   <PdfPagesPreview

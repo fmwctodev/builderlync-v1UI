@@ -230,14 +230,14 @@ export function PdfPagesPreview({
         >
           {showSectionTitle && (
             <div className="mb-4">
-              {sectionTitle && (
+              {/* {sectionTitle && (
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {sectionTitle}
                 </h2>
-              )}
-              <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              )} */}
+              {/* <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {title}
-              </div>
+              </div> */}
             </div>
           )}
           <div className="rounded-lg border border-gray-200 overflow-hidden dark:border-gray-700">
@@ -269,14 +269,14 @@ export function PdfPagesPreview({
           >
             {showSectionTitle && index === 0 && (
               <div className="mb-4">
-                {sectionTitle && (
+                {/* {sectionTitle && (
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {sectionTitle}
                   </h2>
-                )}
-                <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                )} */}
+                {/* <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {title}
-                </div>
+                </div> */}
               </div>
             )}
             <img
