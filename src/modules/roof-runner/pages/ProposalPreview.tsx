@@ -82,6 +82,43 @@ const paginateEstimateItems = (
   return pages;
 };
 
+const PROPOSAL_PAGE_STYLE = {
+  width: "816px",
+  minHeight: "1056px",
+  padding: "32px",
+  position: "relative" as const,
+};
+
+const PHOTO_SECTION_PAGE_SIZE = 12;
+const TEXT_SECTION_FIRST_PAGE_WEIGHT = 3000;
+const TEXT_SECTION_CONTINUED_PAGE_WEIGHT = 3400;
+
+const chunkArray = <T,>(items: T[], size: number) => {
+  if (!items.length) return [[]];
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+};
+
+const getTextSectionBlockWeight = (html: string) => {
+  const textLength = stripHtmlTags(html).length;
+  const breakCount = (html.match(/<br\s*\/?>/gi) || []).length;
+  const blockCount = (html.match(/<(p|div|li|h1|h2|h3|ul|ol|blockquote)\b/gi) || [])
+    .length;
+  const headingCount = (html.match(/<h[1-3]\b/gi) || []).length;
+
+  return (
+    textLength +
+    breakCount * 40 +
+    blockCount * 110 +
+    headingCount * 160
+  );
+};
+
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -314,6 +351,135 @@ export default function ProposalPreview() {
     visibleEstimateItems,
     estimateOptionDescription
   );
+
+  const splitPlainTextIntoHtmlBlocks = (value: string) => {
+    const normalized = value.replace(/\r/g, "").trim();
+    if (!normalized) return [];
+
+    const sourceBlocks = normalized
+      .split(/\n{2,}/)
+      .map((block) => block.trim())
+      .filter(Boolean);
+    const paragraphBlocks =
+      sourceBlocks.length > 1
+        ? sourceBlocks
+        : normalized
+            .split(/\n/)
+            .map((block) => block.trim())
+            .filter(Boolean);
+
+    const blocksToRender =
+      paragraphBlocks.length > 1
+        ? paragraphBlocks
+        : (() => {
+            const sentences =
+              normalized.match(/[^.!?]+[.!?]*\s*/g)?.map((part) => part.trim()) ||
+              [normalized];
+            const chunks: string[] = [];
+            let currentChunk = "";
+
+            sentences.forEach((sentence) => {
+              if (
+                currentChunk &&
+                currentChunk.length + sentence.length > 850
+              ) {
+                chunks.push(currentChunk.trim());
+                currentChunk = sentence;
+                return;
+              }
+
+              currentChunk = currentChunk
+                ? `${currentChunk} ${sentence}`.trim()
+                : sentence;
+            });
+
+            if (currentChunk.trim()) {
+              chunks.push(currentChunk.trim());
+            }
+
+            return chunks.filter(Boolean);
+          })();
+
+    return blocksToRender.map((block) => `<p>${toRichHtml(block)}</p>`);
+  };
+
+  const getTextSectionPages = (value?: string) => {
+    const rawValue = (value || "").trim();
+    if (!rawValue) {
+      return ["<p>Section content</p>"];
+    }
+
+    const hasHtmlMarkup = /<[a-z][\s\S]*>/i.test(rawValue);
+    let blocks: string[] = [];
+
+    if (hasHtmlMarkup) {
+      const sanitizedHtml = sanitizeRichHtml(rawValue);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(
+        `<div data-root="true">${sanitizedHtml}</div>`,
+        "text/html"
+      );
+      const root = doc.body.firstElementChild;
+      let nodes = Array.from(root?.childNodes || []);
+
+      if (nodes.length === 1 && nodes[0].nodeType === Node.ELEMENT_NODE) {
+        const wrapper = nodes[0] as HTMLElement;
+        if (
+          ["DIV", "SECTION", "ARTICLE"].includes(wrapper.tagName) &&
+          wrapper.childNodes.length > 1
+        ) {
+          nodes = Array.from(wrapper.childNodes);
+        }
+      }
+
+      blocks = nodes
+        .map((node) =>
+          node.nodeType === Node.TEXT_NODE
+            ? escapeHtml(node.textContent || "")
+            : (node as HTMLElement).outerHTML
+        )
+        .map((block) => block.trim())
+        .filter((block) => stripHtmlTags(block).length > 0)
+        .flatMap((block) =>
+          getTextSectionBlockWeight(block) >
+          TEXT_SECTION_CONTINUED_PAGE_WEIGHT
+            ? splitPlainTextIntoHtmlBlocks(stripHtmlTags(block))
+            : [block]
+        );
+    }
+
+    if (!blocks.length) {
+      blocks = splitPlainTextIntoHtmlBlocks(rawValue);
+    }
+
+    const pages: string[] = [];
+    let currentPageBlocks: string[] = [];
+    let currentWeight = 0;
+    let currentPageLimit = TEXT_SECTION_FIRST_PAGE_WEIGHT;
+
+    blocks.forEach((block) => {
+      const blockWeight = getTextSectionBlockWeight(block);
+      const wouldOverflow =
+        currentPageBlocks.length > 0 &&
+        currentWeight + blockWeight > currentPageLimit;
+
+      if (wouldOverflow) {
+        pages.push(currentPageBlocks.join(""));
+        currentPageBlocks = [];
+        currentWeight = 0;
+        currentPageLimit = TEXT_SECTION_CONTINUED_PAGE_WEIGHT;
+      }
+
+      currentPageBlocks.push(block);
+      currentWeight += blockWeight;
+    });
+
+    if (currentPageBlocks.length > 0 || pages.length === 0) {
+      pages.push(currentPageBlocks.join(""));
+    }
+
+    return pages;
+  };
 
   const renderAcceptancePage = () => (
     <div
@@ -721,7 +887,7 @@ export default function ProposalPreview() {
                     }}
                   >
                     <div className="mb-8">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center justify-between gap-4">
                         <div>
                           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                             {estimateOptionTitle}
@@ -733,7 +899,7 @@ export default function ProposalPreview() {
                           )}
                         </div>
                         {estimateItemPages.length > 1 && (
-                          <div className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                          <div className="inline-flex shrink-0 items-center justify-center self-start whitespace-nowrap rounded-full border border-gray-200 px-3 py-1 text-center text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:border-gray-600 dark:text-gray-400">
                             Page {pageIndex + 1} of {estimateItemPages.length}
                           </div>
                         )}
@@ -1104,75 +1270,129 @@ export default function ProposalPreview() {
                   s.name !== "Cover" && s.name !== "Estimate" && s.active
               )
               .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
-              .map((section: any) => {
+              .flatMap((section: any) => {
                 if (section.type === "pdf" && section.content?.pdfs) {
-                  return (
-                    <React.Fragment key={section.id}>
-                      {section.content.pdfs.map((pdf: any, idx: number) => (
-                        <PdfPagesPreview
-                          key={`${section.id}-${idx}`}
-                          url={pdf.url}
-                          title={pdf.name}
-                          variant="proposal"
-                          sectionTitle={section.name}
-                          showSectionTitle={idx === 0}
-                        />
-                      ))}
-                    </React.Fragment>
-                  );
+                  return section.content.pdfs.map((pdf: any, idx: number) => (
+                    <PdfPagesPreview
+                      key={`${section.id}-${idx}`}
+                      url={pdf.url}
+                      title={pdf.name}
+                      variant="proposal"
+                      sectionTitle={section.name}
+                      showSectionTitle={idx === 0}
+                    />
+                  ));
                 }
 
-                return (
-                  <div
-                    key={section.id}
-                    className="bg-white dark:bg-gray-800 pdf-page"
-                    style={{
-                      width: "816px",
-                      minHeight: "1056px",
-                      padding: "32px",
-                      position: "relative"
-                    }}
-                  >
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                      {section.name}
-                    </h2>
-                    {section.type === "photos" && section.content?.photos && (
+                if (section.type === "photos") {
+                  const photoPages = chunkArray(
+                    section.content?.photos || [],
+                    PHOTO_SECTION_PAGE_SIZE
+                  );
+
+                  return photoPages.map((photoPage: string[], pageIndex: number) => (
+                    <div
+                      key={`${section.id}-photos-${pageIndex}`}
+                      className="bg-white dark:bg-gray-800 pdf-page"
+                      style={PROPOSAL_PAGE_STYLE}
+                    >
+                      <div className="mb-6 flex items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                            {section.name}
+                          </h2>
+                          {pageIndex > 0 && (
+                            <div className="text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                              Continued
+                            </div>
+                          )}
+                        </div>
+                        {photoPages.length > 1 && (
+                          <div className="inline-flex shrink-0 items-center justify-center self-start whitespace-nowrap rounded-full border border-gray-200 px-3 py-1 text-center text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                            Page {pageIndex + 1} of {photoPages.length}
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-3 gap-3">
-                        {section.content.photos.map(
-                          (photo: string, idx: number) => (
+                        {photoPage.map((photo: string, idx: number) => {
+                          const photoNumber =
+                            pageIndex * PHOTO_SECTION_PAGE_SIZE + idx + 1;
+                          return (
                             <div
-                              key={idx}
+                              key={`${section.id}-photo-${photoNumber}`}
                               className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                             >
                               <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700">
                                 <img
                                   src={photo}
-                                  alt={`Photo ${idx + 1}`}
+                                  alt={`Photo ${photoNumber}`}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              {/* <div className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
-                                {`Photo ${idx + 1}`}
-                              </div> */}
                             </div>
-                          )
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ));
+                }
+
+                if (section.type === "text") {
+                  const textPages = getTextSectionPages(
+                    section.content?.description ||
+                      section.content?.text ||
+                      "Section content"
+                  );
+
+                  return textPages.map((pageHtml: string, pageIndex: number) => (
+                    <div
+                      key={`${section.id}-text-${pageIndex}`}
+                      className="bg-white dark:bg-gray-800 pdf-page"
+                      style={PROPOSAL_PAGE_STYLE}
+                    >
+                      <div className="mb-6 flex items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                            {section.name}
+                          </h2>
+                          {pageIndex > 0 && (
+                            <div className="text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                              Continued
+                            </div>
+                          )}
+                        </div>
+                        {textPages.length > 1 && (
+                          <div className="inline-flex shrink-0 items-center justify-center self-start whitespace-nowrap rounded-full border border-gray-200 px-3 py-1 text-center text-xs font-medium uppercase tracking-[0.18em] text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                            Page {pageIndex + 1} of {textPages.length}
+                          </div>
                         )}
                       </div>
-                    )}
-                    {section.type === "text" && (
                       <div
-                        className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
+                        className="text-gray-600 dark:text-gray-400 break-words leading-7 [&>*+*]:mt-4"
                         dangerouslySetInnerHTML={{
-                          __html: toRichHtml(
-                            section.content?.description ||
-                              section.content?.text ||
-                              "Section content"
-                          ),
+                          __html: pageHtml,
                         }}
                       />
-                    )}
-                  </div>
-                );
+                    </div>
+                  ));
+                }
+
+                return [
+                  <div
+                    key={section.id}
+                    className="bg-white dark:bg-gray-800 pdf-page"
+                    style={PROPOSAL_PAGE_STYLE}
+                  >
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                      {section.name}
+                    </h2>
+                    <div className="text-gray-600 dark:text-gray-400 break-words">
+                      {section.content?.description ||
+                        section.content?.text ||
+                        "Section content"}
+                    </div>
+                  </div>,
+                ];
               })
             }
             {renderAcceptancePage()}

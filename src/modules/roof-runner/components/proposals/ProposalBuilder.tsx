@@ -117,6 +117,13 @@ interface Section {
   };
 }
 
+interface UploadingPhoto {
+  id: string;
+  sectionId: string;
+  previewUrl: string;
+  name: string;
+}
+
 export default function ProposalBuilder({
   proposalId,
   onClose,
@@ -233,6 +240,7 @@ export default function ProposalBuilder({
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState<UploadingPhoto[]>([]);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
@@ -687,78 +695,77 @@ export default function ProposalBuilder({
     e: React.ChangeEvent<HTMLInputElement>,
     sectionName: string
   ) => {
-    const files = e.target.files;
-    if (files) {
-      for (const file of Array.from(files)) {
-        const blobUrl = URL.createObjectURL(file);
-        uploadPhoto(sectionName, blobUrl);
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
 
-        try {
-          const section = sections.find((s) => s.name === sectionName);
-          if (!section) return;
+    if (files.length > 0) {
+      const section = sections.find((s) => s.name === sectionName);
+      if (!section) return;
 
-          const API_BASE_URL =
-            import.meta.env.VITE_API_BASE_URL ||
-            "https://builderlyncapi.testenvapp.com/api";
-          const token = localStorage.getItem("token");
-
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("sectionId", section.id);
-          formData.append("type", "photo");
-
-          const response = await fetch(
-            `${API_BASE_URL}/proposals/${proposalId}/media`,
+      await Promise.allSettled(
+        files.map(async (file) => {
+          const uploadId = crypto.randomUUID();
+          const previewUrl = URL.createObjectURL(file);
+          setUploadingPhotos((prev) => [
+            ...prev,
             {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: formData,
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            const permanentUrl = result.data.url;
-            setSections((prev) =>
-              prev.map((s) =>
-                s.name === sectionName && s.content?.photos
-                  ? {
-                    ...s,
-                    content: {
-                      ...s.content,
-                      photos: s.content.photos.map((url) =>
-                        url === blobUrl ? permanentUrl : url
-                      ),
-                    },
-                  }
-                  : s
-              )
-            );
-            URL.revokeObjectURL(blobUrl);
-          }
-        } catch (error) {
-          console.error("Error uploading photo:", error);
-        }
-      }
-    }
-  };
-
-  const uploadPhoto = (sectionName: string, photoUrl: string) => {
-    setSections(
-      sections.map((section) =>
-        section.name === sectionName && section.content?.photos
-          ? {
-            ...section,
-            content: {
-              ...section.content,
-              photos: [...section.content.photos, photoUrl],
+              id: uploadId,
+              sectionId: section.id,
+              previewUrl,
+              name: file.name,
             },
+          ]);
+
+          try {
+            const API_BASE_URL =
+              import.meta.env.VITE_API_BASE_URL ||
+              "https://builderlyncapi.testenvapp.com/api";
+            const token = localStorage.getItem("token");
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("sectionId", section.id);
+            formData.append("type", "photo");
+
+            const response = await fetch(
+              `${API_BASE_URL}/proposals/${proposalId}/media`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+            if (result.success) {
+              const permanentUrl = result.data.url;
+              setSections((prev) =>
+                prev.map((s) =>
+                  s.id === section.id && s.content?.photos
+                    ? {
+                        ...s,
+                        content: {
+                          ...s.content,
+                          photos: [...(s.content.photos || []), permanentUrl],
+                        },
+                      }
+                    : s
+                )
+              );
+            }
+          } catch (error) {
+            console.error("Error uploading photo:", error);
+          } finally {
+            setUploadingPhotos((prev) =>
+              prev.filter((photo) => photo.id !== uploadId)
+            );
+            URL.revokeObjectURL(previewUrl);
           }
-          : section
-      )
-    );
+        })
+      );
+    }
   };
 
   const deletePhoto = async (sectionName: string, index: number) => {
@@ -2631,7 +2638,16 @@ export default function ProposalBuilder({
                             Gallery view
                           </span>
                           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {(sections.find((s) => s.name === activeSection)?.content?.photos || []).length} photos
+                            {(sections.find((s) => s.name === activeSection)?.content?.photos || []).length +
+                              uploadingPhotos.filter(
+                                (photo) =>
+                                  photo.sectionId ===
+                                  sections.find(
+                                    (s) =>
+                                      s.name === activeSection &&
+                                      s.type === "photos"
+                                  )?.id
+                              ).length} photos
                           </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
@@ -2667,6 +2683,40 @@ export default function ProposalBuilder({
                                     {`Photo ${idx + 1}`}
                                   </div>
                                 )}
+                              </div>
+                            ))}
+                          {uploadingPhotos
+                            .filter(
+                              (photo) =>
+                                photo.sectionId ===
+                                sections.find(
+                                  (s) =>
+                                    s.name === activeSection &&
+                                    s.type === "photos"
+                                )?.id
+                            )
+                            .map((photo) => (
+                              <div
+                                key={photo.id}
+                                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden shadow-sm"
+                              >
+                                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                  <img
+                                    src={photo.previewUrl}
+                                    alt={photo.name}
+                                    className="w-full h-full object-cover opacity-60"
+                                  />
+                                  <div className="absolute inset-0 animate-pulse bg-white/40 dark:bg-gray-900/40" />
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                    <div className="h-8 w-8 rounded-full border-b-2 border-primary-600 animate-spin" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                      Uploading...
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {photo.name}
+                                </div>
                               </div>
                             ))}
                           {proposalStatus !== 'sent' && (
