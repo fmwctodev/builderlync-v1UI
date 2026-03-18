@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { CatalogItem } from '../../../shared/store/services/catalogApi';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5175/api';
 
@@ -28,7 +29,7 @@ export interface Proposal {
   id: number;
   type: string;
   title: string;
-  status: 'incomplete' | 'complete' | 'sent' | 'signed';
+  status: 'incomplete' | 'complete' | 'sent' | 'signed' | 'lost';
   signature_status?: 'not_sent' | 'pending_signature' | 'viewed' | 'signed' | 'declined' | 'expired' | 'voided';
   signature_status_updated_at?: string;
   identifier: string;
@@ -65,6 +66,51 @@ export interface UpdateProposalRequest {
   address?: Address;
   contractor_signature?: ContractorSignature;
 }
+
+const getCatalogFinalUnitCost = (catalogItem: CatalogItem): string => {
+  const preTaxCost = Number(catalogItem.preTaxCost || 0);
+  const materialPurchaseTax = Number(catalogItem.materialPurchaseTax || 0);
+  const finalUnitCost = preTaxCost + (preTaxCost * materialPurchaseTax) / 100;
+
+  return Number.isFinite(finalUnitCost) ? finalUnitCost.toFixed(2) : '0.00';
+};
+
+const mapCatalogItemToProposalItem = (catalogItem: CatalogItem) => ({
+  id: crypto.randomUUID(),
+  name: catalogItem.name,
+  description: catalogItem.description || '',
+  mapping: '',
+  coverage: catalogItem.coverage?.toString() || '',
+  unitCost: getCatalogFinalUnitCost(catalogItem),
+  unit: catalogItem.unit || 'square',
+  qty: '1',
+  salesTax: catalogItem.salesTax?.toString() || '0',
+  visible: true,
+  checked: false,
+  catalogItemId: String(catalogItem.id),
+  pricingSource: 'catalog_live',
+  priceSyncedAt: new Date().toISOString(),
+});
+
+const normalizeProposalSections = (sections: any) => ({
+  ...(sections && typeof sections === 'object' ? sections : {}),
+  settings:
+    sections && typeof sections === 'object' && sections.settings && typeof sections.settings === 'object'
+      ? sections.settings
+      : {},
+  sections:
+    sections && typeof sections === 'object' && Array.isArray(sections.sections)
+      ? sections.sections
+      : [],
+  items:
+    sections && typeof sections === 'object' && Array.isArray(sections.items)
+      ? sections.items
+      : [],
+  upgrades:
+    sections && typeof sections === 'object' && Array.isArray(sections.upgrades)
+      ? sections.upgrades
+      : [],
+});
 
 export const proposalsApi = {
   async createProposal(data: CreateProposalRequest): Promise<Proposal> {
@@ -222,5 +268,25 @@ export const proposalsApi = {
       console.error('Error unlinking proposal from opportunity:', error);
       throw error;
     }
+  },
+
+  async addCatalogItemsToProposal(proposalId: number, catalogItems: CatalogItem[]): Promise<Proposal> {
+    if (!catalogItems.length) {
+      throw new Error('No catalog items provided');
+    }
+
+    const proposal = await this.getProposalById(proposalId);
+    const normalizedSections = normalizeProposalSections(proposal.sections);
+    const nextItems = [
+      ...normalizedSections.items,
+      ...catalogItems.map(mapCatalogItemToProposalItem),
+    ];
+
+    return this.updateProposal(proposalId, {
+      sections: {
+        ...normalizedSections,
+        items: nextItems,
+      },
+    });
   }
 };
