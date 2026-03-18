@@ -17,10 +17,7 @@ import {
   deleteJobEvent,
   Event,
 } from "../../../shared/store/services/eventsApi";
-import {
-  getContacts,
-  Contact,
-} from "../../../shared/store/services/contactsApi";
+import ContactSearchDropdown from "../components/ContactSearchDropdown";
 
 interface CalendarEvent {
   id: string;
@@ -38,6 +35,7 @@ interface CalendarEvent {
 }
 
 type ViewType = "daily" | "weekly" | "monthly";
+const ALL_CONTACT_TYPES: string[] = [];
 
 const Calendars: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -46,7 +44,6 @@ const Calendars: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
@@ -95,15 +92,14 @@ const Calendars: React.FC = () => {
     }
   };
 
-  const fetchContacts = async () => {
-    try {
-      const response = await getContacts("", "", 1, 1000);
-      console.log("response", response);
-      setContacts(response.data.contacts || []);
-    } catch (error: any) {
-      console.error("Error fetching contacts:", error);
-      setToast({ message: "Failed to load contacts", type: "error" });
+  const getEventContactId = (event: Event) => {
+    const rawContactId = (event as any).contact_id ?? event.contactId;
+    if (rawContactId === null || rawContactId === undefined || rawContactId === "") {
+      return undefined;
     }
+
+    const parsedContactId = Number(rawContactId);
+    return Number.isNaN(parsedContactId) ? undefined : parsedContactId;
   };
 
   const fetchEvents = async () => {
@@ -285,7 +281,7 @@ const Calendars: React.FC = () => {
     console.log("Event data:", event);
     console.log("Staff list:", staff);
     const selectedJob = jobs.find((job) => job.id === (event as any).job_id);
-    const selectedContact = contacts.find((c) => c.id === (event as any).contact_id);
+    const eventContactId = getEventContactId(event);
     // Since event doesn't have createdBy/createdByName, use first staff member as default
     const defaultStaff = staff.length > 0 ? staff[0] : null;
     console.log("Default staff:", defaultStaff);
@@ -294,8 +290,13 @@ const Calendars: React.FC = () => {
     const formDataToSet = {
       type: event.type || "meeting",
       title: event.title,
-      contactId: selectedContact ? Number(selectedContact.id) : undefined,
-      contactName: selectedContact ? (selectedContact.fullName || selectedContact.full_name) : "",
+      contactId: eventContactId,
+      contactName:
+        event.contact?.full_name ||
+        (event as any).contact_name ||
+        (event as any).contacts?.full_name ||
+        event.contactName ||
+        "",
       startDate: (event as any).start_date || event.startDate,
       startTime: (event as any).start_time || event.startTime,
       endDate: (event as any).end_date || event.endDate,
@@ -439,7 +440,6 @@ const Calendars: React.FC = () => {
   useEffect(() => {
     fetchStaff();
     fetchJobs();
-    fetchContacts();
     fetchEvents();
   }, []);
 
@@ -993,30 +993,26 @@ const Calendars: React.FC = () => {
                     <User className="w-4 h-4 mr-2" />
                     Contact (Optional)
                   </label>
-                  <select
-                    value={formData.contactId || ""}
-                    onChange={(e) => {
-                      const selectedContact = contacts.find(
-                        (c) => String(c.id) === e.target.value,
-                      );
+                  <ContactSearchDropdown
+                    selectedContact={
+                      formData.contactId
+                        ? {
+                            id: String(formData.contactId),
+                            name: formData.contactName || `Contact #${formData.contactId}`,
+                          }
+                        : null
+                    }
+                    onSelectContact={(contact) => {
                       setFormData({
                         ...formData,
-                        contactId: selectedContact ? Number(selectedContact.id) : undefined,
-                        contactName: selectedContact
-                          ? selectedContact.fullName || selectedContact.full_name
-                          : "",
+                        contactId: contact ? Number(contact.id) : undefined,
+                        contactName: contact ? contact.name : "",
                       });
                     }}
-                    className="input w-full focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="">Select a contact (optional)</option>
-                    {contacts.map((contact) => (
-                      <option key={contact.id} value={String(contact.id)}>
-                        {contact.fullName}{" "}
-                        {contact.email ? `(${contact.email})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                    contactTypes={ALL_CONTACT_TYPES}
+                    placeholder="Search contacts..."
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-4">

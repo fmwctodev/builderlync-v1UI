@@ -2,12 +2,26 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
+export interface EventContact {
+  id: number | string;
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  address?: string | null;
+}
+
 export interface Event {
   id?: number;
   type: string;
   title: string;
   contactId?: number;
   contactName?: string;
+  contact?: EventContact | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contactCompany?: string | null;
+  contactAddress?: string | null;
   startDate: string;
   startTime: string;
   endDate: string;
