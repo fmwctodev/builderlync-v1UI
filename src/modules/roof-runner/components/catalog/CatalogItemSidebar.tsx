@@ -415,8 +415,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
               </label>
               <input
                 type="number"
-                value={formData.coverage || 0}
-                onChange={(e) => handleChange('coverage', parseFloat(e.target.value) || 0)}
+                value={formData.coverage === 0 ? '' : formData.coverage || ''}
+                placeholder="0"
+                onChange={(e) => handleChange('coverage', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                 onBlur={() => handleBlur('coverage')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
@@ -441,8 +442,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
               </label>
               <input
                 type="number"
-                value={formData.waste || 0}
-                onChange={(e) => handleChange('waste', parseFloat(e.target.value) || 0)}
+                value={formData.waste === 0 ? '' : formData.waste || ''}
+                placeholder="0"
+                onChange={(e) => handleChange('waste', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                 onBlur={() => handleBlur('waste')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
@@ -470,8 +472,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                 <input
                   type="number"
-                  value={formData.preTaxCost || 0}
-                  onChange={(e) => handleChange('preTaxCost', parseFloat(e.target.value) || 0)}
+                  value={formData.preTaxCost === 0 ? '' : formData.preTaxCost || ''}
+                  placeholder="0"
+                  onChange={(e) => handleChange('preTaxCost', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   onBlur={() => handleBlur('preTaxCost')}
                   className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 />
@@ -485,8 +488,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.materialPurchaseTax || 0}
-                  onChange={(e) => handleChange('materialPurchaseTax', parseFloat(e.target.value) || 0)}
+                  value={formData.materialPurchaseTax === 0 ? '' : formData.materialPurchaseTax || ''}
+                  placeholder="0"
+                  onChange={(e) => handleChange('materialPurchaseTax', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   onBlur={() => handleBlur('materialPurchaseTax')}
                   className="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 />
@@ -502,8 +506,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
             <div className="relative">
               <input
                 type="number"
-                value={formData.salesTax || 0}
-                onChange={(e) => handleChange('salesTax', parseFloat(e.target.value) || 0)}
+                value={formData.salesTax === 0 ? '' : formData.salesTax || ''}
+                placeholder="0"
+                onChange={(e) => handleChange('salesTax', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                 onBlur={() => handleBlur('salesTax')}
                 className="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
