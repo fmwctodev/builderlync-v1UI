@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, Plus, X, AlertTriangle, Settings, FileText } from 'lucide-react';
+import { Send, Users, Plus, X, AlertTriangle, Settings, FileText, Smile, Tag } from 'lucide-react';
 import { SnippetSelector } from './SnippetSelector';
 import { useNavigate } from 'react-router-dom';
 import { smtpApi } from '../services/smtpApi';
 import { CreateTeamModal } from './CreateTeamModal';
+import { TagDropdown } from './TagDropdown';
+import { EmojiPicker } from './EmojiPicker';
 
 interface TeamMessageInputProps {
   onSend: (message: string, metadata: any) => void;
@@ -20,6 +22,8 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
   const [error, setError] = useState<string | null>(null);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [showSnippetSelector, setShowSnippetSelector] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   useEffect(() => {
     loadTeams();
@@ -45,7 +49,7 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
 
     try {
       await smtpApi.sendTeamMessage(selectedTeam, subject, message, messageType);
-      
+
       onSend(message, {
         teamId: selectedTeam,
         messageType,
@@ -157,34 +161,77 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
         />
       </div>
 
-      {/* Send Button */}
+      {/* Toolbar and Send Button */}
       <div className="flex justify-between items-center">
-        <button 
-          onClick={() => setShowSnippetSelector(true)}
-          className="p-2 text-gray-500 hover:text-gray-700"
-          title="Insert snippet"
-        >
-          <FileText className="w-5 h-5" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowSnippetSelector(true)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+            title="Insert snippet"
+          >
+            <FileText className="w-5 h-5" />
+          </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+              className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Insert emoji"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  setMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }}
+                onClose={() => setShowEmojiPicker(false)}
+                position="top"
+              />
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}
+              className="p-2 text-gray-500 hover:text-gray-700 transition-colors" title="Insert tag"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+            {showTagDropdown && (
+              <TagDropdown
+                onSelect={(val) => {
+                  setMessage(prev => prev + val);
+                  setShowTagDropdown(false);
+                }}
+                onClose={() => setShowTagDropdown(false)}
+                position="top"
+              />
+            )}
+          </div>
+        </div>
+
         <div className="flex space-x-3">
-        <button
-          onClick={() => {setMessage(''); setSubject('');}}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          Clear
-        </button>
-        <button
-          onClick={handleSend}
-          disabled={!message.trim() || !selectedTeam || sending || (messageType === 'email' && !subject.trim())}
-          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Users className="w-4 h-4" />
-          <span>{sending ? 'Sending...' : `Send ${messageType.toUpperCase()} to Team`}</span>
-        </button>
+          <button
+            onClick={() => { setMessage(''); setSubject(''); }}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            Clear
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={!message.trim() || !selectedTeam || sending || (messageType === 'email' && !subject.trim())}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Users className="w-4 h-4" />
+            <span>{sending ? 'Sending...' : `Send ${messageType.toUpperCase()} to Team`}</span>
+          </button>
         </div>
       </div>
 
-      <CreateTeamModal 
+      <CreateTeamModal
         isOpen={showCreateTeam}
         onClose={() => {
           console.log('Modal close called');
@@ -207,4 +254,3 @@ export function TeamMessageInput({ onSend }: TeamMessageInputProps) {
     </div>
   );
 }
-

@@ -24,6 +24,7 @@ export function SierraAiModule() {
       case 'overview':
         return (
           <OverviewPage
+            agent={layoutState.agent}
             agentStatus={layoutState.agentStatus}
             onToggleStatus={layoutState.onToggleStatus}
             onNavigate={(tab) => console.log('Navigate to:', tab)}
@@ -46,9 +47,10 @@ export function SierraAiModule() {
       default:
         return (
           <OverviewPage
+            agent={layoutState.agent}
             agentStatus={layoutState.agentStatus}
             onToggleStatus={layoutState.onToggleStatus}
-            onNavigate={() => {}}
+            onNavigate={() => { }}
           />
         );
     }

@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Send, FileText, Paperclip, Smile, DollarSign, Plus, Sparkles, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Send, FileText, Paperclip, Smile, DollarSign, Plus, Sparkles, ChevronDown, Tag } from 'lucide-react';
+import { TagDropdown } from '../../../../shared/components/TagDropdown';
+import { EmojiPicker } from '../../../../shared/components/EmojiPicker';
 
 interface MessageInputSMSProps {
   onSend: (message: string, metadata: any) => void;
   fromNumber?: string;
   toNumber?: string;
-  contactName?: string;
 }
 
-export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: MessageInputSMSProps) {
+export function MessageInputSMS({ onSend, fromNumber, toNumber }: MessageInputSMSProps) {
   const [message, setMessage] = useState('');
   const [selectedFromNumber, setSelectedFromNumber] = useState(fromNumber || '+1 813-527-9352');
   const [selectedToNumber, setSelectedToNumber] = useState(toNumber || '');
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
 
@@ -177,9 +180,44 @@ export function MessageInputSMS({ onSend, fromNumber, toNumber, contactName }: M
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Attach file">
             <Paperclip className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji">
-            <Smile className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  setMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }}
+                onClose={() => setShowEmojiPicker(false)}
+                position="top"
+              />
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert tag"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+            {showTagDropdown && (
+              <TagDropdown
+                onSelect={(val) => {
+                  setMessage(prev => prev + val);
+                  setShowTagDropdown(false);
+                }}
+                onClose={() => setShowTagDropdown(false)}
+                position="top"
+              />
+            )}
+          </div>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Payment">
             <DollarSign className="w-5 h-5" />
           </button>
