@@ -169,6 +169,18 @@ export const UserImport: React.FC = () => {
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
 
+  const normalizeHeader = (value: string) =>
+    String(value || '')
+      .toLowerCase()
+      .replace(/\uFEFF/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const getValue = (row: Record<string, string>, aliases: string[]): string => {
+    const aliasSet = new Set(aliases.map(normalizeHeader));
+    const entry = Object.entries(row).find(([key]) => aliasSet.has(normalizeHeader(key)));
+    return entry ? String(entry[1] || '').trim() : '';
+  };
+
   const mapImportedJobRows = (rows: Array<Record<string, string>>, sourceName: string) =>
     rows.map((row) => {
       const firstName = (row['Customer / First name'] || '').trim();
@@ -208,18 +220,6 @@ export const UserImport: React.FC = () => {
         details: detailsParts.join(' | '),
       };
     });
-
-  const normalizeHeader = (value: string) =>
-    String(value || '')
-      .toLowerCase()
-      .replace(/\uFEFF/g, '')
-      .replace(/[^a-z0-9]/g, '');
-
-  const getValue = (row: Record<string, string>, aliases: string[]): string => {
-    const aliasSet = new Set(aliases.map(normalizeHeader));
-    const entry = Object.entries(row).find(([key]) => aliasSet.has(normalizeHeader(key)));
-    return entry ? String(entry[1] || '').trim() : '';
-  };
 
   const mapImportedContactRows = (rows: Array<Record<string, string>>, sourceName: string) =>
     rows
