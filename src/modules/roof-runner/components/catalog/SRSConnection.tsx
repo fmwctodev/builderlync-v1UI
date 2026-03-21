@@ -7,7 +7,9 @@ interface SRSConnectionProps {
 }
 
 export default function SRSConnection({ onConnectionSuccess, onClose }: SRSConnectionProps) {
-  const [customerCode, setCustomerCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,7 +19,19 @@ export default function SRSConnection({ onConnectionSuccess, onClose }: SRSConne
     setError('');
 
     try {
-      const result = await srsService.saveCustomerProfile(customerCode.trim());
+      const trimmedAccountNumber = accountNumber.trim();
+      const trimmedInvoiceNumber = invoiceNumber.trim();
+
+      if (!trimmedAccountNumber || !trimmedInvoiceNumber || !invoiceDate) {
+        setError('Account number, invoice number, and invoice date are required.');
+        return;
+      }
+
+      const result = await srsService.saveCustomerProfile(
+        trimmedAccountNumber,
+        trimmedInvoiceNumber,
+        invoiceDate
+      );
       
       if (result.success && result.data?.connected) {
         onConnectionSuccess();
@@ -37,25 +51,55 @@ export default function SRSConnection({ onConnectionSuccess, onClose }: SRSConne
         <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Connect to SRS Distribution</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Enter your SRS customer code to enable pricing and ordering.
+            Enter your account details to verify and enable SRS pricing and ordering.
           </p>
         </div>
 
         <form onSubmit={handleConnect} className="space-y-4 px-6 py-5">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Customer Code
+              Account Number
             </label>
             <input
               type="text"
-              value={customerCode}
-              onChange={(e) => setCustomerCode(e.target.value)}
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
-              placeholder="Enter your SRS customer code"
+              placeholder="Enter your SRS account number"
               autoComplete="off"
               required
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Example: X000000</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Invoice Number
+            </label>
+            <input
+              type="text"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+              placeholder="Enter a recent invoice number"
+              autoComplete="off"
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Example: INV123456</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Invoice Date
+            </label>
+            <input
+              type="date"
+              value={invoiceDate}
+              onChange={(e) => setInvoiceDate(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Use the date from that invoice.</p>
           </div>
 
           {error && (

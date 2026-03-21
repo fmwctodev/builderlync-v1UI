@@ -31,7 +31,7 @@ const Integrations: React.FC = () => {
   const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
-  const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; customerCode?: string }>({ connected: false });
+  const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; accountNumber?: string }>({ connected: false });
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
@@ -202,8 +202,8 @@ const Integrations: React.FC = () => {
     try {
       const result = await srsService.getCustomerProfile();
       if (result?.success && result.data?.connected) {
-        const customerCode = result.data?.profile?.customer_code || result.data?.profile?.customerCode;
-        setSrsStatus({ connected: true, customerCode });
+        const accountNumber = result.data?.profile?.customer_code || result.data?.profile?.customerCode;
+        setSrsStatus({ connected: true, accountNumber });
         return;
       }
       setSrsStatus({ connected: false });
@@ -614,9 +614,9 @@ const Integrations: React.FC = () => {
               </p>
             )}
 
-            {integration.id === 'srs-distribution' && integration.connected && srsStatus.customerCode && (
+            {integration.id === 'srs-distribution' && integration.connected && srsStatus.accountNumber && (
               <p className="text-xs text-green-600 dark:text-green-400 mb-4">
-                Customer Code: {srsStatus.customerCode}
+                Account Number: {srsStatus.accountNumber}
               </p>
             )}
 
