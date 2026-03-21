@@ -1,5 +1,7 @@
 interface SRSCredentials {
-  customerCode: string;
+  accountNumber: string;
+  invoiceNumber: string;
+  invoiceDate: string;
 }
 
 interface SRSBranch {
@@ -22,7 +24,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176
 class SRSService {
   async authenticate(credentials: SRSCredentials): Promise<{ success: boolean; user?: SRSUser; message?: string }> {
     try {
-      const result = await this.saveCustomerProfile(credentials.customerCode);
+      const result = await this.saveCustomerProfile(
+        credentials.accountNumber,
+        credentials.invoiceNumber,
+        credentials.invoiceDate
+      );
       if (result.success && result.data?.connected) {
         return {
           success: true,
@@ -94,7 +100,31 @@ class SRSService {
     }
   }
 
-  async saveCustomerProfile(customerCode: string): Promise<{ success: boolean; data?: any; message?: string }> {
+  async validateCustomer(
+    accountNumber: string,
+    invoiceNumber: string,
+    invoiceDate: string
+  ): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/srs/validate-customer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ accountNumber, invoiceNumber, invoiceDate })
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Failed to validate SRS customer profile' };
+    }
+  }
+
+  async saveCustomerProfile(
+    accountNumber: string,
+    invoiceNumber: string,
+    invoiceDate: string
+  ): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
       const response = await fetch(`${API_BASE_URL}/srs/customer`, {
         method: 'POST',
@@ -102,7 +132,7 @@ class SRSService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ customerCode })
+        body: JSON.stringify({ accountNumber, invoiceNumber, invoiceDate })
       });
       return response.json();
     } catch (error) {
