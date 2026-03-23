@@ -12,9 +12,11 @@ import JobCamReportsIndex from './pages/job-cam/JobCamReportsIndex';
 import JobCamTemplates from './pages/job-cam/JobCamTemplates';
 import JobCamSharing from './pages/job-cam/JobCamSharing';
 import Measurements from './pages/Measurements';
-import Proposals from './pages/Proposals';
-import ProposalBuilder from './pages/ProposalBuilder';
-import AiProposalGenerator from './pages/AiProposalGenerator';
+import ProposalsHome from './pages/proposals/ProposalsHome';
+import ProposalsListScreen from './pages/proposals/ProposalsListScreen';
+import MobileProposalBuilder from './pages/proposals/MobileProposalBuilder';
+import MobileAiProposalGenerator from './pages/proposals/MobileAiProposalGenerator';
+import ProposalDetailScreen from './pages/proposals/ProposalDetailScreen';
 import MaterialOrders from './pages/MaterialOrders';
 import Calendars from './pages/CalendarsNew';
 import Jobs from './pages/Jobs';
@@ -76,10 +78,12 @@ export function RoofRunnerModule() {
         <Route path="instant-estimator/:id/manage/materials/:materialId/edit" element={<EditMaterial />} />
         <Route path="instant-estimator/:id/manage/materials" element={<MaterialsList />} />
         <Route path="measurements" element={<Measurements />} />
-        <Route path="proposals" element={<Proposals />} />
-        <Route path="proposals/ai-generate" element={<AiProposalGenerator />} />
-        <Route path="proposals/new" element={<ProposalBuilder />} />
-        <Route path="proposals/:proposalId/edit" element={<ProposalBuilder />} />
+        <Route path="proposals" element={<ProposalsHome />} />
+        <Route path="proposals/all" element={<ProposalsListScreen />} />
+        <Route path="proposals/ai-generate" element={<MobileAiProposalGenerator />} />
+        <Route path="proposals/new" element={<MobileProposalBuilder />} />
+        <Route path="proposals/:proposalId/edit" element={<MobileProposalBuilder />} />
+        <Route path="proposals/:proposalId/preview" element={<ProposalDetailScreen />} />
         <Route path="material-orders" element={<MaterialOrders />} />
         <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<Automations />} />
