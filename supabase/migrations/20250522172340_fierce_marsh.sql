@@ -1,0 +1,3 @@
+-- Migration: fierce_marsh
+-- This migration was applied directly to the remote database
+-- Creating placeholder to maintain migration history consistency

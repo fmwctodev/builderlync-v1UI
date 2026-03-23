@@ -1,0 +1,3 @@
+-- Migration: divine_cliff
+-- This migration was applied directly to the remote database
+-- Creating placeholder to maintain migration history consistency

@@ -1,0 +1,156 @@
+import React, { useState, useEffect } from 'react';
+import { Package, Truck, ChevronRight, Search, Filter, CheckCircle } from 'lucide-react';
+import { OrderDetailsModal } from './abc-supply';
+import { ABCSupplyOrder, fetchRecentOrders } from '../services/abcSupplyApi';
+
+interface OrderHistoryProps {
+  onBack: () => void;
+}
+
+const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [orders, setOrders] = useState<ABCSupplyOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<ABCSupplyOrder | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      const fetchedOrders = await fetchRecentOrders('', 10);
+      setOrders(fetchedOrders);
+    };
+    loadOrders();
+  }, []);
+
+  const handleOrderClick = (order: ABCSupplyOrder) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'processing': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'shipped': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'delivered': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
+      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'processing': return <Package className="h-4 w-4" />;
+      case 'shipped': return <Truck className="h-4 w-4" />;
+      case 'delivered': return <CheckCircle className="h-4 w-4" />;
+      default: return <Package className="h-4 w-4" />;
+    }
+  };
+
+  const filteredOrders = orders.filter(order =>
+    searchQuery === '' ||
+    order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.items.some(item => item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
+        <button
+          onClick={onBack}
+          className="text-white hover:text-white text-sm mb-2"
+        >
+          ← Back to Dashboard
+        </button>
+        <h1 className="text-2xl font-bold text-white">Order History</h1>
+        <p className="mt-2 text-gray-400">View and track your orders</p>
+
+        <div className="mt-4 flex gap-2">
+          <div className="relative flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full bg-primary-700 dark:bg-primary-600 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 bg-primary-800 dark:bg-primary-700 border border-gray-600 rounded-md hover:bg-primary-700 dark:hover:bg-primary-600">
+            <Filter size={16} />
+            Filter
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-primary-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        {filteredOrders.length > 0 ? (
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {filteredOrders.map((order) => (
+              <div
+                key={order.id}
+                onClick={() => handleOrderClick(order)}
+                className="p-6 hover:bg-primary-50 dark:hover:bg-primary-700 transition cursor-pointer"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Order #{order.orderNumber}
+                      </span>
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                        {getStatusIcon(order.status)}
+                        <span className="capitalize">{order.status}</span>
+                      </div>
+                    </div>
+
+                    <p className="font-medium text-primary-600 dark:text-primary-400 mb-2">
+                      ${order.total.toFixed(2)} - {order.items.length} items
+                    </p>
+
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      <div className="font-medium mb-1">Items:</div>
+                      {order.items.map((item) => (
+                        <div key={item.id} className="ml-2">
+                          {'\u2022'} {item.description} (Qty: {item.quantity})
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div>Ordered: {new Date(order.createdAt).toLocaleDateString()}</div>
+                      {order.status !== 'delivered' && order.estimatedDeliveryDate && (
+                        <div>Est. Delivery: {new Date(order.estimatedDeliveryDate).toLocaleDateString()}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center ml-4">
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 text-center">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {searchQuery ? 'No orders found matching your search.' : 'No orders found'}
+            </p>
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+            >
+              Start Shopping
+            </button>
+          </div>
+        )}
+      </div>
+
+      <OrderDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        order={selectedOrder}
+      />
+    </div>
+  );
+};
+
+export default OrderHistory;

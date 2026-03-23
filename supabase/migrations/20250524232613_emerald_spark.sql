@@ -1,0 +1,3 @@
+-- Migration: emerald_spark
+-- This migration was applied directly to the remote database
+-- Creating placeholder to maintain migration history consistency

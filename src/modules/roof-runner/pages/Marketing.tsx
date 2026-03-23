@@ -1,0 +1,70 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { FileText, Zap, Sparkles } from 'lucide-react';
+import { FormsAndFunnels } from '../../marketing/pages/FormsAndFunnels';
+import SierraMarketingDashboard from '../../marketing/pages/SierraMarketingDashboard';
+import SierraSocialAIModule from '../../marketing/social/SierraSocialAIModule';
+
+const Marketing: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'sierra';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const tabs = [
+    { id: 'sierra', label: 'Sierra Marketing AI', icon: Zap },
+    { id: 'sierra-social', label: 'Sierra Social AI', icon: Sparkles },
+    { id: 'forms-funnels', label: 'Forms & Funnels', icon: FileText },
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId });
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
+        </div>
+
+        {/* Sub Navigation */}
+        <div className="flex items-center gap-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary-600 text-white rounded-t-lg'
+                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                }`}
+              >
+                <Icon size={16} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'sierra' && <SierraMarketingDashboard />}
+        {activeTab === 'sierra-social' && <SierraSocialAIModule />}
+        {activeTab === 'forms-funnels' && <FormsAndFunnels />}
+      </div>
+    </div>
+  );
+};
+
+export default Marketing;

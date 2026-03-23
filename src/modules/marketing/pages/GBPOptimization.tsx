@@ -1,0 +1,79 @@
+import React from 'react';
+import { ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+export function GBPOptimization() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          Google Business Profile Optimization
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
+          Easily connect your Google Business Profile to start managing your local presence.
+        </p>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center justify-center px-6 py-16">
+        {/* Illustration */}
+        <div className="mb-8">
+          <div className="relative">
+            {/* Desk and Cat Illustration */}
+            <svg width="400" height="300" viewBox="0 0 400 300" className="text-gray-300 dark:text-gray-600">
+              {/* Background elements */}
+              <rect x="300" y="60" width="80" height="100" rx="4" fill="currentColor" opacity="0.3" />
+              <rect x="320" y="40" width="40" height="60" rx="4" fill="#FCD34D" />
+              <rect x="340" y="80" width="20" height="40" rx="2" fill="currentColor" opacity="0.4" />
+              
+              {/* Desk */}
+              <rect x="100" y="180" width="200" height="80" rx="8" fill="currentColor" opacity="0.4" />
+              <rect x="90" y="250" width="220" height="20" rx="4" fill="currentColor" opacity="0.3" />
+              
+              {/* Computer Screen */}
+              <rect x="120" y="120" width="160" height="100" rx="8" fill="white" stroke="currentColor" strokeWidth="2" />
+              <rect x="130" y="130" width="140" height="80" rx="4" fill="currentColor" opacity="0.1" />
+              
+              {/* Cat */}
+              <ellipse cx="200" cy="200" rx="25" ry="20" fill="currentColor" opacity="0.6" />
+              <circle cx="190" cy="190" r="15" fill="currentColor" opacity="0.7" />
+              <circle cx="210" cy="190" r="15" fill="currentColor" opacity="0.7" />
+              <polygon points="185,180 195,170 205,180" fill="currentColor" opacity="0.7" />
+              <polygon points="205,180 215,170 225,180" fill="currentColor" opacity="0.7" />
+              <circle cx="188" cy="185" r="2" fill="white" />
+              <circle cx="212" cy="185" r="2" fill="white" />
+              <ellipse cx="200" cy="195" rx="3" ry="2" fill="white" />
+              
+              {/* Plant */}
+              <rect x="350" y="200" width="8" height="40" fill="currentColor" opacity="0.4" />
+              <ellipse cx="354" cy="190" rx="12" ry="8" fill="currentColor" opacity="0.5" />
+              <ellipse cx="354" cy="185" rx="8" ry="6" fill="currentColor" opacity="0.6" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Empty State Content */}
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Nothing to see here!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+            Add new business to see how you can later optimize it better for a great online visibility.
+          </p>
+          
+          {/* Integrate GBP Button */}
+          <button 
+            onClick={() => navigate('/marketing/integrations')}
+            className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Integrate GBP
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
