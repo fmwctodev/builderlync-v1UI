@@ -49,7 +49,7 @@ function MessageText({ content }: { content: string }) {
           return <p key={i} className="font-semibold text-white mt-1">{line.slice(2, -2)}</p>;
         }
         if (line.startsWith('- ') || line.startsWith('• ')) {
-          return <p key={i} className="ml-4 before:content-['•'] before:mr-2 before:text-cyan-500">{line.slice(2)}</p>;
+          return <p key={i} className="ml-4 before:content-['•'] before:mr-2 before:text-primary-500">{line.slice(2)}</p>;
         }
         if (!line) return <br key={i} />;
         return <p key={i}>{line}</p>;
@@ -75,7 +75,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-500">
-          <div className="w-8 h-8 border-2 border-slate-600 border-t-cyan-500 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-slate-600 border-t-primary-500 rounded-full animate-spin" />
           <span className="text-sm">Loading conversation...</span>
         </div>
       </div>
@@ -87,7 +87,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center max-w-sm px-6">
           <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-4">
-            <Bot size={28} className="text-cyan-500" />
+            <Bot size={28} className="text-primary-500" />
           </div>
           <h3 className="text-white font-semibold mb-2">Sierra Social AI</h3>
           <p className="text-slate-400 text-sm leading-relaxed">
@@ -119,7 +119,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
           return (
             <div key={msg.id} className="flex justify-end">
               <div className="max-w-[70%]">
-                <div className="bg-cyan-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
+                <div className="bg-primary-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
                   {msg.content}
                 </div>
                 <p className="text-xs text-slate-600 text-right mt-1">{formatRelativeTime(msg.created_at)}</p>
@@ -134,7 +134,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
         return (
           <div key={msg.id} className="flex gap-3">
             <div className="w-7 h-7 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot size={14} className="text-cyan-400" />
+              <Bot size={14} className="text-primary-400" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3">
@@ -162,7 +162,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
       {sending && (
         <div className="flex gap-3">
           <div className="w-7 h-7 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0">
-            <Bot size={14} className="text-cyan-400" />
+            <Bot size={14} className="text-primary-400" />
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />

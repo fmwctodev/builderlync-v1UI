@@ -73,7 +73,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
               key={i}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-700 border border-slate-600 rounded-full text-xs text-slate-300"
             >
-              {att.type === 'youtube' ? <Youtube size={12} className="text-red-400" /> : <Link size={12} className="text-cyan-400" />}
+              {att.type === 'youtube' ? <Youtube size={12} className="text-red-400" /> : <Link size={12} className="text-primary-400" />}
               <span className="max-w-[160px] truncate">{att.title ?? att.url}</span>
               <button
                 onClick={() => removeAttachment(i)}
@@ -94,13 +94,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addUrlAttachment()}
             placeholder={urlType === 'youtube' ? 'Paste YouTube URL...' : 'Paste URL to analyze...'}
-            className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+            className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-primary-500"
             autoFocus
           />
           <button
             onClick={addUrlAttachment}
             disabled={!urlInput.trim()}
-            className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white text-sm rounded-lg"
+            className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm rounded-lg"
           >
             Add
           </button>
@@ -129,7 +129,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
                 onClick={() => { setUrlType('url'); setShowUrlInput(true); setShowAttachMenu(false); }}
                 className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
               >
-                <Link size={14} className="text-cyan-400" />
+                <Link size={14} className="text-primary-400" />
                 Paste URL
               </button>
               <button
@@ -158,14 +158,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
           placeholder="Ask Sierra to create social content, suggest ideas, or repurpose your content..."
           rows={1}
           disabled={disabled}
-          className="flex-1 resize-none bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+          className="flex-1 resize-none bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-colors disabled:opacity-50"
           style={{ maxHeight: '200px' }}
         />
 
         <button
           onClick={handleSend}
           disabled={!value.trim() || sending || disabled}
-          className="p-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex-shrink-0"
+          className="p-2.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex-shrink-0"
           title="Send (Enter)"
         >
           {sending ? (

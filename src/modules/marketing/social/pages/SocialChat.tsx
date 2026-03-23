@@ -201,7 +201,7 @@ const SocialChat: React.FC<SocialChatProps> = ({ orgId, userId }) => {
           </h2>
           <button
             onClick={handleNewThread}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-xs rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs rounded-lg transition-colors"
           >
             <Plus size={13} />
             New chat

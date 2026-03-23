@@ -41,7 +41,7 @@ const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
         <span className="text-sm font-semibold text-slate-200">Conversations</span>
         <button
           onClick={onNewThread}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-primary-400 hover:bg-slate-700 transition-colors"
           title="New conversation"
         >
           <Plus size={16} />
@@ -67,7 +67,7 @@ const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
             <p className="text-slate-500 text-xs mb-4">Start chatting with Sierra AI to generate social content</p>
             <button
               onClick={onNewThread}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors"
             >
               New conversation
             </button>
