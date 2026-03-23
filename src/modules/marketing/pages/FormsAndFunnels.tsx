@@ -500,12 +500,6 @@ const FormsLibraryContent: React.FC = () => {
                   <Plus size={16} />
                   <span>+ New Form</span>
                 </button>
-                <button
-                  onClick={() => navigate(`/org/${orgSlug}/marketing/forms/builder/new`)}
-                  className="inline-flex items-center space-x-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold"
-                >
-                  Go to Forms Builder
-                </button>
               </div>
             </div>
           ) : (
