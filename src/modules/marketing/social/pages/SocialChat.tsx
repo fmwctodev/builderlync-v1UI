@@ -180,7 +180,7 @@ const SocialChat: React.FC<SocialChatProps> = ({ orgId, userId }) => {
   );
 
   return (
-    <div className="flex h-full bg-slate-900 overflow-hidden">
+    <div className="flex h-full bg-white dark:bg-slate-900 overflow-hidden">
       <ThreadSidebar
         threads={threads}
         activeThreadId={activeThreadId}
@@ -195,8 +195,8 @@ const SocialChat: React.FC<SocialChatProps> = ({ orgId, userId }) => {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700 bg-slate-800/50">
-          <h2 className="text-sm font-medium text-slate-200">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+          <h2 className="text-sm font-medium text-gray-800 dark:text-slate-200">
             {threads.find((t) => t.id === activeThreadId)?.title ?? 'New conversation'}
           </h2>
           <button

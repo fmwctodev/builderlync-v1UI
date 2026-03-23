@@ -65,19 +65,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
   };
 
   return (
-    <div className="bg-slate-800 border-t border-slate-700 p-4">
+    <div className="bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 p-4">
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {attachments.map((att, i) => (
             <div
               key={i}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-700 border border-slate-600 rounded-full text-xs text-slate-300"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-full text-xs text-gray-700 dark:text-slate-300"
             >
-              {att.type === 'youtube' ? <Youtube size={12} className="text-red-400" /> : <Link size={12} className="text-primary-400" />}
+              {att.type === 'youtube' ? <Youtube size={12} className="text-red-400" /> : <Link size={12} className="text-primary-500 dark:text-primary-400" />}
               <span className="max-w-[160px] truncate">{att.title ?? att.url}</span>
               <button
                 onClick={() => removeAttachment(i)}
-                className="text-slate-500 hover:text-slate-300 ml-0.5"
+                className="text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 ml-0.5"
               >
                 <X size={10} />
               </button>
@@ -94,7 +94,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addUrlAttachment()}
             placeholder={urlType === 'youtube' ? 'Paste YouTube URL...' : 'Paste URL to analyze...'}
-            className="flex-1 px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-primary-500"
+            className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500"
             autoFocus
           />
           <button
@@ -106,7 +106,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
           </button>
           <button
             onClick={() => setShowUrlInput(false)}
-            className="p-1.5 text-slate-400 hover:text-slate-200"
+            className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
           >
             <X size={16} />
           </button>
@@ -117,33 +117,33 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
         <div className="relative">
           <button
             onClick={() => setShowAttachMenu((v) => !v)}
-            className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
             title="Attach"
           >
             <Paperclip size={18} />
           </button>
 
           {showAttachMenu && (
-            <div className="absolute bottom-full left-0 mb-2 bg-slate-700 border border-slate-600 rounded-xl shadow-xl overflow-hidden min-w-[180px] z-10">
+            <div className="absolute bottom-full left-0 mb-2 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl shadow-xl overflow-hidden min-w-[180px] z-10">
               <button
                 onClick={() => { setUrlType('url'); setShowUrlInput(true); setShowAttachMenu(false); }}
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-white transition-colors"
               >
-                <Link size={14} className="text-primary-400" />
+                <Link size={14} className="text-primary-500 dark:text-primary-400" />
                 Paste URL
               </button>
               <button
                 onClick={() => { setUrlType('youtube'); setShowUrlInput(true); setShowAttachMenu(false); }}
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-white transition-colors"
               >
                 <Youtube size={14} className="text-red-400" />
                 YouTube
               </button>
               <button
                 onClick={() => setShowAttachMenu(false)}
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-white transition-colors"
               >
-                <Upload size={14} className="text-slate-400" />
+                <Upload size={14} className="text-gray-500 dark:text-slate-400" />
                 Upload File
               </button>
             </div>
@@ -158,7 +158,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
           placeholder="Ask Sierra to create social content, suggest ideas, or repurpose your content..."
           rows={1}
           disabled={disabled}
-          className="flex-1 resize-none bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-colors disabled:opacity-50"
+          className="flex-1 resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:border-primary-500 transition-colors disabled:opacity-50"
           style={{ maxHeight: '200px' }}
         />
 
@@ -176,7 +176,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, sending, disabled }) => {
         </button>
       </div>
 
-      <p className="text-xs text-slate-600 mt-2 ml-1">
+      <p className="text-xs text-gray-400 dark:text-slate-600 mt-2 ml-1">
         Enter to send · Shift+Enter for new line
       </p>
     </div>

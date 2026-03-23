@@ -43,10 +43,10 @@ function formatRelativeTime(iso: string): string {
 function MessageText({ content }: { content: string }) {
   const lines = content.split('\n');
   return (
-    <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+    <div className="text-sm text-gray-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
       {lines.map((line, i) => {
         if (line.startsWith('**') && line.endsWith('**')) {
-          return <p key={i} className="font-semibold text-white mt-1">{line.slice(2, -2)}</p>;
+          return <p key={i} className="font-semibold text-gray-900 dark:text-white mt-1">{line.slice(2, -2)}</p>;
         }
         if (line.startsWith('- ') || line.startsWith('• ')) {
           return <p key={i} className="ml-4 before:content-['•'] before:mr-2 before:text-primary-500">{line.slice(2)}</p>;
@@ -74,8 +74,8 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-slate-500">
-          <div className="w-8 h-8 border-2 border-slate-600 border-t-primary-500 rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-slate-500">
+          <div className="w-8 h-8 border-2 border-gray-300 dark:border-slate-600 border-t-primary-500 rounded-full animate-spin" />
           <span className="text-sm">Loading conversation...</span>
         </div>
       </div>
@@ -86,11 +86,11 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center max-w-sm px-6">
-          <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center mx-auto mb-4">
             <Bot size={28} className="text-primary-500" />
           </div>
-          <h3 className="text-white font-semibold mb-2">Sierra Social AI</h3>
-          <p className="text-slate-400 text-sm leading-relaxed">
+          <h3 className="text-gray-900 dark:text-white font-semibold mb-2">Sierra Social AI</h3>
+          <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed">
             Ask me to create social content for any platform, repurpose your existing content, or suggest ideas based on your brand.
           </p>
           <div className="mt-6 flex flex-col gap-2">
@@ -101,7 +101,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
             ].map((suggestion) => (
               <button
                 key={suggestion}
-                className="text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                className="text-left px-3 py-2 bg-gray-50 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
               >
                 {suggestion}
               </button>
@@ -122,7 +122,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 <div className="bg-primary-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
                   {msg.content}
                 </div>
-                <p className="text-xs text-slate-600 text-right mt-1">{formatRelativeTime(msg.created_at)}</p>
+                <p className="text-xs text-gray-400 dark:text-slate-600 text-right mt-1">{formatRelativeTime(msg.created_at)}</p>
               </div>
             </div>
           );
@@ -133,11 +133,11 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
         return (
           <div key={msg.id} className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot size={14} className="text-primary-400" />
+            <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 flex items-center justify-center flex-shrink-0 mt-1">
+              <Bot size={14} className="text-primary-500 dark:text-primary-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3">
                 {text && <MessageText content={text} />}
               </div>
               {drafts.length > 0 && (
@@ -153,7 +153,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   ))}
                 </div>
               )}
-              <p className="text-xs text-slate-600 mt-1 ml-1">{formatRelativeTime(msg.created_at)}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-600 mt-1 ml-1">{formatRelativeTime(msg.created_at)}</p>
             </div>
           </div>
         );
@@ -161,13 +161,13 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
       {sending && (
         <div className="flex gap-3">
-          <div className="w-7 h-7 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0">
-            <Bot size={14} className="text-primary-400" />
+          <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 flex items-center justify-center flex-shrink-0">
+            <Bot size={14} className="text-primary-500 dark:text-primary-400" />
           </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
-            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
+          <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
+            <span className="w-1.5 h-1.5 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
+            <span className="w-1.5 h-1.5 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
           </div>
         </div>
       )}

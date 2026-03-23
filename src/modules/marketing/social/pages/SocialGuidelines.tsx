@@ -82,17 +82,17 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-40">
-        <div className="w-6 h-6 border-2 border-slate-600 border-t-cyan-500 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-gray-300 dark:border-slate-600 border-t-primary-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 bg-slate-800/50">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
         <div>
-          <h2 className="text-base font-semibold text-white">Brand Guidelines</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Define your brand voice, style, and content rules for AI generation</p>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Brand Guidelines</h2>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Define your brand voice, style, and content rules for AI generation</p>
         </div>
         <div className="flex items-center gap-2">
           {saved && (
@@ -102,11 +102,11 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             </span>
           )}
           {saving && (
-            <span className="text-xs text-slate-500">Saving...</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">Saving...</span>
           )}
           <button
             onClick={() => save(guidelines)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-xl transition-colors"
           >
             <Save size={14} />
             Save
@@ -116,24 +116,24 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
 
       <div className="flex-1 overflow-y-auto p-5">
         <div className="max-w-3xl mx-auto space-y-8">
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Brand Voice</h3>
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Brand Voice</h3>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Voice description</label>
+              <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Voice description</label>
               <textarea
                 value={guidelines.brand_voice ?? ''}
                 onChange={(e) => updateField('brand_voice', e.target.value)}
                 placeholder="Describe your brand voice in a few sentences..."
                 rows={3}
-                className="w-full resize-none bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500 transition-colors"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-2">Tone preferences by platform</label>
+              <label className="text-xs text-gray-500 dark:text-slate-400 block mb-2">Tone preferences by platform</label>
               <div className="space-y-2">
                 {PLATFORMS.map((platform) => (
                   <div key={platform} className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400 capitalize w-28">{platform.replace('_', ' ')}</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400 capitalize w-28">{platform.replace('_', ' ')}</span>
                     <select
                       value={(guidelines.tone_preferences as Record<string, string>)?.[platform] ?? ''}
                       onChange={(e) =>
@@ -142,7 +142,7 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
                           [platform]: e.target.value,
                         } as SocialGuideline['tone_preferences'])
                       }
-                      className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                      className="flex-1 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 dark:text-slate-200 focus:outline-none focus:border-primary-500"
                     >
                       <option value="">Use default tone</option>
                       {TONES.map((t) => (
@@ -155,7 +155,7 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             </div>
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
             <GuidelineBlockEditor
               label="Content Themes"
               description="Topics and themes to regularly cover"
@@ -165,7 +165,7 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             />
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
             <GuidelineBlockEditor
               label="Writing Style Rules"
               description="Specific writing guidelines for AI to follow"
@@ -175,7 +175,7 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             />
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
             <GuidelineBlockEditor
               label="Image Style"
               description="Visual style preferences for AI-generated images"
@@ -185,8 +185,8 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             />
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Words & Phrases</h3>
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Words & Phrases</h3>
             <GuidelineBlockEditor
               label="Words to Avoid"
               blocks={toBlocks(guidelines.words_to_avoid as StringArray)}
@@ -195,8 +195,8 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             />
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white">CTAs & Hashtags</h3>
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">CTAs & Hashtags</h3>
             <GuidelineBlockEditor
               label="CTA Rules"
               description="Call-to-action guidelines"
@@ -206,7 +206,7 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
             />
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1.5">Preferred hashtags</label>
+                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1.5">Preferred hashtags</label>
                 <textarea
                   value={((guidelines.hashtag_preferences as { preferred?: string[] })?.preferred ?? []).join('\n')}
                   onChange={(e) =>
@@ -217,11 +217,11 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
                   }
                   rows={4}
                   placeholder="#roofing&#10;#stormrepair"
-                  className="w-full resize-none bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500"
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1.5">Banned hashtags</label>
+                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1.5">Banned hashtags</label>
                 <textarea
                   value={((guidelines.hashtag_preferences as { banned?: string[] })?.banned ?? []).join('\n')}
                   onChange={(e) =>
@@ -232,17 +232,17 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
                   }
                   rows={4}
                   placeholder="#cheap&#10;#discount"
-                  className="w-full resize-none bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500"
                 />
               </div>
             </div>
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Platform Notes</h3>
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Platform Notes</h3>
             {PLATFORMS.map((platform) => (
               <div key={platform}>
-                <label className="text-xs text-slate-400 block mb-1 capitalize">{platform.replace('_', ' ')}</label>
+                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1 capitalize">{platform.replace('_', ' ')}</label>
                 <input
                   value={(guidelines.platform_specific_notes as Record<string, string>)?.[platform] ?? ''}
                   onChange={(e) =>
@@ -252,32 +252,32 @@ const SocialGuidelines: React.FC<SocialGuidelinesProps> = ({ orgId }) => {
                     } as SocialGuideline['platform_specific_notes'])
                   }
                   placeholder={`Notes for ${platform}...`}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500"
                 />
               </div>
             ))}
           </section>
 
-          <section className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Seasonal & Competitor Rules</h3>
+          <section className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Seasonal & Competitor Rules</h3>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Seasonal rules</label>
+              <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Seasonal rules</label>
               <textarea
                 value={guidelines.seasonal_rules ?? ''}
                 onChange={(e) => updateField('seasonal_rules', e.target.value)}
                 rows={3}
                 placeholder="e.g. During storm season (June-Sept), prioritize emergency response content..."
-                className="w-full resize-none bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="w-full resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Competitor rules</label>
+              <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Competitor rules</label>
               <textarea
                 value={guidelines.competitor_rules ?? ''}
                 onChange={(e) => updateField('competitor_rules', e.target.value)}
                 rows={3}
                 placeholder="e.g. Never mention competitors by name. Focus on our unique value..."
-                className="w-full resize-none bg-slate-700 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="w-full resize-none bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary-500"
               />
             </div>
           </section>

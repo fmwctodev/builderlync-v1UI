@@ -6,10 +6,10 @@ interface ThreadSidebarProps {
   threads: SocialAIThread[];
   activeThreadId: string | null;
   loading: boolean;
-  onSelectThread: (id: string) => void;
-  onNewThread: () => void;
-  onArchiveThread: (id: string) => void;
-  onDeleteThread: (id: string) => void;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+  onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
   showOwner?: boolean;
   currentUserId?: string;
 }
@@ -29,19 +29,19 @@ const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
   threads,
   activeThreadId,
   loading,
-  onSelectThread,
-  onNewThread,
-  onArchiveThread,
-  onDeleteThread,
+  onSelect,
+  onNew,
+  onArchive,
+  onDelete,
   showOwner,
 }) => {
   return (
-    <div className="bg-slate-800 border-r border-slate-700 h-full flex flex-col w-72 flex-shrink-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-        <span className="text-sm font-semibold text-slate-200">Conversations</span>
+    <div className="bg-gray-50 dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 h-full flex flex-col w-72 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+        <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">Conversations</span>
         <button
-          onClick={onNewThread}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-primary-400 hover:bg-slate-700 transition-colors"
+          onClick={onNew}
+          className="p-1.5 rounded-lg text-gray-400 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
           title="New conversation"
         >
           <Plus size={16} />
@@ -53,20 +53,20 @@ const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-4 bg-slate-700 rounded w-3/4 mb-1" />
-                <div className="h-3 bg-slate-700/50 rounded w-1/3" />
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-1" />
+                <div className="h-3 bg-gray-100 dark:bg-slate-700/50 rounded w-1/3" />
               </div>
             ))}
           </div>
         ) : threads.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 py-12 text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center mb-3">
-              <MessageSquare size={20} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center mb-3">
+              <MessageSquare size={20} className="text-gray-400 dark:text-slate-400" />
             </div>
-            <p className="text-slate-400 text-sm font-medium mb-1">No conversations yet</p>
-            <p className="text-slate-500 text-xs mb-4">Start chatting with Sierra AI to generate social content</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm font-medium mb-1">No conversations yet</p>
+            <p className="text-gray-400 dark:text-slate-500 text-xs mb-4">Start chatting with Sierra AI to generate social content</p>
             <button
-              onClick={onNewThread}
+              onClick={onNew}
               className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg transition-colors"
             >
               New conversation
@@ -80,9 +80,9 @@ const ThreadSidebar: React.FC<ThreadSidebarProps> = ({
                 thread={thread}
                 isActive={thread.id === activeThreadId}
                 showOwner={showOwner}
-                onSelect={() => onSelectThread(thread.id)}
-                onArchive={() => onArchiveThread(thread.id)}
-                onDelete={() => onDeleteThread(thread.id)}
+                onSelect={() => onSelect(thread.id)}
+                onArchive={() => onArchive(thread.id)}
+                onDelete={() => onDelete(thread.id)}
               />
             ))}
           </div>
@@ -114,20 +114,22 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
   return (
     <div
       className={`group relative flex items-start gap-2 px-3 py-2.5 mx-2 rounded-lg cursor-pointer transition-colors ${
-        isActive ? 'bg-slate-700' : 'hover:bg-slate-700/50'
+        isActive
+          ? 'bg-gray-200 dark:bg-slate-700'
+          : 'hover:bg-gray-100 dark:hover:bg-slate-700/50'
       }`}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-200 truncate font-medium leading-tight">
+        <p className="text-sm text-gray-800 dark:text-slate-200 truncate font-medium leading-tight">
           {thread.title || 'New conversation'}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-slate-500">{relativeTime(thread.updated_at)}</span>
+          <span className="text-xs text-gray-400 dark:text-slate-500">{relativeTime(thread.updated_at)}</span>
           {showOwner && thread.owner_name && (
-            <span className="text-xs px-1.5 py-0.5 bg-slate-600 text-slate-300 rounded">
+            <span className="text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-slate-300 rounded">
               {thread.owner_name}
             </span>
           )}
@@ -138,14 +140,14 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
             onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-600 transition-colors"
+            className="p-1 rounded text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
             title="Archive"
           >
             <Archive size={12} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-slate-600 transition-colors"
+            className="p-1 rounded text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
             title="Delete"
           >
             <Trash2 size={12} />

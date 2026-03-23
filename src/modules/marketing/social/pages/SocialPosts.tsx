@@ -40,9 +40,9 @@ const PostRow: React.FC<{
   const style = STATUS_STYLES[post.status] ?? STATUS_STYLES['draft'];
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 hover:bg-slate-800/50 border-b border-slate-800 transition-colors group">
+    <div className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 transition-colors group">
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-200 truncate">{post.body || post.hook_text || 'Untitled draft'}</p>
+        <p className="text-sm text-gray-800 dark:text-slate-200 truncate">{post.body || post.hook_text || 'Untitled draft'}</p>
         <div className="flex items-center gap-2 mt-1">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${style.bg} ${style.text}`}>
             {post.status === 'draft' && <Edit3 size={10} />}
@@ -53,38 +53,38 @@ const PostRow: React.FC<{
             <span className="capitalize">{post.status.replace('_', ' ')}</span>
           </span>
           {post.scheduled_at_utc && (
-            <span className="text-xs text-slate-500">{formatDate(post.scheduled_at_utc)}</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">{formatDate(post.scheduled_at_utc)}</span>
           )}
           {post.ai_generated && (
-            <span className="text-xs text-cyan-600 bg-cyan-600/10 px-1.5 py-0.5 rounded">AI</span>
+            <span className="text-xs text-primary-600 bg-primary-600/10 px-1.5 py-0.5 rounded">AI</span>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-1">
         {postAccounts.slice(0, 4).map((acc) => (
-          <div key={acc.id} className="w-6 h-6 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center">
+          <div key={acc.id} className="w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 flex items-center justify-center">
             <ProviderIcon provider={acc.provider} size={12} />
           </div>
         ))}
         {postAccounts.length > 4 && (
-          <span className="text-xs text-slate-500">+{postAccounts.length - 4}</span>
+          <span className="text-xs text-gray-400 dark:text-slate-500">+{postAccounts.length - 4}</span>
         )}
       </div>
 
       <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+          className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
         >
           <MoreVertical size={16} />
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 bg-slate-700 border border-slate-600 rounded-xl shadow-xl overflow-hidden min-w-[160px] z-20">
+          <div className="absolute right-0 top-full mt-1 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl shadow-xl overflow-hidden min-w-[160px] z-20">
             {post.status === 'pending_approval' && (
               <button
                 onClick={() => { onApprove(post.id); setMenuOpen(false); }}
-                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-emerald-400 hover:bg-slate-600"
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-emerald-400 hover:bg-gray-200 dark:hover:bg-slate-600"
               >
                 <CheckCircle size={14} />
                 Approve
@@ -92,7 +92,7 @@ const PostRow: React.FC<{
             )}
             <button
               onClick={() => { onDuplicate(post.id); setMenuOpen(false); }}
-              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600"
+              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
             >
               <Copy size={14} />
               Duplicate
@@ -100,7 +100,7 @@ const PostRow: React.FC<{
             {(post.status === 'scheduled' || post.status === 'pending_approval') && (
               <button
                 onClick={() => { onCancel(post.id); setMenuOpen(false); }}
-                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-yellow-400 hover:bg-slate-600"
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-yellow-400 hover:bg-gray-200 dark:hover:bg-slate-600"
               >
                 <XCircle size={14} />
                 Cancel
@@ -108,7 +108,7 @@ const PostRow: React.FC<{
             )}
             <button
               onClick={() => { onDelete(post.id); setMenuOpen(false); }}
-              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-slate-600"
+              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-200 dark:hover:bg-slate-600"
             >
               <Trash2 size={14} />
               Delete
@@ -170,27 +170,27 @@ const SocialPosts: React.FC<SocialPostsProps> = ({ orgId }) => {
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-700 bg-slate-800/50">
-        <div className="flex items-center gap-2 flex-1 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2">
-          <Search size={14} className="text-slate-400 flex-shrink-0" />
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
+        <div className="flex items-center gap-2 flex-1 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2">
+          <Search size={14} className="text-gray-500 dark:text-slate-400 flex-shrink-0" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search posts..."
-            className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none"
           />
         </div>
 
-        <div className="flex gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
+        <div className="flex gap-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-1">
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
               className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                 statusFilter === opt.value
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
               }`}
             >
               {opt.label}
@@ -198,7 +198,7 @@ const SocialPosts: React.FC<SocialPostsProps> = ({ orgId }) => {
           ))}
         </div>
 
-        <button className="flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-xl transition-colors">
+        <button className="flex items-center gap-1.5 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-xl transition-colors">
           <Plus size={14} />
           New post
         </button>
@@ -207,10 +207,10 @@ const SocialPosts: React.FC<SocialPostsProps> = ({ orgId }) => {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-6 h-6 border-2 border-slate-600 border-t-cyan-500 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-300 dark:border-slate-600 border-t-primary-500 rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+          <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-slate-500">
             <Calendar size={28} className="mb-2 opacity-50" />
             <p className="text-sm">No posts found</p>
           </div>

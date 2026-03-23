@@ -52,16 +52,16 @@ const SierraSocialAIModule: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-700 bg-slate-800/60 overflow-x-auto">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+      <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                ? 'bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/50'
             }`}
           >
             {tab.icon}

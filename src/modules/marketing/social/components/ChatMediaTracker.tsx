@@ -59,9 +59,9 @@ const ChatMediaTracker: React.FC<ChatMediaTrackerProps> = ({ jobs, onJobsUpdated
   if (!jobs.length) return null;
 
   return (
-    <div className="border-t border-slate-700 px-4 py-2 bg-slate-800/80">
+    <div className="border-t border-gray-200 dark:border-slate-700 px-4 py-2 bg-gray-50/80 dark:bg-slate-800/80">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-slate-500 flex items-center gap-1">
+        <span className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1">
           <Film size={12} />
           Media
         </span>
@@ -100,7 +100,7 @@ const JobPill: React.FC<{ job: TrackedJob }> = ({ job }) => {
   }
 
   return (
-    <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-700 border border-slate-600 rounded-full text-xs text-slate-400">
+    <span className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-full text-xs text-gray-500 dark:text-slate-400">
       {job.status === 'generating' ? (
         <Loader2 size={11} className="animate-spin" />
       ) : (
