@@ -35,7 +35,7 @@ const reviewBadge: Record<string, string> = {
 };
 
 const categoryColor: Record<string, string> = {
-  before: 'bg-blue-100 text-blue-700',
+  before: 'bg-primary-100 text-primary-700',
   during: 'bg-amber-100 text-amber-700',
   after: 'bg-green-100 text-green-700',
   damage: 'bg-red-100 text-red-700',
@@ -134,7 +134,7 @@ const JobCamTimeline: React.FC = () => {
       key={photo.id}
       className={`relative group rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 aspect-square cursor-pointer border-2 transition-all ${
         selected.has(photo.id)
-          ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
+          ? 'border-primary-500 ring-2 ring-primary-200 dark:ring-primary-900'
           : 'border-transparent hover:border-gray-300 dark:hover:border-gray-500'
       }`}
       onClick={() => setDrawerPhoto(photo)}
@@ -155,7 +155,7 @@ const JobCamTimeline: React.FC = () => {
         onClick={e => { e.stopPropagation(); toggleSelect(photo.id); }}
       >
         {selected.has(photo.id) ? (
-          <CheckSquare size={18} className="text-blue-500 drop-shadow-md" />
+          <CheckSquare size={18} className="text-primary-500 drop-shadow-md" />
         ) : (
           <Square size={18} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md transition-opacity" />
         )}
@@ -187,7 +187,7 @@ const JobCamTimeline: React.FC = () => {
           </div>
         )}
         {photo.is_customer_shareable && (
-          <div title="Customer shareable" className="w-5 h-5 rounded bg-blue-500/90 flex items-center justify-center">
+          <div title="Customer shareable" className="w-5 h-5 rounded bg-primary-500/90 flex items-center justify-center">
             <Shield size={11} className="text-white" />
           </div>
         )}
@@ -226,7 +226,7 @@ const JobCamTimeline: React.FC = () => {
               placeholder="Search photos..."
               value={filters.search ?? ''}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value || undefined }))}
-              className="pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 w-full focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -340,7 +340,7 @@ const JobCamTimeline: React.FC = () => {
       </div>
 
       {selected.size > 0 && (
-        <div className="bg-blue-600 text-white px-6 py-2.5 flex items-center gap-4">
+        <div className="bg-primary-600 text-white px-6 py-2.5 flex items-center gap-4">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex gap-2 ml-auto flex-wrap">
             {[
@@ -361,7 +361,7 @@ const JobCamTimeline: React.FC = () => {
             <button onClick={selectAll} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full font-medium">
               Select All
             </button>
-            <button onClick={clearSelection} className="text-xs hover:text-blue-200">
+            <button onClick={clearSelection} className="text-xs hover:text-primary-200">
               <X size={14} />
             </button>
           </div>
@@ -379,7 +379,7 @@ const JobCamTimeline: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400">No photos found</p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="mt-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="mt-4 text-sm text-primary-600 dark:text-primary-400 hover:underline"
             >
               Upload the first photo
             </button>

@@ -16,7 +16,7 @@ function getSLAStatus(sla_breached: boolean, hours_remaining?: number): SLAStatu
 const CONFIG: Record<SLAStatus, { label: string; className: string; icon: React.ReactNode }> = {
   on_track: {
     label: 'On Track',
-    className: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+    className: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
     icon: <CheckCircle className="w-3 h-3" />,
   },
   due_soon: {

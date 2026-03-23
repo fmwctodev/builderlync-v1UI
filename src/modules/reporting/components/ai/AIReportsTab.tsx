@@ -176,7 +176,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
       {/* Generate Panel */}
       <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl border border-gray-200 dark:border-slate-700 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+          <Sparkles className="w-5 h-5 text-primary-500 dark:text-primary-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">Generate Report</span>
         </div>
 
@@ -188,7 +188,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             onKeyDown={handleKeyDown}
             placeholder="Describe the report you need... e.g., 'Sales performance breakdown by rep this quarter'"
             disabled={isGenerating}
-            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm disabled:opacity-50"
           />
 
           <div className="relative">
@@ -196,7 +196,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
               value={scope}
               onChange={(e) => setScope(e.target.value as ReportScope)}
               disabled={isGenerating}
-              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 cursor-pointer"
+              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 cursor-pointer"
             >
               {SCOPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -210,7 +210,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
               disabled={isGenerating}
-              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 cursor-pointer"
+              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 cursor-pointer"
             >
               {TIMEFRAME_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -222,7 +222,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim() || isGenerating}
-            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-all"
+            className="flex items-center gap-2 px-5 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-all"
           >
             {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
@@ -242,11 +242,11 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
         </div>
 
         {isGenerating && (
-          <div className="mt-4 bg-gray-50 dark:bg-slate-900/50 rounded-lg border border-cyan-500/20 p-6 flex flex-col items-center">
+          <div className="mt-4 bg-gray-50 dark:bg-slate-900/50 rounded-lg border border-primary-200 dark:border-primary-800/30 p-6 flex flex-col items-center">
             <div className="relative w-12 h-12 mb-3">
-              <div className="absolute inset-0 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
+              <div className="absolute inset-0 rounded-full border-2 border-primary-300 border-t-primary-600 animate-spin" />
               <div className="absolute inset-2 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <Sparkles className="w-4 h-4 text-primary-400" />
               </div>
             </div>
             <p className="text-gray-900 dark:text-white font-medium text-sm">Generating your report...</p>
@@ -265,7 +265,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search reports..."
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -273,7 +273,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
               hasActiveFilters
-                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
                 : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
             }`}
           >
@@ -287,7 +287,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             <select
               value={filters.category ?? ''}
               onChange={(e) => setFilters({ ...filters, category: e.target.value as AIReport['report_category'] || undefined })}
-              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">All Categories</option>
               {Object.entries(CATEGORY_LABELS).map(([v, l]) => (
@@ -298,7 +298,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             <select
               value={filters.scope ?? ''}
               onChange={(e) => setFilters({ ...filters, scope: e.target.value as ReportScope || undefined })}
-              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">All Scopes</option>
               {SCOPE_OPTIONS.map((opt) => (
@@ -309,7 +309,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             <select
               value={filters.status ?? ''}
               onChange={(e) => setFilters({ ...filters, status: e.target.value as AIReport['status'] || undefined })}
-              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">All Statuses</option>
               <option value="complete">Complete</option>
@@ -320,7 +320,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
             {hasActiveFilters && (
               <button
                 onClick={() => setFilters({})}
-                className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 text-sm"
+                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 text-sm"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear
@@ -331,7 +331,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
 
         {loadingReports ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-cyan-500 dark:text-cyan-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary-500 dark:text-primary-400 animate-spin" />
           </div>
         ) : reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -364,8 +364,8 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-teal-500/20 flex items-center justify-center flex-shrink-0">
-                            <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                          <div className="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-4 h-4 text-primary-500 dark:text-primary-400" />
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">{report.report_name}</p>

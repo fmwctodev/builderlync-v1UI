@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, Send, FileDown, Loader2, Check, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, FileDown, Loader2, Check, CreditCard as Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Proposal } from '../../../types/proposalIntegration';
 
@@ -71,7 +71,7 @@ export function ProposalBuilderHeader({
                 onChange={(e) => setTitleValue(e.target.value)}
                 onBlur={handleTitleSubmit}
                 onKeyDown={handleTitleKeyDown}
-                className="text-lg font-semibold bg-transparent border-b-2 border-blue-500 outline-none text-gray-900 dark:text-white px-1"
+                className="text-lg font-semibold bg-transparent border-b-2 border-primary-500 outline-none text-gray-900 dark:text-white px-1"
                 autoFocus
               />
             ) : (
@@ -122,7 +122,7 @@ export function ProposalBuilderHeader({
           </button>
 
           <button
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
           >
             <Send className="w-4 h-4" />
             Send

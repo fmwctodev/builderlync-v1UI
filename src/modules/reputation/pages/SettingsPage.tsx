@@ -224,7 +224,7 @@ export const SettingsPage: React.FC<Props> = ({
                 placeholder="Paste your Late API key…"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <button type="button" onClick={() => setShowKey((v) => !v)}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -232,7 +232,7 @@ export const SettingsPage: React.FC<Props> = ({
               </button>
             </div>
             <button onClick={handleConnectLate} disabled={!apiKey.trim() || savingKey}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 dark:disabled:bg-primary-800 text-white transition-colors">
               {savingKey && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Connect
             </button>
@@ -309,7 +309,7 @@ export const SettingsPage: React.FC<Props> = ({
                   value={settings?.default_ai_tone ?? 'concise'}
                   disabled={!canWriteSettings}
                   onChange={(e) => patch({ default_ai_tone: e.target.value as AITone })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                 >
                   {TONE_OPTIONS.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -335,7 +335,7 @@ export const SettingsPage: React.FC<Props> = ({
                     checked={settings?.auto_append_signature ?? false}
                     disabled={!canWriteSettings}
                     onChange={(e) => patch({ auto_append_signature: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
                   />
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     Auto-append signature to AI drafts
@@ -349,7 +349,7 @@ export const SettingsPage: React.FC<Props> = ({
                     value={settings?.default_signature ?? ''}
                     disabled={!canWriteSettings}
                     onChange={(e) => patch({ default_signature: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none disabled:opacity-50"
                   />
                 )}
               </div>
@@ -382,7 +382,7 @@ export const SettingsPage: React.FC<Props> = ({
                     value={settings?.sla_hours_positive ?? 48}
                     disabled={!canWriteSettings}
                     onChange={(e) => patch({ sla_hours_positive: Math.max(1, parseInt(e.target.value) || 48) })}
-                    className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                   />
                   <span className="text-xs text-gray-500 dark:text-gray-400">hours</span>
                 </div>
@@ -399,7 +399,7 @@ export const SettingsPage: React.FC<Props> = ({
                     value={settings?.sla_hours_negative ?? 12}
                     disabled={!canWriteSettings}
                     onChange={(e) => patch({ sla_hours_negative: Math.max(1, parseInt(e.target.value) || 12) })}
-                    className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                   />
                   <span className="text-xs text-gray-500 dark:text-gray-400">hours</span>
                 </div>
@@ -421,7 +421,7 @@ export const SettingsPage: React.FC<Props> = ({
             canWriteSettings ? (
               <button
                 onClick={() => setRuleModal({ open: true, rule: null })}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Rule
@@ -521,7 +521,7 @@ export const SettingsPage: React.FC<Props> = ({
                   value={settings?.escalation_email ?? ''}
                   disabled={!canWriteSettings}
                   onChange={(e) => patch({ escalation_email: e.target.value || null })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                 />
               </div>
 

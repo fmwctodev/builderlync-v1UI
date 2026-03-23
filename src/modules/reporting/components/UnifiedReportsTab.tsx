@@ -32,7 +32,7 @@ interface CombinedStats {
 const TYPE_CONFIG: Record<ReportType, { label: string; color: string; icon: React.ReactNode }> = {
   ai: {
     label: 'AI Report',
-    color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   call: {
@@ -42,7 +42,7 @@ const TYPE_CONFIG: Record<ReportType, { label: string; color: string; icon: Reac
   },
   appointment: {
     label: 'Appointments',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
     icon: <Calendar className="w-3.5 h-3.5" />,
   },
   lead_source: {
@@ -301,8 +301,8 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
     <div className="p-6 space-y-6 bg-gray-50 dark:bg-slate-900 min-h-full">
       <div className="grid grid-cols-4 gap-4">
         <StatCard
-          icon={<FileText className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />}
-          iconBg="bg-cyan-500/20"
+          icon={<FileText className="w-5 h-5 text-primary-500 dark:text-primary-400" />}
+          iconBg="bg-primary-500/20"
           label="Total Reports"
           value={stats.total}
         />
@@ -339,7 +339,7 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search reports..."
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -347,7 +347,7 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
                   typeFilter
-                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                    ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
                     : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
                 }`}
               >
@@ -360,7 +360,7 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                className="appearance-none pl-3 pr-8 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
               >
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -386,7 +386,7 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
             {hasFilters && (
               <button
                 onClick={() => { setTypeFilter(''); setSearch(''); }}
-                className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 text-sm"
+                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-500 text-sm"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear
@@ -397,7 +397,7 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">

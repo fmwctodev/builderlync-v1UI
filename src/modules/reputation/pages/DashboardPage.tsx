@@ -48,7 +48,7 @@ export const DashboardPage: React.FC<Props> = ({ orgId }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -84,8 +84,8 @@ export const DashboardPage: React.FC<Props> = ({ orgId }) => {
         <StatCard
           label="Total Reviews"
           value={stats.totalReviews}
-          icon={<MessageSquare className="w-5 h-5 text-blue-600" />}
-          color="text-blue-600 dark:text-blue-400"
+          icon={<MessageSquare className="w-5 h-5 text-primary-600" />}
+          color="text-primary-600 dark:text-primary-400"
         />
         <StatCard
           label="Unreplied"
@@ -152,7 +152,7 @@ export const DashboardPage: React.FC<Props> = ({ orgId }) => {
                     title={`${entry.date}: ${entry.count} review${entry.count !== 1 ? 's' : ''}`}
                   >
                     <div
-                      className="w-full bg-blue-400 dark:bg-blue-500 rounded-t group-hover:bg-blue-500 dark:group-hover:bg-blue-400 transition-colors"
+                      className="w-full bg-primary-400 dark:bg-primary-500 rounded-t group-hover:bg-primary-500 dark:group-hover:bg-primary-400 transition-colors"
                       style={{ height: `${Math.max(pct, 4)}%` }}
                     />
                   </div>

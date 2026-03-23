@@ -15,8 +15,8 @@ export const PlatformBadge: React.FC<Props> = ({ platform, size = 'sm' }) => {
     <span
       className={`inline-flex items-center gap-1 rounded-full font-medium ${base} ${
         isGoogle
-          ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-          : 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+          : 'bg-secondary-50 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300'
       }`}
     >
       {isGoogle ? (

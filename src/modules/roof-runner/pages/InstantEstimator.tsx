@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Settings, Edit, Copy, Trash2, ChevronLeft, ChevronRight, Star, Info, ExternalLink, Check } from 'lucide-react';
+import { Plus, X, Settings, CreditCard as Edit, Copy, Trash2, ChevronLeft, ChevronRight, Star, Info, ExternalLink, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { instantEstimatorsApi, type InstantEstimator } from '../services/instantEstimatorsApi';
 import Toast from '../../../shared/components/Toast';
@@ -393,7 +393,7 @@ const InstantEstimatorPage: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customer reviews</h3>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
+                    <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 rounded-full">
                       Beta
                     </span>
                   </div>

@@ -17,7 +17,7 @@ export const TemperatureSlider: React.FC<Props> = ({ value, onChange, disabled }
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500 dark:text-gray-400">Precise</span>
-        <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400">
+        <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
           {value.toFixed(1)} — {label}
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-400">Creative</span>
@@ -33,7 +33,7 @@ export const TemperatureSlider: React.FC<Props> = ({ value, onChange, disabled }
           onChange={(e) => onChange(steps[parseInt(e.target.value)])}
           className="w-full h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: `linear-gradient(to right, #06b6d4 ${pct}%, #e5e7eb ${pct}%)`,
+            background: `linear-gradient(to right, #dc2626 ${pct}%, #e5e7eb ${pct}%)`,
           }}
         />
       </div>

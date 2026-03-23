@@ -23,7 +23,7 @@ export const ReviewList: React.FC<Props> = ({
   if (loading && reviews.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center py-16">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -56,7 +56,7 @@ export const ReviewList: React.FC<Props> = ({
           <button
             onClick={onLoadMore}
             disabled={loading}
-            className="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Load more

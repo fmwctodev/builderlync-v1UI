@@ -113,7 +113,7 @@ export function MetaAdsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
       </div>
     );
   }
@@ -122,14 +122,14 @@ export function MetaAdsTab() {
     return (
       <div className="p-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
+            <BarChart3 className="w-8 h-8 text-primary-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Meta Ads Account Connected</h3>
           <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6">
             Connect your Meta Ads (Facebook) account to view real-time campaign performance, spend, reach, and conversion data.
           </p>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors">
             <Settings className="w-4 h-4" />
             Connect Meta Ads
           </button>
@@ -161,7 +161,7 @@ export function MetaAdsTab() {
                 onClick={() => setSelectedRange(r.days)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   selectedRange === r.days
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
@@ -178,8 +178,8 @@ export function MetaAdsTab() {
       {kpis && (
         <div className="grid grid-cols-4 gap-4">
           <KPICard
-            icon={<DollarSign className="w-5 h-5 text-blue-600" />}
-            iconBg="bg-blue-500/10"
+            icon={<DollarSign className="w-5 h-5 text-primary-600" />}
+            iconBg="bg-primary-500/10"
             label="Total Spend"
             value={formatCurrency(kpis.totalSpend)}
           />
@@ -249,7 +249,7 @@ export function MetaAdsTab() {
                   labelFormatter={(d) => new Date(d).toLocaleDateString()}
                   contentStyle={{ background: 'var(--tooltip-bg, #fff)', border: '1px solid #e5e7eb', borderRadius: 8 }}
                 />
-                <Bar dataKey="spend" fill="#2563eb" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="spend" fill="#dc2626" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -266,7 +266,7 @@ export function MetaAdsTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search campaigns..."
-              className="pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
         </div>

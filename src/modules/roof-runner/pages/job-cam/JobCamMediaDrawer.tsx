@@ -28,7 +28,7 @@ const phaseLabel: Record<PhotoPhase, string> = {
 };
 
 const categoryColors: Record<PhotoCategory, string> = {
-  before: 'bg-blue-100 text-blue-700',
+  before: 'bg-primary-100 text-primary-700',
   during: 'bg-amber-100 text-amber-700',
   after: 'bg-green-100 text-green-700',
   damage: 'bg-red-100 text-red-700',
@@ -195,7 +195,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
               </span>
             )}
             {photo.is_customer_shareable && (
-              <span className="flex items-center gap-1 text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium">
+              <span className="flex items-center gap-1 text-xs bg-primary-500 text-white px-2 py-0.5 rounded-full font-medium">
                 <Shield size={10} /> Shareable
               </span>
             )}
@@ -250,7 +250,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                       value={form.description}
                       onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                       rows={2}
-                      className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
 
@@ -270,7 +270,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                         onChange={e => setTagInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
                         placeholder="Add tag..."
-                        className="flex-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                       <button onClick={addTag} className="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
                         Add
@@ -314,7 +314,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                       onChange={e => setForm(f => ({ ...f, office_notes: e.target.value }))}
                       rows={2}
                       placeholder="Internal notes..."
-                      className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
 
@@ -346,7 +346,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                     <div className="space-y-2">
                       {[
                         { key: 'is_claim_relevant' as const, label: 'Claim Relevant', icon: Briefcase, color: 'text-orange-600' },
-                        { key: 'is_customer_shareable' as const, label: 'Customer Shareable', icon: Shield, color: 'text-blue-600' },
+                        { key: 'is_customer_shareable' as const, label: 'Customer Shareable', icon: Shield, color: 'text-primary-600' },
                         { key: 'is_marketing_approved' as const, label: 'Marketing Approved', icon: Star, color: 'text-green-600' },
                       ].map(flag => (
                         <label key={flag.key} className="flex items-center gap-3 cursor-pointer">
@@ -434,7 +434,7 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                       <span className={`flex items-center gap-1 text-xs ${photo.is_claim_relevant ? 'text-orange-600' : 'text-gray-300 dark:text-gray-600'}`}>
                         <Briefcase size={13} /> Claim
                       </span>
-                      <span className={`flex items-center gap-1 text-xs ${photo.is_customer_shareable ? 'text-blue-600' : 'text-gray-300 dark:text-gray-600'}`}>
+                      <span className={`flex items-center gap-1 text-xs ${photo.is_customer_shareable ? 'text-primary-600' : 'text-gray-300 dark:text-gray-600'}`}>
                         <Shield size={13} /> Shareable
                       </span>
                       <span className={`flex items-center gap-1 text-xs ${photo.is_marketing_approved ? 'text-green-600' : 'text-gray-300 dark:text-gray-600'}`}>

@@ -15,7 +15,7 @@ import { format, formatDistanceToNow, isPast } from 'date-fns';
 const shareModeConfig: Record<ShareMode, { label: string; color: string; description: string }> = {
   customer: {
     label: 'Customer',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
     description: 'Share approved photos with the homeowner',
   },
   claim: {
@@ -265,7 +265,7 @@ const JobCamSharing: React.FC = () => {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Active Links', value: activeLinks.length, icon: Link, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
-          { label: 'Total Views', value: links.reduce((sum, l) => sum + l.access_count, 0), icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+          { label: 'Total Views', value: links.reduce((sum, l) => sum + l.access_count, 0), icon: Eye, color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20' },
           { label: 'Revoked', value: revokedLinks.length + expiredLinks.length, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
         ].map(stat => (
           <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex items-center gap-4">
@@ -406,12 +406,12 @@ const JobCamSharing: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
+      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-primary-900 dark:text-primary-200 mb-2 flex items-center gap-2">
           <Shield size={15} />
           Access Security
         </h3>
-        <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-300">
+        <ul className="space-y-1 text-sm text-primary-800 dark:text-primary-300">
           <li>Links use unique tokens and cannot be guessed</li>
           <li>Revoked links immediately stop working</li>
           <li>Expired links are automatically deactivated</li>

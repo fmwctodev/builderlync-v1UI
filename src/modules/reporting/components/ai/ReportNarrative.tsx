@@ -16,7 +16,7 @@ export function ReportNarrative({ executiveSummary, insights, recommendations }:
       {executiveSummary && (
         <div className="bg-white dark:bg-slate-800/60 rounded-xl border border-gray-200 dark:border-slate-700/50 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <FileText className="w-4 h-4 text-cyan-400" />
+            <FileText className="w-4 h-4 text-primary-500" />
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Executive Summary</h3>
           </div>
           <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{executiveSummary}</p>

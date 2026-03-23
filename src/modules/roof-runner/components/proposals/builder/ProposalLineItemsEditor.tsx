@@ -80,7 +80,7 @@ export function ProposalLineItemsEditor({
               <tr
                 key={item.id}
                 className={`group hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
-                  item.source_tag === 'instant_estimator' ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''
+                  item.source_tag === 'instant_estimator' ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''
                 }`}
               >
                 <td className="px-2 py-3">
@@ -105,7 +105,7 @@ export function ProposalLineItemsEditor({
                       />
                     </div>
                     {item.source_tag === 'instant_estimator' && (
-                      <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                      <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded">
                         <Zap className="w-3 h-3" />
                         Auto
                       </span>
@@ -122,7 +122,7 @@ export function ProposalLineItemsEditor({
                     type="number"
                     value={item.quantity}
                     onChange={(e) => handleFieldChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm text-right text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm text-right text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                     min="0"
                     step="0.01"
                   />
@@ -132,7 +132,7 @@ export function ProposalLineItemsEditor({
                     type="text"
                     value={item.unit || ''}
                     onChange={(e) => handleFieldChange(item.id, 'unit', e.target.value)}
-                    className="w-full bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="ea"
                   />
                 </td>
@@ -143,7 +143,7 @@ export function ProposalLineItemsEditor({
                       type="number"
                       value={item.unit_price}
                       onChange={(e) => handleFieldChange(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                      className={`w-full bg-transparent border rounded pl-6 pr-2 py-1 text-sm text-right focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                      className={`w-full bg-transparent border rounded pl-6 pr-2 py-1 text-sm text-right focus:ring-1 focus:ring-primary-500 focus:border-primary-500 ${
                         item.unit_price === 0
                           ? 'border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400'
                           : 'border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white'
@@ -256,7 +256,7 @@ export function ProposalLineItemsEditor({
         ) : (
           <button
             onClick={() => setIsAddingItem(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg"
           >
             <Plus className="w-4 h-4" />
             Add Line Item

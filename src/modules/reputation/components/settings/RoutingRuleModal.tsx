@@ -87,7 +87,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
             <select
               value={form.platform ?? ''}
               onChange={(e) => set('platform', (e.target.value as Platform) || null)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Any platform</option>
               <option value="googlebusiness">Google Business</option>
@@ -108,7 +108,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
                   max={5}
                   value={form.min_rating}
                   onChange={(e) => set('min_rating', Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
               <span className="text-gray-400 mt-5">–</span>
@@ -120,7 +120,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
                   max={5}
                   value={form.max_rating}
                   onChange={(e) => set('max_rating', Math.min(5, Math.max(1, parseInt(e.target.value) || 5)))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -138,7 +138,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
                   onClick={() => setAssignMode(mode)}
                   className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
                     assignMode === mode
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -158,7 +158,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
               <select
                 value={form.assign_to_role ?? ''}
                 onChange={(e) => set('assign_to_role', e.target.value || null)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">Select role…</option>
                 <option value="admin">Admin</option>
@@ -176,7 +176,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
             <select
               value={form.priority}
               onChange={(e) => set('priority', e.target.value as Priority)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="low">Low</option>
               <option value="normal">Normal</option>
@@ -190,7 +190,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
               type="checkbox"
               checked={form.requires_manual_approval}
               onChange={(e) => set('requires_manual_approval', e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
             />
             <span className="text-xs text-gray-700 dark:text-gray-300">Requires manual approval before replying</span>
           </label>
@@ -210,7 +210,7 @@ export const RoutingRuleModal: React.FC<Props> = ({ orgId, rule, onSave, onClose
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white transition-colors"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {rule ? 'Save Changes' : 'Add Rule'}

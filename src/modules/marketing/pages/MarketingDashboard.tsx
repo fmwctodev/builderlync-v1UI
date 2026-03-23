@@ -38,7 +38,7 @@ const MarketingDashboard: React.FC = () => {
                 className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
                   activeTab === tab.id
                     ? 'bg-primary-600 text-white rounded-t-lg'
-                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 bg-gray-100 dark:bg-gray-700 rounded-t-lg'
                 }`}
               >
                 <Icon size={16} />

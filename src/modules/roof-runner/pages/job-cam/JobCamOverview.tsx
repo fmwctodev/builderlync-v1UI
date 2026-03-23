@@ -45,7 +45,7 @@ const categoryLabel: Record<string, string> = {
 };
 
 const categoryColor: Record<string, string> = {
-  before: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  before: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
   during: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   after: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   damage: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
@@ -137,8 +137,8 @@ const JobCamOverview: React.FC = () => {
           label="Jobs with media this week"
           value={stats?.jobsWithMediaThisWeek ?? 0}
           icon={Camera}
-          iconColor="text-blue-600"
-          bgColor="bg-blue-50 dark:bg-blue-900/20"
+          iconColor="text-primary-600"
+          bgColor="bg-primary-50 dark:bg-primary-900/20"
           onClick={() => setActiveFilter('all')}
         />
         <KPICard
