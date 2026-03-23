@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Edit2,
   X,
-  Upload
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -570,6 +571,13 @@ export const Users: React.FC = () => {
                               title="Import Data"
                             >
                               <Upload className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/super-admin/users/${user.id}/import/custom-jobs`)}
+                              className="text-amber-600 hover:text-amber-800 flex items-center gap-1"
+                              title="Import Custom Jobs"
+                            >
+                              <FileSpreadsheet className="w-4 h-4" />
                             </button>
                             {user.userType === 'staff' && (
                               <button
