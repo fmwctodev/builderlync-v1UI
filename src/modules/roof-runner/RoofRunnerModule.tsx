@@ -30,6 +30,9 @@ import ContactProfile from './pages/ContactProfile';
 import WorkOrders from './pages/WorkOrders';
 import Automations from './pages/Automations';
 import Opportunities from './pages/Opportunities';
+import Proposals from './pages/Proposals';
+import AiProposalGenerator from './pages/AiProposalGenerator';
+import ProposalBuilder from './pages/ProposalBuilder';
 import FileManager from './pages/FileManager';
 import { ReputationModule } from '../reputation/ReputationModule';
 import Marketing from './pages/Marketing';
@@ -77,6 +80,9 @@ export function RoofRunnerModule() {
         <Route path="work-orders" element={<WorkOrders />} />
         <Route path="automation" element={<Automations />} />
         <Route path="opportunities" element={<Opportunities />} />
+        <Route path="proposals" element={<Proposals />} />
+        <Route path="proposals/ai-generate" element={<AiProposalGenerator />} />
+        <Route path="proposals/:id" element={<ProposalBuilder />} />
         <Route path="marketing/*" element={<Marketing />} />
         <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
         <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
