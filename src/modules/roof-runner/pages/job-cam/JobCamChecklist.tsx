@@ -287,7 +287,7 @@ const JobCamChecklist: React.FC = () => {
                               {item.status === 'missing' && (
                                 <button
                                   onClick={() => navigate(`../../jobs/${jobId}?category=${item.templateItem.category ?? ''}`)}
-                                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                  className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
                                 >
                                   <Camera size={12} />
                                   Add photo

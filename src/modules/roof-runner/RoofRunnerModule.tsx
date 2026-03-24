@@ -4,9 +4,8 @@ import { store } from './store';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BlankPage from './pages/BlankPage';
-import JobCamOverview from './pages/job-cam/JobCamOverview';
-import JobCamTimeline from './pages/job-cam/JobCamTimeline';
-import JobCamChecklist from './pages/job-cam/JobCamChecklist';
+import JobCamHome from './pages/job-cam/JobCamHome';
+import JobDetailWorkspace from './pages/job-cam/JobDetailWorkspace';
 import JobCamReportBuilder from './pages/job-cam/JobCamReportBuilder';
 import JobCamReportsIndex from './pages/job-cam/JobCamReportsIndex';
 import JobCamTemplates from './pages/job-cam/JobCamTemplates';
@@ -61,13 +60,13 @@ export function RoofRunnerModule() {
         <Route path="jobs" element={<Jobs />} />
         <Route path="payments" element={<Payments />} />
         <Route path="ai-agents/*" element={<SierraAiModule />} />
-        <Route path="job-cam" element={<JobCamOverview />} />
-        <Route path="job-cam/jobs/:jobId" element={<JobCamTimeline />} />
-        <Route path="job-cam/jobs/:jobId/checklist" element={<JobCamChecklist />} />
+        <Route path="job-cam" element={<JobCamHome />} />
+        <Route path="job-cam/jobs/:jobId" element={<JobDetailWorkspace />} />
+        <Route path="job-cam/jobs/:jobId/reports/:reportId" element={<JobCamReportBuilder />} />
         <Route path="job-cam/reports" element={<JobCamReportsIndex />} />
         <Route path="job-cam/reports/:reportId" element={<JobCamReportBuilder />} />
         <Route path="job-cam/templates" element={<JobCamTemplates />} />
-        <Route path="job-cam/sharing" element={<JobCamSharing />} />
+        <Route path="job-cam/shared" element={<JobCamSharing />} />
         <Route path="instant-estimator" element={<InstantEstimator />} />
         <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
         <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />

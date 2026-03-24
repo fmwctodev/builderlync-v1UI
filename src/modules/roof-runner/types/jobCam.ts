@@ -5,7 +5,7 @@ export type ProcessingStatus = 'uploading' | 'uploaded' | 'processing' | 'ready'
 export type TemplateType = 'shotlist' | 'report' | 'job_preset';
 export type ReportType = 'inspection' | 'progress' | 'completion' | 'claim' | 'custom';
 export type ReportStatus = 'draft' | 'final';
-export type ShareMode = 'customer' | 'claim' | 'internal';
+export type ShareMode = 'customer' | 'claim' | 'internal' | 'gallery' | 'timeline' | 'single_photo' | 'report';
 export type AuditAction =
   | 'tag_edit'
   | 'flag_change'
@@ -14,7 +14,30 @@ export type AuditAction =
   | 'checklist_link'
   | 'report_add'
   | 'share_link_created'
-  | 'share_link_revoked';
+  | 'share_link_revoked'
+  | 'photo_uploaded'
+  | 'photo_deleted'
+  | 'file_uploaded'
+  | 'file_deleted'
+  | 'report_created'
+  | 'report_finalized';
+
+export type ActivityEventType =
+  | 'photo_uploaded'
+  | 'photo_deleted'
+  | 'photo_tagged'
+  | 'photo_reviewed'
+  | 'checklist_completed'
+  | 'report_created'
+  | 'report_finalized'
+  | 'file_uploaded'
+  | 'file_deleted'
+  | 'share_link_created'
+  | 'share_link_revoked'
+  | 'note_added'
+  | 'bulk_update';
+
+export type JobFileCategory = 'contract' | 'permit' | 'invoice' | 'inspection' | 'insurance' | 'warranty' | 'other';
 
 export interface JobPhoto {
   id: string;
@@ -51,6 +74,7 @@ export interface JobPhoto {
   is_marketing_approved: boolean;
   office_notes: string | null;
   checklist_item_id: string | null;
+  is_hidden_from_timeline: boolean;
   processing_status: ProcessingStatus;
   created_at: string;
   updated_at: string;
@@ -204,7 +228,50 @@ export interface BulkUpdatePayload {
   is_claim_relevant?: boolean;
   is_customer_shareable?: boolean;
   is_marketing_approved?: boolean;
+  is_hidden_from_timeline?: boolean;
   office_notes?: string;
+}
+
+export interface JobFile {
+  id: string;
+  user_id: string;
+  job_id: number;
+  file_url: string;
+  storage_path: string;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string | null;
+  category: JobFileCategory;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  uploader_email?: string;
+}
+
+export interface JobActivityEvent {
+  id: string;
+  job_id: number;
+  event_type: ActivityEventType;
+  user_id: string;
+  entity_id: string | null;
+  entity_type: string | null;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  user_email?: string;
+}
+
+export interface JobWithMediaSummary {
+  id: number;
+  name: string;
+  location: string | null;
+  contact_name: string | null;
+  status: string;
+  photo_count: number;
+  pending_review_count: number;
+  latest_photo_date: string | null;
+  latest_photo_url: string | null;
+  checklist_progress: number | null;
 }
 
 export interface CreateReportInput {
@@ -220,4 +287,12 @@ export interface CreateShareLinkInput {
   share_mode: ShareMode;
   recipient_label?: string;
   expires_at?: string;
+  photo_ids?: string[];
+  report_id?: string;
+}
+
+export interface UploadJobFileInput {
+  job_id: number;
+  category: JobFileCategory;
+  description?: string;
 }

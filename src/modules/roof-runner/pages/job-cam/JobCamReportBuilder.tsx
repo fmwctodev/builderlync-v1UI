@@ -110,7 +110,7 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ jobId, sectionId, reportId, o
                   onClick={() => toggle(photo.id)}
                   className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                     selected.has(photo.id)
-                      ? 'border-blue-500 ring-2 ring-blue-200'
+                      ? 'border-primary-500 ring-2 ring-primary-200'
                       : 'border-transparent hover:border-gray-300'
                   }`}
                 >
@@ -120,8 +120,8 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ jobId, sectionId, reportId, o
                     className="w-full h-full object-cover"
                   />
                   {selected.has(photo.id) && (
-                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                      <CheckCircle className="text-blue-500 drop-shadow" size={20} />
+                    <div className="absolute inset-0 bg-primary-500/20 flex items-center justify-center">
+                      <CheckCircle className="text-primary-500 drop-shadow" size={20} />
                     </div>
                   )}
                 </button>
@@ -353,7 +353,7 @@ const JobCamReportBuilder: React.FC = () => {
               value={newReportForm.title}
               onChange={e => setNewReportForm(f => ({ ...f, title: e.target.value }))}
               placeholder="e.g. Inspection Report - 123 Main St"
-              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -471,7 +471,7 @@ const JobCamReportBuilder: React.FC = () => {
               onBlur={handleSaveReport}
               placeholder="Add notes about this report..."
               rows={3}
-              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -491,7 +491,7 @@ const JobCamReportBuilder: React.FC = () => {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       onClick={() => setMediaPickerSection(section.id)}
-                      className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 px-2 py-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                     >
                       <ImagePlus size={13} />
                       Add photos
@@ -556,7 +556,7 @@ const JobCamReportBuilder: React.FC = () => {
                         ))}
                         <button
                           onClick={() => setMediaPickerSection(section.id)}
-                          className="aspect-video border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                          className="aspect-video border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
                         >
                           <ImagePlus size={20} />
                           <span className="text-xs mt-1">Add more</span>
@@ -565,7 +565,7 @@ const JobCamReportBuilder: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => setMediaPickerSection(section.id)}
-                        className="w-full py-8 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                        className="w-full py-8 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
                       >
                         <ImagePlus size={24} />
                         <span className="text-sm mt-2">Click to add photos</span>

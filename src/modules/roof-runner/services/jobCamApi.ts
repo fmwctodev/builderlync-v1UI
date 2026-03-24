@@ -14,6 +14,10 @@ import type {
   CreateReportInput,
   CreateShareLinkInput,
   AuditAction,
+  JobFile,
+  JobActivityEvent,
+  JobWithMediaSummary,
+  UploadJobFileInput,
 } from '../types/jobCam';
 
 async function getCurrentUserId(): Promise<string> {
@@ -497,5 +501,143 @@ export async function revokeShareLink(id: string): Promise<void> {
     .from('job_media_share_links')
     .update({ is_revoked: true })
     .eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchJobsWithMedia(): Promise<JobWithMediaSummary[]> {
+  const { data: photos, error: pErr } = await supabase!
+    .from('job_photos')
+    .select('job_id, review_status, capture_date, thumbnail_url, file_url')
+    .not('job_id', 'is', null)
+    .order('capture_date', { ascending: false });
+
+  if (pErr) throw pErr;
+
+  const { data: jobs, error: jErr } = await supabase!
+    .from('jobs')
+    .select('id, name, location, status, contact_id')
+    .order('updated_at', { ascending: false });
+
+  if (jErr) throw jErr;
+
+  const photosByJob = (photos ?? []).reduce<Record<number, typeof photos>>((acc, p) => {
+    const jid = p.job_id as number;
+    if (!acc[jid]) acc[jid] = [];
+    acc[jid]!.push(p);
+    return acc;
+  }, {});
+
+  const jobIds = Object.keys(photosByJob).map(Number);
+
+  return (jobs ?? [])
+    .filter((j: { id: number }) => jobIds.includes(j.id))
+    .map((j: { id: number; name: string; location: string | null; status: string }) => {
+      const jp = photosByJob[j.id] ?? [];
+      const pending = jp.filter(p => p.review_status === 'pending').length;
+      const latest = jp[0];
+      return {
+        id: j.id,
+        name: j.name,
+        location: j.location,
+        contact_name: null,
+        status: j.status,
+        photo_count: jp.length,
+        pending_review_count: pending,
+        latest_photo_date: latest?.capture_date ?? null,
+        latest_photo_url: latest?.thumbnail_url ?? latest?.file_url ?? null,
+        checklist_progress: null,
+      } as JobWithMediaSummary;
+    })
+    .sort((a, b) => {
+      const da = a.latest_photo_date ? new Date(a.latest_photo_date).getTime() : 0;
+      const db = b.latest_photo_date ? new Date(b.latest_photo_date).getTime() : 0;
+      return db - da;
+    });
+}
+
+export async function fetchJobFiles(jobId: number): Promise<JobFile[]> {
+  const { data, error } = await supabase!
+    .from('job_files')
+    .select('*')
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as JobFile[];
+}
+
+export async function uploadJobFile(
+  file: File,
+  input: UploadJobFileInput
+): Promise<JobFile> {
+  const userId = await getCurrentUserId();
+  const fileExt = file.name.split('.').pop();
+  const fileName = `files/${userId}/${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase!.storage
+    .from('job-photos')
+    .upload(fileName, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase!.storage
+    .from('job-photos')
+    .getPublicUrl(fileName);
+
+  const { data, error } = await supabase!
+    .from('job_files')
+    .insert({
+      user_id: userId,
+      job_id: input.job_id,
+      file_url: publicUrl,
+      storage_path: fileName,
+      file_name: file.name,
+      file_size: file.size,
+      mime_type: file.type,
+      category: input.category,
+      description: input.description ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as JobFile;
+}
+
+export async function deleteJobFile(id: string): Promise<void> {
+  const { error } = await supabase!.from('job_files').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchJobActivity(jobId: number, limit = 50): Promise<JobActivityEvent[]> {
+  const { data, error } = await supabase!
+    .from('job_activity_events')
+    .select('*')
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as JobActivityEvent[];
+}
+
+export async function logJobActivity(
+  jobId: number,
+  eventType: JobActivityEvent['event_type'],
+  summary: string,
+  entityId?: string,
+  entityType?: string,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  const userId = await getCurrentUserId();
+  const { error } = await supabase!.from('job_activity_events').insert({
+    job_id: jobId,
+    event_type: eventType,
+    user_id: userId,
+    entity_id: entityId ?? null,
+    entity_type: entityType ?? null,
+    summary,
+    metadata: metadata ?? null,
+  });
   if (error) throw error;
 }

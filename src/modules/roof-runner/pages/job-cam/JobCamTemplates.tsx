@@ -120,7 +120,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, type, onSave,
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="e.g. Residential Roof Inspection"
-              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -172,7 +172,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, type, onSave,
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Required Shots</label>
                 <button
                   onClick={addItem}
-                  className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800"
+                  className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800"
                 >
                   <Plus size={13} />
                   Add shot
@@ -231,7 +231,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, type, onSave,
                 {items.length === 0 && (
                   <button
                     onClick={addItem}
-                    className="w-full py-6 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-6 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus size={16} />
                     Add required shot
@@ -245,7 +245,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, type, onSave,
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Default Sections</label>
-                <button onClick={addItem} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+                <button onClick={addItem} className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800">
                   <Plus size={13} />
                   Add section
                 </button>
@@ -414,7 +414,7 @@ const JobCamTemplates: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-gray-900 dark:text-white">{template.name}</h3>
                       {template.is_default && (
-                        <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">Default</span>
+                        <span className="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full font-medium">Default</span>
                       )}
                     </div>
                     {template.description && (
