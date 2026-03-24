@@ -88,7 +88,7 @@ export function SierraAssistantChatView() {
                   key={thread.id}
                   onClick={() => { setActiveThread(thread); setThreadDropdownOpen(false); }}
                   className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                    activeThread?.id === thread.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    activeThread?.id === thread.id ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="truncate font-medium">{thread.title}</div>
@@ -117,8 +117,8 @@ export function SierraAssistantChatView() {
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {showEmpty && userId && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8 px-4">
-            <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
-              <Sparkles size={22} className="text-blue-600 dark:text-blue-400" />
+            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mb-3">
+              <Sparkles size={22} className="text-primary-600 dark:text-primary-400" />
             </div>
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">How can I help?</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
@@ -129,7 +129,7 @@ export function SierraAssistantChatView() {
                 <button
                   key={prompt}
                   onClick={() => handleSuggestion(prompt)}
-                  className="text-left text-xs px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 transition-colors border border-gray-100 dark:border-gray-700"
+                  className="text-left text-xs px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-300 transition-colors border border-gray-100 dark:border-gray-700"
                 >
                   {prompt}
                 </button>
@@ -173,7 +173,7 @@ export function SierraAssistantChatView() {
         <div className={`flex items-end gap-2 rounded-xl border transition-colors ${
           isBusy
             ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
-            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus-within:border-blue-500 dark:focus-within:border-blue-400'
+            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus-within:border-primary-500 dark:focus-within:border-primary-400'
         }`}>
           <textarea
             ref={inputRef}
@@ -189,7 +189,7 @@ export function SierraAssistantChatView() {
           <button
             onClick={handleSend}
             disabled={isBusy || !input.trim()}
-            className="flex-shrink-0 m-1.5 p-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white disabled:text-gray-400 transition-colors"
+            className="flex-shrink-0 m-1.5 p-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white disabled:text-gray-400 transition-colors"
           >
             {isBusy
               ? <Loader2 size={16} className="animate-spin" />

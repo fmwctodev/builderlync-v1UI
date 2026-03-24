@@ -17,10 +17,10 @@ export function SierraAssistantFAB() {
         rounded-full shadow-lg
         font-medium text-sm text-white
         transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500
         ${panelOpen
           ? 'bg-gray-700 dark:bg-gray-600 hover:bg-gray-600 dark:hover:bg-gray-500'
-          : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+          : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600'
         }
       `}
     >

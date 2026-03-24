@@ -56,11 +56,11 @@ export function ExecutionPlanCard({ executionRequestId, responseToUser, actions,
   const approvedIds = actions.filter(a => checked[a.action_id]).map(a => a.action_id);
 
   return (
-    <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
+    <div className="rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 overflow-hidden">
       {/* Header */}
-      <div className="px-3 py-2.5 flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800">
-        <Zap size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
-        <p className="text-xs font-medium text-blue-800 dark:text-blue-300 flex-1">{responseToUser}</p>
+      <div className="px-3 py-2.5 flex items-center gap-2 bg-primary-100 dark:bg-primary-900/30 border-b border-primary-200 dark:border-primary-800">
+        <Zap size={14} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
+        <p className="text-xs font-medium text-primary-800 dark:text-primary-300 flex-1">{responseToUser}</p>
       </div>
 
       {/* Action list */}
@@ -86,7 +86,7 @@ export function ExecutionPlanCard({ executionRequestId, responseToUser, actions,
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => toggleCheck(action.action_id)}
-                  className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -128,7 +128,7 @@ export function ExecutionPlanCard({ executionRequestId, responseToUser, actions,
         <button
           onClick={() => onConfirm(approvedIds)}
           disabled={isLoading || approvedIds.length === 0}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white text-xs font-medium transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 dark:disabled:bg-primary-800 text-white text-xs font-medium transition-colors"
         >
           <CheckCircle size={13} />
           {isLoading ? 'Executing...' : `Approve ${approvedIds.length > 0 ? `(${approvedIds.length})` : ''}`}

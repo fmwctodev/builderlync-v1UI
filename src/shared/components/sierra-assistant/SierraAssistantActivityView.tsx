@@ -111,7 +111,7 @@ export function SierraAssistantActivityView() {
                       <p className="text-xs text-red-500 mt-0.5 truncate">{log.error_message}</p>
                     )}
                     {log.confirmed_by_user && (
-                      <span className="inline-block mt-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                      <span className="inline-block mt-1 text-xs px-1.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
                         Confirmed
                       </span>
                     )}

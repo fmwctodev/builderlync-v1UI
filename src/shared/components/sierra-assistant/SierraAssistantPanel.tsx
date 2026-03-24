@@ -67,14 +67,14 @@ export function SierraAssistantPanel() {
         aria-label="Sierra AI Assistant"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center h-7 w-7 rounded-full bg-white/20">
               <Sparkles size={14} className="text-white" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-white leading-tight">Sierra</h2>
-              <p className="text-xs text-blue-200 leading-tight">AI Executive Assistant</p>
+              <p className="text-xs text-primary-200 leading-tight">AI Executive Assistant</p>
             </div>
           </div>
           <button
@@ -97,7 +97,7 @@ export function SierraAssistantPanel() {
                 className={`
                   flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors
                   ${activeTab === tab.id
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-900'
+                    ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400 bg-white dark:bg-gray-900'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }
                 `}

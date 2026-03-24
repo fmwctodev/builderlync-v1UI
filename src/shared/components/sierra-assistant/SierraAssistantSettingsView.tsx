@@ -40,7 +40,7 @@ export function SierraAssistantSettingsView() {
         {/* Confirmation setting */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-blue-600 dark:text-blue-400" />
+            <ShieldCheck size={14} className="text-primary-600 dark:text-primary-400" />
             <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Safety</h3>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -53,7 +53,7 @@ export function SierraAssistantSettingsView() {
             <button
               onClick={() => setConfirmAllWrites(!confirmAllWrites)}
               className={`relative flex-shrink-0 h-5 w-9 rounded-full transition-colors mt-0.5 ${
-                confirmAllWrites ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                confirmAllWrites ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
               }`}
               role="switch"
               aria-checked={confirmAllWrites}
@@ -70,7 +70,7 @@ export function SierraAssistantSettingsView() {
         {/* Custom instructions */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Brain size={14} className="text-blue-600 dark:text-blue-400" />
+            <Brain size={14} className="text-primary-600 dark:text-primary-400" />
             <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Custom Instructions</h3>
           </div>
           <div>
@@ -82,7 +82,7 @@ export function SierraAssistantSettingsView() {
               onChange={e => setSystemPromptOverride(e.target.value)}
               placeholder="e.g. I prefer formal email drafts. Always suggest a follow-up task after scheduling an appointment. My team works Pacific time..."
               rows={6}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               {systemPromptOverride.length}/1000 characters
@@ -91,12 +91,12 @@ export function SierraAssistantSettingsView() {
         </div>
 
         {/* About */}
-        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 p-3 space-y-1">
-          <p className="text-xs font-medium text-blue-800 dark:text-blue-300">About Sierra</p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">
+        <div className="rounded-xl bg-primary-50 dark:bg-primary-950/30 border border-primary-100 dark:border-primary-900 p-3 space-y-1">
+          <p className="text-xs font-medium text-primary-800 dark:text-primary-300">About Sierra</p>
+          <p className="text-xs text-primary-600 dark:text-primary-400">
             Sierra is your AI executive assistant built into BuilderLynk. She can read and act on your contacts, schedule, opportunities, tasks, and more — all from this panel.
           </p>
-          <p className="text-xs text-blue-500 dark:text-blue-500 mt-1">
+          <p className="text-xs text-primary-500 dark:text-primary-500 mt-1">
             Press <strong>⌘⇧K</strong> (Mac) or <strong>Ctrl+⇧K</strong> (Windows) to open/close.
           </p>
         </div>
@@ -107,7 +107,7 @@ export function SierraAssistantSettingsView() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white text-sm font-medium transition-colors"
         >
           {isSaving
             ? <><Loader2 size={15} className="animate-spin" /> Saving...</>
