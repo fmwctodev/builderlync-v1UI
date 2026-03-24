@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Bell, ChevronDown, Menu, Search, Moon, Sun, Phone } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Search, Moon, Sun, Phone, Sparkles } from 'lucide-react';
 import { useTheme } from '../../../../shared/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../../../shared/store/slices/authSlice';
 import DialerModalEnhanced from '../../../../shared/components/DialerModalEnhanced';
 import { clearAllAuth } from '../../../../shared/utils/authSync';
+import { useSierraAssistant } from '../../../../shared/context/SierraAssistantContext';
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -19,6 +20,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const { setPanelOpen, panelOpen } = useSierraAssistant();
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -70,6 +72,18 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
             className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
           >
             <Phone size={20} />
+          </button>
+
+          <button
+            onClick={() => setPanelOpen(!panelOpen)}
+            title="Sierra AI Assistant (⌘⇧K)"
+            className={`p-2 rounded-md transition-colors flex items-center gap-1.5 text-sm font-medium ${
+              panelOpen
+                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <Sparkles size={18} />
           </button>
 
           <div className="relative">
