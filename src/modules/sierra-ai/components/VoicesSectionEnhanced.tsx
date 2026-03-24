@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Play, Check, User, Loader2 } from 'lucide-react';
-import { elevenlabsApi } from '../services/elevenlabsApi';
+import { vapiApi } from '../services/vapiApi';
 
 interface Voice {
   voice_id: string;
@@ -32,7 +32,7 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
   const loadAgentVoice = async () => {
     if (!agentId) return;
     try {
-      const response = await elevenlabsApi.getAgentVoice(agentId);
+      const response = await vapiApi.getAgentVoice(agentId);
       if (response?.data?.voice_id) {
         setAgentVoiceId(response.data.voice_id);
         setSelectedVoice(response.data.voice_id);
@@ -45,10 +45,11 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
   const loadVoices = async () => {
     try {
       setLoading(true);
-      const response = await elevenlabsApi.listVoices();
-      setVoices(response.data?.voices || []);
-      if (response.data?.voices?.length > 0) {
-        setSelectedVoice(response.data.voices[0].voice_id);
+      const response = await vapiApi.listVoices();
+      const voiceData = response.data || [];
+      setVoices(voiceData);
+      if (voiceData.length > 0) {
+        setSelectedVoice(voiceData[0].voice_id);
       }
     } catch (error) {
       console.error('Error loading voices:', error);
@@ -63,7 +64,7 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
       return;
     }
     try {
-      await elevenlabsApi.updateAgent(agentId, { voice_id: voiceId });
+      await vapiApi.updateAgent(agentId, { voice_id: voiceId });
       setSelectedVoice(voiceId);
       setAgentVoiceId(voiceId);
     } catch (error) {
@@ -97,7 +98,7 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-sm text-green-700 dark:text-green-300 font-medium">
-              Agent voice configured in ElevenLabs
+              Agent voice configured in Vapi
             </span>
           </div>
         )}
@@ -123,14 +124,14 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
                 <div className="relative mb-4">
                   <div
                     className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${
-                      voice.labels?.gender === 'male'
+                      voice.category === 'male'
                         ? 'bg-red-100 dark:bg-red-900/20'
                         : 'bg-pink-100 dark:bg-pink-900/20'
                     }`}
                   >
                     <User
                       className={`w-10 h-10 ${
-                        voice.labels?.gender === 'male'
+                        voice.category === 'male'
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-pink-600 dark:text-pink-400'
                       }`}
@@ -148,7 +149,7 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
                     {voice.name}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 capitalize mb-2">
-                    {voice.labels?.gender || voice.category}
+                    {voice.category}
                   </p>
                 </div>
 

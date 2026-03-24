@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Check, User, Loader2 } from 'lucide-react';
-import { elevenlabsApi } from '../../services/elevenlabsApi';
+import { vapiApi } from '../../services/vapiApi';
 
 interface Voice {
   voice_id: string;
@@ -24,7 +24,7 @@ export function VoicesTab() {
   const loadVoices = async () => {
     try {
       setLoading(true);
-      const response = await elevenlabsApi.listVoices();
+      const response = await vapiApi.listVoices();
       setVoices(response.data?.voices || []);
       if (response.data?.voices?.length > 0) {
         setSelectedVoice(response.data.voices[0].voice_id);

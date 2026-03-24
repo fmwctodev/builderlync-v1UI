@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/ai-agents`,
+  baseURL: `${API_BASE_URL}`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,17 +46,6 @@ export interface UpdateAgentPayload {
   language?: string;
   temperature?: number;
   max_tokens?: number;
-  voices?: any[];
-  languages?: any[];
-  system_tools?: any[];
-  authentication_enabled?: boolean;
-  allowlist?: string[];
-  overrides?: any;
-  conversation_initiation_webhook?: any;
-  post_call_webhook?: any;
-  daily_call_limit?: number;
-  concurrent_call_limit?: number;
-  bursting_enabled?: boolean;
   [key: string]: any;
 }
 
@@ -68,89 +57,79 @@ export interface CreatePhoneNumberPayload {
   token: string;
 }
 
-export interface AssignPhonePayload {
-  phone_number_id: string;
-  agent_id: string;
-}
-
-export interface UnassignPhonePayload {
-  phone_number_id: string;
-}
-
-// Agent APIs
-export const elevenlabsApi = {
+export const vapiApi = {
   // Agents
   async createAgent(payload: CreateAgentPayload) {
-    const response = await api.post('/', payload);
+    const response = await api.post('/ai-agents', payload);
     return response.data;
   },
 
   async getAgents(organizationId: string) {
-    const response = await api.get('/', {
+    const response = await api.get('/ai-agents', {
       params: { organization_id: organizationId },
     });
     return response.data;
   },
 
   async getAgent(agentId: string) {
-    const response = await api.get(`/${agentId}`);
+    const response = await api.get(`/ai-agents/${agentId}`);
     return response.data;
   },
 
   async updateAgent(agentId: string, payload: UpdateAgentPayload) {
-    const response = await api.patch(`/${agentId}`, payload);
+    const response = await api.patch(`/ai-agents/${agentId}`, payload);
     return response.data;
   },
 
   async deleteAgent(agentId: string) {
-    const response = await api.delete(`/${agentId}`);
+    const response = await api.delete(`/ai-agents/${agentId}`);
     return response.data;
   },
 
   // Phone Numbers
   async createPhoneNumber(payload: CreatePhoneNumberPayload) {
-    const response = await api.post('/phone-numbers', payload);
+    const response = await api.post('/ai-agents/phone-numbers', payload);
     return response.data;
   },
 
   async getPhoneNumbers() {
-    const response = await api.get('/phone-numbers');
+    const response = await api.get('/ai-agents/phone-numbers');
     return response.data;
   },
 
-  async assignPhoneToAgent(payload: AssignPhonePayload) {
-    const response = await api.post('/phone-numbers/assign', payload);
+  async assignPhoneToAgent(payload: { phone_number_id: string; agent_id: string }) {
+    const response = await api.post('/ai-agents/phone-numbers/assign', payload);
     return response.data;
   },
 
-  async unassignPhoneFromAgent(payload: UnassignPhonePayload) {
-    const response = await api.post('/phone-numbers/unassign', payload);
+  async unassignPhoneFromAgent(payload: { phone_number_id: string }) {
+    const response = await api.post('/ai-agents/phone-numbers/unassign', payload);
     return response.data;
   },
 
   async deletePhoneNumber(phoneNumberId: string) {
-    const response = await api.delete(`/phone-numbers/${phoneNumberId}`);
+    const response = await api.delete(`/ai-agents/phone-numbers/${phoneNumberId}`);
     return response.data;
   },
 
   // Voices
   async listVoices() {
-    const response = await api.get('/voices');
+    const response = await api.get('/vapi/voices');
     return response.data;
   },
 
   async getAgentVoice(agentId: string) {
-    const response = await api.get(`/${agentId}/voice`);
+    const response = await api.get(`/ai-agents/${agentId}/voice`);
     return response.data;
   },
 
   async getAgentKnowledgeBase(agentId: string) {
-    const response = await api.get(`/${agentId}/knowledge-base`);
+    const response = await api.get(`/ai-agents/${agentId}/knowledge-base`);
     return response.data;
   },
 
   async addKnowledgeBaseUrl(agentId: string, url: string, name: string) {
-    const response = await api.post(`/${agentId}/knowledge-base/url`, { url, name });
+    const response = await api.post(`/ai-agents/${agentId}/knowledge-base/url`, { url, name });
     return response.data;
   },
 
@@ -158,13 +137,13 @@ export const elevenlabsApi = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
-    const response = await api.post(`/${agentId}/knowledge-base/file`, formData);
+    const response = await api.post(`/ai-agents/${agentId}/knowledge-base/file`, formData);
     return response.data;
   },
 
   // Conversations
   async getConversations(agentId?: string) {
-    const response = await api.get('/conversations', {
+    const response = await api.get('/ai-agents/conversations', {
       params: agentId ? { agent_id: agentId } : {},
     });
     return response.data;
@@ -172,28 +151,28 @@ export const elevenlabsApi = {
 
   // Twilio Integration
   async checkTwilioIntegration() {
-    const response = await api.get('/twilio/check');
+    const response = await api.get('/ai-agents/twilio/check');
     return response.data;
   },
 
   // Client Tools
   async getClientTools(agentId: string) {
-    const response = await api.get(`/${agentId}/client-tools`);
+    const response = await api.get(`/ai-agents/${agentId}/client-tools`);
     return response.data;
   },
 
   async createClientTool(agentId: string, toolData: any) {
-    const response = await api.post(`/${agentId}/client-tools`, toolData);
+    const response = await api.post(`/ai-agents/${agentId}/client-tools`, toolData);
     return response.data;
   },
 
   async updateClientTool(toolId: string, updates: any) {
-    const response = await api.patch(`/client-tools/${toolId}`, updates);
+    const response = await api.patch(`/ai-agents/client-tools/${toolId}`, updates);
     return response.data;
   },
 
   async deleteClientTool(toolId: string) {
-    const response = await api.delete(`/client-tools/${toolId}`);
+    const response = await api.delete(`/ai-agents/client-tools/${toolId}`);
     return response.data;
   },
 };

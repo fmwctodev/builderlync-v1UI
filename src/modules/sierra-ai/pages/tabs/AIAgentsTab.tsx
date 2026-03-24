@@ -26,7 +26,7 @@ import {
   AIAgent,
 } from '../../services/agentsApi';
 import { CreateAgentWizard } from '../CreateAgentWizard';
-import { elevenlabsApi } from '../../services/elevenlabsApi';
+import { vapiApi } from '../../services/vapiApi';
 import { useAppSelector } from '../../../roof-runner/store/hooks';
 
 export function AIAgentsTab() {
@@ -58,7 +58,7 @@ export function AIAgentsTab() {
 
     try {
       setLoading(true);
-      const response = await elevenlabsApi.getAgents(String(user.id));
+      const response = await vapiApi.getAgents(String(user.id));
       setAgents(response.data || []);
     } catch (error) {
       console.error('Error loading agents:', error);

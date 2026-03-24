@@ -69,10 +69,10 @@ export function ImportFromUrlModal({
 
       if (agentId) {
         try {
-          const { elevenlabsApi } = await import('../services/elevenlabsApi');
-          await elevenlabsApi.addKnowledgeBaseUrl(agentId, url, "Scraped: " + (new URL(url).hostname));
-        } catch (elevenLabsError) {
-          console.error("Failed to add to ElevenLabs KB:", elevenLabsError);
+          const { vapiApi } = await import('../services/vapiApi');
+          await vapiApi.addKnowledgeBaseUrl(agentId, url, "Scraped: " + (new URL(url).hostname));
+        } catch (VapiError) {
+          console.error("Failed to add to Vapi KB:", VapiError);
           // Don't fail the whole operation if just EL fails, but maybe notify user?
         }
       }

@@ -130,11 +130,11 @@ export const knowledgeBaseApi = {
     return data;
   },
 
-  async syncAllToElevenLabs(payload: {
+  async syncAllToVapi(payload: {
     organization_id: string;
     agent_id: string;
   }) {
-    const { data } = await api.post('/knowledge-base/sync-to-elevenlabs', payload);
+    const { data } = await api.post('/knowledge-base/sync-to-Vapi', payload);
     return data;
   },
 };

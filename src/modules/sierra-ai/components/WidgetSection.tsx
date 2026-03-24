@@ -8,7 +8,7 @@ interface WidgetSectionProps {
 }
 
 export function WidgetSection({ agentId }: WidgetSectionProps) {
-  const { widgetEnabled, setWidgetEnabled, setElevenlabsAgentId } = useWidget();
+  const { widgetEnabled, setWidgetEnabled, setVapiAgentId } = useWidget();
   const [config, setConfig] = useState<WidgetConfig>({
     theme: 'light',
     primary_color: '#ef4444',
@@ -26,7 +26,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   const [activePreview, setActivePreview] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [showCode, setShowCode] = useState(false);
   const [showWidgetPreview, setShowWidgetPreview] = useState(false);
-  const [elevenlabsAgentId, setElevenlabsAgentIdLocal] = useState<string>('');
+  const [VapiAgentId, setVapiAgentIdLocal] = useState<string>('');
 
   useEffect(() => {
     loadWidgetConfig();
@@ -37,11 +37,11 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
     if (!agentId) return;
 
     try {
-      const { elevenlabsApi } = await import('../services/elevenlabsApi');
-      const response = await elevenlabsApi.getAgent(agentId);
-      if (response.data?.elevenlabs_agent_id) {
-        setElevenlabsAgentIdLocal(response.data.elevenlabs_agent_id);
-        setElevenlabsAgentId(response.data.elevenlabs_agent_id);
+      const { vapiApi } = await import('../services/vapiApi');
+      const response = await vapiApi.getAgent(agentId);
+      if (response.data?.Vapi_agent_id) {
+        setVapiAgentIdLocal(response.data.Vapi_agent_id);
+        setVapiAgentId(response.data.Vapi_agent_id);
       }
     } catch (error) {
       console.error('Error loading agent data:', error);
@@ -64,17 +64,17 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
     }
   };
 
-  const handleSyncFromElevenLabs = async () => {
+  const handleSyncFromVapi = async () => {
     if (!agentId) return;
 
     try {
       setSyncing(true);
-      const data = await widgetApi.syncFromElevenLabs(agentId);
+      const data = await widgetApi.syncFromVapi(agentId);
       setConfig(data);
-      alert('Widget configuration synced from ElevenLabs successfully!');
+      alert('Widget configuration synced from Vapi successfully!');
     } catch (error) {
-      console.error('Error syncing from ElevenLabs:', error);
-      alert('Failed to sync from ElevenLabs. Make sure your agent is connected.');
+      console.error('Error syncing from Vapi:', error);
+      alert('Failed to sync from Vapi. Make sure your agent is connected.');
     } finally {
       setSyncing(false);
     }
@@ -98,9 +98,9 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   };
 
   const generateEmbedCode = () => {
-    const agentIdToUse = elevenlabsAgentId || agentId || 'your-agent-id';
-    return `<elevenlabs-convai agent-id="${agentIdToUse}"></elevenlabs-convai>
-<script src="https://unpkg.com/@elevenlabs/convai-widget-embed@beta" async type="text/javascript"></script>`;
+    const agentIdToUse = VapiAgentId || agentId || 'your-agent-id';
+    return `<Vapi-convai agent-id="${agentIdToUse}"></Vapi-convai>
+<script src="https://unpkg.com/@Vapi/convai-widget-embed@beta" async type="text/javascript"></script>`;
   };
 
   const copyToClipboard = () => {

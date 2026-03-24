@@ -145,7 +145,7 @@ export function PhoneNumbersSection({ organizationId, agentId }: PhoneNumbersSec
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Phone numbers</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Create and manage your phone numbers with ElevenLabs
+            Create and manage your phone numbers with Vapi
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -18,8 +18,8 @@ export function SierraAiTabLayout({ children }: SierraAiTabLayoutProps) {
 
   const tabs: Tab[] = [
     { id: 'agents', label: 'AI Agents', icon: Bot },
-    // { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
-    // { id: 'voices', label: 'Voices', icon: Mic },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
+    { id: 'voices', label: 'Voices', icon: Mic },
     { id: 'templates', label: 'Agent Templates', icon: Layers },
   ];
 

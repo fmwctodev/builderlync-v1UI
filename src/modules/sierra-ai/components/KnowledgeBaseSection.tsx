@@ -5,7 +5,7 @@ import { ImportFromUrlModal } from './ImportFromUrlModal';
 import { UploadFilesModal } from './UploadFilesModal';
 import { AddFAQModal } from './AddFAQModal';
 import { AddTableModal } from './AddTableModal';
-import { ElevenLabsKnowledgeBase } from './ElevenLabsKnowledgeBase';
+import { VapiKnowledgeBase } from './VapiKnowledgeBase';
 import { mockKbCollections } from '../lib/mockData';
 import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 
@@ -106,7 +106,7 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-xs text-green-700 dark:text-green-300 font-medium">
-                  Auto-syncing to ElevenLabs
+                  Auto-syncing to Vapi
                 </span>
               </div>
             )}
@@ -262,7 +262,7 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
 
       {agentId && (
         <div className="mb-6">
-          <ElevenLabsKnowledgeBase agentId={agentId} />
+          <VapiKnowledgeBase agentId={agentId} />
         </div>
       )}
 

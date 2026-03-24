@@ -89,7 +89,7 @@ export function SecuritySection({
             </p>
             <button className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               <Shield className="w-4 h-4" />
-              Learn how to secure your ElevenLabs Agent
+              Learn how to secure your Vapi Agent
             </button>
           </div>
           <button
@@ -272,7 +272,7 @@ export function SecuritySection({
           </p>
           <button className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-6">
             <LinkIcon className="w-4 h-4" />
-            Learn how to automate post-call workflows with ElevenLabs & n8n
+            Learn how to automate post-call workflows with Vapi & n8n
           </button>
 
           <div className="flex items-center justify-between mb-4">

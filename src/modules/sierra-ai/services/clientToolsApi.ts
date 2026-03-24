@@ -40,8 +40,8 @@ export interface UpdateClientToolInput extends Partial<CreateClientToolInput> {
 }
 
 export async function fetchClientTools(agentId: string): Promise<ClientTool[]> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.getClientTools(agentId);
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.getClientTools(agentId);
   return response.data || [];
 }
 
@@ -61,8 +61,8 @@ export async function createClientTool(
     enabled: input.enabled ?? true,
   };
 
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.createClientTool(agentId, toolData);
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.createClientTool(agentId, toolData);
   return response.data;
 }
 
@@ -70,21 +70,21 @@ export async function updateClientTool(
   input: UpdateClientToolInput
 ): Promise<ClientTool> {
   const { id, ...updates } = input;
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.updateClientTool(id, updates);
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.updateClientTool(id, updates);
   return response.data;
 }
 
 export async function deleteClientTool(toolId: string): Promise<void> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  await elevenlabsApi.deleteClientTool(toolId);
+  const { vapiApi } = await import('./vapiApi');
+  await vapiApi.deleteClientTool(toolId);
 }
 
 export async function toggleClientTool(
   toolId: string,
   enabled: boolean
 ): Promise<ClientTool> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.updateClientTool(toolId, { enabled });
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.updateClientTool(toolId, { enabled });
   return response.data;
 }
