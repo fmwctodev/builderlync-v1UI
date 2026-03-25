@@ -100,6 +100,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
       case 'shipped': return 'text-primary-600 bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400';
       case 'delivered': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
       case 'created': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      // Webhook statuses
+      case 'updated': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'cancelled': return 'text-red-600 bg-red-100 dark:bg-red-900/20 dark:text-red-400';
+      case 'in_transit': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'arrived': return 'text-primary-600 bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400';
+      case 'invoiced': return 'text-purple-600 bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400';
       default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400';
     }
   };
@@ -108,7 +114,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
     switch (status?.toLowerCase()) {
       case 'processing': return <Package className="h-4 w-4" />;
       case 'shipped': return <Truck className="h-4 w-4" />;
-      case 'delivered': return <Truck className="h-4 w-4" />;
+      case 'delivered': return <Package className="h-4 w-4" />; // Delivery completed
+      // Webhook statuses
+      case 'updated': return <Package className="h-4 w-4" />;
+      case 'in_transit': return <Truck className="h-4 w-4" />;
+      case 'arrived': return <Truck className="h-4 w-4" />;
+      case 'invoiced': return <Package className="h-4 w-4" />;
+      case 'cancelled': return <Package className="h-4 w-4" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
