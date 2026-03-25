@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Search, Filter, Grid, List, Settings, Building2 } from 'lucide-react';
 import NewButtonDropdown from './NewButtonDropdown';
 import { hasPermission } from '../../../shared/utils/permissions';
-import { Job } from '../../../shared/store/services/jobsApi';
 
 interface JobsHeaderProps {
   activeView: string;
@@ -18,8 +17,31 @@ interface JobsHeaderProps {
   onNewJob: () => void;
   onNewReport: () => void;
   onNewCustomer: () => void;
-  jobs?: Job[];
+  /** Total count from API for the current filter (used in the All Jobs label) */
+  totalJobs?: number;
+  /** Cumulative counts per stage from the backend */
+  jobCounts?: any;
 }
+
+const STAGE_FILTERS = [
+  { value: 'all', label: 'All Jobs' },
+  { value: 'active', label: 'Active Jobs' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'lost', label: 'Lost Jobs' },
+  { value: 'inspection-estimate-booked', label: 'Inspection/Estimate Booked' },
+  { value: 'inspection-estimate-complete', label: 'Inspection/Estimate Complete' },
+  { value: 'proposal-drafted', label: 'Proposal Drafted' },
+  { value: 'proposal-sent', label: 'Proposal Sent' },
+  { value: 'proposal-accepted', label: 'Proposal Accepted' },
+  { value: 'job-won', label: 'Job Won' },
+  { value: 'under-contract', label: 'Under Contract' },
+  { value: 'invoice-sent', label: 'Invoice Sent' },
+  { value: 'invoice-paid', label: 'Invoice Paid' },
+  { value: 'job-scheduled', label: 'Job Scheduled' },
+  { value: 'materials-ordered', label: 'Materials Ordered' },
+  { value: 'job-started', label: 'Job Started' },
+  { value: 'job-complete', label: 'Job Complete' },
+];
 
 const JobsHeader: React.FC<JobsHeaderProps> = ({
   activeView,
@@ -35,41 +57,48 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
   onNewJob,
   onNewReport,
   onNewCustomer,
-  jobs = []
+  totalJobs,
+  jobCounts,
 }) => {
-  const dynamicFilters = useMemo(() => {
-    const stages = [
-      'Inspection/Estimate Booked', 'Inspection/Estimate Complete', 'Proposal Drafted',
-      'Proposal Sent', 'Proposal Accepted', 'Job Lost', 'Job Won', 'Under Contract',
-      'Invoice Sent', 'Invoice Paid', 'Job Scheduled', 'Materials Ordered',
-      'Job Started', 'Job Complete'
-    ];
+  const getCountForFilter = (value: string) => {
+    if (!jobCounts) return null;
+    if (value === 'all') return jobCounts.all;
+    if (value === 'active') return jobCounts.active;
+    if (value === 'completed') return jobCounts.completed;
+    if (value === 'lost') return jobCounts.lost;
 
-    const filters = [
-      { value: 'all', label: 'All Jobs', count: jobs.length },
-      { value: 'active', label: 'Active Jobs', count: jobs.filter(j => !['Job Lost', 'Job Complete'].includes(j.workflow_stages || j.workflowStages)).length },
-      { value: 'completed', label: 'Completed', count: jobs.filter(j => (j.workflow_stages || j.workflowStages) === 'Job Complete').length },
-      { value: 'lost', label: 'Lost Jobs', count: jobs.filter(j => (j.workflow_stages || j.workflowStages) === 'Job Lost').length },
-    ];
+    // Map slugified values back to canonical stage names
+    const stageMap: Record<string, string> = {
+      'inspection-estimate-booked': 'Inspection/Estimate Booked',
+      'inspection-estimate-complete': 'Inspection/Estimate Complete',
+      'proposal-drafted': 'Proposal Drafted',
+      'proposal-sent': 'Proposal Sent',
+      'proposal-accepted': 'Proposal Accepted',
+      'job-lost': 'Job Lost',
+      'job-won': 'Job Won',
+      'under-contract': 'Under Contract',
+      'invoice-sent': 'Invoice Sent',
+      'invoice-paid': 'Invoice Paid',
+      'job-scheduled': 'Job Scheduled',
+      'materials-ordered': 'Materials Ordered',
+      'job-started': 'Job Started',
+      'job-complete': 'Job Complete',
+    };
 
-    // Add stage-based filters with counts
-    stages.forEach(stage => {
-      const count = jobs.filter(j => (j.workflow_stages || j.workflowStages) === stage).length;
-      if (count > 0) {
-        filters.push({
-          value: stage.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          label: stage,
-          count
-        });
-      }
-    });
-
-    return filters;
-  }, [jobs]);
+    const stageName = stageMap[value];
+    return stageName ? (jobCounts[stageName] || 0) : null;
+  };
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jobs</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jobs</h1>
+          {totalJobs !== undefined && (
+            <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300">
+              {totalJobs.toLocaleString()} total
+            </span>
+          )}
+        </div>
         <NewButtonDropdown
           onNewJob={onNewJob}
           onNewReport={onNewReport}
@@ -137,23 +166,29 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search jobs..."
+            placeholder="Search by address, contact name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input w-full pl-10"
           />
         </div>
+
+        {/* Stage filter dropdown — labels come from API, no stale counts */}
         <select
           value={selectedFilter}
           onChange={(e) => setSelectedFilter(e.target.value)}
           className="input min-w-[200px]"
         >
-          {dynamicFilters.map(filter => (
-            <option key={filter.value} value={filter.value}>
-              {filter.label} ({filter.count})
-            </option>
-          ))}
+          {STAGE_FILTERS.map(f => {
+            const count = getCountForFilter(f.value);
+            return (
+              <option key={f.value} value={f.value}>
+                {f.label}{count !== null ? ` (${count})` : ''}
+              </option>
+            );
+          })}
         </select>
+
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

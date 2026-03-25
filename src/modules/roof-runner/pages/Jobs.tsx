@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { getJobs, createJob, updateJob, deleteJob, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
+import { getJobs, createJob, updateJob, deleteJob, getJobCounts, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
 import JobsHeader from '../components/JobsHeader';
@@ -37,12 +37,21 @@ const Jobs: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [jobCounts, setJobCounts] = useState<any>(null);
+  const PAGE_SIZE = 50;
+
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
     sortBy: 'Last updated (newest)',
     assignees: [],
     stages: [],
     updatedDate: [],
-    closeDate: []
+    closeDate: [],
+    createdDate: []
   });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [modalMessage, setModalMessage] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -108,9 +117,39 @@ const Jobs: React.FC = () => {
     }
   };
 
+  // Map selectedFilter value to the workflowStage API param
+  const getWorkflowStageFromFilter = (filter: string): string | undefined => {
+    if (filter === 'all') return undefined;
+    if (filter === 'active') return undefined; // handled by status param
+    if (filter === 'completed') return 'Job Complete';
+    if (filter === 'lost') return 'Job Lost';
+    // Stage-based values are slugified stage names — reverse them
+    // e.g. 'job-scheduled' -> find matching stage
+    const stageMap: Record<string, string> = {
+      'inspection-estimate-booked': 'Inspection/Estimate Booked',
+      'inspection-estimate-complete': 'Inspection/Estimate Complete',
+      'proposal-drafted': 'Proposal Drafted',
+      'proposal-sent': 'Proposal Sent',
+      'proposal-accepted': 'Proposal Accepted',
+      'job-lost': 'Job Lost',
+      'job-won': 'Job Won',
+      'under-contract': 'Under Contract',
+      'invoice-sent': 'Invoice Sent',
+      'invoice-paid': 'Invoice Paid',
+      'job-scheduled': 'Job Scheduled',
+      'materials-ordered': 'Materials Ordered',
+      'job-started': 'Job Started',
+      'job-complete': 'Job Complete',
+    };
+    return stageMap[filter];
+  };
+
   const fetchJobs = async (page: number = 1) => {
     try {
       setLoading(true);
+
+      const workflowStage = getWorkflowStageFromFilter(selectedFilter);
+      const isActiveFilter = selectedFilter === 'active';
 
       const filters = {
         jobType: (selectedJobType !== 'all' && selectedJobType !== 'instant-estimator') ? selectedJobType : undefined,
@@ -118,19 +157,37 @@ const Jobs: React.FC = () => {
         search: searchQuery || undefined,
         sortBy: advancedFilters.sortBy,
         assignees: advancedFilters.assignees.length > 0 ? advancedFilters.assignees : undefined,
+        // If sidebar stages are selected, use those; otherwise use the dropdown filter stage
         stages: advancedFilters.stages.length > 0 ? advancedFilters.stages : undefined,
+        workflowStage: advancedFilters.stages.length === 0 ? workflowStage : undefined,
+        status: isActiveFilter ? 'active' : undefined,
         updatedDate: advancedFilters.updatedDate.length > 0 ? advancedFilters.updatedDate : undefined,
-        closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined
+        closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined,
+        createdDate: advancedFilters.createdDate.length > 0 ? advancedFilters.createdDate : undefined,
       };
 
-      const response = await getJobs(page, 100, filters);
+      const response = await getJobs(page, PAGE_SIZE, filters);
       const fetchedJobs = response.data.data || [];
+      const pagination = response.data.pagination;
+
       setJobs(fetchedJobs);
+      setCurrentPage(pagination.page);
+      setTotalJobs(pagination.total);
+      setTotalPages(pagination.totalPages);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       setToast({ message: 'Failed to load jobs', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCounts = async () => {
+    try {
+      const response = await getJobCounts();
+      setJobCounts(response.data);
+    } catch (error) {
+      console.error('Error fetching job counts:', error);
     }
   };
 
@@ -227,7 +284,8 @@ const Jobs: React.FC = () => {
       }
 
       // Refresh jobs list
-      fetchJobs();
+      fetchJobs(currentPage);
+      fetchCounts();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to save job';
       setModalMessage({ message: errorMessage, type: 'error' });
@@ -241,7 +299,8 @@ const Jobs: React.FC = () => {
     try {
       await deleteJob(id);
       setToast({ message: 'Job deleted successfully!', type: 'success' });
-      fetchJobs();
+      fetchJobs(currentPage);
+      fetchCounts();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to delete job';
       setToast({ message: errorMessage, type: 'error' });
@@ -364,8 +423,9 @@ const Jobs: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
-    fetchJobs();
+    fetchJobs(1);
     fetchStaff();
+    fetchCounts();
   }, []);
 
   useEffect(() => {
@@ -375,8 +435,11 @@ const Jobs: React.FC = () => {
     }
   }, [showJobDetails]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    fetchJobs();
+    setCurrentPage(1);
+    fetchJobs(1);
+    fetchCounts();
   }, [selectedJobType, selectedFilter, searchQuery, advancedFilters]);
 
   useEffect(() => {
@@ -418,7 +481,8 @@ const Jobs: React.FC = () => {
         onNewJob={() => setShowAddressModal(true)}
         onNewReport={handleNewReport}
         onNewCustomer={handleNewCustomer}
-        jobs={jobs}
+        totalJobs={totalJobs}
+        jobCounts={jobCounts}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -445,7 +509,7 @@ const Jobs: React.FC = () => {
                       latitude: job.latitude ? Number(job.latitude) : undefined,
                       longitude: job.longitude ? Number(job.longitude) : undefined
                     } as CreateJobRequest);
-                    fetchJobs();
+                    fetchJobs(currentPage);
                   }
                 } catch (error) {
                   console.error('Error updating job stage:', error);
@@ -462,6 +526,11 @@ const Jobs: React.FC = () => {
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalJobs={totalJobs}
+              pageSize={PAGE_SIZE}
+              onPageChange={(page) => fetchJobs(page)}
             />
           )}
 

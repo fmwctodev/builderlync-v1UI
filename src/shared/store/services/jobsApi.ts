@@ -174,6 +174,7 @@ class JobsApiService {
     stages?: string[];
     updatedDate?: string[];
     closeDate?: string[];
+    createdDate?: string[];
     leadSources?: string[];
   }): Promise<JobsResponse> {
     const params = new URLSearchParams({
@@ -210,6 +211,9 @@ class JobsApiService {
     }
     if (filters?.closeDate && filters.closeDate.length > 0) {
       params.append('closeDate', filters.closeDate.join(','));
+    }
+    if (filters?.createdDate && filters.createdDate.length > 0) {
+      params.append('createdDate', filters.createdDate.join(','));
     }
     if (filters?.leadSources && filters.leadSources.length > 0) {
       params.append('leadSources', filters.leadSources.join(','));
@@ -258,6 +262,10 @@ class JobsApiService {
       body: JSON.stringify({ attachmentIds }),
     });
   }
+
+  async getJobCounts() {
+    return this.makeRequest('/jobs/counts');
+  }
 }
 
 const jobsApiService = new JobsApiService();
@@ -269,3 +277,4 @@ export const updateJob = jobsApiService.updateJob.bind(jobsApiService);
 export const deleteJob = jobsApiService.deleteJob.bind(jobsApiService);
 export const getJobById = jobsApiService.getJobById.bind(jobsApiService);
 export const updateJobAttachmentsIds = jobsApiService.updateJobAttachmentsIds.bind(jobsApiService);
+export const getJobCounts = jobsApiService.getJobCounts.bind(jobsApiService);
