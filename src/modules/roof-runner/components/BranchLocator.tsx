@@ -1,86 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MapPin, Phone, Check, Building, Search, ArrowRight } from 'lucide-react';
-import { Wrapper } from '@googlemaps/react-wrapper';
+import { MapPin, Phone, Check, Building, Search } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { srsApi } from '../services/srsApi';
-import { Branch, ShipTo } from '../../abc-supply/types';
+import { ShipTo } from '../../abc-supply/types';
 
-// Helper component for Map
-interface MapComponentProps {
-  branches: any[];
-  selectedBranch: any | null;
-}
-
-const MapComponent: React.FC<MapComponentProps> = ({ branches, selectedBranch }) => {
-  const mapRef = React.useRef<HTMLDivElement>(null);
-  const mapInstanceRef = React.useRef<google.maps.Map | null>(null);
-  const markersRef = React.useRef<google.maps.Marker[]>([]);
-
-  useEffect(() => {
-    if (!mapRef.current || !window.google?.maps) return;
-
-    const map = new google.maps.Map(mapRef.current, {
-      zoom: 4,
-      center: { lat: 39.8283, lng: -98.5795 }, // US Center
-      mapTypeId: google.maps.MapTypeId.ROADMAP,
-    });
-    mapInstanceRef.current = map;
-
-    return () => {
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapInstanceRef.current || branches.length === 0) return;
-
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-
-    const bounds = new google.maps.LatLngBounds();
-    let hasValidCoordinates = false;
-
-    branches.forEach(branch => {
-      // Map ShipToBranch or regular Branch to coordinates if available
-      // ShipToBranch usually doesn't have coordinates directly, need to check data model. 
-      // API 'getBranches' returns coordinates. 'ShipToBranch' usually just has address.
-      // If we don't have coordinates, we can't map. 
-      // For this implementation, we will try to map if coords exist.
-      const lat = branch.coordinates?.latitude;
-      const lng = branch.coordinates?.longitude;
-
-      if (lat && lng) {
-        hasValidCoordinates = true;
-        const isSelected = selectedBranch?.id === branch.id || selectedBranch?.number === branch.number;
-
-        const marker = new google.maps.Marker({
-          position: { lat, lng },
-          map: mapInstanceRef.current,
-          title: branch.name,
-          icon: isSelected ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' : undefined
-        });
-
-        markersRef.current.push(marker);
-        bounds.extend({ lat, lng });
-      }
-    });
-
-    if (hasValidCoordinates && branches.length > 0) {
-      if (selectedBranch && selectedBranch.coordinates) {
-        mapInstanceRef.current.setCenter({
-          lat: selectedBranch.coordinates.latitude,
-          lng: selectedBranch.coordinates.longitude
-        });
-        mapInstanceRef.current.setZoom(12);
-      } else {
-        mapInstanceRef.current.fitBounds(bounds);
-      }
-    }
-  }, [branches, selectedBranch]);
-
-  return <div ref={mapRef} style={{ width: '100%', height: '400px' }} />;
-};
 
 interface BranchLocatorProps {
   onBack: () => void;
@@ -191,15 +114,36 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
     setTimeout(onBack, 150);
   };
 
+  const [pagination, setPagination] = useState<{ page: number; limit: number }>({
+    page: 1,
+    limit: 12,
+  });
+
   // Filter branches based on search
   const filteredBranches = useMemo(() => {
     if (!searchQuery.trim()) return availableBranches;
-    const q = searchQuery.toLowerCase();
+    // Strip "Branch #" prefix so users can search "Branch #55BCH" or just "55BCH"
+    const rawQ = searchQuery.trim().replace(/^branch\s*#?\s*/i, '').toLowerCase();
+    const q = rawQ || searchQuery.trim().toLowerCase();
     return availableBranches.filter((b: any) =>
       (b.name && b.name.toLowerCase().includes(q)) ||
-      (b.number && b.number.includes(q))
+      (b.branchName && b.branchName.toLowerCase().includes(q)) ||
+      (b.number && b.number.toString().toLowerCase().includes(q)) ||
+      (b.branchCode && b.branchCode.toString().toLowerCase().includes(q)) ||
+      (b.address?.city && b.address.city.toLowerCase().includes(q))
     );
   }, [availableBranches, searchQuery]);
+
+  const paginatedBranches = useMemo(() => {
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    return filteredBranches.slice(startIndex, startIndex + pagination.limit);
+  }, [filteredBranches, pagination.page, pagination.limit]);
+
+  const totalPages = Math.ceil(filteredBranches.length / pagination.limit);
+
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [searchQuery]);
 
   if (loading) {
     return (
@@ -233,29 +177,31 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
         <p className="text-white/80 text-sm">Select your Account and Branch to view specific pricing and availability.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Account Selection */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">1. Select Account</h2>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {shipTos.map(account => (
-                <div
-                  key={account.number}
-                  onClick={() => HandleShipToSelect(account)}
-                  className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedShipTo?.number === account.number ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  <div className="font-medium text-gray-900 dark:text-white">{account.name}</div>
-                  <div className="text-xs text-gray-500">#{account.number}</div>
-                  <div className="text-xs text-gray-500 truncate">{account.address?.line1}, {account.address?.city}</div>
-                </div>
-              ))}
+      <div className={`grid grid-cols-1 ${supplier === 'SRS' ? '' : 'lg:grid-cols-3'} gap-6`}>
+        {/* Account Selection - Only for ABC Supply */}
+        {supplier === 'ABC Supply' && (
+          <div className="lg:col-span-1 space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">1. Select Account</h2>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {shipTos.map(account => (
+                  <div
+                    key={account.number}
+                    onClick={() => HandleShipToSelect(account)}
+                    className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedShipTo?.number === account.number ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                  >
+                    <div className="font-medium text-gray-900 dark:text-white">{account.name}</div>
+                    <div className="text-xs text-gray-500">#{account.number}</div>
+                    <div className="text-xs text-gray-500 truncate">{account.address?.line1}, {account.address?.city}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Branch Selection */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className={`${supplier === 'SRS' ? 'w-full' : 'lg:col-span-2'} space-y-4`}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-full">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">2. Select Branch</h2>
 
@@ -277,39 +223,75 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
                   />
                 </div>
 
-                {filteredBranches.length === 0 ? (
+                {paginatedBranches.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No branches available for this account.
+                    No branches found for "{searchQuery}".
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2">
-                    {filteredBranches.map((branch: any) => {
-                      // Compute a normalized key for this branch — same logic used in HandleBranchSelect
-                      const branchKey = branch.number || branch.branchCode || branch.id;
-                      const isSelected = !!(selectedBranch?.id && branchKey && selectedBranch.id === branchKey);
-                      return (
-                        <div
-                          key={branchKey || Math.random()}
-                          className={`p-4 rounded-lg border flex flex-col justify-between ${isSelected ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'}`}
-                        >
-                          <div>
-                            <div className="flex justify-between items-start">
-                              <h3 className="font-medium text-gray-900 dark:text-white">{branch.name || branch.branchName}</h3>
-                              {isSelected && <Check className="h-4 w-4 text-primary-600" />}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Branch #{branchKey}</div>
-                            {branch.phoneNumber && <div className="text-xs text-gray-500 mt-2 flex items-center gap-1"><Phone size={12} /> {branch.phoneNumber}</div>}
-                          </div>
-                          <button
-                            onClick={() => HandleBranchSelect(branch)}
-                            className={`mt-4 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto pr-2">
+                      {paginatedBranches.map((branch: any) => {
+                        // Compute a normalized key for this branch
+                        const branchKey = branch.number || branch.branchCode || branch.id;
+                        const isSelected = !!(selectedBranch?.id && branchKey && selectedBranch.id === branchKey);
+                        return (
+                          <div
+                            key={branchKey || Math.random()}
+                            className={`p-4 rounded-lg border flex flex-col justify-between ${isSelected ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-colors'}`}
                           >
-                            {isSelected ? 'Selected' : 'Select Branch'}
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <h3 className="font-medium text-gray-900 dark:text-white line-clamp-1">{branch.name || branch.branchName}</h3>
+                                {isSelected && <Check className="h-4 w-4 text-primary-600 flex-shrink-0" />}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Branch #{branchKey}</div>
+                              {branch.address?.city && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {branch.address.city}, {branch.address.state}
+                                </div>
+                              )}
+                              {branch.phoneNumber && (
+                                <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                  <Phone size={10} /> {branch.phoneNumber}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => HandleBranchSelect(branch)}
+                              className={`mt-4 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
+                            >
+                              {isSelected ? 'Selected' : 'Select Branch'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Branch Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
+                        <span className="text-sm text-gray-500">
+                          Page {pagination.page} of {totalPages}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            disabled={pagination.page === 1}
+                            onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+                            className="px-3 py-1 bg-gray-700 text-white rounded text-sm disabled:opacity-50 hover:bg-gray-600"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            disabled={pagination.page === totalPages}
+                            onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+                            className="px-3 py-1 bg-gray-700 text-white rounded text-sm disabled:opacity-50 hover:bg-gray-600"
+                          >
+                            Next
                           </button>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

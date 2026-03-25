@@ -8,9 +8,10 @@ import OrderDetailsModal from './OrderDetailsModal';
 interface OrderHistoryProps {
   onBack: () => void;
   supplier?: string;
+  branchId?: string;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Supply' }) => {
+const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Supply', branchId }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
         endDate,
         itemsPerPage,
         pageNumber: pageNum,
-        search: searchQuery
+        search: searchQuery,
+        branchId: branchId // also pass branchId if we want to filter history by branch
       };
 
       let response;
@@ -52,13 +54,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
       if (response) {
         // Handle different response structures gracefully
         const responseData = response as any;
-        // ABC API usually returns { orders: [], total: N } or similar
-        // SRS might be different. 
-        // Adjust based on observation: User previously saw "data.items" in SRS or ABC.
+        
+        // Match the backend ResponseHandler.success(res, { data, total }) format
         const items = responseData.orders ||
           responseData.items ||
-          (responseData.data && (responseData.data.items || responseData.data.orders)) ||
+          (responseData.data && Array.isArray(responseData.data) ? responseData.data : 
+           (responseData.data && (responseData.data.data || responseData.data.items || responseData.data.orders))) ||
           [];
+          
         setOrders(items);
 
         const total = responseData.total ||
@@ -66,6 +69,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
           (responseData.data && responseData.data.total) ||
           (responseData.data && responseData.data.pagination ? responseData.data.pagination.totalItems : 0) ||
           items.length;
+          
         setTotalOrders(total);
       } else {
         setOrders([]);
@@ -203,17 +207,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
                       )}
 
                       <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Branch {order.branch || (order as any).branchNumber}
-                        {order.productQty ? ` - ${order.productQty} items` : (order as any).lines ? ` - ${(order as any).lines.length} items` : ''}
+                        Branch {order.branch || (order as any).branch_code || (order as any).branchNumber}
+                        {order.productQty ? ` - ${order.productQty} items` : 
+                         (order as any).order_line_items ? ` - ${(order as any).order_line_items.length} items` :
+                         (order as any).lines ? ` - ${(order as any).lines.length} items` : ''}
                       </p>
 
                       <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
-                          {/* <span className="font-medium">Date:</span> {new Date(order.invoiceDate || (order as any).orderDate || (order as any).createdAt).toLocaleDateString()} */}
-                          <span className="font-medium">Order Type:</span> {order.orderType || (order as any).orderType || 'Unknown'}
+                          <span className="font-medium">Order Type:</span> {order.orderType || (order as any).order_type || (order as any).orderType || 'Standard'}
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Total:</span> ${((order as any).totalAmount || (order as any).total || 0).toFixed(2)}
+                          <span className="font-medium">Total:</span> ${((order as any).total_amount || (order as any).total_price || (order as any).totalAmount || 0).toFixed(2)}
                         </div>
                       </div>
 
@@ -269,6 +274,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          supplier={supplier}
         />
       )}
     </div>

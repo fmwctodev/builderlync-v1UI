@@ -21,25 +21,43 @@ export default function SRSConnection({ onConnectionSuccess, onClose }: SRSConne
     try {
       const trimmedAccountNumber = accountNumber.trim();
       const trimmedInvoiceNumber = invoiceNumber.trim();
+      const trimmedInvoiceDate = invoiceDate.trim();
 
-      if (!trimmedAccountNumber || !trimmedInvoiceNumber || !invoiceDate) {
+      if (!trimmedAccountNumber || !trimmedInvoiceNumber || !trimmedInvoiceDate) {
         setError('Account number, invoice number, and invoice date are required.');
+        setLoading(false);
         return;
       }
 
-      const result = await srsService.saveCustomerProfile(
+      // 1. Validate the customer credentials via API
+      const validationResult = await srsService.validateCustomer(
         trimmedAccountNumber,
         trimmedInvoiceNumber,
-        invoiceDate
+        trimmedInvoiceDate
       );
       
-      if (result.success && result.data?.connected) {
+      // SRS API returns { data: { valid: true } } for validation
+      if (!validationResult.success || (!validationResult.data?.valid && !validationResult.data?.connected)) {
+        setError(validationResult.message || 'Validation failed. Please check your account details and invoice info.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Save the customer profile only if validation succeeded
+      const saveResult = await srsService.saveCustomerProfile(
+        trimmedAccountNumber,
+        trimmedInvoiceNumber,
+        trimmedInvoiceDate
+      );
+      
+      // Database save returns { data: { connected: true } } or similar
+      if (saveResult.success && (saveResult.data?.connected || saveResult.data?.valid)) {
         onConnectionSuccess();
       } else {
-        setError(result.message || 'Connection failed');
+        setError(saveResult.message || 'Validation succeeded, but failed to save profile to database.');
       }
     } catch (error) {
-      setError('Connection error');
+      setError('Connection error occurred while verifying SRS account.');
     } finally {
       setLoading(false);
     }
