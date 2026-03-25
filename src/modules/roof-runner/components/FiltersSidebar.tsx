@@ -15,6 +15,7 @@ export interface AdvancedFilters {
   stages: string[];
   updatedDate: string[];
   closeDate: string[];
+  createdDate: string[];
 }
 
 const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ 
@@ -67,22 +68,20 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   };
 
   const stages = [
-    'New lead', 'Appointment scheduled', 'Appointment run', 'Adjuster Meeting Scheduled',
-    'Adjuster Meeting Complete', 'Under Service Agreement/Contin', 'Estimate Received',
-    'Proposal sent/presented', 'Proposal follow-up', 'Reinspection', 'Public Adjuster',
-    'Proposal signed/Pre-Production', 'Supplementing', 'Pre-production', 'Materials Ordered',
-    'Production', 'Post-production', 'Payments/Invoicing', 'Post-job completion follow-up',
-    'Job completed', 'Lost', 'Unqualified'
-  ];
-
-  const leadSources = [
-    'Unassigned', 'Antonio', 'Billboard/Print Ad', 'CAI', 'Call Center', 'Call In',
-    'Chive', 'Clive', 'Customer referral', 'DEMO - IE', 'Door', 'Door hanger',
-    'Door knocking', 'Existing Relationship', 'Facebook', 'Goodwin', 'Google',
-    'GutterMaxx', 'Home Advisor', 'Instagram', 'Insurance Agent Referral', 'Light',
-    'Mailer', 'Nadine', 'Omar', 'Realestate referral', 'Referral - Kammie', 'REI',
-    'Repeat Customer', 'Roof Engine', 'The Roofing Broker', 'Thumbtack', 'Torus',
-    'Website', 'Website - IE', 'Yard Sign', 'Yelp'
+    'Inspection/Estimate Booked',
+    'Inspection/Estimate Complete',
+    'Proposal Drafted',
+    'Proposal Sent',
+    'Proposal Accepted',
+    'Job Won',
+    'Job Lost',
+    'Under Contract',
+    'Invoice Sent',
+    'Invoice Paid',
+    'Job Scheduled',
+    'Materials Ordered',
+    'Job Started',
+    'Job Complete'
   ];
 
   const sortOptions = [
@@ -167,7 +166,7 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                   type="checkbox" 
                   className="mr-2" 
                   checked={localFilters.assignees.includes(member.id)}
-                  onChange={() => toggleArrayFilter('assignees', member.id)}
+                  onChange={() => toggleArrayFilter('assignees', Number(member.id))}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   {member.first_name} {member.last_name}
@@ -220,6 +219,24 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                   className="mr-2" 
                   checked={localFilters.updatedDate.includes(option)}
                   onChange={() => toggleArrayFilter('updatedDate', option)}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Created Date */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Created date</h4>
+          <div className="space-y-2">
+            {dateRanges.map(option => (
+              <label key={option} className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  className="mr-2" 
+                  checked={localFilters.createdDate.includes(option)}
+                  onChange={() => toggleArrayFilter('createdDate', option)}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
               </label>

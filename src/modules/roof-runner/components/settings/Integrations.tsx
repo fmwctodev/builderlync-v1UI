@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ExternalLink } from 'lucide-react';
+import { Check, ExternalLink, Building2, Phone, Mail, MapPin, Hash, Calendar, X, RefreshCw, CheckCircle2, User } from 'lucide-react';
 import axios from 'axios';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
 import { getTwilioStatus, TwilioStatus } from '../../../../shared/store/services/twilioApi';
@@ -31,7 +31,8 @@ const Integrations: React.FC = () => {
   const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
   const [twilioStatus, setTwilioStatus] = React.useState<TwilioStatus>({ connected: false });
-  const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; accountNumber?: string }>({ connected: false });
+  const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; accountNumber?: string; profile?: any }>({ connected: false });
+  const [showSrsDetailsModal, setShowSrsDetailsModal] = React.useState(false);
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
@@ -203,7 +204,7 @@ const Integrations: React.FC = () => {
       const result = await srsService.getCustomerProfile();
       if (result?.success && result.data?.connected) {
         const accountNumber = result.data?.profile?.customer_code || result.data?.profile?.customerCode;
-        setSrsStatus({ connected: true, accountNumber });
+        setSrsStatus({ connected: true, accountNumber, profile: result.data?.profile });
         return;
       }
       setSrsStatus({ connected: false });
@@ -286,7 +287,11 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'twilio') {
       setShowTwilioModal(true);
     } else if (integrationId === 'srs-distribution') {
-      setShowSrsModal(true);
+      if (srsStatus.connected) {
+        setShowSrsDetailsModal(true);
+      } else {
+        setShowSrsModal(true);
+      }
     } else if (integrationId === 'google-business') {
       googleBusinessApi.connect("integrations");
     } else if (integrationId === 'abc-supply') {
@@ -421,7 +426,11 @@ const Integrations: React.FC = () => {
     if (integrationId === 'twilio') {
       setShowTwilioModal(true);
     } else if (integrationId === 'srs-distribution') {
-      setShowSrsModal(true);
+      if (srsStatus.connected) {
+        setShowSrsDetailsModal(true);
+      } else {
+        setShowSrsModal(true);
+      }
     } else {
       console.log(`Managing ${integrationId}...`);
     }
@@ -615,9 +624,15 @@ const Integrations: React.FC = () => {
             )}
 
             {integration.id === 'srs-distribution' && integration.connected && srsStatus.accountNumber && (
-              <p className="text-xs text-green-600 dark:text-green-400 mb-4">
-                Account Number: {srsStatus.accountNumber}
-              </p>
+              <div className="text-xs text-green-600 dark:text-green-400 mb-4 space-y-0.5">
+                <p>Account: <span className="font-medium">{srsStatus.accountNumber}</span></p>
+                {srsStatus.profile?.customer_details?.customerName && (
+                  <p>Name: <span className="font-medium">{srsStatus.profile.customer_details.customerName}</span></p>
+                )}
+                {srsStatus.profile?.customer_details?.homeBranch && (
+                  <p>Home Branch: <span className="font-medium">{srsStatus.profile.customer_details.homeBranch}</span></p>
+                )}
+              </div>
             )}
 
             <div className="flex flex-col space-y-2">
@@ -693,6 +708,103 @@ const Integrations: React.FC = () => {
           }}
           onClose={() => setShowSrsModal(false)}
         />
+      )}
+
+      {showSrsDetailsModal && srsStatus.profile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+
+            {/* Header hero */}
+            <div className="relative bg-gradient-to-br from-red-600 to-red-700 px-6 pt-6 pb-8">
+              <button
+                onClick={() => setShowSrsDetailsModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-11 w-11 rounded-xl bg-white/15 flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-red-200 text-xs font-medium uppercase tracking-wider">SRS Distribution</p>
+                  <h2 className="text-white text-lg font-bold leading-tight">Account Details</h2>
+                </div>
+              </div>
+              {/* Big account number display */}
+              <div className="bg-white/15 rounded-xl px-4 py-3">
+                <p className="text-red-200 text-xs font-medium mb-0.5">Account Number</p>
+                <p className="text-white text-xl font-bold tracking-wide font-mono">{srsStatus.profile.customer_code}</p>
+              </div>
+              {/* Connected badge */}
+              <div className="absolute -bottom-3 right-6 flex items-center gap-1.5 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Connected
+              </div>
+            </div>
+
+            {/* Details rows */}
+            <div className="flex-1 overflow-y-auto px-6 pt-7 pb-4 space-y-1">
+              {[
+                { icon: User, label: 'Customer Name', value: srsStatus.profile.customer_details?.customerName },
+                { icon: Hash, label: 'Home Branch', value: srsStatus.profile.customer_details?.homeBranch },
+                { icon: Mail, label: 'Email', value: srsStatus.profile.customer_details?.email || srsStatus.profile.customer_details?.emailAddress },
+                { icon: Phone, label: 'Phone', value: srsStatus.profile.customer_details?.phone || srsStatus.profile.customer_details?.phoneNumber },
+                { icon: MapPin, label: 'Location', value: [srsStatus.profile.customer_details?.city, srsStatus.profile.customer_details?.state].filter(Boolean).join(', ') || undefined },
+                { icon: CheckCircle2, label: 'Validation', value: srsStatus.profile.customer_details?.validIndicator === 'Y' ? 'Valid ✓' : srsStatus.profile.customer_details?.validIndicator },
+                { icon: Calendar, label: 'Connected Since', value: srsStatus.profile.updated_at ? new Date(srsStatus.profile.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined },
+              ].filter(row => row.value).map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                  <div className="h-8 w-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-4 w-4 text-red-500 dark:text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{label}</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{value}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Extra fields from SRS API response */}
+              {srsStatus.profile.customer_details && (() => {
+                const knownKeys = ['customerName','homeBranch','email','emailAddress','phone','phoneNumber','city','state','validIndicator'];
+                const extras = Object.entries(srsStatus.profile.customer_details).filter(([k, v]) => !knownKeys.includes(k) && v !== null && v !== undefined && v !== '');
+                return extras.length > 0 ? (
+                  <details className="mt-1">
+                    <summary className="text-xs text-gray-400 cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300 py-1">
+                      {extras.length} more field{extras.length !== 1 ? 's' : ''} from SRS
+                    </summary>
+                    <div className="mt-2 space-y-1">
+                      {extras.map(([k, v]) => (
+                        <div key={k} className="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[180px] ml-2">{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null;
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-2 flex gap-3">
+              <button
+                onClick={() => { setShowSrsDetailsModal(false); setShowSrsModal(true); }}
+                className="flex items-center justify-center gap-2 flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reconnect
+              </button>
+              <button
+                onClick={() => setShowSrsDetailsModal(false)}
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2.5 text-sm font-medium text-white transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <EagleViewConnectionModal
