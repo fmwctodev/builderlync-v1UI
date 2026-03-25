@@ -67,6 +67,10 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     updateFilters(key, []);
   };
 
+  const setSingleChoiceFilter = (key: keyof AdvancedFilters, value: string) => {
+    updateFilters(key, [value]);
+  };
+
   const stages = [
     'Inspection/Estimate Booked',
     'Inspection/Estimate Complete',
@@ -210,15 +214,26 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
         {/* Updated Date */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Updated date</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Updated date</h4>
+            {localFilters.updatedDate.length > 0 && (
+              <button 
+                className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                onClick={() => selectNoneArrayFilter('updatedDate')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <div className="space-y-2">
             {dateRanges.map(option => (
               <label key={option} className="flex items-center">
                 <input 
-                  type="checkbox" 
+                  type="radio" 
+                  name="updatedDate"
                   className="mr-2" 
                   checked={localFilters.updatedDate.includes(option)}
-                  onChange={() => toggleArrayFilter('updatedDate', option)}
+                  onChange={() => setSingleChoiceFilter('updatedDate', option)}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
               </label>
@@ -228,15 +243,26 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
         {/* Created Date */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Created date</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Created date</h4>
+            {localFilters.createdDate.length > 0 && (
+              <button 
+                className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                onClick={() => selectNoneArrayFilter('createdDate')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <div className="space-y-2">
             {dateRanges.map(option => (
               <label key={option} className="flex items-center">
                 <input 
-                  type="checkbox" 
+                  type="radio" 
+                  name="createdDate"
                   className="mr-2" 
                   checked={localFilters.createdDate.includes(option)}
-                  onChange={() => toggleArrayFilter('createdDate', option)}
+                  onChange={() => setSingleChoiceFilter('createdDate', option)}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
               </label>
@@ -246,15 +272,26 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
         {/* Close Date */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Close date</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Close date</h4>
+            {localFilters.closeDate.length > 0 && (
+              <button 
+                className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                onClick={() => selectNoneArrayFilter('closeDate')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <div className="space-y-2">
             {closeDateRanges.map(option => (
               <label key={option} className="flex items-center">
                 <input 
-                  type="checkbox" 
+                  type="radio" 
+                  name="closeDate"
                   className="mr-2" 
                   checked={localFilters.closeDate.includes(option)}
-                  onChange={() => toggleArrayFilter('closeDate', option)}
+                  onChange={() => setSingleChoiceFilter('closeDate', option)}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">{option}</span>
               </label>
