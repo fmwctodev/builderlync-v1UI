@@ -68,7 +68,7 @@ class SRSService {
 
   async searchProducts(query: string, page = 1, limit = 50): Promise<{ data: any[]; pagination?: any }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/srs/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+      const response = await fetch(`${API_BASE_URL}/srs/items/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
       
       if (response.ok) {
         const result = await response.json();

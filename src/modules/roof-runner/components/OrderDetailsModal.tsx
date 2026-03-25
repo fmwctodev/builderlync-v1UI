@@ -1,30 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { Package, Truck, CheckCircle, FileText, X, MapPin, Printer, ShoppingBag } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
+import { srsApi } from '../services/srsApi';
 
 interface OrderDetailsModalProps {
     order: any;
     onClose: () => void;
+    supplier?: string;
 }
 
-const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrder, onClose }) => {
+const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrder, onClose, supplier = 'ABC Supply' }) => {
     const [orderDetails, setOrderDetails] = useState<any>(initialOrder);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
             try {
-                const confirmationNumber = initialOrder.confirmationNumber || initialOrder.confirmationId;
+                if (supplier === 'SRS') {
+                    // For SRS, we primarily use the database record ID
+                    const orderId = initialOrder.id || initialOrder.orderNumber;
+                    if (orderId) {
+                        const response = await srsApi.getOrderById(orderId);
+                        const details = response.data || response;
+                        
+                        // Map SRS fields to common format
+                        setOrderDetails({
+                            ...initialOrder,
+                            ...details,
+                            orderNumber: details.po_number || details.transaction_id || initialOrder.orderNumber,
+                            orderStatus: details.status || initialOrder.orderStatus,
+                            lines: details.order_line_items || details.orderLineItemDetails || [],
+                            shipTo: details.ship_to || initialOrder.shipTo,
+                            invoiceDate: details.created_at || initialOrder.invoiceDate
+                        });
+                    }
+                } else {
+                    const confirmationNumber = initialOrder.confirmationNumber || initialOrder.confirmationId;
 
-                if (confirmationNumber) {
-                    // Use the specialized endpoint for confirmation number
-                    const response = await abcSupplyApi.getOrderDetails(confirmationNumber);
-                    const details = (response as any).data || response;
-                    setOrderDetails({ ...initialOrder, ...details });
-                } else if (initialOrder.orderNumber) {
-                    const response = await abcSupplyApi.getOrderById(initialOrder.orderNumber);
-                    const details = (response as any).data || response;
-                    setOrderDetails({ ...initialOrder, ...details });
+                    if (confirmationNumber) {
+                        // Use the specialized endpoint for confirmation number
+                        const response = await abcSupplyApi.getOrderDetails(confirmationNumber);
+                        const details = (response as any).data || response;
+                        setOrderDetails({ ...initialOrder, ...details });
+                    } else if (initialOrder.orderNumber) {
+                        const response = await abcSupplyApi.getOrderById(initialOrder.orderNumber);
+                        const details = (response as any).data || response;
+                        setOrderDetails({ ...initialOrder, ...details });
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load order details:', error);
@@ -34,7 +56,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
         };
 
         fetchOrderDetails();
-    }, [initialOrder]);
+    }, [initialOrder, supplier]);
 
     const handlePrint = () => {
         window.print();
@@ -50,15 +72,26 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
     const currentStepIndex = steps.findIndex(s => s.id === (orderDetails.orderStatus?.toLowerCase() || 'processing'));
     const isStepComplete = (index: number) => index <= (currentStepIndex === -1 ? 1 : currentStepIndex);
 
-    // Robust mapping for lines/items
+    // Robust mapping for lines/items (handles both ABC and SRS formats)
     const lines = orderDetails.lines || orderDetails.items || [];
-    const orderItems = lines.map((line: any) => ({
-        name: line.itemDescription || line.description || line.name || 'Item',
-        desc: line.itemNumber || line.productCode || line.sku || '',
-        qty: `${line.orderedQty?.value || line.quantity || 0} ${line.orderedQty?.uom || line.uom || ''}`,
-        price: line.unitPrice?.value || line.price || line.unitPrice || 0,
-        total: (line.unitPrice?.value || line.price || line.unitPrice || 0) * (line.orderedQty?.value || line.quantity || 0)
-    }));
+    const orderItems = lines.map((line: any) => {
+        // Handle various field names from different APIs/Tables
+        const name = line.itemDescription || line.productDescription || line.description || line.name || 'Item';
+        const desc = line.itemNumber || line.productId || line.productCode || line.sku || '';
+        const qtyValue = line.orderedQty?.value || line.quantity || line.qty || 0;
+        const uom = line.orderedQty?.uom || line.uom || line.unitOfMeasure || '';
+        const price = line.unitPrice?.value || line.unitPrice || line.price || 0;
+        const image = line.productImageUrl || line.imageUrl || line.image || line.productVariants?.[0]?.variantImageURL || "";
+        
+        return {
+            name,
+            desc,
+            qty: `${qtyValue} ${uom}`,
+            price: price,
+            total: price * qtyValue,
+            image
+        };
+    });
 
     // Calculate totals if not provided
     const subtotal = orderItems.reduce((acc: number, item: any) => acc + item.total, 0);
@@ -139,6 +172,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                                 <table className="w-full text-sm">
                                     <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 font-medium">
                                         <tr>
+                                            <th className="px-4 py-3 text-left w-16"></th>
                                             <th className="px-4 py-3 text-left">ITEM</th>
                                             <th className="px-4 py-3 text-center">QTY</th>
                                             <th className="px-4 py-3 text-right">UNIT PRICE</th>
@@ -149,27 +183,45 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                                         {orderItems.map((item: any, idx: number) => (
                                             <tr key={idx}>
                                                 <td className="px-4 py-3">
-                                                    <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                                    <p className="text-xs text-gray-500">{item.desc}</p>
+                                                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-700 rounded-md overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center">
+                                                        {item.image ? (
+                                                            <img 
+                                                                src={item.image} 
+                                                                alt="" 
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = 'none';
+                                                                    e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <div className={`fallback-icon ${item.image ? 'hidden' : ''}`}>
+                                                            <ShoppingBag className="h-5 w-5 text-gray-400 opacity-50" />
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-center">{item.qty}</td>
-                                                <td className="px-4 py-3 text-right">${typeof item.price === 'number' ? item.price.toFixed(2) : item.price}</td>
-                                                <td className="px-4 py-3 text-right font-medium">${typeof item.total === 'number' ? item.total.toFixed(2) : item.total}</td>
+                                                <td className="px-4 py-3">
+                                                    <p className="font-medium text-gray-900 dark:text-white leading-tight">{item.name}</p>
+                                                    <p className="text-[10px] font-mono text-primary-600 dark:text-primary-400 mt-0.5">#{item.desc}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">{item.qty}</td>
+                                                <td className="px-4 py-3 text-right whitespace-nowrap font-mono">${typeof item.price === 'number' ? item.price.toFixed(2) : item.price}</td>
+                                                <td className="px-4 py-3 text-right font-medium whitespace-nowrap font-mono">${typeof item.total === 'number' ? item.total.toFixed(2) : item.total}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot className="bg-gray-50 dark:bg-gray-700/30">
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-gray-500">Subtotal</td>
-                                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white">${subtotal.toFixed(2)}</td>
+                                            <td colSpan={4} className="px-4 py-2 text-right text-gray-500">Subtotal</td>
+                                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-mono">${subtotal.toFixed(2)}</td>
                                         </tr>
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-2 text-right text-gray-500">Tax (Est.)</td>
-                                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white">${tax.toFixed(2)}</td>
+                                            <td colSpan={4} className="px-4 py-2 text-right text-gray-500">Tax (Est.)</td>
+                                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-mono">${tax.toFixed(2)}</td>
                                         </tr>
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white text-lg">Total</td>
-                                            <td className="px-4 py-3 text-right font-bold text-[#D71920] text-lg">${total.toFixed(2)}</td>
+                                            <td colSpan={4} className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white text-lg">Total</td>
+                                            <td className="px-4 py-3 text-right font-bold text-[#D71920] text-lg font-mono">${total.toFixed(2)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>

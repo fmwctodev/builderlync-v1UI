@@ -186,27 +186,20 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         if (!items.length || !branchCode) return;
 
         try {
-            const customerCode = getSrsCustomerCode();
-            if (!customerCode) return;
-
             const requestBody = {
-                sourceSystem: "BUILDERLYNC",
-                customerCode,
                 branchCode: branchCode,
-                transactionId: `SPR-${Date.now()}`,
-                jobAccountNumber: 1,
                 productList: items
                     .map((item: any) => ({
                         productId: resolveSrsProductId(item),
-                        productName: item.familyName || item.itemDescription || item.itemNumber,
-                        productOptions: ["N/A"],
+                        productName: item.itemDescription || item.familyName || item.itemNumber,
+                        productOptions: Array.isArray(item.productOptions) ? item.productOptions : ["N/A"],
                         quantity: item.quantity || 1,
                         uom: resolveSrsUom(item)
                     }))
                     .filter((item: any) => item.productId)
             };
 
-            if (!requestBody.productList.length) return; // nothing to price
+            if (!requestBody.productList.length) return; 
 
             const response = await srsApi.getPrice(requestBody);
             
@@ -375,12 +368,14 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     },
                     orderLineItemDetails: items.map((item: any) => ({
                         productId: resolveSrsProductId(item),
-                        productName: item.familyName || item.itemDescription || `Product ${item.itemNumber}`,
-                        option: "N/A",
+                        productName: item.itemDescription || item.familyName || `Product ${item.itemNumber}`,
+                        productDescription: item.itemDescription || item.productDescription || item.familyName,
+                        productImageUrl: item.productImageUrl || item.productVariants?.[0]?.variantImageURL || "",
+                        option: item.selectedOption || "N/A",
                         quantity: item.quantity,
                         price: item.price || getItemPrice(item.itemNumber) || 0,
                         customerItem: item.itemNumber || "XXXX",
-                        uom: resolveSrsUom(item)
+                        uom: item.selectedUOM || resolveSrsUom(item)
                     })),
                     customerContactInfo: {
                         customerContactName: checkoutData.contact?.name || "Builder",
@@ -604,19 +599,33 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                         {/* Header */}
                                                         <div>
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2">
-                                                                    {item.familyName || item.itemDescription || `Item ${item.itemNumber}`}
+                                                                <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight line-clamp-3">
+                                                                    {item.itemDescription || item.familyName || `Item ${item.itemNumber}`}
                                                                 </h3>
                                                                 <button
-                                                                    onClick={() => onRemoveItem(item.itemNumber)}
+                                                                    onClick={() => onRemoveItem((item as any).cartKey || item.itemNumber)}
                                                                     className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1 -mt-1"
                                                                     title="Remove item"
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </button>
                                                             </div>
-                                                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                <span>#{item.itemNumber}</span>
+                                                            <div className="flex flex-col gap-0.5 mt-1 text-xs">
+                                                                <span className="text-gray-500 dark:text-gray-400 uppercase font-medium tracking-wider">{item.familyName}</span>
+                                                                <span className="text-primary-600 dark:text-primary-400 font-mono font-medium">#{item.itemNumber}</span>
+                                                                {/* Show selected option & UOM for SRS */}
+                                                                {(item as any).selectedOption && (
+                                                                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-300 border-l-2 border-primary-500 pl-1.5">
+                                                                            {(item as any).selectedOption}
+                                                                        </span>
+                                                                        {(item as any).selectedUOM && (
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                                                                · {(item as any).selectedUOM}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -624,7 +633,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
                                                             <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
                                                                 <button
-                                                                    onClick={() => onUpdateQuantity(item.itemNumber, Math.max(1, item.quantity - 1))}
+                                                                    onClick={() => onUpdateQuantity((item as any).cartKey || item.itemNumber, Math.max(1, item.quantity - 1))}
                                                                     className="w-7 h-7 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 rounded-md shadow-sm transition-all"
                                                                 >
                                                                     <Minus className="h-3 w-3" />
@@ -633,7 +642,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                                     {item.quantity}
                                                                 </span>
                                                                 <button
-                                                                    onClick={() => onUpdateQuantity(item.itemNumber, item.quantity + 1)}
+                                                                    onClick={() => onUpdateQuantity((item as any).cartKey || item.itemNumber, item.quantity + 1)}
                                                                     className="w-7 h-7 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600 rounded-md shadow-sm transition-all"
                                                                 >
                                                                     <Plus className="h-3 w-3" />
