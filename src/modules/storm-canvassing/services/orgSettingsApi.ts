@@ -139,7 +139,8 @@ export async function testStormProviderConnection(
     try {
       const response = await fetch('https://api.weather.gov/alerts/active?area=TX&limit=1', {
         headers: {
-          'User-Agent': 'BuilderLynk-StormCanvassing/1.0 (contact@builderlynk.com)',
+          'User-Agent': 'Builderlync',
+          'API-Key': 'Builderlync',
           Accept: 'application/geo+json',
         },
       });

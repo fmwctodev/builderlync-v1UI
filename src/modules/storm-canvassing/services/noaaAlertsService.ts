@@ -1,7 +1,8 @@
 import type { StormLayerType } from '../types';
 
 const NWS_BASE_URL = 'https://api.weather.gov';
-const USER_AGENT = 'BuilderLynk-StormCanvassing/1.0 (contact@builderlynk.com)';
+const USER_AGENT = 'Builderlync';
+const API_KEY = 'Builderlync';
 
 export interface NWSAlert {
   id: string;
@@ -157,6 +158,7 @@ export async function fetchActiveAlerts(stateCode: string): Promise<NWSAlert[]> 
   const response = await fetch(url, {
     headers: {
       'User-Agent': USER_AGENT,
+      'API-Key': API_KEY,
       Accept: 'application/geo+json',
     },
   });
