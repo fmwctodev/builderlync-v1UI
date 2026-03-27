@@ -112,6 +112,18 @@ export async function updateOrgSettings(
   if (updates.operating_states !== undefined) {
     updateData.operating_states = updates.operating_states;
   }
+  if (updates.tracked_event_types !== undefined) {
+    updateData.tracked_event_types = updates.tracked_event_types;
+  }
+  if (updates.default_historical_days_back !== undefined) {
+    updateData.default_historical_days_back = updates.default_historical_days_back;
+  }
+  if (updates.alert_recipient_user_ids !== undefined) {
+    updateData.alert_recipient_user_ids = updates.alert_recipient_user_ids;
+  }
+  if (updates.alert_recipient_external_emails !== undefined) {
+    updateData.alert_recipient_external_emails = updates.alert_recipient_external_emails;
+  }
 
   const { data, error } = await supabase
     .from('canvass_org_settings')

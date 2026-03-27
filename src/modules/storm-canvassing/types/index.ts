@@ -316,6 +316,35 @@ export interface CanvassAppointment {
   updated_at: string;
 }
 
+export type TrackedEventType =
+  | 'hail'
+  | 'tornado'
+  | 'severe_thunderstorm'
+  | 'high_wind'
+  | 'flood'
+  | 'winter_storm'
+  | 'hurricane';
+
+export const ALL_TRACKED_EVENT_TYPES: TrackedEventType[] = [
+  'hail',
+  'tornado',
+  'severe_thunderstorm',
+  'high_wind',
+  'flood',
+  'winter_storm',
+  'hurricane',
+];
+
+export const TRACKED_EVENT_TYPE_LABELS: Record<TrackedEventType, string> = {
+  hail: 'Hail',
+  tornado: 'Tornado',
+  severe_thunderstorm: 'Severe Thunderstorm',
+  high_wind: 'High Wind',
+  flood: 'Flood / Flash Flood',
+  winter_storm: 'Winter Storm',
+  hurricane: 'Hurricane',
+};
+
 export interface CanvassOrgSettings {
   organization_id: string;
   contact_reveal_cache_hours: number;
@@ -332,6 +361,10 @@ export interface CanvassOrgSettings {
   mrms_base_url?: string;
   hail_threshold_inches?: number;
   operating_states?: string[];
+  tracked_event_types?: TrackedEventType[];
+  default_historical_days_back?: number;
+  alert_recipient_user_ids?: string[];
+  alert_recipient_external_emails?: string[];
   created_at: string;
   updated_at: string;
 }
