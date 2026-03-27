@@ -1,6 +1,6 @@
-export type StormProvider = 'MOCK' | 'HAILTRACE' | 'HAIL_RECON';
+export type StormProvider = 'MOCK' | 'HAILTRACE' | 'HAIL_RECON' | 'NOAA';
 export type ContactProvider = 'MOCK' | 'HAILTRACE' | 'HAIL_RECON';
-export type StormLayerType = 'HAIL' | 'WIND' | 'TORNADO' | 'FLOOD';
+export type StormLayerType = 'HAIL' | 'WIND' | 'TORNADO' | 'FLOOD' | 'HURRICANE';
 export type StormLayerFormat = 'GEOJSON' | 'TILESET_URL';
 export type TurfStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
 export type TurfAssignmentStatus = 'ASSIGNED' | 'ACTIVE' | 'DONE';
@@ -45,6 +45,7 @@ export interface StormEvent {
   max_hail_estimate?: number;
   confidence_score?: number;
   ingestion_job_id?: string;
+  noaa_alert_id?: string;
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -327,9 +328,10 @@ export interface CanvassOrgSettings {
   hailtrace_api_key?: string;
   hail_recon_api_key?: string;
   mapbox_style_url?: string;
-  noaa_mode_enabled?: boolean;
+  noaa_mode?: 'mock' | 'live';
   mrms_base_url?: string;
-  hail_min_threshold_inches?: number;
+  hail_threshold_inches?: number;
+  operating_states?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -418,9 +420,17 @@ export interface CanvassKPIs {
 export interface NOAAConfig {
   enabled: boolean;
   mrmsBaseUrl: string;
-  hailMinThresholdInches: number;
+  hailThresholdInches: number;
   autoIngestEnabled: boolean;
   ingestIntervalMinutes: number;
+  operatingStates: string[];
+}
+
+export interface NOAAIngestionResult {
+  events: StormEvent[];
+  eventsCreated: number;
+  layersCreated: number;
+  duplicatesSkipped: number;
 }
 
 export const HAIL_SEVERITY_COLORS: Record<HailSeverityBand, string> = {

@@ -74,6 +74,25 @@ export async function getStormEventById(
   };
 }
 
+export async function getStormEventByAlertId(
+  organizationId: string,
+  noaaAlertId: string
+): Promise<StormEvent | null> {
+  const { data, error } = await supabase
+    .from('storm_events')
+    .select('*, storm_layers(*)')
+    .eq('organization_id', organizationId)
+    .eq('noaa_alert_id', noaaAlertId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch storm event by alert ID: ${error.message}`);
+  }
+
+  if (!data) return null;
+  return { ...data, layers: data.storm_layers || [] };
+}
+
 export async function createStormEvent(
   organizationId: string,
   eventData: Partial<StormEvent>,
@@ -83,10 +102,12 @@ export async function createStormEvent(
     .from('storm_events')
     .insert({
       organization_id: organizationId,
+      user_id: userId,
       name: eventData.name,
       description: eventData.description,
       provider: eventData.provider || 'MOCK',
       external_id: eventData.external_id,
+      noaa_alert_id: eventData.noaa_alert_id,
       event_date: eventData.event_date,
       event_start: eventData.event_start,
       event_end: eventData.event_end,
@@ -95,6 +116,10 @@ export async function createStormEvent(
       center_lng: eventData.center_lng,
       metadata: eventData.metadata || {},
       is_active: eventData.is_active ?? true,
+      status: eventData.status,
+      max_hail_estimate: eventData.max_hail_estimate,
+      confidence_score: eventData.confidence_score,
+      ingestion_job_id: eventData.ingestion_job_id,
       created_by: userId,
     })
     .select()

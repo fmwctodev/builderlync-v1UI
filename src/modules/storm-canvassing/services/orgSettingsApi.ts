@@ -4,10 +4,13 @@ import type { CanvassOrgSettings, StormProvider, ContactProvider } from '../type
 export async function getOrgSettings(
   organizationId: string
 ): Promise<CanvassOrgSettings | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from('canvass_org_settings')
     .select('*')
-    .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) {
@@ -15,7 +18,12 @@ export async function getOrgSettings(
     return null;
   }
 
-  return data;
+  if (!data) return null;
+
+  return {
+    ...data,
+    organization_id: organizationId,
+  } as CanvassOrgSettings;
 }
 
 export async function getOrCreateOrgSettings(
@@ -24,9 +32,13 @@ export async function getOrCreateOrgSettings(
   const existing = await getOrgSettings(organizationId);
   if (existing) return existing;
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('canvass_org_settings')
     .insert({
+      user_id: user.id,
       organization_id: organizationId,
       contact_reveal_cache_hours: 720,
       contact_reveal_cost: 1,
@@ -35,6 +47,7 @@ export async function getOrCreateOrgSettings(
       default_door_density: 150,
       default_storm_provider: 'MOCK',
       default_contact_provider: 'MOCK',
+      operating_states: [],
     })
     .select()
     .single();
@@ -43,13 +56,16 @@ export async function getOrCreateOrgSettings(
     throw new Error(`Failed to create org settings: ${error.message}`);
   }
 
-  return data;
+  return { ...data, organization_id: organizationId } as CanvassOrgSettings;
 }
 
 export async function updateOrgSettings(
   organizationId: string,
   updates: Partial<Omit<CanvassOrgSettings, 'organization_id' | 'created_at' | 'updated_at'>>
 ): Promise<CanvassOrgSettings> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   await getOrCreateOrgSettings(organizationId);
 
   const updateData: Record<string, unknown> = {};
@@ -84,20 +100,23 @@ export async function updateOrgSettings(
   if (updates.mapbox_style_url !== undefined) {
     updateData.mapbox_style_url = updates.mapbox_style_url;
   }
-  if (updates.noaa_mode_enabled !== undefined) {
-    updateData.noaa_mode_enabled = updates.noaa_mode_enabled;
+  if (updates.noaa_mode !== undefined) {
+    updateData.noaa_mode = updates.noaa_mode;
   }
   if (updates.mrms_base_url !== undefined) {
     updateData.mrms_base_url = updates.mrms_base_url;
   }
-  if (updates.hail_min_threshold_inches !== undefined) {
-    updateData.hail_min_threshold_inches = updates.hail_min_threshold_inches;
+  if (updates.hail_threshold_inches !== undefined) {
+    updateData.hail_threshold_inches = updates.hail_threshold_inches;
+  }
+  if (updates.operating_states !== undefined) {
+    updateData.operating_states = updates.operating_states;
   }
 
   const { data, error } = await supabase
     .from('canvass_org_settings')
     .update(updateData)
-    .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
     .select()
     .single();
 
@@ -105,7 +124,7 @@ export async function updateOrgSettings(
     throw new Error(`Failed to update org settings: ${error.message}`);
   }
 
-  return data;
+  return { ...data, organization_id: organizationId } as CanvassOrgSettings;
 }
 
 export async function testStormProviderConnection(
@@ -116,6 +135,24 @@ export async function testStormProviderConnection(
     return { success: true, message: 'Mock provider is always available' };
   }
 
+  if (provider === 'NOAA') {
+    try {
+      const response = await fetch('https://api.weather.gov/alerts/active?area=TX&limit=1', {
+        headers: {
+          'User-Agent': 'BuilderLynk-StormCanvassing/1.0 (contact@builderlynk.com)',
+          Accept: 'application/geo+json',
+        },
+      });
+      if (response.ok) {
+        return { success: true, message: 'NOAA NWS API is reachable and responding' };
+      }
+      return { success: false, message: `NOAA API returned status ${response.status}` };
+    } catch {
+      return { success: false, message: 'Could not reach NOAA NWS API' };
+    }
+  }
+
+  void apiKey;
   return {
     success: false,
     message: `${provider} integration is not yet implemented. Contact support for API access.`,
@@ -130,6 +167,7 @@ export async function testContactProviderConnection(
     return { success: true, message: 'Mock provider is always available' };
   }
 
+  void apiKey;
   return {
     success: false,
     message: `${provider} contact integration is not yet implemented. Contact support for API access.`,

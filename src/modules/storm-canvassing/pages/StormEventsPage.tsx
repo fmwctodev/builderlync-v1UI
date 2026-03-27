@@ -18,7 +18,8 @@ import {
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { useSupabaseUser } from '../../../shared/hooks/useSupabaseUser';
 import { getStormEvents } from '../services/stormEventsApi';
-import { runMockIngestion } from '../services/noaaEngine';
+import { runMockIngestion, runNOAAIngestion } from '../services/noaaEngine';
+import { getOrgSettings } from '../services/orgSettingsApi';
 import type { StormEvent, StormEventStatus } from '../types';
 import { HAIL_SEVERITY_COLORS, HAIL_SIZE_THRESHOLDS } from '../types';
 
@@ -116,14 +117,34 @@ export function StormEventsPage() {
     setIsIngesting(true);
     setToast(null);
     try {
-      const imported = await runMockIngestion(organizationId, user?.id);
-      setEvents((prev) => [...imported, ...prev]);
-      setToast({ type: 'success', text: `Imported ${imported.length} storm event(s) successfully` });
-    } catch {
-      setToast({ type: 'error', text: 'Failed to run ingestion' });
+      const settings = await getOrgSettings(organizationId);
+      const operatingStates = settings?.operating_states ?? [];
+
+      let result;
+      if (settings?.noaa_mode === 'live' && operatingStates.length > 0) {
+        result = await runNOAAIngestion(
+          organizationId,
+          operatingStates,
+          user?.id,
+          settings.hail_threshold_inches ?? 0.75
+        );
+      } else {
+        result = await runMockIngestion(organizationId, user?.id);
+      }
+
+      setEvents((prev) => [...result.events, ...prev]);
+
+      const modeLabel = settings?.noaa_mode === 'live' ? 'NOAA Live' : 'Mock';
+      let msg = `${modeLabel} ingestion complete: ${result.eventsCreated} event(s) created`;
+      if (result.duplicatesSkipped > 0) {
+        msg += `, ${result.duplicatesSkipped} duplicate(s) skipped`;
+      }
+      setToast({ type: 'success', text: msg });
+    } catch (err) {
+      setToast({ type: 'error', text: err instanceof Error ? err.message : 'Failed to run ingestion' });
     } finally {
       setIsIngesting(false);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => setToast(null), 6000);
     }
   };
 

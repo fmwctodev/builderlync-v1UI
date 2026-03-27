@@ -13,9 +13,11 @@ import {
   Clock,
   AlertTriangle,
   Play,
+  Globe,
 } from 'lucide-react';
 
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
+import { useSupabaseUser } from '../../../shared/hooks/useSupabaseUser';
 import {
   getOrCreateOrgSettings,
   updateOrgSettings,
@@ -24,13 +26,42 @@ import {
 import { getCreditBalance, getCreditLedgerHistory } from '../services/contactRevealApi';
 import { getAvailableStormProviders } from '../providers/stormProvider';
 import { getAvailableContactProviders } from '../providers/contactProvider';
-import { runMockIngestion } from '../services/noaaEngine';
+import { runMockIngestion, runNOAAIngestion } from '../services/noaaEngine';
 import type { CanvassOrgSettings, StormProvider, ContactProvider } from '../types';
 
 type SettingsTab = 'general' | 'providers' | 'noaa' | 'credits';
 
+const US_STATES: Array<{ code: string; name: string }> = [
+  { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' }, { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' },
+  { code: 'FL', name: 'Florida' }, { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' }, { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' }, { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' }, { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' }, { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' }, { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' }, { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' },
+];
+
 export function CanvassSettingsPage() {
   const { currentOrganization } = useCurrentOrganization();
+  const { user } = useSupabaseUser();
   const organizationId = currentOrganization?.id;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -53,9 +84,10 @@ export function CanvassSettingsPage() {
     defaultContactProvider: 'MOCK' as ContactProvider,
     hailtraceApiKey: '',
     hailReconApiKey: '',
-    noaaModeEnabled: false,
+    noaaMode: 'mock' as 'mock' | 'live',
     mrmsBaseUrl: 'https://mrms.ncep.noaa.gov/data/2D/',
-    hailMinThresholdInches: 0.75,
+    hailThresholdInches: 0.75,
+    operatingStates: [] as string[],
   });
 
   const stormProviders = getAvailableStormProviders();
@@ -87,9 +119,10 @@ export function CanvassSettingsPage() {
           defaultContactProvider: settingsData.default_contact_provider,
           hailtraceApiKey: settingsData.hailtrace_api_key || '',
           hailReconApiKey: settingsData.hail_recon_api_key || '',
-          noaaModeEnabled: settingsData.noaa_mode_enabled || false,
+          noaaMode: settingsData.noaa_mode || 'mock',
           mrmsBaseUrl: settingsData.mrms_base_url || 'https://mrms.ncep.noaa.gov/data/2D/',
-          hailMinThresholdInches: settingsData.hail_min_threshold_inches || 0.75,
+          hailThresholdInches: settingsData.hail_threshold_inches ?? 0.75,
+          operatingStates: settingsData.operating_states || [],
         });
       } catch (err) {
         console.error('Error loading settings:', err);
@@ -100,6 +133,15 @@ export function CanvassSettingsPage() {
 
     loadData();
   }, [organizationId]);
+
+  const toggleState = (code: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      operatingStates: prev.operatingStates.includes(code)
+        ? prev.operatingStates.filter((s) => s !== code)
+        : [...prev.operatingStates, code],
+    }));
+  };
 
   const handleSave = async () => {
     if (!organizationId) return;
@@ -118,13 +160,15 @@ export function CanvassSettingsPage() {
         default_contact_provider: formState.defaultContactProvider,
         hailtrace_api_key: formState.hailtraceApiKey || undefined,
         hail_recon_api_key: formState.hailReconApiKey || undefined,
-        noaa_mode_enabled: formState.noaaModeEnabled,
+        noaa_mode: formState.noaaMode,
         mrms_base_url: formState.mrmsBaseUrl || undefined,
-        hail_min_threshold_inches: formState.hailMinThresholdInches,
+        hail_threshold_inches: formState.hailThresholdInches,
+        operating_states: formState.operatingStates,
       });
 
       setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
-    } catch (err) {
+      setTimeout(() => setSaveMessage(null), 4000);
+    } catch {
       setSaveMessage({ type: 'error', text: 'Failed to save settings' });
     } finally {
       setIsSaving(false);
@@ -146,11 +190,23 @@ export function CanvassSettingsPage() {
     setIsRunningIngestion(true);
     setIngestionMessage(null);
     try {
-      const result = await runMockIngestion(organizationId);
-      setIngestionMessage({
-        type: 'success',
-        text: `Ingestion complete: ${result.eventsCreated} events created, ${result.layersCreated} layers created`,
-      });
+      let result;
+      if (formState.noaaMode === 'live' && formState.operatingStates.length > 0) {
+        result = await runNOAAIngestion(
+          organizationId,
+          formState.operatingStates,
+          user?.id,
+          formState.hailThresholdInches
+        );
+      } else {
+        result = await runMockIngestion(organizationId, user?.id);
+      }
+
+      let msg = `Ingestion complete: ${result.eventsCreated} event(s) created, ${result.layersCreated} layer(s) created`;
+      if (result.duplicatesSkipped > 0) {
+        msg += `, ${result.duplicatesSkipped} duplicate(s) skipped`;
+      }
+      setIngestionMessage({ type: 'success', text: msg });
     } catch (err) {
       setIngestionMessage({
         type: 'error',
@@ -394,33 +450,69 @@ export function CanvassSettingsPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    NOAA Storm Data Engine
+                    NOAA NWS Alerts Engine
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Auto-ingest hail and severe weather data from NOAA MRMS
+                    Pull real-time storm alerts from NOAA National Weather Service
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                  <input
-                    type="checkbox"
-                    checked={formState.noaaModeEnabled}
-                    onChange={(e) =>
-                      setFormState((prev) => ({ ...prev, noaaModeEnabled: e.target.checked }))
-                    }
-                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      Enable NOAA Mode
-                    </span>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Use NOAA MRMS radar-derived hail data for storm events
-                    </p>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ingestion Mode
+                  </label>
+                  <div className="flex gap-3">
+                    {(['mock', 'live'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setFormState((prev) => ({ ...prev, noaaMode: mode }))}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          formState.noaaMode === mode
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+                        }`}
+                      >
+                        {mode === 'mock' ? 'Mock (Demo)' : 'Live (NOAA NWS)'}
+                      </button>
+                    ))}
                   </div>
-                </label>
+                  {formState.noaaMode === 'live' && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      Live mode uses the free NOAA NWS Alerts API — no API key required.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Minimum Hail Threshold: {formState.hailThresholdInches}"
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="2.75"
+                    step="0.05"
+                    value={formState.hailThresholdInches}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        hailThresholdInches: parseFloat(e.target.value),
+                      }))
+                    }
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0.1" (Trace)</span>
+                    <span>0.75" (Quarter)</span>
+                    <span>1.75" (Golf Ball)</span>
+                    <span>2.75" (Baseball)</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Only import storm events where max hail exceeds this size
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -435,40 +527,80 @@ export function CanvassSettingsPage() {
                     placeholder="https://mrms.ncep.noaa.gov/data/2D/"
                     className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    NOAA MRMS GRIB2 data endpoint for mesh hail analysis
-                  </p>
                 </div>
+              </div>
+            </div>
 
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Minimum Hail Threshold: {formState.hailMinThresholdInches}"
-                  </label>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="2.75"
-                    step="0.05"
-                    value={formState.hailMinThresholdInches}
-                    onChange={(e) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        hailMinThresholdInches: parseFloat(e.target.value),
-                      }))
-                    }
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>0.1" (Trace)</span>
-                    <span>0.75" (Quarter)</span>
-                    <span>1.75" (Golf Ball)</span>
-                    <span>2.75" (Baseball)</span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Only import storm events where max hail exceeds this size
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Monitored States
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Select the states to monitor for active storm alerts
+                    {formState.operatingStates.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full font-medium">
+                        {formState.operatingStates.length} selected
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                {US_STATES.map((state) => {
+                  const selected = formState.operatingStates.includes(state.code);
+                  return (
+                    <button
+                      key={state.code}
+                      onClick={() => toggleState(state.code)}
+                      title={state.name}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        selected
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600'
+                      }`}
+                    >
+                      {state.code}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {formState.operatingStates.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {formState.operatingStates.map((code) => {
+                    const state = US_STATES.find((s) => s.code === code);
+                    return (
+                      <span
+                        key={code}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs rounded-full border border-blue-200 dark:border-blue-700"
+                      >
+                        {state?.name ?? code}
+                        <button
+                          onClick={() => toggleState(code)}
+                          className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-200"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {formState.noaaMode === 'live' && formState.operatingStates.length === 0 && (
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    No states selected. Live NOAA ingestion requires at least one monitored state.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
@@ -482,14 +614,15 @@ export function CanvassSettingsPage() {
               </div>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Manually trigger a storm data ingestion run to pull the latest events from the configured provider.
-                In demo mode, this generates realistic mock storm events with hail data.
+                {formState.noaaMode === 'live'
+                  ? 'Fetch active storm alerts from NOAA NWS for your monitored states.'
+                  : 'Generate realistic mock storm events with hail data for testing.'}
               </p>
 
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleRunIngestion}
-                  disabled={isRunningIngestion}
+                  disabled={isRunningIngestion || (formState.noaaMode === 'live' && formState.operatingStates.length === 0)}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   {isRunningIngestion ? (
@@ -516,14 +649,6 @@ export function CanvassSettingsPage() {
                     {ingestionMessage.text}
                   </div>
                 )}
-              </div>
-
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  NOAA MRMS integration is currently in mock/demo mode. Real MRMS ingestion
-                  requires a server-side worker process. Contact support to enable live data ingestion.
-                </p>
               </div>
             </div>
           </div>

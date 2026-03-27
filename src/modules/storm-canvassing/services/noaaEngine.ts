@@ -1,15 +1,21 @@
-import type { StormEvent, StormLayer, NOAAConfig, HailSeverityBand, DoorStormMatch } from '../types';
+import type { StormEvent, StormLayer, NOAAConfig, NOAAIngestionResult, HailSeverityBand, DoorStormMatch } from '../types';
 import { getHailSeverityBand, HAIL_SEVERITY_COLORS } from '../types';
 import { supabase } from '../../../shared/lib/supabase';
-import { createStormEvent, createStormLayer } from './stormEventsApi';
+import { createStormEvent, createStormLayer, getStormEventByAlertId } from './stormEventsApi';
 import { createIngestionJob, updateIngestionJobStatus } from './stormIngestionApi';
+import {
+  fetchAlertsForStates,
+  buildGeoJSONFromAlert,
+  type ParsedStormAlert,
+} from './noaaAlertsService';
 
 const DEFAULT_NOAA_CONFIG: NOAAConfig = {
   enabled: false,
   mrmsBaseUrl: 'https://mrms.ncep.noaa.gov/data',
-  hailMinThresholdInches: 0.75,
+  hailThresholdInches: 0.75,
   autoIngestEnabled: false,
   ingestIntervalMinutes: 60,
+  operatingStates: [],
 };
 
 export function buildHailSeverityColorScale(): Array<{ value: number; color: string }> {
@@ -63,10 +69,125 @@ export function buildMockHailGeoJSON(
   return { type: 'FeatureCollection', features };
 }
 
+export async function runNOAAIngestion(
+  organizationId: string,
+  operatingStates: string[],
+  userId?: string,
+  hailThreshold: number = 0.75
+): Promise<NOAAIngestionResult> {
+  if (operatingStates.length === 0) {
+    throw new Error('No operating states configured. Please add at least one state to monitor.');
+  }
+
+  const job = await createIngestionJob(
+    organizationId,
+    'NOAA',
+    { mode: 'live', states: operatingStates, triggered_by: 'manual' },
+    userId
+  );
+
+  await updateIngestionJobStatus(job.id, 'RUNNING', {
+    started_at: new Date().toISOString(),
+  });
+
+  const importedEvents: StormEvent[] = [];
+  let eventsCreated = 0;
+  let layersCreated = 0;
+  let duplicatesSkipped = 0;
+
+  try {
+    const alerts = await fetchAlertsForStates(operatingStates);
+    const filtered = alerts.filter(
+      (a) => !a.maxHailEstimate || a.maxHailEstimate >= hailThreshold
+    );
+
+    for (const alert of filtered) {
+      try {
+        const existing = await getStormEventByAlertId(organizationId, alert.alertId);
+        if (existing) {
+          duplicatesSkipped++;
+          continue;
+        }
+
+        const bbox = alert.bbox;
+        const event = await createStormEvent(
+          organizationId,
+          {
+            name: alert.headline || `${alert.event} — ${alert.areaDescription.substring(0, 60)}`,
+            description: alert.description,
+            provider: 'NOAA',
+            external_id: alert.alertId,
+            noaa_alert_id: alert.alertId,
+            event_date: alert.effective.substring(0, 10),
+            event_start: alert.effective,
+            event_end: alert.expires,
+            center_lat: alert.centerLat,
+            center_lng: alert.centerLng,
+            bbox,
+            is_active: true,
+            status: 'ACTIVE',
+            max_hail_estimate: alert.maxHailEstimate,
+            confidence_score: 0.85,
+            ingestion_job_id: job.id,
+            metadata: {
+              source: 'noaa_nws_alerts',
+              severity: alert.severity,
+              state: alert.stateCode,
+              sender: alert.senderName,
+              job_id: job.id,
+            },
+          },
+          userId
+        );
+
+        const geojson = buildGeoJSONFromAlert(alert);
+        await createStormLayer(organizationId, event.id, {
+          name: `${alert.event} Layer`,
+          layer_type: alert.layerType,
+          format: 'GEOJSON',
+          geojson,
+          min_threshold: alert.maxHailEstimate ? Math.max(0.25, alert.maxHailEstimate * 0.5) : 0.25,
+          max_threshold: alert.maxHailEstimate,
+          is_visible: true,
+          display_order: 0,
+          style: {
+            fillOpacity: 0.45,
+            strokeWidth: 1,
+            colorScale: {
+              property: 'hail_size',
+              stops: buildHailSeverityColorScale(),
+            },
+          },
+        });
+
+        importedEvents.push(event);
+        eventsCreated++;
+        layersCreated++;
+      } catch {
+        // continue on per-alert error
+      }
+    }
+
+    await updateIngestionJobStatus(job.id, 'COMPLETED', {
+      completed_at: new Date().toISOString(),
+      events_found: alerts.length,
+      events_imported: eventsCreated,
+    });
+  } catch (err) {
+    await updateIngestionJobStatus(job.id, 'FAILED', {
+      completed_at: new Date().toISOString(),
+      error_message: err instanceof Error ? err.message : 'Unknown error',
+    });
+    throw err;
+  }
+
+  return { events: importedEvents, eventsCreated, layersCreated, duplicatesSkipped };
+}
+
 export async function runMockIngestion(
   organizationId: string,
   userId?: string
-): Promise<StormEvent[]> {
+): Promise<NOAAIngestionResult> {
   const job = await createIngestionJob(
     organizationId,
     'MOCK',
@@ -170,7 +291,12 @@ export async function runMockIngestion(
     events_imported: eventsImported,
   });
 
-  return importedEvents;
+  return {
+    events: importedEvents,
+    eventsCreated: eventsImported,
+    layersCreated: eventsImported,
+    duplicatesSkipped: 0,
+  };
 }
 
 export async function matchDoorsToStormEvent(
