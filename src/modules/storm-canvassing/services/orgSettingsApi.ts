@@ -10,7 +10,7 @@ export async function getOrgSettings(
   const { data, error } = await supabase
     .from('canvass_org_settings')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('organization_id', organizationId)
     .maybeSingle();
 
   if (error) {
@@ -20,10 +20,7 @@ export async function getOrgSettings(
 
   if (!data) return null;
 
-  return {
-    ...data,
-    organization_id: organizationId,
-  } as CanvassOrgSettings;
+  return data as CanvassOrgSettings;
 }
 
 export async function getOrCreateOrgSettings(
@@ -116,7 +113,7 @@ export async function updateOrgSettings(
   const { data, error } = await supabase
     .from('canvass_org_settings')
     .update(updateData)
-    .eq('user_id', user.id)
+    .eq('organization_id', organizationId)
     .select()
     .single();
 

@@ -120,10 +120,14 @@ export async function createTurf(
       ? { type: 'MultiPolygon', coordinates: [turfData.geometry.coordinates] }
       : turfData.geometry;
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('turfs')
     .insert({
       organization_id: organizationId,
+      user_id: user.id,
       name: turfData.name,
       description: turfData.description,
       geometry: geometryForDB,
@@ -132,7 +136,7 @@ export async function createTurf(
       status: 'NOT_STARTED',
       total_doors: 0,
       visited_doors: 0,
-      created_by: userId,
+      created_by: userId || user.id,
     })
     .select()
     .single();
