@@ -115,6 +115,8 @@ const ContactProfile: React.FC = () => {
     deductible: 0,
     claimDetails: "",
     createdBy: 1,
+    contactId: null,
+    contactName: null
   });
 
   const fetchStaff = async () => {
@@ -166,6 +168,8 @@ const ContactProfile: React.FC = () => {
       deductible: 0,
       claimDetails: "",
       createdBy: 1,
+      contactId: null,
+      contactName: null
     });
   };
 
@@ -348,7 +352,10 @@ const ContactProfile: React.FC = () => {
       <ContactHeader
         contactName={contact.fullName}
         onBack={() => navigate(getOrgPath("contacts"))}
-        onCreateJob={() => setShowAddressModal(true)}
+        onCreateJob={() => {
+          if (contact.address) setJobAddress(contact.address);
+          setShowAddressModal(true);
+        }}
         onEdit={handleEdit}
       />
 
@@ -413,12 +420,19 @@ const ContactProfile: React.FC = () => {
               ...formData,
               location: jobAddress,
               name: jobAddress,
+              contactId: Number(contact.id),
+              contactName: contact.fullName || contact.full_name || contact.name || 'Contact',
             });
             setShowAddressModal(false);
             setShowJobDetails(true);
           }
         }}
         onCreateFromCompanyCam={() => {
+          setFormData({
+            ...formData,
+            contactId: Number(contact.id),
+            contactName: contact.fullName || contact.full_name || contact.name || 'Contact',
+          });
           setShowAddressModal(false);
           setShowJobDetails(true);
         }}

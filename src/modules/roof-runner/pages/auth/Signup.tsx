@@ -261,12 +261,11 @@ const Signup: React.FC = () => {
                 type="text"
                 value={formData.betaCode}
                 onChange={handleChange}
-                required
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
-                style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
+                style={{ '--tw-ring-color': '#dc2626' } as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
-                placeholder="Enter your beta code"
+                placeholder="Enter your beta code (Optional)"
               />
             </div>
           </div>

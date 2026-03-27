@@ -25,7 +25,9 @@ export interface Job {
   };
   customer?: {
     id: number;
-    full_name: string;
+    full_name?: string;
+    fullName?: string;
+    name?: string;
     email: string;
     phone: string;
     company: string;

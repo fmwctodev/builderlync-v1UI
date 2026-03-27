@@ -924,12 +924,18 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [catalogItems, setCatalogItems] = useState<APICatalogItem[]>([]);
+  const [catalogSearchResults, setCatalogSearchResults] = useState<APICatalogItem[]>([]);
+  const [upgradeCatalogSearchResults, setUpgradeCatalogSearchResults] = useState<APICatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [searchingCatalog, setSearchingCatalog] = useState(false);
+  const [searchingUpgradeCatalog, setSearchingUpgradeCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTemplateLocked, setIsTemplateLocked] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<UploadingPhoto[]>([]);
   const catalogItemsRef = useRef<APICatalogItem[]>([]);
+  const catalogSearchRequestRef = useRef(0);
+  const upgradeCatalogSearchRequestRef = useRef(0);
 
   const [sections, setSections] = useState<Section[]>([
     { id: 'cover', name: "Cover", active: true, order: 0 },
@@ -1131,6 +1137,81 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
       }))
     );
   }, [catalogItems]);
+
+  useEffect(() => {
+    if (!showCatalogDropdown) return;
+
+    const query = catalogSearch.trim();
+    if (!query) {
+      catalogSearchRequestRef.current += 1;
+      setCatalogSearchResults([]);
+      setSearchingCatalog(false);
+      return;
+    }
+
+    setSearchingCatalog(true);
+    const debounceTimer = setTimeout(async () => {
+      const requestId = ++catalogSearchRequestRef.current;
+
+      try {
+        const response = await getCatalogItems({ search: query, limit: 50 });
+        if (requestId !== catalogSearchRequestRef.current) return;
+        setCatalogSearchResults(response.success && response.data ? response.data.items : []);
+      } catch (error) {
+        if (requestId !== catalogSearchRequestRef.current) return;
+        console.error("Failed to search catalog items:", error);
+        setCatalogSearchResults([]);
+      } finally {
+        if (requestId === catalogSearchRequestRef.current) {
+          setSearchingCatalog(false);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [catalogSearch, showCatalogDropdown]);
+
+  useEffect(() => {
+    if (!showUpgradeCatalogDropdown) return;
+
+    const query = upgradeCatalogSearch.trim();
+    if (!query) {
+      upgradeCatalogSearchRequestRef.current += 1;
+      setUpgradeCatalogSearchResults([]);
+      setSearchingUpgradeCatalog(false);
+      return;
+    }
+
+    setSearchingUpgradeCatalog(true);
+    const debounceTimer = setTimeout(async () => {
+      const requestId = ++upgradeCatalogSearchRequestRef.current;
+
+      try {
+        const response = await getCatalogItems({ search: query, limit: 50 });
+        if (requestId !== upgradeCatalogSearchRequestRef.current) return;
+        setUpgradeCatalogSearchResults(
+          response.success && response.data ? response.data.items : []
+        );
+      } catch (error) {
+        if (requestId !== upgradeCatalogSearchRequestRef.current) return;
+        console.error("Failed to search upgrade catalog items:", error);
+        setUpgradeCatalogSearchResults([]);
+      } finally {
+        if (requestId === upgradeCatalogSearchRequestRef.current) {
+          setSearchingUpgradeCatalog(false);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [upgradeCatalogSearch, showUpgradeCatalogDropdown]);
+
+  const visibleCatalogItems = catalogSearch.trim()
+    ? catalogSearchResults
+    : catalogItems;
+  const visibleUpgradeCatalogItems = upgradeCatalogSearch.trim()
+    ? upgradeCatalogSearchResults
+    : catalogItems;
 
   // Removed blob URL cleanup since we're now using permanent URLs
 
@@ -2854,10 +2935,18 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                           onBlur={() => setTimeout(() => { setShowCatalogDropdown(false); setEditingItemId(null); }, 200)}
                                         />
                                       </div>
-                                      <div className="max-h-64 overflow-y-auto">
-                                        {catalogItems
-                                          .filter(item => item.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-                                          .map((item, idx) => (
+                                      <div className="h-64 overflow-y-auto">
+                                        {searchingCatalog && (
+                                          <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                            Searching catalog...
+                                          </div>
+                                        )}
+                                        {!searchingCatalog && visibleCatalogItems.length === 0 && (
+                                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                            No catalog items found.
+                                          </div>
+                                        )}
+                                        {!searchingCatalog && visibleCatalogItems.map((item, idx) => (
                                             <button
                                               key={idx}
                                               onClick={() => addItemFromCatalog(item)}
@@ -3052,10 +3141,18 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                   onBlur={() => setTimeout(() => setShowCatalogDropdown(false), 200)}
                                 />
                               </div>
-                              <div className="max-h-64 overflow-y-auto">
-                                {catalogItems
-                                  .filter(item => item.name.toLowerCase().includes(catalogSearch.toLowerCase()))
-                                  .map((item, idx) => (
+                              <div className="h-64 overflow-y-auto">
+                                {searchingCatalog && (
+                                  <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                    Searching catalog...
+                                  </div>
+                                )}
+                                {!searchingCatalog && visibleCatalogItems.length === 0 && (
+                                  <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    No catalog items found.
+                                  </div>
+                                )}
+                                {!searchingCatalog && visibleCatalogItems.map((item, idx) => (
                                     <button
                                       key={idx}
                                       onClick={() => addItemFromCatalog(item)}
@@ -3306,10 +3403,18 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                               onBlur={() => setTimeout(() => { setShowUpgradeCatalogDropdown(null); setEditingUpgradeItemId(null); }, 200)}
                                             />
                                           </div>
-                                          <div className="max-h-64 overflow-y-auto">
-                                            {catalogItems
-                                              .filter(item => item.name.toLowerCase().includes(upgradeCatalogSearch.toLowerCase()))
-                                              .map((item, idx) => (
+                                          <div className="h-64 overflow-y-auto">
+                                            {searchingUpgradeCatalog && (
+                                              <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                                Searching catalog...
+                                              </div>
+                                            )}
+                                            {!searchingUpgradeCatalog && visibleUpgradeCatalogItems.length === 0 && (
+                                              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                No catalog items found.
+                                              </div>
+                                            )}
+                                            {!searchingUpgradeCatalog && visibleUpgradeCatalogItems.map((item, idx) => (
                                                 <button
                                                   key={idx}
                                                   onClick={() => addItemToUpgradeFromCatalog(upgrade.id, item)}
@@ -3582,10 +3687,18 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
                                         onBlur={() => setTimeout(() => setShowUpgradeCatalogDropdown(null), 200)}
                                       />
                                     </div>
-                                    <div className="max-h-64 overflow-y-auto">
-                                      {catalogItems
-                                        .filter(item => item.name.toLowerCase().includes(upgradeCatalogSearch.toLowerCase()))
-                                        .map((item, idx) => (
+                                    <div className="h-64 overflow-y-auto">
+                                      {searchingUpgradeCatalog && (
+                                        <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                          Searching catalog...
+                                        </div>
+                                      )}
+                                      {!searchingUpgradeCatalog && visibleUpgradeCatalogItems.length === 0 && (
+                                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                          No catalog items found.
+                                        </div>
+                                      )}
+                                      {!searchingUpgradeCatalog && visibleUpgradeCatalogItems.map((item, idx) => (
                                           <button
                                             key={idx}
                                             onClick={() => addItemToUpgradeFromCatalog(upgrade.id, item)}

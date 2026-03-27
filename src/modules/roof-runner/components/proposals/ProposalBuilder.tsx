@@ -237,7 +237,11 @@ export default function ProposalBuilder({
   );
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [catalogItems, setCatalogItems] = useState<APICatalogItem[]>([]);
+  const [catalogSearchResults, setCatalogSearchResults] = useState<APICatalogItem[]>([]);
+  const [upgradeCatalogSearchResults, setUpgradeCatalogSearchResults] = useState<APICatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [searchingCatalog, setSearchingCatalog] = useState(false);
+  const [searchingUpgradeCatalog, setSearchingUpgradeCatalog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState<UploadingPhoto[]>([]);
@@ -292,6 +296,8 @@ export default function ProposalBuilder({
   });
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loadingJob, setLoadingJob] = useState(false);
+  const catalogSearchRequestRef = useRef(0);
+  const upgradeCatalogSearchRequestRef = useRef(0);
 
   const [sections, setSections] = useState<Section[]>([
     { id: "cover", name: "Cover", active: true, order: 0 },
@@ -643,6 +649,81 @@ export default function ProposalBuilder({
       loadCatalogItems();
     }
   }, [loading]);
+
+  useEffect(() => {
+    if (!showCatalogDropdown) return;
+
+    const query = catalogSearch.trim();
+    if (!query) {
+      catalogSearchRequestRef.current += 1;
+      setCatalogSearchResults([]);
+      setSearchingCatalog(false);
+      return;
+    }
+
+    setSearchingCatalog(true);
+    const debounceTimer = setTimeout(async () => {
+      const requestId = ++catalogSearchRequestRef.current;
+
+      try {
+        const response = await getCatalogItems({ search: query, limit: 50 });
+        if (requestId !== catalogSearchRequestRef.current) return;
+        setCatalogSearchResults(response.success && response.data ? response.data.items : []);
+      } catch (error) {
+        if (requestId !== catalogSearchRequestRef.current) return;
+        console.error("Failed to search catalog items:", error);
+        setCatalogSearchResults([]);
+      } finally {
+        if (requestId === catalogSearchRequestRef.current) {
+          setSearchingCatalog(false);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [catalogSearch, showCatalogDropdown]);
+
+  useEffect(() => {
+    if (!showUpgradeCatalogDropdown) return;
+
+    const query = upgradeCatalogSearch.trim();
+    if (!query) {
+      upgradeCatalogSearchRequestRef.current += 1;
+      setUpgradeCatalogSearchResults([]);
+      setSearchingUpgradeCatalog(false);
+      return;
+    }
+
+    setSearchingUpgradeCatalog(true);
+    const debounceTimer = setTimeout(async () => {
+      const requestId = ++upgradeCatalogSearchRequestRef.current;
+
+      try {
+        const response = await getCatalogItems({ search: query, limit: 50 });
+        if (requestId !== upgradeCatalogSearchRequestRef.current) return;
+        setUpgradeCatalogSearchResults(
+          response.success && response.data ? response.data.items : []
+        );
+      } catch (error) {
+        if (requestId !== upgradeCatalogSearchRequestRef.current) return;
+        console.error("Failed to search upgrade catalog items:", error);
+        setUpgradeCatalogSearchResults([]);
+      } finally {
+        if (requestId === upgradeCatalogSearchRequestRef.current) {
+          setSearchingUpgradeCatalog(false);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [upgradeCatalogSearch, showUpgradeCatalogDropdown]);
+
+  const visibleCatalogItems = catalogSearch.trim()
+    ? catalogSearchResults
+    : catalogItems;
+  const visibleUpgradeCatalogItems = upgradeCatalogSearch.trim()
+    ? upgradeCatalogSearchResults
+    : catalogItems;
 
   useEffect(() => {
     if (!showContactModal) return;
@@ -3558,16 +3639,20 @@ export default function ProposalBuilder({
                                                   }
                                                 />
                                               </div>
-                                              <div className="max-h-64 overflow-y-auto">
-                                                {catalogItems
-                                                  .filter((item) =>
-                                                    item.name
-                                                      .toLowerCase()
-                                                      .includes(
-                                                        catalogSearch.toLowerCase()
-                                                      )
-                                                  )
-                                                  .map((item, idx) => (
+                                              <div className="h-64 overflow-y-auto">
+                                                {searchingCatalog && (
+                                                  <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                                    Searching catalog...
+                                                  </div>
+                                                )}
+                                                {!searchingCatalog &&
+                                                  visibleCatalogItems.length === 0 && (
+                                                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                      No catalog items found.
+                                                    </div>
+                                                  )}
+                                                {!searchingCatalog &&
+                                                  visibleCatalogItems.map((item, idx) => (
                                                     <button
                                                       key={idx}
                                                       onClick={() =>
@@ -3799,14 +3884,20 @@ export default function ProposalBuilder({
                                       }
                                     />
                                   </div>
-                                  <div className="max-h-64 overflow-y-auto">
-                                    {catalogItems
-                                      .filter((item) =>
-                                        item.name
-                                          .toLowerCase()
-                                          .includes(catalogSearch.toLowerCase())
-                                      )
-                                      .map((item, idx) => (
+                                  <div className="h-64 overflow-y-auto">
+                                    {searchingCatalog && (
+                                      <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                        Searching catalog...
+                                      </div>
+                                    )}
+                                    {!searchingCatalog &&
+                                      visibleCatalogItems.length === 0 && (
+                                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                          No catalog items found.
+                                        </div>
+                                      )}
+                                    {!searchingCatalog &&
+                                      visibleCatalogItems.map((item, idx) => (
                                         <button
                                           key={idx}
                                           onClick={() =>
@@ -4224,16 +4315,20 @@ export default function ProposalBuilder({
                                                         }
                                                       />
                                                     </div>
-                                                    <div className="max-h-64 overflow-y-auto">
-                                                      {catalogItems
-                                                        .filter((item) =>
-                                                          item.name
-                                                            .toLowerCase()
-                                                            .includes(
-                                                              upgradeCatalogSearch.toLowerCase()
-                                                            )
-                                                        )
-                                                        .map((item, idx) => (
+                                                    <div className="h-64 overflow-y-auto">
+                                                      {searchingUpgradeCatalog && (
+                                                        <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                                          Searching catalog...
+                                                        </div>
+                                                      )}
+                                                      {!searchingUpgradeCatalog &&
+                                                        visibleUpgradeCatalogItems.length === 0 && (
+                                                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                            No catalog items found.
+                                                          </div>
+                                                        )}
+                                                      {!searchingUpgradeCatalog &&
+                                                        visibleUpgradeCatalogItems.map((item, idx) => (
                                                           <button
                                                             key={idx}
                                                             onClick={() =>
@@ -4552,16 +4647,20 @@ export default function ProposalBuilder({
                                               }
                                             />
                                           </div>
-                                          <div className="max-h-64 overflow-y-auto">
-                                            {catalogItems
-                                              .filter((item) =>
-                                                item.name
-                                                  .toLowerCase()
-                                                  .includes(
-                                                    upgradeCatalogSearch.toLowerCase()
-                                                  )
-                                              )
-                                              .map((item, idx) => (
+                                          <div className="h-64 overflow-y-auto">
+                                            {searchingUpgradeCatalog && (
+                                              <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                                Searching catalog...
+                                              </div>
+                                            )}
+                                            {!searchingUpgradeCatalog &&
+                                              visibleUpgradeCatalogItems.length === 0 && (
+                                                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                                  No catalog items found.
+                                                </div>
+                                              )}
+                                            {!searchingUpgradeCatalog &&
+                                              visibleUpgradeCatalogItems.map((item, idx) => (
                                                 <button
                                                   key={idx}
                                                   onClick={() =>
@@ -5302,6 +5401,3 @@ export default function ProposalBuilder({
     </>
   );
 }
-
-
-

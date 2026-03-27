@@ -32,7 +32,8 @@ import PaymentCancel from './modules/roof-runner/pages/PaymentCancel';
 function AppContent() {
   const { user, token } = useAppSelector((state) => state.auth);
   const location = useLocation();
-  const forceLightTheme = location.pathname.startsWith('/estimator/');
+  const LightThemePages = ['/estimator/', '/forms/public/'];
+  const forceLightTheme = LightThemePages.some((page) => location.pathname.startsWith(page));
 
   useEffect(() => {
     if (user && token) {

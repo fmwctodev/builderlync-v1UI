@@ -90,7 +90,12 @@ const MeasurementsTab: React.FC<MeasurementsTabProps> = ({ jobId, jobAddress }) 
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => navigate(`/org/${orgSlug}/diy`)}
+              onClick={() => {
+                const searchParams = new URLSearchParams();
+                if (jobId) searchParams.set('jobId', jobId.toString());
+                if (jobAddress) searchParams.set('address', jobAddress);
+                navigate(`/org/${orgSlug}/diy?${searchParams.toString()}`);
+              }}
               className="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/10 rounded-lg border border-primary-200 dark:border-primary-800 transition-colors"
             >
               DIY Report

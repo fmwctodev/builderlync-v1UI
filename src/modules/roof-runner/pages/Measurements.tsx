@@ -430,7 +430,12 @@ export default function Measurements() {
                 Dashboard
               </button>
               <button
-                onClick={() => navigate('../diy')}
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  if (initialAddress) params.set('address', initialAddress);
+                  if (initialJobId) params.set('jobId', initialJobId);
+                  navigate(`../diy${params.toString() ? '?' + params.toString() : ''}`);
+                }}
                 className="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 title="Create DIY Drawing"
               >

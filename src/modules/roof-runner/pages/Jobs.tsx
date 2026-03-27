@@ -83,28 +83,24 @@ const Jobs: React.FC = () => {
     contactName: null
   });
 
-  const resolveContactId = (job: Job): number | null => {
+  const resolveContactId = (job: Job | any): number | null => {
     const id =
       job.contact_id ??
       job.contactId ??
-      job.customer?.id ??
       job.customer_id ??
       job.customerId ??
+      job.customer?.id ??
       null;
     return id ? Number(id) : null;
   };
 
   const resolveContactName = (job: Job | any): string | null => {
-    return (
-      job.contactName ||
-      job.customer?.full_name ||
-      job.customer?.fullName ||
-      job.customer?.name ||
-      job.customer?.company ||
-      job.customer?.email ||
-      job.customer?.phone ||
-      null
-    );
+    if (job.contactName) return job.contactName;
+    if (job.customer) {
+      return job.customer.full_name || job.customer.fullName || job.customer.name || job.customer.company || job.customer.email || job.customer.phone || null;
+    }
+    if (job.contact_name) return job.contact_name;
+    return null;
   };
 
   const formatDateForInput = (dateString: string | undefined | null): string => {
@@ -411,13 +407,25 @@ const Jobs: React.FC = () => {
         location: opp.property_address || '',
         jobValue: String(opp.value || ''),
         source: opp.source || '',
-        jobType: 'residential', // Default or map if possible
+        jobType: 'residential',
         contactName: opp.contacts?.[0]?.contact_name || null,
         opportunity_id: opp.id,
-        // Map other fields as needed
       });
       setShowJobDetails(true);
-      // Clean up state so it doesn't re-trigger on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (location.state?.createFromContact && location.state?.contactData) {
+      const contact = location.state.contactData;
+      setFormData({
+        ...formData,
+        contactId: Number(contact.id),
+        contactName: contact.fullName,
+        location: contact.address || '',
+        name: contact.address || contact.fullName || 'New Job',
+      });
+      if (contact.address) {
+        setJobAddress(contact.address);
+      }
+      setShowAddressModal(true);
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);

@@ -19,7 +19,7 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
 
     if (response.message === 'PENDING_PAYMENT') {
       console.log('Redirecting to billing for payment');
-      window.location.href = '/billing';
+      window.location.href = `/billing?email=${encodeURIComponent(action.payload.email)}`;
       return;
     }
 
