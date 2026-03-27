@@ -1,5 +1,7 @@
-import { X, MapPin, Phone, Mail, Calendar, ClipboardList, User, CreditCard, ChevronRight } from 'lucide-react';
+import { X, MapPin, Phone, Mail, Calendar, ClipboardList, User, CreditCard, ChevronRight, AlertTriangle, CloudRain } from 'lucide-react';
 import type { Door, CanvassVisit, ContactReveal, CanvassOutcome } from '../../types';
+import { getHailSeverityBand, HAIL_SEVERITY_COLORS } from '../../types';
+import type { ParsedHailAlert, HailForecastPoint } from '../../services/nwsApiService';
 
 export interface DoorInfoDrawerProps {
   door: Door | null;
@@ -13,6 +15,8 @@ export interface DoorInfoDrawerProps {
   onRevealContact: (door: Door) => void;
   onCreateLead: (door: Door) => void;
   isRevealing?: boolean;
+  activeAlerts?: ParsedHailAlert[];
+  hailForecast?: HailForecastPoint[];
 }
 
 function getOutcomeBadge(outcome: CanvassOutcome) {
@@ -49,16 +53,25 @@ export function DoorInfoDrawer({
   onRevealContact,
   onCreateLead,
   isRevealing,
+  activeAlerts = [],
+  hailForecast = [],
 }: DoorInfoDrawerProps) {
   if (!door) return null;
 
-  const fullAddress = `${door.address1}${door.address2 ? ' ' + door.address2 : ''}, ${door.city}, ${door.state} ${door.zip}`;
   const canReveal = !revealedContact && creditBalance >= revealCost;
+
+  const nearbyAlerts = activeAlerts.filter(
+    (a) => a.isHailRelated || a.isThunderstormRelated || a.isTornadoRelated
+  );
+
+  const upcomingHail = hailForecast.filter(
+    (f) => f.hailWeather.length > 0 || f.hazardPhenomena.some((h) => h.toLowerCase().includes('hail'))
+  );
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 md:absolute md:inset-auto md:right-4 md:bottom-4 md:w-96">
-      <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
-        <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-[80vh] flex flex-col">
+        <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
               <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -78,7 +91,7 @@ export function DoorInfoDrawer({
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
@@ -99,6 +112,48 @@ export function DoorInfoDrawer({
             <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-sm font-medium text-red-700 dark:text-red-400">
                 Do Not Knock
+              </p>
+            </div>
+          )}
+
+          {nearbyAlerts.length > 0 && (
+            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+                  Active Storm Alerts
+                </h4>
+              </div>
+              {nearbyAlerts.slice(0, 2).map((alert) => (
+                <div key={alert.id} className="flex items-start gap-2">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
+                    style={{ backgroundColor: alert.severity === 'Extreme' ? '#dc2626' : alert.severity === 'Severe' ? '#f97316' : '#f59e0b' }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {alert.event}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {alert.severity}
+                      {alert.maxHailInches ? ` - ${alert.maxHailInches}" hail` : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {upcomingHail.length > 0 && nearbyAlerts.length === 0 && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <CloudRain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                  Hail Forecast
+                </h4>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {upcomingHail[0].hailWeather[0]?.description || 'Hail risk in upcoming forecast'}
               </p>
             </div>
           )}

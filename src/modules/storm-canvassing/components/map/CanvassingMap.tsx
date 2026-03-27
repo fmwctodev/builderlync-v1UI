@@ -1,14 +1,18 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Map, { MapRef, NavigationControl, GeolocateControl, ScaleControl } from 'react-map-gl';
 import type { MapLayerMouseEvent } from 'react-map-gl';
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 import { StormLayerOverlay } from './StormLayerOverlay';
 import { TurfLayer } from './TurfLayer';
 import { DoorsLayer } from './DoorsLayer';
 import { UserLocationMarker } from './UserLocationMarker';
 import { RepLocationsLayer } from './RepLocationsLayer';
+import { AlertsLayer } from './AlertsLayer';
 import type { StormLayer, Turf, Door, TeamMemberLocation } from '../../types';
+import type { ParsedHailAlert } from '../../services/nwsApiService';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 
@@ -35,11 +39,14 @@ export interface CanvassingMapProps {
     turfs?: boolean;
     doors?: boolean;
     reps?: boolean;
+    alerts?: boolean;
   };
   stormLayerOpacity?: number;
   hailThreshold?: number;
   isDrawingMode?: boolean;
   onDrawComplete?: (geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => void;
+  liveAlerts?: ParsedHailAlert[];
+  onViewportChange?: (bounds: { minLng: number; minLat: number; maxLng: number; maxLat: number }) => void;
   className?: string;
 }
 
@@ -63,14 +70,20 @@ export function CanvassingMap({
   onMapClick,
   repLocations = [],
   currentUserId,
-  layerVisibility = { storm: true, turfs: true, doors: true, reps: true },
+  layerVisibility = { storm: true, turfs: true, doors: true, reps: true, alerts: true },
   stormLayerOpacity = 0.5,
   hailThreshold = 0,
+  isDrawingMode = false,
+  onDrawComplete,
+  liveAlerts = [],
+  onViewportChange,
   className = '',
 }: CanvassingMapProps) {
   const mapRef = useRef<MapRef>(null);
+  const drawRef = useRef<MapboxDraw | null>(null);
   const [viewState, setViewState] = useState(initialViewState);
   const [cursor, setCursor] = useState<string>('auto');
+  const viewportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const visibleStormLayers = useMemo(() => {
     return stormLayers.filter((layer) => layer.is_visible);
@@ -123,6 +136,63 @@ export function CanvassingMap({
     }
   }, [selectedTurfId, turfs]);
 
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    if (isDrawingMode && !drawRef.current) {
+      const draw = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: { polygon: true, trash: true },
+        defaultMode: 'draw_polygon',
+      });
+      map.addControl(draw as unknown as mapboxgl.IControl);
+      drawRef.current = draw;
+
+      const handleCreate = (e: { features: GeoJSON.Feature[] }) => {
+        const feature = e.features[0];
+        if (feature?.geometry && onDrawComplete) {
+          onDrawComplete(feature.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon);
+        }
+        draw.deleteAll();
+      };
+
+      map.on('draw.create', handleCreate);
+      setCursor('crosshair');
+
+      return () => {
+        map.off('draw.create', handleCreate);
+        if (drawRef.current) {
+          map.removeControl(drawRef.current as unknown as mapboxgl.IControl);
+          drawRef.current = null;
+        }
+        setCursor('auto');
+      };
+    }
+
+    if (!isDrawingMode && drawRef.current) {
+      map.removeControl(drawRef.current as unknown as mapboxgl.IControl);
+      drawRef.current = null;
+      setCursor('auto');
+    }
+  }, [isDrawingMode, onDrawComplete]);
+
+  const handleMoveEnd = useCallback(() => {
+    if (!onViewportChange || !mapRef.current) return;
+    if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current);
+    viewportTimerRef.current = setTimeout(() => {
+      const bounds = mapRef.current?.getBounds();
+      if (bounds) {
+        onViewportChange({
+          minLng: bounds.getWest(),
+          minLat: bounds.getSouth(),
+          maxLng: bounds.getEast(),
+          maxLat: bounds.getNorth(),
+        });
+      }
+    }, 2000);
+  }, [onViewportChange]);
+
   if (!MAPBOX_TOKEN) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 dark:bg-gray-800 ${className}`}>
@@ -141,8 +211,9 @@ export function CanvassingMap({
       ref={mapRef}
       {...viewState}
       onMove={(evt) => setViewState(evt.viewState)}
+      onMoveEnd={handleMoveEnd}
       onClick={onMapClick}
-      cursor={cursor}
+      cursor={isDrawingMode ? 'crosshair' : cursor}
       mapStyle="mapbox://styles/mapbox/streets-v12"
       mapboxAccessToken={MAPBOX_TOKEN}
       style={{ width: '100%', height: '100%' }}
@@ -166,6 +237,10 @@ export function CanvassingMap({
             threshold={hailThreshold}
           />
         ))}
+
+      {layerVisibility.alerts && liveAlerts.length > 0 && (
+        <AlertsLayer alerts={liveAlerts} opacity={stormLayerOpacity * 0.7} />
+      )}
 
       {layerVisibility.turfs && (
         <TurfLayer

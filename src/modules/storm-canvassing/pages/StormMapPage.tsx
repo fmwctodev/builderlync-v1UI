@@ -1,23 +1,51 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X, RefreshCw, Download } from 'lucide-react';
 
 import { CanvassingMap, MapControls, LayerVisibility } from '../components/map';
-import { StormEventSelector, TurfListPanel, DoorInfoDrawer, CanvassingModePanel } from '../components/panels';
+import {
+  StormEventSelector,
+  TurfListPanel,
+  DoorInfoDrawer,
+  CanvassingModePanel,
+  CreateTurfModal,
+  ZoneSubscriptionsPanel,
+  StormAlertToastBanner,
+} from '../components/panels';
 
 import { useOfflineSync } from '../offline/hooks/useOfflineSync';
 import { cacheTurfWithDoors, createOfflineVisit, queueMediaCapture } from '../offline/syncService';
 import { findNearestUnvisitedDoor, getDoorsInTurf } from '../services/doorsApi';
 import { getStormEvents, importStormEventsFromProvider } from '../services/stormEventsApi';
-import { getTurfs, getMyTurfs, updateTurfAssignmentStatus } from '../services/turfsApi';
+import { getTurfs, updateTurfAssignmentStatus, createTurf } from '../services/turfsApi';
 import { createVisit } from '../services/visitsApi';
 import { revealContact, getCreditBalance } from '../services/contactRevealApi';
 import { getOrCreateOrgSettings } from '../services/orgSettingsApi';
 import { getTeamLocationsWithStats, updateRepLocation, deactivateRepLocation } from '../services/repLocationsApi';
+import {
+  fetchHailAlertsByStates,
+  fetchHailObservationsNearBbox,
+  extractHailForecastFromGridpoint,
+  fetchPointMetadata,
+  fetchZonesByState,
+} from '../services/nwsApiService';
+import type { ParsedHailAlert, StationHailObservation, HailForecastPoint, NWSZone } from '../services/nwsApiService';
+import {
+  getZoneSubscriptions,
+  createZoneSubscription,
+  toggleZoneSubscription,
+  deleteZoneSubscription,
+} from '../services/zoneSubscriptionsApi';
+import type { ZoneAlertSubscription, CreateZoneSubscriptionInput } from '../services/zoneSubscriptionsApi';
+
+import { useStormAlertNotifications } from '../hooks/useStormAlertNotifications';
+import { useStormAlertToast } from '../hooks/useStormAlertToast';
 
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { useSupabaseUser } from '../../../shared/hooks/useSupabaseUser';
 import type { StormEvent, StormLayer, Turf, Door, CanvassOutcome, CanvassOrgSettings, TeamMemberLocation } from '../types';
+
+const ALERT_POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 export function StormMapPage() {
   const navigate = useNavigate();
@@ -52,14 +80,46 @@ export function StormMapPage() {
     turfs: true,
     doors: true,
     reps: true,
+    alerts: true,
   });
   const [stormOpacity, setStormOpacity] = useState(0.5);
   const [hailThreshold, setHailThreshold] = useState(0);
 
-  const { isOnline, isActuallyOnline, pendingCount, pendingMediaCount, sync } = useOfflineSync(
+  const [liveAlerts, setLiveAlerts] = useState<ParsedHailAlert[]>([]);
+  const [liveAlertsLoading, setLiveAlertsLoading] = useState(false);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+
+  const [historicalObservations, setHistoricalObservations] = useState<StationHailObservation[]>([]);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
+
+  const [hailForecast, setHailForecast] = useState<HailForecastPoint[]>([]);
+  const [hailForecastLoading, setHailForecastLoading] = useState(false);
+
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawnGeometry, setDrawnGeometry] = useState<GeoJSON.Polygon | GeoJSON.MultiPolygon | null>(null);
+  const [showCreateTurfModal, setShowCreateTurfModal] = useState(false);
+
+  const [zoneSubscriptions, setZoneSubscriptions] = useState<ZoneAlertSubscription[]>([]);
+  const [availableZones, setAvailableZones] = useState<NWSZone[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
+
+  const [viewportBounds, setViewportBounds] = useState<{
+    minLng: number; minLat: number; maxLng: number; maxLat: number;
+  } | null>(null);
+
+  const { isActuallyOnline, pendingCount, pendingMediaCount, sync } = useOfflineSync(
     organizationId || null,
     userId || null
   );
+
+  const { processNewAlerts, requestBrowserPermission } = useStormAlertNotifications({
+    organizationId: organizationId || '',
+    userId: userId || '',
+    enableBrowser: true,
+    enableEmail: zoneSubscriptions.some((s) => s.is_active && s.notify_email),
+  });
+
+  const { toasts, showAlertToasts, dismissToast } = useStormAlertToast();
 
   useEffect(() => {
     if (!organizationId) return;
@@ -133,7 +193,7 @@ export function StormMapPage() {
   useEffect(() => {
     if (!organizationId || !orgSettings?.allow_gps_tracking) return;
 
-    const fetchRepLocations = async () => {
+    const fetchRepLocs = async () => {
       try {
         const locs = await getTeamLocationsWithStats(organizationId);
         setRepLocations(locs);
@@ -141,10 +201,131 @@ export function StormMapPage() {
       }
     };
 
-    fetchRepLocations();
-    const interval = setInterval(fetchRepLocations, 60000);
+    fetchRepLocs();
+    const interval = setInterval(fetchRepLocs, 60000);
     return () => clearInterval(interval);
   }, [organizationId, orgSettings?.allow_gps_tracking]);
+
+  useEffect(() => {
+    if (!organizationId || !orgSettings) return;
+
+    const states = orgSettings.operating_states;
+    if (!states || states.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchAlerts = async () => {
+      setLiveAlertsLoading(true);
+      try {
+        const alerts = await fetchHailAlertsByStates(states);
+        if (cancelled) return;
+        setLiveAlerts(alerts);
+
+        const newAlerts = processNewAlerts(alerts);
+        if (newAlerts.length > 0) {
+          showAlertToasts(newAlerts);
+        }
+      } catch {
+      } finally {
+        if (!cancelled) setLiveAlertsLoading(false);
+      }
+    };
+
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, ALERT_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [organizationId, orgSettings, processNewAlerts, showAlertToasts]);
+
+  const viewportFetchRef = useRef(false);
+  useEffect(() => {
+    if (!viewportBounds || viewportFetchRef.current) return;
+
+    viewportFetchRef.current = true;
+    setHistoricalLoading(true);
+
+    fetchHailObservationsNearBbox(
+      viewportBounds.minLat,
+      viewportBounds.minLng,
+      viewportBounds.maxLat,
+      viewportBounds.maxLng
+    )
+      .then((obs) => setHistoricalObservations(obs))
+      .catch(() => {})
+      .finally(() => {
+        setHistoricalLoading(false);
+        setTimeout(() => {
+          viewportFetchRef.current = false;
+        }, 30000);
+      });
+  }, [viewportBounds]);
+
+  useEffect(() => {
+    if (!selectedEvent?.center_lat || !selectedEvent?.center_lng) {
+      setHailForecast([]);
+      return;
+    }
+
+    let cancelled = false;
+    setHailForecastLoading(true);
+
+    (async () => {
+      try {
+        const meta = await fetchPointMetadata(selectedEvent.center_lat!, selectedEvent.center_lng!);
+        if (!meta || cancelled) {
+          setHailForecastLoading(false);
+          return;
+        }
+
+        const forecast = await extractHailForecastFromGridpoint(meta.wfo, meta.gridX, meta.gridY);
+        if (!cancelled) setHailForecast(forecast);
+      } catch {
+      } finally {
+        if (!cancelled) setHailForecastLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [selectedEvent?.id, selectedEvent?.center_lat, selectedEvent?.center_lng]);
+
+  useEffect(() => {
+    if (!organizationId || !userId) return;
+
+    getZoneSubscriptions(organizationId, userId)
+      .then(setZoneSubscriptions)
+      .catch(() => {});
+  }, [organizationId, userId]);
+
+  useEffect(() => {
+    if (!orgSettings?.operating_states?.length) return;
+
+    let cancelled = false;
+    setZonesLoading(true);
+
+    (async () => {
+      const allZones: NWSZone[] = [];
+      for (const state of orgSettings.operating_states!.slice(0, 3)) {
+        try {
+          const zones = await fetchZonesByState(state);
+          if (!cancelled) allZones.push(...zones);
+        } catch {
+        }
+      }
+      if (!cancelled) {
+        setAvailableZones(allZones);
+        setZonesLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [orgSettings?.operating_states]);
+
+  useEffect(() => {
+    requestBrowserPermission();
+  }, [requestBrowserPermission]);
 
   const handleImportMockEvents = async () => {
     if (!organizationId || !userId) return;
@@ -180,13 +361,69 @@ export function StormMapPage() {
     setSelectedDoor(door);
   }, []);
 
+  const handleAlertSelect = useCallback((alert: ParsedHailAlert) => {
+    setSelectedAlertId(alert.id);
+  }, []);
+
+  const handleViewportChange = useCallback((bounds: { minLng: number; minLat: number; maxLng: number; maxLat: number }) => {
+    setViewportBounds(bounds);
+  }, []);
+
+  const handleDrawComplete = useCallback((geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => {
+    setDrawnGeometry(geometry);
+    setIsDrawingMode(false);
+    setShowCreateTurfModal(true);
+  }, []);
+
+  const handleCreateTurfFromDrawing = useCallback(
+    async (data: { name: string; description: string; stormEventId: string; color: string; geometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon }) => {
+      if (!organizationId || !data.geometry) return;
+
+      const newTurf = await createTurf(
+        organizationId,
+        {
+          name: data.name,
+          description: data.description,
+          geometry: data.geometry,
+          stormEventId: data.stormEventId || undefined,
+          color: data.color,
+        },
+        userId
+      );
+
+      setTurfs((prev) => [newTurf, ...prev]);
+      setDrawnGeometry(null);
+    },
+    [organizationId, userId]
+  );
+
+  const handleCreateZoneSubscription = useCallback(
+    async (input: CreateZoneSubscriptionInput) => {
+      if (!organizationId || !userId) return;
+      const sub = await createZoneSubscription(organizationId, userId, input);
+      setZoneSubscriptions((prev) => [sub, ...prev]);
+    },
+    [organizationId, userId]
+  );
+
+  const handleToggleZoneSubscription = useCallback(async (id: string, isActive: boolean) => {
+    await toggleZoneSubscription(id, isActive);
+    setZoneSubscriptions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, is_active: isActive } : s))
+    );
+  }, []);
+
+  const handleDeleteZoneSubscription = useCallback(async (id: string) => {
+    await deleteZoneSubscription(id);
+    setZoneSubscriptions((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
   const handleStartCanvassing = useCallback(
     async (turf: Turf) => {
       if (!organizationId || !userId) return;
 
       try {
         await cacheTurfWithDoors(organizationId, turf.id);
-
         await updateTurfAssignmentStatus(organizationId, turf.id, userId, 'ACTIVE');
 
         setSelectedTurf(turf);
@@ -326,6 +563,12 @@ export function StormMapPage() {
               selectedEventId={selectedEvent?.id}
               onEventSelect={setSelectedEvent}
               isLoading={isLoading}
+              liveAlerts={liveAlerts}
+              liveAlertsLoading={liveAlertsLoading}
+              onAlertSelect={handleAlertSelect}
+              selectedAlertId={selectedAlertId}
+              historicalObservations={historicalObservations}
+              historicalLoading={historicalLoading}
             />
 
             {stormEvents.length === 0 && !isLoading && (
@@ -349,15 +592,26 @@ export function StormMapPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-hidden">
-            <TurfListPanel
-              turfs={turfs.filter(
-                (t) => !selectedEvent || t.storm_event_id === selectedEvent.id
-              )}
-              selectedTurfId={selectedTurf?.id}
-              onTurfSelect={handleTurfSelect}
-              onStartCanvassing={handleStartCanvassing}
-              isLoading={isLoading}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              <TurfListPanel
+                turfs={turfs.filter(
+                  (t) => !selectedEvent || t.storm_event_id === selectedEvent.id
+                )}
+                selectedTurfId={selectedTurf?.id}
+                onTurfSelect={handleTurfSelect}
+                onStartCanvassing={handleStartCanvassing}
+                isLoading={isLoading}
+              />
+            </div>
+
+            <ZoneSubscriptionsPanel
+              subscriptions={zoneSubscriptions}
+              availableZones={availableZones}
+              zonesLoading={zonesLoading}
+              onCreateSubscription={handleCreateZoneSubscription}
+              onToggleSubscription={handleToggleZoneSubscription}
+              onDeleteSubscription={handleDeleteZoneSubscription}
             />
           </div>
         </div>
@@ -388,6 +642,10 @@ export function StormMapPage() {
                 }
               : undefined
           }
+          isDrawingMode={isDrawingMode}
+          onDrawComplete={handleDrawComplete}
+          liveAlerts={liveAlerts}
+          onViewportChange={handleViewportChange}
         />
 
         <MapControls
@@ -399,7 +657,14 @@ export function StormMapPage() {
           onHailThresholdChange={setHailThreshold}
           showHailControls={stormLayers.some((l) => l.layer_type === 'HAIL')}
           repCount={repLocations.length}
+          liveAlertCount={liveAlerts.length}
+          hailForecast={hailForecast}
+          hailForecastLoading={hailForecastLoading}
+          isDrawingMode={isDrawingMode}
+          onToggleDrawingMode={() => setIsDrawingMode((prev) => !prev)}
         />
+
+        <StormAlertToastBanner toasts={toasts} onDismiss={dismissToast} />
 
         {pendingCount > 0 && (
           <div className="absolute top-4 right-4 z-10">
@@ -431,6 +696,8 @@ export function StormMapPage() {
           onRevealContact={handleRevealContact}
           onCreateLead={(door) => navigate(`/storm-canvassing/leads?door=${door.id}`)}
           isRevealing={isRevealing}
+          activeAlerts={liveAlerts}
+          hailForecast={hailForecast}
         />
       )}
 
@@ -452,6 +719,18 @@ export function StormMapPage() {
           onExitCanvassingMode={() => {
             setIsCanvassingMode(false);
             setCurrentCanvassingDoor(null);
+          }}
+        />
+      )}
+
+      {showCreateTurfModal && (
+        <CreateTurfModal
+          stormEvents={stormEvents}
+          drawnGeometry={drawnGeometry}
+          onConfirm={handleCreateTurfFromDrawing}
+          onClose={() => {
+            setShowCreateTurfModal(false);
+            setDrawnGeometry(null);
           }}
         />
       )}

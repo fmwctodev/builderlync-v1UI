@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { X, MapPin } from 'lucide-react';
+import { X, MapPin, Hexagon } from 'lucide-react';
 import type { StormEvent } from '../../types';
 
 interface CreateTurfModalProps {
   stormEvents: StormEvent[];
+  drawnGeometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   onConfirm: (data: {
     name: string;
     description: string;
     stormEventId: string;
     color: string;
+    geometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   }) => Promise<void>;
   onClose: () => void;
 }
@@ -18,7 +20,7 @@ const TURF_COLORS = [
   '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16',
 ];
 
-export function CreateTurfModal({ stormEvents, onConfirm, onClose }: CreateTurfModalProps) {
+export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose }: CreateTurfModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [stormEventId, setStormEventId] = useState('');
@@ -36,7 +38,13 @@ export function CreateTurfModal({ stormEvents, onConfirm, onClose }: CreateTurfM
     setIsSubmitting(true);
     setError(null);
     try {
-      await onConfirm({ name: name.trim(), description: description.trim(), stormEventId, color });
+      await onConfirm({
+        name: name.trim(),
+        description: description.trim(),
+        stormEventId,
+        color,
+        ...(drawnGeometry ? { geometry: drawnGeometry } : {}),
+      });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create turf');
@@ -64,6 +72,15 @@ export function CreateTurfModal({ stormEvents, onConfirm, onClose }: CreateTurfM
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {drawnGeometry && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <Hexagon className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Custom polygon drawn on map
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Turf Name <span className="text-red-500">*</span>

@@ -18,3 +18,6 @@ export type { MapControlsProps, LayerVisibility } from './MapControls';
 
 export { RepLocationsLayer } from './RepLocationsLayer';
 export type { RepLocationsLayerProps } from './RepLocationsLayer';
+
+export { AlertsLayer, AlertsLegend } from './AlertsLayer';
+export type { AlertsLayerProps } from './AlertsLayer';
