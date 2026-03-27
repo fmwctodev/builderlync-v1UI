@@ -78,7 +78,6 @@ export function StormMapPage() {
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
     storm: true,
     turfs: true,
-    doors: true,
     reps: true,
     alerts: true,
   });

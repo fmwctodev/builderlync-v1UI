@@ -7,7 +7,6 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 import { StormLayerOverlay } from './StormLayerOverlay';
 import { TurfLayer } from './TurfLayer';
-import { DoorsLayer } from './DoorsLayer';
 import { UserLocationMarker } from './UserLocationMarker';
 import { RepLocationsLayer } from './RepLocationsLayer';
 import { AlertsLayer } from './AlertsLayer';
@@ -37,7 +36,6 @@ export interface CanvassingMapProps {
   layerVisibility?: {
     storm?: boolean;
     turfs?: boolean;
-    doors?: boolean;
     reps?: boolean;
     alerts?: boolean;
   };
@@ -70,7 +68,7 @@ export function CanvassingMap({
   onMapClick,
   repLocations = [],
   currentUserId,
-  layerVisibility = { storm: true, turfs: true, doors: true, reps: true, alerts: true },
+  layerVisibility = { storm: true, turfs: true, reps: true, alerts: true },
   stormLayerOpacity = 0.5,
   hailThreshold = 0,
   isDrawingMode = false,
@@ -252,15 +250,6 @@ export function CanvassingMap({
         />
       )}
 
-      {layerVisibility.doors && (
-        <DoorsLayer
-          doors={doors}
-          selectedDoorId={selectedDoorId}
-          onDoorClick={handleDoorClick}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        />
-      )}
 
       {showUserLocation && userLocation && (
         <UserLocationMarker lat={userLocation.lat} lng={userLocation.lng} />

@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { Layers, Eye, EyeOff, ChevronDown, ChevronUp, Cloud, MapPin, Home, UserCheck, AlertTriangle, CloudRain, Thermometer, Wind } from 'lucide-react';
+import { Layers, Eye, EyeOff, ChevronDown, ChevronUp, Cloud, MapPin, UserCheck, AlertTriangle, CloudRain, Thermometer, Wind } from 'lucide-react';
 import { StormLayerLegend } from './StormLayerOverlay';
 import { TurfLegend } from './TurfLayer';
-import { DoorsLegend } from './DoorsLayer';
 import { AlertsLegend } from './AlertsLayer';
 import type { HailForecastPoint } from '../../services/nwsApiService';
 
 export interface LayerVisibility {
   storm: boolean;
   turfs: boolean;
-  doors: boolean;
   reps: boolean;
   alerts: boolean;
 }
@@ -99,12 +97,6 @@ export function MapControls({
                 label="Turfs"
                 isVisible={layerVisibility.turfs}
                 onToggle={() => toggleLayer('turfs')}
-              />
-              <LayerToggle
-                icon={<Home className="w-4 h-4" />}
-                label="Doors"
-                isVisible={layerVisibility.doors}
-                onToggle={() => toggleLayer('doors')}
               />
               <LayerToggle
                 icon={<UserCheck className="w-4 h-4" />}
@@ -264,7 +256,6 @@ export function MapControls({
           {layerVisibility.storm && <StormLayerLegend layerType="HAIL" />}
           {layerVisibility.alerts && <AlertsLegend />}
           {layerVisibility.turfs && <TurfLegend />}
-          {layerVisibility.doors && <DoorsLegend />}
         </div>
       )}
     </div>

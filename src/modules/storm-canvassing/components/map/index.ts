@@ -7,9 +7,6 @@ export type { StormLayerOverlayProps } from './StormLayerOverlay';
 export { TurfLayer, TurfLegend } from './TurfLayer';
 export type { TurfLayerProps } from './TurfLayer';
 
-export { DoorsLayer, DoorsLegend } from './DoorsLayer';
-export type { DoorsLayerProps } from './DoorsLayer';
-
 export { UserLocationMarker } from './UserLocationMarker';
 export type { UserLocationMarkerProps } from './UserLocationMarker';
 
