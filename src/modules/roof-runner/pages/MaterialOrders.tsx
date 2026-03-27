@@ -3,17 +3,19 @@ import { useSearchParams } from 'react-router-dom';
 import { Plus, ChevronDown } from 'lucide-react';
 import ABCSupplyView from '../components/ABCSupplyView';
 import SRSSupplyView from '../components/SRSSupplyView';
+import QxoSupplyView from '../components/QxoSupplyView';
 
 export default function MaterialOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialSupplier = searchParams.get('supplier') === 'SRS' ? 'SRS' : 'ABC Supply';
+  const urlSupplier = searchParams.get('supplier');
+  const initialSupplier = urlSupplier === 'SRS' ? 'SRS' : urlSupplier === 'QXO (Beacon)' ? 'QXO (Beacon)' : 'ABC Supply';
   const [selectedSupplier, setSelectedSupplier] = useState(initialSupplier);
   const [showDropdown, setShowDropdown] = useState(false);
 
   // Sync state if URL changes externally
   useEffect(() => {
     const urlSupplier = searchParams.get('supplier');
-    if (urlSupplier && (urlSupplier === 'SRS' || urlSupplier === 'ABC Supply')) {
+    if (urlSupplier && (urlSupplier === 'SRS' || urlSupplier === 'ABC Supply' || urlSupplier === 'QXO (Beacon)')) {
       setSelectedSupplier(urlSupplier);
     }
   }, [searchParams]);
@@ -57,7 +59,7 @@ export default function MaterialOrders() {
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
                 <div className="py-1">
-                  {['ABC Supply', 'SRS'].map((supplier) => (
+                  {['ABC Supply', 'SRS', 'QXO (Beacon)'].map((supplier) => (
                     <button
                       key={supplier}
                       onClick={() => handleSupplierChange(supplier)}
@@ -88,6 +90,7 @@ export default function MaterialOrders() {
         <div className="p-6">
           {selectedSupplier === 'ABC Supply' && <ABCSupplyView />}
           {selectedSupplier === 'SRS' && <SRSSupplyView />}
+          {selectedSupplier === 'QXO (Beacon)' && <QxoSupplyView />}
         </div>
       </div>
     </div>
