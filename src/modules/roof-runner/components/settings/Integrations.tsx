@@ -8,6 +8,9 @@ import EagleViewConnectionModal from './EagleViewConnectionModal';
 import { googleBusinessApi } from '../../../../shared/services/googleBusinessApi';
 import { srsService } from '../../services/srsService';
 import SRSConnection from '../catalog/SRSConnection';
+import QxoConnection from '../catalog/QxoConnection';
+import { qxoService } from '../../services/qxoService';
+import QxoDetailsModal from './QxoDetailsModal';
 import { cloudDriveApi } from '../../../../shared/services/cloudDriveApi';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -34,6 +37,9 @@ const Integrations: React.FC = () => {
   const [srsStatus, setSrsStatus] = React.useState<{ connected: boolean; accountNumber?: string; profile?: any }>({ connected: false });
   const [showSrsDetailsModal, setShowSrsDetailsModal] = React.useState(false);
   const [abcSupplyStatus, setAbcSupplyStatus] = React.useState({ connected: false });
+  const [qxoStatus, setQxoStatus] = React.useState<{ connected: boolean; email?: string; profile?: any }>({ connected: false });
+  const [showQxoModal, setShowQxoModal] = React.useState(false);
+  const [showQxoDetailsModal, setShowQxoDetailsModal] = React.useState(false);
   const [eagleViewStatus, setEagleViewStatus] = React.useState<{ connected: boolean; usingOwnAccount: boolean; credits: number }>({ connected: false, usingOwnAccount: false, credits: 0 });
   const [googleDriveStatus, setGoogleDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
   const [oneDriveStatus, setOneDriveStatus] = React.useState<{ connected: boolean; email?: string }>({ connected: false });
@@ -52,6 +58,7 @@ const Integrations: React.FC = () => {
     fetchABCSupplyStatus();
     handleABCSupplyCallback();
     fetchSrsStatus();
+    fetchQxoStatus();
     fetchEagleViewStatus();
     fetchGoogleDriveStatus();
     fetchOneDriveStatus();
@@ -213,6 +220,19 @@ const Integrations: React.FC = () => {
     }
   };
 
+  const fetchQxoStatus = async () => {
+    try {
+      const result = await qxoService.getStatus();
+      if (result?.success && result.data?.connected) {
+        setQxoStatus({ connected: true, email: result.data?.email, profile: result.data?.profileData });
+        return;
+      }
+      setQxoStatus({ connected: false });
+    } catch (error) {
+      setQxoStatus({ connected: false });
+    }
+  };
+
   const fetchGoogleDriveStatus = async () => {
     try {
       const connection = await cloudDriveApi.getCurrentUserConnection();
@@ -292,6 +312,8 @@ const Integrations: React.FC = () => {
       } else {
         setShowSrsModal(true);
       }
+    } else if (integrationId === 'qxo') {
+      setShowQxoModal(true);
     } else if (integrationId === 'google-business') {
       googleBusinessApi.connect("integrations");
     } else if (integrationId === 'abc-supply') {
@@ -337,6 +359,12 @@ const Integrations: React.FC = () => {
     } else if (integrationId === 'srs-distribution') {
       await srsService.logout();
       setSrsStatus({ connected: false });
+    } else if (integrationId === 'qxo') {
+      try {
+        setLoading('qxo');
+        await qxoService.logout();
+        setQxoStatus({ connected: false });
+      } finally { setLoading(null); }
     } else if (integrationId === 'eagleview') {
       try {
         setLoading('eagleview');
@@ -431,6 +459,12 @@ const Integrations: React.FC = () => {
       } else {
         setShowSrsModal(true);
       }
+    } else if (integrationId === 'qxo') {
+      if (qxoStatus.connected) {
+        setShowQxoDetailsModal(true);
+      } else {
+        setShowQxoModal(true);
+      }
     } else {
       console.log(`Managing ${integrationId}...`);
     }
@@ -470,15 +504,15 @@ const Integrations: React.FC = () => {
       connected: srsStatus.connected,
       hasManage: true,
     },
-    // {
-    //   id: 'qxo',
-    //   name: 'QXO',
-    //   description: 'The largest publicly traded distributor of roofing materials in the United States and Canada.',
-    //   category: 'Supply Chain',
-    //   connected: false,
-    //   learnMoreUrl: '#',
-    //   setupInstructionsUrl: '#',
-    // },
+    {
+      id: 'qxo',
+      name: 'QXO (Beacon)',
+      description: 'The largest publicly traded distributor of roofing materials in the United States and Canada.',
+      category: 'Supply Chain',
+      connected: qxoStatus.connected,
+      companyInfo: qxoStatus.email ? { Email: qxoStatus.email } : null,
+      hasManage: true,
+    },
     {
       id: 'eagleview',
       name: 'EagleView',
@@ -707,6 +741,23 @@ const Integrations: React.FC = () => {
             setShowSrsModal(false);
           }}
           onClose={() => setShowSrsModal(false)}
+        />
+      )}
+
+      {showQxoModal && (
+        <QxoConnection
+          onConnectionSuccess={() => {
+            fetchQxoStatus();
+            setShowQxoModal(false);
+          }}
+          onClose={() => setShowQxoModal(false)}
+        />
+      )}
+
+      {showQxoDetailsModal && (
+        <QxoDetailsModal
+          qxoStatus={qxoStatus as any}
+          onClose={() => setShowQxoDetailsModal(false)}
         />
       )}
 

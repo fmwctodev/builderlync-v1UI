@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, Trash2, X, ChevronDown, Search, Building } from 'lucide-react';
-import { Product, ShipTo } from '../../abc-supply/types';
+import { Product, ShipTo, OrderHistoryItem } from '../../abc-supply/types';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { srsApi } from '../services/srsApi';
 import { srsService } from '../services/srsService';
+import { qxoApi } from '../services/qxoApi';
 import CheckoutForm, { CheckoutFormData } from '../../abc-supply/components/CheckoutForm';
 
 interface CartItem extends Product {
@@ -49,6 +50,8 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     }>>({});
     const [srsCustomerProfile, setSrsCustomerProfile] = useState<any | null>(null);
     const [srsCustomerLoading, setSrsCustomerLoading] = useState(false);
+    const [qxoProfile, setQxoProfile] = useState<any | null>(null);
+    const [qxoLoading, setQxoLoading] = useState(false);
 
     const [shipToAddress, setShipToAddress] = useState({
         name: '',
@@ -104,8 +107,75 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     }
                 } catch (e) { console.error(e); }
             }
+        } else if (isOpen && supplier === 'QXO') {
+            const savedBranch = localStorage.getItem('qxo_selected_branch');
+            if (savedBranch) {
+                try {
+                    setSelectedBranch(JSON.parse(savedBranch));
+                } catch (e) { console.error(e); }
+            }
+            fetchQxoStatus();
         }
     }, [isOpen, supplier, items.length]); 
+
+    const fetchQxoStatus = async () => {
+        setQxoLoading(true);
+        try {
+            const res = await qxoApi.getStatus();
+            const data = res.data || res; // Handle both wrapped and unwrapped for safety
+            if (data.connected) {
+                setQxoProfile(data.profileData || data);
+            }
+        } catch (e) {
+            console.error('Failed to fetch QXO status:', e);
+        } finally {
+            setQxoLoading(false);
+        }
+    };
+    
+    const formatQxoImage = (img: string) => {
+        if (!img) return '/images/default_not_found.jpg';
+        if (img.startsWith('http')) return img;
+        if (img.startsWith('/')) return `https://beaconproplus.com${img}`;
+        return `https://beaconproplus.com/images/large/${img}`;
+    };
+
+    const fetchQxoPrices = async () => {
+        if (!items || items.length === 0) return;
+        const skus = items.map(item => (item as any).skuId || item.itemNumber || item.productId).filter(Boolean);
+        if (skus.length === 0) return;
+
+        try {
+            const res = await qxoApi.getItemPrices({ skus: skus as string[] });
+            if (res.success && res.data) {
+                const pricingData = res.data?.data || res.data?.priceInfo || res.data || {};
+                console.log('[CART DEBUG] QXO Live Prices Fetch Result:', pricingData);
+                
+                const newPrices: Record<string, number> = {};
+                Object.keys(pricingData).forEach(sku => {
+                    const uoms = pricingData[sku];
+                    if (uoms) {
+                        const firstUom = Object.keys(uoms)[0];
+                        const price = uoms[firstUom];
+                        if (price) newPrices[sku] = price;
+                    }
+                });
+                
+                if (Object.keys(newPrices).length > 0) {
+                    console.log('[CART DEBUG] Updating itemPrices with QXO data:', newPrices);
+                    setItemPrices(prev => ({ ...prev, ...newPrices }));
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch QXO prices:', e);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen && supplier === 'QXO') {
+            fetchQxoPrices();
+        }
+    }, [isOpen, items.length]);
 
     useEffect(() => {
         if (!isOpen || supplier !== 'SRS') return;
@@ -399,7 +469,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     console.error("SRS Order failed:", srsResponse);
                     throw new Error("Failed to queue order with SRS");
                 }
-            } else {
+            } else if (supplier === 'ABC Supply') {
                 if (!selectedShipTo) return; // Add null check for TypeScript
                 // Call ABC Supply API
                 const orderData = {
@@ -428,6 +498,22 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     
                 // @ts-ignore
                 await abcSupplyApi.createOrder(orderData);
+            } else if (supplier === 'QXO') {
+                const orderData = {
+                    accountId: qxoProfile?.accountId || qxoProfile?.accountLegacyId || '678204',
+                    branchId: selectedBranch?.id || selectedBranch?.number,
+                    items: items.map(item => ({
+                        productId: item.itemNumber,
+                        quantity: item.quantity,
+                        unitPrice: item.price || getItemPrice(item.itemNumber) || 0,
+                        uom: (item as any).selectedUOM || 'EA'
+                    })),
+                    shippingAddress: checkoutData.shippingAddress,
+                    contact: checkoutData.contact,
+                    notes: checkoutData.instructions
+                };
+                const res = await qxoApi.createOrder(orderData);
+                if (!res.success) throw new Error(res.message || 'Failed to submit QXO order');
             }
 
             setShowCheckoutForm(false);
@@ -441,14 +527,30 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         }
     };
 
+    const resolveItemPrice = (item: any) => {
+        const pVal = item.unitPrice || item.itemPrice || item.price || itemPrices[item.itemNumber] || 0;
+        console.log(`[CART DEBUG] Resolving price for ${item.itemNumber}:`, {
+            unitPrice: item.unitPrice,
+            itemPrice: item.itemPrice,
+            price: item.price,
+            statePrice: itemPrices[item.itemNumber],
+            finalPVal: pVal
+        });
+        if (typeof pVal === 'number') return pVal;
+        return parseFloat(String(pVal).replace(/[^0-9.]/g, '')) || 0;
+    };
+
     const getItemPrice = (itemNumber: string) => {
         return itemPrices[itemNumber] || 0;
     };
 
+    console.log('[CART DEBUG] Current Items:', items);
     const subtotal = items.reduce((sum, item) => {
-        const price = getItemPrice(item.itemNumber);
+        const price = resolveItemPrice(item);
+        console.log(`[CART DEBUG] Item ${item.itemNumber} price: ${price}, quantity: ${item.quantity}`);
         return sum + (price * item.quantity);
     }, 0);
+    console.log('[CART DEBUG] Calculated Subtotal:', subtotal);
     const tax = subtotal * 0.08;
     const total = subtotal + tax;
 
@@ -546,6 +648,40 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                 </div>
                             )}
 
+                            {supplier === 'QXO' && (
+                                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ordering From:</div>
+                                    {qxoProfile ? (
+                                        <div className="flex items-start gap-2 mb-2">
+                                            <Building className="h-4 w-4 text-gray-500 mt-0.5" />
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {qxoProfile.messageInfo?.firstName} {qxoProfile.messageInfo?.lastName} (Account #{qxoProfile.accountId || qxoProfile.accountLegacyId})
+                                                </div>
+                                                <div className="text-xs text-gray-500">{qxoProfile.messageInfo?.emailAddress}</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-orange-600 dark:text-orange-400 mb-2">
+                                            {qxoLoading ? 'Loading Beacon profile...' : 'Connect Beacon Pro+ in Integrations to sync your account.'}
+                                        </div>
+                                    )}
+                                    {selectedBranch ? (
+                                        <div className="flex items-start gap-2">
+                                            <div className="h-4 w-4 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                                                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{selectedBranch.name || selectedBranch.branchName}</div>
+                                                <div className="text-xs text-gray-500">Branch #{selectedBranch.number || selectedBranch.branchNumber || selectedBranch.id}</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-red-500">No Branch Selected</div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Shipping Address Inputs - Simplified for Cart view, full form in Checkout */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -576,18 +712,23 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                 <div className="flex gap-4">
                                                     {/* Product Image */}
                                                     <div className="w-20 h-20 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
-                                                        {(item.productImageUrl || item.productVariants?.[0]?.variantImageURL) ? (
+                                                        {(item.productImageUrl || item.productVariants?.[0]?.variantImageURL || (supplier === 'QXO' && (item.productImage || item.image))) ? (
                                                             <img
-                                                                src={item.productImageUrl || item.productVariants?.[0]?.variantImageURL}
-                                                                alt={item.itemDescription || item.familyName}
+                                                                src={supplier === 'QXO' ? formatQxoImage(item.productImage || item.image) : (item.productImageUrl || item.productVariants?.[0]?.variantImageURL)}
+                                                                alt={item.itemDescription || item.familyName || (item as any).productName || (item as any).name}
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     e.currentTarget.style.display = 'none';
                                                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                                 }}
                                                             />
-                                                        ) : null}
-                                                        <div className={`${(item.productImageUrl || item.productVariants?.[0]?.variantImageURL) ? 'hidden' : ''} w-full h-full flex flex-col items-center justify-center text-gray-400`}>
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                                <ShoppingCart className="w-6 h-6 mb-1 opacity-50" />
+                                                                <span className="text-[10px] font-medium uppercase">No Img</span>
+                                                            </div>
+                                                        )}
+                                                        <div className={`${(item.productImageUrl || item.productVariants?.[0]?.variantImageURL || (supplier === 'QXO' && (item.productImage || item.image))) ? 'hidden' : ''} w-full h-full flex flex-col items-center justify-center text-gray-400`}>
                                                             <ShoppingCart className="w-6 h-6 mb-1 opacity-50" />
                                                             <span className="text-[10px] font-medium uppercase">No Img</span>
                                                         </div>
@@ -652,24 +793,29 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                             {/* Price */}
                                                             <div className="text-right">
                                                                 {(() => {
-                                                                    const price = getItemPrice(item.itemNumber);
+                                                                    const pNum = resolveItemPrice(item);
                                                                     const status = srsPriceStatus[item.itemNumber];
                                                                     const hasStatusMessage = Boolean(status?.message);
-                                                                    return price > 0 ? (
-                                                                        <div className="flex flex-col items-end">
-                                                                            <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                                                                ${(price * item.quantity).toFixed(2)}
-                                                                            </span>
-                                                                            <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                                                                ${price.toFixed(2)} / {item.uoms?.[0]?.code || 'EA'}
-                                                                            </span>
-                                                                            {hasStatusMessage && (
-                                                                                <span className="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
-                                                                                    {status?.message}
+                                                                    
+                                                                    if (pNum > 0) {
+                                                                        return (
+                                                                            <div className="flex flex-col items-end">
+                                                                                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                                                                    ${(pNum * item.quantity).toFixed(2)}
+                                                                                </div>
+                                                                                <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                                                    ${pNum.toFixed(2)} / {(item as any).uom || item.uoms?.[0]?.code || 'EA'}
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
+                                                                                {hasStatusMessage && (
+                                                                                    <span className="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                                                                        {status?.message}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    
+                                                                    return (
                                                                         <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded">
                                                                             {hasStatusMessage ? status?.message : 'Call for Price'}
                                                                         </span>
