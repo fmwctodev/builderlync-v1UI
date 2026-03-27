@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Truck, Building } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Truck, Building, FileStack } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
+import SRSOrderTemplates from './SRSOrderTemplates';
 import { srsApi } from '../services/srsApi';
 import { srsService } from '../services/srsService';
 
@@ -291,6 +292,15 @@ const SRSSupplyView: React.FC = () => {
                 <p className="text-sm opacity-80">Check status and history</p>
               </div>
             </div>
+            <div onClick={() => setCurrentView('templates')} className="bg-white/10 hover:bg-white/20 rounded-lg p-4 flex items-center transition cursor-pointer group text-white">
+              <div className="h-10 w-10 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center">
+                <FileStack className="h-5 w-5" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium">Order Templates</h3>
+                <p className="text-sm opacity-80">Use saved templates</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -376,6 +386,7 @@ const SRSSupplyView: React.FC = () => {
   if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
   if (currentView === 'products') return (isConnected && selectedBranch) ? <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="SRS" branchId={selectedBranch?.id} /> : renderDashboard();
   if (currentView === 'orders') return (isConnected && selectedBranch) ? <OrderHistory onBack={() => setCurrentView('dashboard')} supplier="SRS" branchId={selectedBranch?.id} /> : renderDashboard();
+  if (currentView === 'templates') return (isConnected) ? <SRSOrderTemplates onBack={() => setCurrentView('dashboard')} branchId={selectedBranch?.id} /> : renderDashboard();
   
   return renderDashboard();
 };

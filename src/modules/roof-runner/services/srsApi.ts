@@ -131,5 +131,12 @@ export const srsApi = {
   async getUOMs() {
     const response = await fetch(`${API_BASE_URL}/srs/uoms`);
     return response.json();
+  },
+
+  async getOrderTemplates() {
+    const response = await fetch(`${API_BASE_URL}/srs/order-templates`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.json();
   }
 };
