@@ -7,6 +7,7 @@ import { StormEventsPage } from './pages/StormEventsPage';
 import { StormEventDetailPage } from './pages/StormEventDetailPage';
 import { DoorDetailPage } from './pages/DoorDetailPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
+import { StormIntelligencePage } from './pages/StormIntelligencePage';
 
 export function StormCanvassingModule() {
   return (
@@ -19,6 +20,7 @@ export function StormCanvassingModule() {
       <Route path="leads" element={<CanvassLeadsPage />} />
       <Route path="manager" element={<ManagerDashboardPage />} />
       <Route path="settings" element={<CanvassSettingsPage />} />
+      <Route path="intelligence" element={<StormIntelligencePage />} />
       <Route path="*" element={<Navigate to="" replace />} />
     </Routes>
   );
