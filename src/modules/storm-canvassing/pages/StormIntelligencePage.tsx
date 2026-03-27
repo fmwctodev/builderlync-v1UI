@@ -12,16 +12,13 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { useSupabaseUser } from '../../../shared/hooks/useSupabaseUser';
 import { getOrgSettings } from '../services/orgSettingsApi';
-import type { TrackedEventType } from '../types';
-import { ALL_TRACKED_EVENT_TYPES } from '../types';
 
 import { RealTimeAlertsTab } from './storm-intelligence/RealTimeAlertsTab';
 import { HistoricalStormTab } from './storm-intelligence/HistoricalStormTab';
 import { HailForecastTab } from './storm-intelligence/HailForecastTab';
 import { ZoneAlertsTab } from './storm-intelligence/ZoneAlertsTab';
-import { IntelligenceSettingsTab } from './storm-intelligence/IntelligenceSettingsTab';
 
-type Tab = 'realtime' | 'historical' | 'forecast' | 'zones' | 'settings';
+type Tab = 'realtime' | 'historical' | 'forecast' | 'zones';
 
 const TABS: Array<{ id: Tab; label: string; shortLabel: string; icon: React.ReactNode; description: string }> = [
   {
@@ -52,13 +49,6 @@ const TABS: Array<{ id: Tab; label: string; shortLabel: string; icon: React.Reac
     icon: <Bell className="w-4 h-4" />,
     description: 'Subscribe to UGC zones for geofenced notifications',
   },
-  {
-    id: 'settings',
-    label: 'Settings',
-    shortLabel: 'Settings',
-    icon: <Settings className="w-4 h-4" />,
-    description: 'Turfs, alert preferences, and tracking configuration',
-  },
 ];
 
 export function StormIntelligencePage() {
@@ -70,8 +60,6 @@ export function StormIntelligencePage() {
 
   const [activeTab, setActiveTab] = useState<Tab>('realtime');
   const [operatingStates, setOperatingStates] = useState<string[]>([]);
-  const [trackedEventTypes, setTrackedEventTypes] = useState<TrackedEventType[]>(ALL_TRACKED_EVENT_TYPES);
-  const [historicalDaysBack, setHistoricalDaysBack] = useState(90);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -79,25 +67,8 @@ export function StormIntelligencePage() {
       if (settings?.operating_states && settings.operating_states.length > 0) {
         setOperatingStates(settings.operating_states);
       }
-      if (settings?.tracked_event_types && settings.tracked_event_types.length > 0) {
-        setTrackedEventTypes(settings.tracked_event_types as TrackedEventType[]);
-      }
-      if (settings?.default_historical_days_back) {
-        setHistoricalDaysBack(settings.default_historical_days_back);
-      }
     }).catch(() => {});
   }, [organizationId]);
-
-  const handleSettingsChanged = ({
-    trackedEventTypes: newTypes,
-    historicalDaysBack: newDays,
-  }: {
-    trackedEventTypes: TrackedEventType[];
-    historicalDaysBack: number;
-  }) => {
-    setTrackedEventTypes(newTypes);
-    setHistoricalDaysBack(newDays);
-  };
 
   const currentTab = TABS.find((t) => t.id === activeTab);
 
@@ -164,13 +135,6 @@ export function StormIntelligencePage() {
             organizationId={organizationId}
             userId={userId}
             operatingStates={operatingStates}
-          />
-        )}
-        {activeTab === 'settings' && organizationId && userId && (
-          <IntelligenceSettingsTab
-            organizationId={organizationId}
-            userId={userId}
-            onSettingsChanged={handleSettingsChanged}
           />
         )}
       </div>

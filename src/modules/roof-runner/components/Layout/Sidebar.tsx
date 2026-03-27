@@ -36,7 +36,7 @@ const navItems = {
     { name: 'Automation', icon: Zap, path: 'automation' },
     { name: 'Opportunities', icon: BarChart, path: 'opportunities' },
     { name: 'Marketing', icon: Megaphone, path: 'marketing' },
-    { name: 'Storm Intelligence', icon: CloudLightning, path: 'storm-canvassing/intelligence' },
+    { name: 'Storm Intelligence', icon: CloudLightning, path: 'storm-canvassing' },
     { name: 'File Manager', icon: FolderOpen, path: 'file-manager' },
     { name: 'Reputation', icon: Star, path: 'reputation' },
     { name: 'Reporting', icon: BarChart2, path: 'reporting' },
