@@ -4,7 +4,8 @@ import {
   fetchTwilioPhoneNumbers,
   importPhoneNumbers,
   fetchOrganizationPhoneNumbers,
-  type TwilioPhoneNumber
+  type TwilioPhoneNumber,
+  type PhoneNumber
 } from '../services/phoneNumbersService';
 
 interface ImportPhoneNumbersModalProps {
@@ -24,7 +25,7 @@ export function ImportPhoneNumbersModal({
 }: ImportPhoneNumbersModalProps) {
   const [loading, setLoading] = useState(false);
   const [twilioNumbers, setTwilioNumbers] = useState<TwilioPhoneNumber[]>([]);
-  const [existingNumbers, setExistingNumbers] = useState<Set<string>>(new Set());
+  const [existingNumbers, setExistingNumbers] = useState<Map<string, PhoneNumber>>(new Map());
   const [selectedNumbers, setSelectedNumbers] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<PhoneNumberType>('all');
@@ -45,10 +46,9 @@ export function ImportPhoneNumbersModal({
       const twilioData = await fetchTwilioPhoneNumbers(organizationId);
       setTwilioNumbers(twilioData);
 
-      // Fetch existing numbers from database
       const existingData = await fetchOrganizationPhoneNumbers(organizationId);
-      const existingSet = new Set(existingData.map((n) => n.phone_number));
-      setExistingNumbers(existingSet);
+      const existingMap = new Map(existingData.map((n) => [n.phone_number, n]));
+      setExistingNumbers(existingMap);
     } catch (err) {
       console.error('Error loading phone numbers:', err);
       setError(err instanceof Error ? err.message : 'Failed to load phone numbers');
@@ -259,7 +259,7 @@ export function ImportPhoneNumbersModal({
                         </span>
                         {isExisting && (
                           <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            Already imported
+                            Already imported {existingNumbers.get(number.phoneNumber)?.assigned_agent?.name ? `(Assigned to ${existingNumbers.get(number.phoneNumber)?.assigned_agent?.name})` : '(Unassigned)'}
                           </span>
                         )}
                       </div>

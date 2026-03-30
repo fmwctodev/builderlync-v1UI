@@ -33,9 +33,9 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
     if (!agentId) return;
     try {
       const response = await vapiApi.getAgentVoice(agentId);
-      if (response?.data?.voice_id) {
-        setAgentVoiceId(response.data.voice_id);
-        setSelectedVoice(response.data.voice_id);
+      if (response?.voice_id) {
+        setAgentVoiceId(response.voice_id);
+        setSelectedVoice(response.voice_id);
       }
     } catch (error) {
       console.error('Error loading agent voice:', error);
@@ -48,7 +48,7 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
       const response = await vapiApi.listVoices();
       const voiceData = response.data || [];
       setVoices(voiceData);
-      if (voiceData.length > 0) {
+      if (voiceData.length > 0 && !selectedVoice) {
         setSelectedVoice(voiceData[0].voice_id);
       }
     } catch (error) {

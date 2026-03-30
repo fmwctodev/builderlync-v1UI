@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { CreateAgentWizard } from './pages/CreateAgentWizard';
 import { AgentBuilder } from './pages/AgentBuilder';
@@ -14,8 +14,6 @@ import { LogsTestingPage } from './pages/LogsTestingPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SierraAiTabLayout } from './components/SierraAiTabLayout';
 import { AIAgentsTab } from './pages/tabs/AIAgentsTab';
-import { KnowledgeBaseTab } from './pages/tabs/KnowledgeBaseTab';
-import { VoicesTab } from './pages/tabs/VoicesTab';
 import { AgentTemplatesTab } from './pages/tabs/AgentTemplatesTab';
 
 export function SierraAiModule() {
@@ -56,14 +54,12 @@ export function SierraAiModule() {
     }
   };
 
-  const renderNewTabContent = (activeTab: 'agents' | 'knowledge-base' | 'voices' | 'templates') => {
+  const renderNewTabContent = (activeTab: 'agents' | 'voice-and-sms' | 'templates') => {
     switch (activeTab) {
       case 'agents':
         return <AIAgentsTab />;
-      case 'knowledge-base':
-        return <KnowledgeBaseTab />;
-      case 'voices':
-        return <VoicesTab />;
+      case 'voice-and-sms':
+        return <NumbersRoutingPage />;
       case 'templates':
         return <AgentTemplatesTab />;
       default:
