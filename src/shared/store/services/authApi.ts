@@ -147,7 +147,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Registration failed');
+      throw new Error(result.message || result.error || 'Registration failed');
     }
 
     return result;
@@ -165,7 +165,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Login failed');
+      throw new Error(result.message || result.error || 'Login failed');
     }
 
     return result;
@@ -183,7 +183,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Failed to send OTP');
+      throw new Error(result.message || result.error || 'Failed to send OTP');
     }
 
     return result;
@@ -201,7 +201,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'OTP verification failed');
+      throw new Error(result.message || result.error || 'OTP verification failed');
     }
 
     return result;
@@ -220,7 +220,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Password reset failed');
+      throw new Error(result.message || result.error || 'Password reset failed');
     }
 
     return result;
@@ -239,7 +239,7 @@ export const authApi = {
     console.log(result)
 
     if (!response.ok) {
-      throw new Error(result.message || 'OTP verification failed');
+      throw new Error(result.message || result.error || 'OTP verification failed');
     }
 
     return result;
@@ -257,7 +257,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Failed to resend OTP');
+      throw new Error(result.message || result.error || 'Failed to resend OTP');
     }
 
     return result;
