@@ -111,10 +111,10 @@ export function UploadFilesModal({
 
           if (agentId) {
             try {
-              const { elevenlabsApi } = await import('../services/elevenlabsApi');
-              await elevenlabsApi.addKnowledgeBaseFile(agentId, file, file.name);
-            } catch (elevenLabsError) {
-              console.error("Failed to upload to ElevenLabs KB:", elevenLabsError);
+              const { vapiApi } = await import('../services/vapiApi');
+              await vapiApi.addKnowledgeBaseFile(agentId, file, file.name);
+            } catch (VapiError) {
+              console.error("Failed to upload to Vapi KB:", VapiError);
             }
           }
 

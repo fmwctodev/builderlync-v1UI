@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FileText, Loader2, ExternalLink } from 'lucide-react';
-import { elevenlabsApi } from '../services/elevenlabsApi';
+import { vapiApi } from '../services/vapiApi';
 
-interface ElevenLabsKnowledgeBaseProps {
+interface VapiKnowledgeBaseProps {
   agentId: string;
 }
 
-export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProps) {
+export function VapiKnowledgeBase({ agentId }: VapiKnowledgeBaseProps) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +19,10 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
     if (!agentId || agentId === 'undefined') return;
     try {
       setLoading(true);
-      const response = await elevenlabsApi.getAgentKnowledgeBase(agentId);
+      const response = await vapiApi.getAgentKnowledgeBase(agentId);
       setItems(response?.data?.documents || []);
     } catch (error) {
-      console.error('Error loading ElevenLabs knowledge base:', error);
+      console.error('Error loading Vapi knowledge base:', error);
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -40,7 +40,7 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
     return (
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <p className="text-sm text-blue-900 dark:text-blue-100">
-          No knowledge base items synced to ElevenLabs yet. Add items above to automatically sync them.
+          No knowledge base items synced to Vapi yet. Add items above to automatically sync them.
         </p>
       </div>
     );
@@ -52,7 +52,7 @@ export function ElevenLabsKnowledgeBase({ agentId }: ElevenLabsKnowledgeBaseProp
         <div className="flex items-center gap-2">
           <ExternalLink className="w-4 h-4 text-gray-500" />
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Synced to ElevenLabs ({items.length})
+            Synced to Vapi ({items.length})
           </h3>
         </div>
       </div>

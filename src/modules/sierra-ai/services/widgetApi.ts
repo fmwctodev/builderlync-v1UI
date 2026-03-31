@@ -63,7 +63,7 @@ class WidgetApi {
     return result.data;
   }
 
-  async syncFromElevenLabs(agentId: string): Promise<WidgetConfig> {
+  async syncFromVapi(agentId: string): Promise<WidgetConfig> {
     const response = await fetch(`${API_BASE_URL}/widget/sync/${agentId}`, {
       method: 'POST',
       headers: this.getHeaders()
@@ -71,7 +71,7 @@ class WidgetApi {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to sync from ElevenLabs');
+      throw new Error(error.error || 'Failed to sync from Vapi');
     }
 
     const result = await response.json();

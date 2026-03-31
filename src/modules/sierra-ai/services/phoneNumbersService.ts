@@ -50,8 +50,8 @@ export interface PhoneCapabilities {
 export async function fetchOrganizationPhoneNumbers(
   organizationId: string
 ): Promise<PhoneNumber[]> {
-  const { elevenlabsApi } = await import('./elevenlabsApi');
-  const response = await elevenlabsApi.getPhoneNumbers();
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.getPhoneNumbers();
   return response.data || [];
 }
 

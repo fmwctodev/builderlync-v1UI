@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X, AlertTriangle, Settings } from 'lucide-react';
+import { Send, FileText, Link as LinkIcon, Image as ImageIcon, Paperclip, Smile, DollarSign, Plus, Type, Clock, X, AlertTriangle, Settings, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { smtpApi } from '../../../../shared/services/smtpApi';
+import { TagDropdown } from '../../../../shared/components/TagDropdown';
+import { EmojiPicker } from '../../../../shared/components/EmojiPicker';
 
 interface MessageInputEmailProps {
   onSend: (message: string, metadata: any) => void;
@@ -24,6 +26,8 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSmtpError, setShowSmtpError] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Calculate word count
   const wordCount = message.trim() ? message.trim().split(/\s+/).length : 0;
@@ -276,9 +280,44 @@ export function MessageInputEmail({ onSend, contactEmail, contactName, contactId
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Attach file">
             <Paperclip className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji">
-            <Smile className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  setMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }}
+                onClose={() => setShowEmojiPicker(false)}
+                position="top"
+              />
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert tag"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+            {showTagDropdown && (
+              <TagDropdown
+                onSelect={(val) => {
+                  setMessage(prev => prev + val);
+                  setShowTagDropdown(false);
+                }}
+                onClose={() => setShowTagDropdown(false)}
+                position="top"
+              />
+            )}
+          </div>
           <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Payment">
             <DollarSign className="w-5 h-5" />
           </button>

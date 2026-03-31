@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Upload, FileText, MessageSquare, Table, Globe, Trash2, Volume2, Play } from 'lucide-react';
-import { useAuth } from '../../abc-supply/context/AuthContext';
+import { Plus, FileText, Trash2, Volume2, Play } from 'lucide-react';
+// import { useAuth } from '../../abc-supply/context/AuthContext';
 
 interface KnowledgeItem {
   id: string;
@@ -17,14 +17,17 @@ interface Voice {
 }
 
 export function KnowledgeBaseVoices() {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'knowledge' | 'voices'>('knowledge');
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [agents, setAgents] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('');
+
+  useEffect(() => {
+    loadAgents();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'knowledge' && selectedAgent) {
@@ -34,9 +37,24 @@ export function KnowledgeBaseVoices() {
     }
   }, [activeTab, selectedAgent]);
 
+  const loadAgents = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ai-agents`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      setAgents(data.data || []);
+      if (data.data?.length > 0 && !selectedAgent) {
+        setSelectedAgent(data.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading agents:', error);
+    }
+  };
+
   const loadKnowledgeBase = async () => {
     if (!selectedAgent) return;
-    setLoading(true);
+    // setLoading(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/knowledge-base/qapairs?agent_id=${selectedAgent}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -46,38 +64,22 @@ export function KnowledgeBaseVoices() {
     } catch (error) {
       console.error('Error loading knowledge base:', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
   const loadVoices = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/elevenlabs/voices`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/vapi/voices`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
-      setVoices(data.data?.voices || []);
+      setVoices(data.data || []);
     } catch (error) {
       console.error('Error loading voices:', error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddKnowledge = async (formData: FormData) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/knowledge-base/articles`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: formData
-      });
-      if (response.ok) {
-        loadKnowledgeBase();
-        setShowAddModal(false);
-      }
-    } catch (error) {
-      console.error('Error adding knowledge:', error);
+      // setLoading(false);
     }
   };
 
@@ -117,14 +119,14 @@ export function KnowledgeBaseVoices() {
     }
   };
 
-  const handleSyncToElevenLabs = async () => {
+  const handleSyncToVapi = async () => {
     if (!selectedAgent) {
       alert('Please select an agent first');
       return;
     }
     try {
       const orgId = localStorage.getItem('currentOrganizationId');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/knowledge-base/sync-to-elevenlabs`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/knowledge-base/sync-to-vapi`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,24 +138,38 @@ export function KnowledgeBaseVoices() {
         })
       });
       if (response.ok) {
-        alert('Knowledge base synced to ElevenLabs successfully!');
+        alert('Knowledge base synced to Vapi successfully!');
       }
     } catch (error) {
-      console.error('Error syncing to ElevenLabs:', error);
+      console.error('Error syncing to Vapi:', error);
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-gray-600 dark:text-gray-400">
-          Manage Knowledge Base and AI Voices
-        </p>
+        <div className="flex items-center gap-4">
+          <select
+            value={selectedAgent}
+            onChange={(e) => setSelectedAgent(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="">Select Agent</option>
+            {agents.map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage Knowledge Base and AI Voices
+          </p>
+        </div>
         <button
-          onClick={handleSyncToElevenLabs}
+          onClick={handleSyncToVapi}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          Sync to ElevenLabs
+          Sync to Vapi
         </button>
       </div>
 
@@ -188,7 +204,7 @@ export function KnowledgeBaseVoices() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Knowledge Base Items</h3>
               <button
-                onClick={() => setShowAddModal(true)}
+                // onClick={() => setShowAddModal(true)}
                 className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
                 <Plus className="w-4 h-4 mr-2" />

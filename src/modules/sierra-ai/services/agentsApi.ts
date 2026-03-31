@@ -119,7 +119,7 @@ export interface AIAgent {
     avgDuration?: number;
   };
   id: string;
-  elevenlabs_data?: any;
+  Vapi_data?: any;
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -179,16 +179,16 @@ export interface UpdateAgentInput extends Partial<CreateAgentInput> {
   };
 }
 
-import { elevenlabsApi } from './elevenlabsApi';
+import { vapiApi } from './vapiApi';
 
 export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
-  const response = await elevenlabsApi.getAgents(organizationId);
+  const response = await vapiApi.getAgents(organizationId);
   return response.data || [];
 }
 
 export async function fetchAgentById(id: string): Promise<AIAgent | null> {
   console.log('fetchAgentById called with id:', id);
-  const response = await elevenlabsApi.getAgent(id);
+  const response = await vapiApi.getAgent(id);
   console.log('fetchAgentById response:', response);
   return response.data || response;
 }
@@ -251,7 +251,7 @@ export async function createAgent(
     updated_by: userId,
   };
 
-  const response = await elevenlabsApi.createAgent(agentData as any);
+  const response = await vapiApi.createAgent(agentData as any);
   return response.data || response;
 }
 
@@ -261,12 +261,12 @@ export async function updateAgent(
 ): Promise<AIAgent> {
   const { id, ...updates } = input;
   console.log("input", input);
-  const response = await elevenlabsApi.updateAgent(id, updates);
+  const response = await vapiApi.updateAgent(id, updates);
   return response.data || response;
 }
 
 export async function deleteAgent(id: string): Promise<void> {
-  await elevenlabsApi.deleteAgent(id);
+  await vapiApi.deleteAgent(id);
 }
 
 /**

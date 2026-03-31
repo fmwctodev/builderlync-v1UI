@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Bot, BookOpen, Mic, Layers, LucideIcon } from 'lucide-react';
+import { Bot, Phone, Layers, LucideIcon } from 'lucide-react';
 
-type TabId = 'agents' | 'knowledge-base' | 'voices' | 'templates';
+type TabId = 'agents' | 'voice-and-sms' | 'templates';
 
 interface Tab {
   id: TabId;
@@ -18,8 +18,7 @@ export function SierraAiTabLayout({ children }: SierraAiTabLayoutProps) {
 
   const tabs: Tab[] = [
     { id: 'agents', label: 'AI Agents', icon: Bot },
-    // { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
-    // { id: 'voices', label: 'Voices', icon: Mic },
+    { id: 'voice-and-sms', label: 'Voice and SMS', icon: Phone },
     { id: 'templates', label: 'Agent Templates', icon: Layers },
   ];
 

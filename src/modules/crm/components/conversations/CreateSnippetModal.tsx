@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Smile, Paperclip } from 'lucide-react';
+import { X, Smile, Paperclip, Tag } from 'lucide-react';
 import { Snippet, SnippetFolder } from '../../../../shared/services/snippetsApi';
+import { TagDropdown } from '../../../../shared/components/TagDropdown';
+import { EmojiPicker } from '../../../../shared/components/EmojiPicker';
 
 interface CreateSnippetModalProps {
   folders: SnippetFolder[];
@@ -14,6 +16,8 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [folderId, setFolderId] = useState<number | undefined>();
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,22 +54,20 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
               <button
                 type="button"
                 onClick={() => setType('text')}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg ${
-                  type === 'text'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg ${type === 'text'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 Text Snippet
               </button>
               <button
                 type="button"
                 onClick={() => setType('email')}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg ${
-                  type === 'email'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg ${type === 'email'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 Email Snippet
               </button>
@@ -109,14 +111,42 @@ export function CreateSnippetModal({ folders, onClose, onCreate }: CreateSnippet
                 Snippets Body *
               </label>
               <div className="border border-gray-300 rounded-lg">
-                {/* <div className="flex items-center space-x-2 p-2 border-b border-gray-300">
-                  <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                    <Smile className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                    <Paperclip className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div> */}
+                <div className="flex items-center space-x-2 p-2 border-b border-gray-300">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+                      className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600" title="Insert emoji"
+                    >
+                      <Smile className="w-4 h-4" />
+                    </button>
+                    {showEmojiPicker && (
+                      <EmojiPicker
+                        onSelect={(emoji) => {
+                          setBody(prev => prev + emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                        position="bottom"
+                      />
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button type="button" className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600" onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}>
+                      <Tag className="w-4 h-4" />
+                    </button>
+                    {showTagDropdown && (
+                      <TagDropdown
+                        onSelect={(val) => {
+                          setBody(prev => prev + val);
+                          setShowTagDropdown(false);
+                        }}
+                        onClose={() => setShowTagDropdown(false)}
+                        position="bottom"
+                      />
+                    )}
+                  </div>
+                </div>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}

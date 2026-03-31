@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Phone, Loader2 } from 'lucide-react';
-import { elevenlabsApi } from '../services/elevenlabsApi';
+import { vapiApi } from '../services/vapiApi';
 
 interface CreatePhoneNumberModalProps {
   isOpen: boolean;
@@ -28,7 +28,7 @@ export function CreatePhoneNumberModal({
     setLoading(true);
 
     try {
-      await elevenlabsApi.createPhoneNumber({
+      await vapiApi.createPhoneNumber({
         organization_id: organizationId,
         ...formData,
       });

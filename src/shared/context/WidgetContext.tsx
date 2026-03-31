@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface WidgetContextType {
   widgetEnabled: boolean;
-  elevenlabsAgentId: string | null;
+  vapiAssistantId: string | null;
   widgetConfig: WidgetConfig | null;
   setWidgetEnabled: (enabled: boolean) => void;
-  setElevenlabsAgentId: (agentId: string | null) => void;
+  setVapiAssistantId: (assistantId: string | null) => void;
   setWidgetConfig: (config: WidgetConfig | null) => void;
 }
 
@@ -19,19 +19,19 @@ const WidgetContext = createContext<WidgetContextType | undefined>(undefined);
 
 export function WidgetProvider({ children }: { children: React.ReactNode }) {
   const [widgetEnabled, setWidgetEnabled] = useState(false);
-  const [elevenlabsAgentId, setElevenlabsAgentId] = useState<string | null>(null);
+  const [vapiAssistantId, setVapiAssistantId] = useState<string | null>(null);
   const [widgetConfig, setWidgetConfig] = useState<WidgetConfig | null>(null);
 
   useEffect(() => {
     const orgId = localStorage.getItem('currentOrganizationId');
     if (orgId) {
       const savedEnabled = localStorage.getItem(`widget_enabled_${orgId}`);
-      const savedAgentId = localStorage.getItem(`widget_agent_${orgId}`);
+      const savedAssistantId = localStorage.getItem(`widget_agent_${orgId}`);
       const savedConfig = localStorage.getItem(`widget_config_${orgId}`);
       
-      if (savedEnabled === 'true' && savedAgentId) {
+      if (savedEnabled === 'true' && savedAssistantId) {
         setWidgetEnabled(true);
-        setElevenlabsAgentId(savedAgentId);
+        setVapiAssistantId(savedAssistantId);
         if (savedConfig) {
           setWidgetConfig(JSON.parse(savedConfig));
         }
@@ -40,110 +40,54 @@ export function WidgetProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const scriptId = 'elevenlabs-convai-widget';
-    const widgetId = 'elevenlabs-convai-element';
-    const styleId = 'elevenlabs-convai-custom-style';
+    const scriptId = 'vapi-widget-script';
+    const widgetId = 'vapi-assistant-element';
+    const styleId = 'vapi-custom-style';
     
-    if (widgetEnabled && elevenlabsAgentId) {
+    if (widgetEnabled && vapiAssistantId) {
       const existingWidget = document.getElementById(widgetId);
       if (!existingWidget) {
-        const widget = document.createElement('elevenlabs-convai');
+        const widget = document.createElement('vapi-assistant');
         widget.id = widgetId;
-        widget.setAttribute('agent-id', elevenlabsAgentId);
-        
-        if (widgetConfig?.avatarUrl) {
-          widget.setAttribute('avatar-url', widgetConfig.avatarUrl);
-        }
-        if (widgetConfig?.color) {
-          widget.setAttribute('color', widgetConfig.color);
-        }
-        if (widgetConfig?.position) {
-          widget.setAttribute('position', widgetConfig.position);
-        }
+        widget.setAttribute('assistant-id', vapiAssistantId);
         
         document.body.appendChild(widget);
       } else {
-        if (widgetConfig?.avatarUrl) {
-          existingWidget.setAttribute('avatar-url', widgetConfig.avatarUrl);
-        }
-        if (widgetConfig?.color) {
-          existingWidget.setAttribute('color', widgetConfig.color);
-        }
-        if (widgetConfig?.position) {
-          existingWidget.setAttribute('position', widgetConfig.position);
-        }
+        existingWidget.setAttribute('assistant-id', vapiAssistantId);
       }
 
       const existingScript = document.getElementById(scriptId);
       if (!existingScript) {
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed@beta';
+        script.src = 'https://cdn.jsdelivr.net/gh/VapiAI/html-widget@latest/dist/vapi-widget.js';
         script.async = true;
-        script.type = 'text/javascript';
+        script.defer = true;
         document.head.appendChild(script);
-      }
-      
-      const existingStyle = document.getElementById(styleId);
-      if (!existingStyle) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-          elevenlabs-convai::part(branding) {
-            display: none !important;
-          }
-        `;
-        document.head.appendChild(style);
       }
       
       const orgId = localStorage.getItem('currentOrganizationId');
       if (orgId) {
         localStorage.setItem(`widget_enabled_${orgId}`, 'true');
-        localStorage.setItem(`widget_agent_${orgId}`, elevenlabsAgentId);
-        if (widgetConfig) {
-          localStorage.setItem(`widget_config_${orgId}`, JSON.stringify(widgetConfig));
-        }
+        localStorage.setItem(`widget_agent_${orgId}`, vapiAssistantId);
       }
     } else {
       const existingWidget = document.getElementById(widgetId);
-      if (existingWidget) {
-        existingWidget.remove();
-      }
+      if (existingWidget) existingWidget.remove();
       const existingScript = document.getElementById(scriptId);
-      if (existingScript) {
-        existingScript.remove();
-      }
-      const existingStyle = document.getElementById(styleId);
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-      
-      const orgId = localStorage.getItem('currentOrganizationId');
-      if (orgId) {
-        localStorage.removeItem(`widget_enabled_${orgId}`);
-        localStorage.removeItem(`widget_agent_${orgId}`);
-        localStorage.removeItem(`widget_config_${orgId}`);
-      }
+      if (existingScript) existingScript.remove();
     }
 
     return () => {
       const existingWidget = document.getElementById(widgetId);
-      if (existingWidget) {
-        existingWidget.remove();
-      }
+      if (existingWidget) existingWidget.remove();
       const existingScript = document.getElementById(scriptId);
-      if (existingScript) {
-        existingScript.remove();
-      }
-      const existingStyle = document.getElementById(styleId);
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-    };
-  }, [widgetEnabled, elevenlabsAgentId, widgetConfig]);
+      if (existingScript) existingScript.remove();
+    }
+  }, [widgetEnabled, vapiAssistantId, widgetConfig]);
 
   return (
-    <WidgetContext.Provider value={{ widgetEnabled, elevenlabsAgentId, widgetConfig, setWidgetEnabled, setElevenlabsAgentId, setWidgetConfig }}>
+    <WidgetContext.Provider value={{ widgetEnabled, vapiAssistantId, widgetConfig, setWidgetEnabled, setVapiAssistantId, setWidgetConfig }}>
       {children}
     </WidgetContext.Provider>
   );

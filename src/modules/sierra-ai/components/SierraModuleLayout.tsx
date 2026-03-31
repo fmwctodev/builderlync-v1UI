@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { SierraNavigation, TabId } from './SierraNavigation';
 import { mockSierraConfig } from '../lib/mockData';
+import { AIAgent } from '../services/agentsApi';
 
 interface SierraModuleLayoutProps {
   children: (activeTab: TabId, layoutState: LayoutState) => React.ReactNode;
 }
 
 export interface LayoutState {
+  agent: AIAgent | null;
   agentStatus: 'active' | 'paused';
   hasPendingChanges: boolean;
   onToggleStatus: () => void;
@@ -41,6 +43,7 @@ export function SierraModuleLayout({ children }: SierraModuleLayoutProps) {
   };
 
   const layoutState: LayoutState = {
+    agent: null, // Default to null, can be updated if we fetch an agent
     agentStatus,
     hasPendingChanges,
     onToggleStatus: handleToggleStatus,

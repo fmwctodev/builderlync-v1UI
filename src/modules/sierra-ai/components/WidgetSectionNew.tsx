@@ -7,7 +7,7 @@ interface WidgetSectionProps {
 }
 
 export function WidgetSection({ agentId }: WidgetSectionProps) {
-  const { widgetEnabled, setWidgetEnabled, setElevenlabsAgentId, setWidgetConfig } = useWidget();
+  const { widgetEnabled, setWidgetEnabled, setVapiAgentId, setWidgetConfig } = useWidget();
   const [config, setConfig] = useState({
     avatarType: 'orb' as 'orb' | 'link' | 'image',
     avatarUrl: '',
@@ -17,35 +17,35 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   });
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [elevenlabsAgentId, setElevenlabsAgentIdLocal] = useState<string>('');
+  const [VapiAgentId, setVapiAgentIdLocal] = useState<string>('');
 
   useEffect(() => {
     loadAgentData();
   }, [agentId]);
 
   useEffect(() => {
-    if (elevenlabsAgentId) {
-      loadWidgetFromElevenLabs();
+    if (VapiAgentId) {
+      loadWidgetFromVapi();
     }
-  }, [elevenlabsAgentId]);
+  }, [VapiAgentId]);
 
   const loadAgentData = async () => {
     if (!agentId || agentId === 'undefined') return;
 
     try {
-      const { elevenlabsApi } = await import('../services/elevenlabsApi');
-      const response = await elevenlabsApi.getAgent(agentId);
-      if (response.data?.elevenlabs_agent_id) {
-        setElevenlabsAgentIdLocal(response.data.elevenlabs_agent_id);
-        setElevenlabsAgentId(response.data.elevenlabs_agent_id);
+      const { vapiApi } = await import('../services/vapiApi');
+      const response = await vapiApi.getAgent(agentId);
+      if (response.data?.Vapi_agent_id) {
+        setVapiAgentIdLocal(response.data.Vapi_agent_id);
+        setVapiAgentId(response.data.Vapi_agent_id);
       }
     } catch (error) {
       console.error('Error loading agent data:', error);
     }
   };
 
-  const loadWidgetFromElevenLabs = async () => {
-    if (!elevenlabsAgentId) return;
+  const loadWidgetFromVapi = async () => {
+    if (!VapiAgentId) return;
 
     try {
       setLoading(true);
@@ -68,14 +68,14 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
         }
       }
     } catch (error) {
-      console.error('Error loading widget from ElevenLabs:', error);
+      console.error('Error loading widget from Vapi:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleImageUpload = async (file: File) => {
-    if (!elevenlabsAgentId) return;
+    if (!VapiAgentId) return;
 
     try {
       setUploading(true);
@@ -145,8 +145,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
   };
 
   const generateEmbedCode = () => {
-    const agentIdToUse = elevenlabsAgentId || 'your-agent-id';
-    let code = `<elevenlabs-convai agent-id="${agentIdToUse}"`;
+    const agentIdToUse = VapiAgentId || 'your-agent-id';
+    let code = `<Vapi-convai agent-id="${agentIdToUse}"`;
 
     if (config.avatarType !== 'orb' && config.avatarUrl) {
       code += ` avatar-url="${config.avatarUrl}"`;
@@ -158,7 +158,7 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
       code += ` position="${config.position}"`;
     }
 
-    code += `></elevenlabs-convai>\n<script src="https://unpkg.com/@elevenlabs/convai-widget-embed@beta" async type="text/javascript"></script>`;
+    code += `></Vapi-convai>\n<script src="https://unpkg.com/@Vapi/convai-widget-embed@beta" async type="text/javascript"></script>`;
     return code;
   };
 
@@ -177,8 +177,8 @@ export function WidgetSection({ agentId }: WidgetSectionProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={loadWidgetFromElevenLabs}
-              disabled={!elevenlabsAgentId || loading}
+              onClick={loadWidgetFromVapi}
+              disabled={!VapiAgentId || loading}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

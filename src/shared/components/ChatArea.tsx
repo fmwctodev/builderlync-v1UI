@@ -18,7 +18,8 @@ import {
   Mail,
   FileText,
   AlertTriangle,
-  Settings
+  Settings,
+  Tag as TagIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ChannelTabs, ChannelType } from './ChannelTabs';
@@ -27,6 +28,8 @@ import { MessageInputEmail } from './MessageInputEmail';
 import { MessageInputInternalComment } from './MessageInputInternalComment';
 import { TeamMessageInput } from './TeamMessageInput';
 import { SnippetSelector } from './SnippetSelector';
+import { EmojiPicker } from './EmojiPicker';
+import { TagDropdown } from './TagDropdown';
 import {
   getConversation,
   getConversationMessages,
@@ -43,7 +46,7 @@ interface ChatAreaProps {
 
 export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps) {
   const navigate = useNavigate();
-  const [activeChannel, setActiveChannel] = useState<ChannelType | 'team'>('sms');
+  const [activeChannel, setActiveChannel] = useState<ChannelType | 'team' | 'internal'>('sms');
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,6 +58,8 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
   const [messageContent, setMessageContent] = useState('');
   const [subject, setSubject] = useState('');
   const [showSnippetSelector, setShowSnippetSelector] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -286,8 +291,8 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
               return (
                 <div key={message.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[70%] px-4 py-2 rounded-lg ${isOutbound
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white border border-gray-200 text-gray-900'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white border border-gray-200 text-gray-900'
                     }`}>
                     <div className="flex items-center space-x-2 mb-1">
                       {isEmail ? (
@@ -324,8 +329,8 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
           <button
             onClick={() => setActiveChannel('sms')}
             className={`px-4 py-2 text-sm font-medium ${activeChannel === 'sms'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
               }`}
           >
             SMS
@@ -333,8 +338,8 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
           <button
             onClick={() => setActiveChannel('email')}
             className={`px-4 py-2 text-sm font-medium ${activeChannel === 'email'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
               }`}
           >
             Email
@@ -349,7 +354,13 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
             >
               Team Message
             </button> */}
-          <button className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 ml-auto">
+          <button
+            onClick={() => setActiveChannel('internal' as any)}
+            className={`px-4 py-2 text-sm font-medium ml-auto ${activeChannel === ('internal' as any)
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
             Internal Comment
           </button>
         </div>
@@ -382,6 +393,12 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
               contactEmail={conversation?.contact?.email || undefined}
               contactName={conversation?.contact?.full_name || undefined}
               contactId={conversation?.contact?.id?.toString()}
+              onSendSuccess={handleSendSuccess}
+              onSendError={handleSendError}
+            />
+          ) : activeChannel === ('internal' as any) ? (
+            <MessageInputInternalComment
+              conversationId={conversationId!}
               onSendSuccess={handleSendSuccess}
               onSendError={handleSendError}
             />
@@ -439,12 +456,45 @@ export function ChatArea({ conversationId, onCloseConversation }: ChatAreaProps)
                   >
                     <FileText className="w-4 h-4" />
                   </button>
-                  {/* <button className="p-1 text-gray-500 hover:text-gray-700">
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-                    <button className="p-1 text-gray-500 hover:text-gray-700">
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+                      className="p-1 text-gray-500 hover:text-gray-700 transition-colors" title="Insert emoji"
+                    >
                       <Smile className="w-4 h-4" />
-                    </button> */}
+                    </button>
+                    {showEmojiPicker && (
+                      <EmojiPicker
+                        onSelect={(emoji) => {
+                          setMessageContent(prev => prev + emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                        position="top"
+                      />
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}
+                      className="p-1 text-gray-500 hover:text-gray-700 transition-colors" title="Insert tag"
+                    >
+                      <TagIcon className="w-4 h-4" />
+                    </button>
+                    {showTagDropdown && (
+                      <TagDropdown
+                        onSelect={(val) => {
+                          setMessageContent(prev => prev + val);
+                          setShowTagDropdown(false);
+                        }}
+                        onClose={() => setShowTagDropdown(false)}
+                        position="top"
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-500">{messageContent.split(' ').filter(w => w.length > 0).length} words</span>

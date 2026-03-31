@@ -86,11 +86,11 @@ export function CreateAgentWizard() {
     setIsCreating(true);
 
     try {
-      const { elevenlabsApi } = await import('../services/elevenlabsApi');
+      const { vapiApi } = await import('../services/vapiApi');
 
       const agentType = wizardState.template === 'business_assistant' ? 'voice' : 'voice';
 
-      const response = await elevenlabsApi.createAgent({
+      const response = await vapiApi.createAgent({
         organization_id: (user?.organization_id || user?.organizationId || orgSlug || '').toString(),
         name: wizardState.agentName,
         description: wizardState.mainGoal,

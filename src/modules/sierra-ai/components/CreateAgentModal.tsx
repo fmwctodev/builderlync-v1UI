@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Bot, Loader2, Mic } from 'lucide-react';
-import { elevenlabsApi } from '../services/elevenlabsApi';
+import { vapiApi } from '../services/vapiApi';
 import { useAppSelector } from '../../../shared/store/hooks';
 
 interface CreateAgentModalProps {
@@ -58,7 +58,7 @@ export function CreateAgentModal({
   const loadVoices = async () => {
     setLoadingVoices(true);
     try {
-      const response = await elevenlabsApi.listVoices();
+      const response = await vapiApi.listVoices();
       setVoices(response.data?.voices || []);
       if (response.data?.voices?.length > 0) {
         setFormData((prev) => ({ ...prev, voice_id: response.data.voices[0].voice_id }));
@@ -75,7 +75,7 @@ export function CreateAgentModal({
     setLoading(true);
 
     try {
-      const response = await elevenlabsApi.createAgent({
+      const response = await vapiApi.createAgent({
         ...formData,
         organization_id: orgId
       });
