@@ -141,6 +141,7 @@ export default function AiProposalGenerator() {
     if (!currentOrganizationId) return;
 
     setStep(3);
+    setIsGenerating(true);
     setGenerationError(null);
     setStatusIndex(0);
 
@@ -194,8 +195,10 @@ export default function AiProposalGenerator() {
       );
 
       setStep(4);
+      setIsGenerating(false);
     } catch (err) {
       clearInterval(interval);
+      setIsGenerating(false);
       setGenerationError(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
   }
@@ -206,12 +209,19 @@ export default function AiProposalGenerator() {
     );
   }
 
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const stepLabels: { icon: React.ReactNode; label: string }[] = [
     { icon: <User size={14} />, label: 'Setup' },
     { icon: <Settings size={14} />, label: 'Context' },
     { icon: <Zap size={14} />, label: 'Generating' },
     { icon: <CheckCircle size={14} />, label: 'Done' },
   ];
+
+  function navigateToStep(target: WizardStep) {
+    if (isGenerating) return;
+    setStep(target);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -220,8 +230,9 @@ export default function AiProposalGenerator() {
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => (step > 1 && step < 3 ? setStep((step - 1) as WizardStep) : navigate(-1))}
+              onClick={() => (step > 1 ? setStep((step - 1) as WizardStep) : navigate(-1))}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              disabled={isGenerating}
             >
               <ArrowLeft size={20} />
             </button>
@@ -239,16 +250,22 @@ export default function AiProposalGenerator() {
               const isDone = step > stepNum;
               return (
                 <React.Fragment key={i}>
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary-600 text-white'
-                      : isDone
-                      ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                      : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-                  }`}>
+                  <button
+                    onClick={() => navigateToStep(stepNum)}
+                    disabled={isGenerating}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      isGenerating ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-primary-300 dark:hover:ring-primary-600'
+                    } ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : isDone
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                    }`}
+                  >
                     {isDone ? <CheckCircle size={12} /> : s.icon}
                     <span className="hidden sm:inline">{s.label}</span>
-                  </div>
+                  </button>
                   {i < stepLabels.length - 1 && (
                     <div className={`w-4 h-px ${isDone ? 'bg-primary-300 dark:bg-primary-700' : 'bg-gray-200 dark:bg-gray-600'}`} />
                   )}
@@ -357,8 +374,7 @@ export default function AiProposalGenerator() {
             <div className="flex justify-end">
               <button
                 onClick={() => setStep(2)}
-                disabled={!title.trim() || !selectedContact}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Next
                 <ArrowRight size={16} />
@@ -446,8 +462,7 @@ export default function AiProposalGenerator() {
               </button>
               <button
                 onClick={runGeneration}
-                disabled={selectedSections.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <Sparkles size={16} />
                 Generate Proposal
@@ -459,7 +474,31 @@ export default function AiProposalGenerator() {
         {/* ── Step 3: Generating ── */}
         {step === 3 && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-            {!generationError ? (
+            {generationError ? (
+              <>
+                <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <AlertCircle size={32} className="text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Generation failed</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">{generationError}</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setStep(2); setGenerationError(null); }}
+                    className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => navigate('proposals/new')}
+                    className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    Create Manually
+                  </button>
+                </div>
+              </>
+            ) : isGenerating ? (
               <>
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
@@ -486,27 +525,28 @@ export default function AiProposalGenerator() {
               </>
             ) : (
               <>
-                <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <AlertCircle size={32} className="text-red-500" />
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                    <Sparkles size={32} className="text-primary-600 dark:text-primary-400" />
+                  </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Generation failed</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md">{generationError}</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Generating your proposal</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    This is where AI generation progress will be shown.
+                  </p>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { setStep(2); setGenerationError(null); }}
-                    className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    onClick={() => navigate('proposals/new')}
-                    className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Create Manually
-                  </button>
+                <div className="flex gap-1.5 mt-2">
+                  {STATUS_MESSAGES.map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-1.5 w-2 rounded-full bg-gray-200 dark:bg-gray-700"
+                    />
+                  ))}
                 </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+                  Go back to Setup and Context to fill in details, then use Generate Proposal to start.
+                </p>
               </>
             )}
           </div>
@@ -522,49 +562,71 @@ export default function AiProposalGenerator() {
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Proposal generated!</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {sectionsCount} section{sectionsCount !== 1 ? 's' : ''} created and saved as a draft.
+                  {sectionsCount > 0
+                    ? `${sectionsCount} section${sectionsCount !== 1 ? 's' : ''} created and saved as a draft.`
+                    : 'Generated sections will appear here after running AI generation.'}
                 </p>
               </div>
             </div>
 
-            {/* Sections preview */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-              {generatedSections.map((s) => (
-                <div key={s.id}>
-                  <button
-                    onClick={() => toggleSectionExpand(s.id)}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full shrink-0" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{s.title}</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{s.type}</span>
-                    </div>
-                    {s.expanded ? (
-                      <ChevronUp size={16} className="text-gray-400 shrink-0" />
-                    ) : (
-                      <ChevronDown size={16} className="text-gray-400 shrink-0" />
+            {generatedSections.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+                {generatedSections.map((s) => (
+                  <div key={s.id}>
+                    <button
+                      onClick={() => toggleSectionExpand(s.id)}
+                      className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-primary-500 rounded-full shrink-0" />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{s.title}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{s.type}</span>
+                      </div>
+                      {s.expanded ? (
+                        <ChevronUp size={16} className="text-gray-400 shrink-0" />
+                      ) : (
+                        <ChevronDown size={16} className="text-gray-400 shrink-0" />
+                      )}
+                    </button>
+                    {s.expanded && (
+                      <div
+                        className="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: s.content }}
+                      />
                     )}
-                  </button>
-                  {s.expanded && (
-                    <div
-                      className="px-5 pb-4 text-sm text-gray-600 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: s.content }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+                {['Introduction', 'Scope of Work', 'Materials', 'Timeline', 'Terms & Conditions'].map((label, i) => (
+                  <div key={i} className="flex items-center gap-3 px-5 py-4">
+                    <div className="w-2 h-2 bg-gray-300 dark:bg-gray-600 rounded-full shrink-0" />
+                    <span className="text-sm font-medium text-gray-400 dark:text-gray-500">{label}</span>
+                    <span className="text-xs text-gray-300 dark:text-gray-600 ml-auto">Pending</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => navigate(`proposals/${createdProposalId}/edit`)}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Sparkles size={16} />
-                Open in Proposal Builder
-              </button>
+              {createdProposalId ? (
+                <button
+                  onClick={() => navigate(`proposals/${createdProposalId}/edit`)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  <Sparkles size={16} />
+                  Open in Proposal Builder
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg opacity-50 cursor-not-allowed"
+                >
+                  <Sparkles size={16} />
+                  Open in Proposal Builder
+                </button>
+              )}
               <button
                 onClick={() => navigate('proposals')}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
