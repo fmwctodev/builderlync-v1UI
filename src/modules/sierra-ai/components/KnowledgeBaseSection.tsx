@@ -25,6 +25,7 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
   const [documents, setDocuments] = useState<any[]>([]);
   const [scrapedWebsites, setScrapedWebsites] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const { user } = useAppSelector((state: any) => state.auth);
   const orgId = organizationId && organizationId.includes('-') && organizationId.length > 20
@@ -43,6 +44,7 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
         setTables(response?.data?.tables || []);
         setDocuments(response?.data?.documents || []);
         setScrapedWebsites(response?.data?.scrapedWebsites || []);
+        setRefreshKey(prev => prev + 1);
       } else {
         // Fetch all knowledge base for organization
         const [qaData, articlesData, tablesData, documentsData, scrapedWebsitesData] = await Promise.all([
@@ -262,7 +264,7 @@ export function KnowledgeBaseSection({ agentId, organizationId }: KnowledgeBaseS
 
       {agentId && (
         <div className="mb-6">
-          <VapiKnowledgeBase agentId={agentId} />
+          <VapiKnowledgeBase agentId={agentId} refreshKey={refreshKey} />
         </div>
       )}
 

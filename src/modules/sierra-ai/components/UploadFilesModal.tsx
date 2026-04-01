@@ -106,17 +106,8 @@ export function UploadFilesModal({
             formData.append('agent_id', agentId);
           } // Remove extension from title
 
-          // Upload document using the document API
+          // The backend now handles Vapi sync automatically if agentId is provided in formData
           await knowledgeBaseApi.uploadDocument(formData);
-
-          if (agentId) {
-            try {
-              const { vapiApi } = await import('../services/vapiApi');
-              await vapiApi.addKnowledgeBaseFile(agentId, file, file.name);
-            } catch (VapiError) {
-              console.error("Failed to upload to Vapi KB:", VapiError);
-            }
-          }
 
           setUploadingFiles(prev =>
             prev.map((uf, idx) =>
