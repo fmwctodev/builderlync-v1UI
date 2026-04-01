@@ -1,7 +1,7 @@
 // src/modules/reporting/pages/AIReporting.tsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Sparkles, Loader2, Send, Clock, ChevronRight,
   ChevronDown, X,
@@ -25,6 +25,8 @@ function formatRelativeDate(dateStr: string): string {
 
 export function AIReporting() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlReportId = searchParams.get('reportId');
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState('');
@@ -55,7 +57,38 @@ export function AIReporting() {
 
   useEffect(() => {
     loadRecentReports();
-  }, [loadRecentReports]);
+    
+    // Handle loading a report from query params
+    if (urlReportId) {
+       loadReportById(urlReportId);
+    }
+  }, [loadRecentReports, urlReportId]);
+
+  const loadReportById = async (id: string) => {
+    setIsGenerating(true);
+    try {
+      const final = await pollReportStatus(id);
+      if (final.status === 'complete') {
+        const summary = final.result_json?.executive_summary ?? 'Report loaded.';
+        setMessages([
+          { id: crypto.randomUUID(), type: 'user', content: final.prompt || 'View Report', timestamp: new Date(final.created_at) },
+          { 
+            id: crypto.randomUUID(), 
+            type: 'ai', 
+            content: summary, 
+            timestamp: new Date(final.updated_at || final.created_at),
+            reportId: final.id,
+            report: final 
+          }
+        ]);
+        setParentReportId(final.id);
+      }
+    } catch (err) {
+      console.error('Failed to load report:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

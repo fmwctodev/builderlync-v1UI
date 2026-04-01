@@ -41,7 +41,7 @@ const categoryColor: Record<string, string> = {
   during: 'bg-amber-100 text-amber-700',
   after: 'bg-green-100 text-green-700',
   damage: 'bg-red-100 text-red-700',
-  inspection: 'bg-sky-100 text-sky-700',
+  inspection: 'bg-purple-100 text-purple-700',
   completion: 'bg-teal-100 text-teal-700',
   claim: 'bg-orange-100 text-orange-700',
 };

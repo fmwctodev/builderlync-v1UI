@@ -51,6 +51,7 @@ export interface Proposal {
 export interface CreateProposalRequest {
   template_id?: string;
   job_id?: number;
+  contact_id?: number | string;
   title?: string;
   address?: Address;
   contractor_signature?: ContractorSignature;
@@ -293,13 +294,16 @@ export const proposalsApi = {
 
   async generateAiProposal(data: GenerateAiProposalRequest): Promise<GenerateAiProposalResponse> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/proposals/ai-generate`, data, {
+      const resp = await axios.post(`${API_BASE_URL}/proposals/ai-generate`, data, {
         headers: getAuthHeaders(),
       });
-      return response.data;
-    } catch (error) {
-      console.error('Error generating AI proposal:', error);
-      throw error;
+      return {
+        success: resp.data.success,
+        ...(resp.data.data || {}),
+      };
+    } catch (err) {
+      console.error('Error generating AI proposal:', err);
+      throw err;
     }
-  }
+  },
 };

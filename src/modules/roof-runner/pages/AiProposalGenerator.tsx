@@ -163,23 +163,33 @@ export default function AiProposalGenerator() {
     }, 2000);
 
     try {
-      // 1. Create draft proposal via backend API
-      const proposal = await proposalsApi.createProposal({
-        title: title || 'New AI Proposal',
-        template_id: selectedTemplateId || undefined,
-        contact_id: selectedContact?.id,
-      });
+      let proposalIdToUse = createdProposalId;
 
-      if (!proposal?.id) {
-        throw new Error('Failed to create proposal record');
+      if (!proposalIdToUse) {
+        // 1. Create draft proposal via backend API
+        const proposal = await proposalsApi.createProposal({
+          title: title || 'New AI Proposal',
+          template_id: selectedTemplateId || undefined,
+          contact_id: selectedContact?.id,
+        });
+
+        if (!proposal?.id) {
+          throw new Error('Failed to create proposal record');
+        }
+
+        proposalIdToUse = String(proposal.id);
+        setCreatedProposalId(proposalIdToUse);
+      } else {
+        // Optional: Update title if it changed since last attempt
+        await proposalsApi.updateProposal(Number(proposalIdToUse), {
+          title: title || 'New AI Proposal'
+        });
       }
-
-      setCreatedProposalId(String(proposal.id));
 
       // 2. Generate AI sections via backend proxy
       const genResult = await proposalsApi.generateAiProposal({
         organization_id: currentOrganizationId || '',
-        proposal_id: String(proposal.id),
+        proposal_id: proposalIdToUse,
         contact_id: selectedContact?.id,
         sections_to_generate: selectedSections,
         custom_instructions: customInstructions || undefined,

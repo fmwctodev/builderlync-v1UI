@@ -18,6 +18,7 @@ import {
   generateReport, 
   deleteReport 
 } from '@/modules/reporting/services/aiReports';
+import { useCurrentOrganization } from '@/shared/context/OrgContext';
 
 interface Props {
   onNavigateToChat?: () => void;
@@ -25,6 +26,7 @@ interface Props {
 
 export function AIReportsTab({ onNavigateToChat }: Props) {
   const navigate = useNavigate();
+  const { currentOrganizationSlug: orgSlug } = useCurrentOrganization();
 
   const [prompt, setPrompt] = useState('');
   const [scope, setScope] = useState<ReportScope>('my');
@@ -78,7 +80,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
       }
 
       setPrompt('');
-      navigate(`../reporting/ai?reportId=${result.report_id}`);
+      navigate(`/org/${orgSlug}/reporting/ai?reportId=${result.report_id}`);
     } catch (err) {
       alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setIsGenerating(false);
@@ -270,7 +272,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                   return (
                     <tr
                       key={report.id}
-                      onClick={() => navigate(`/reporting/${report.id}`)}
+                      onClick={() => navigate(`/org/${orgSlug}/reporting/${report.id}`)}
                       className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
                     >
                       <td className="px-4 py-3">

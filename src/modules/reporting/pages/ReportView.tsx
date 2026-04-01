@@ -153,6 +153,20 @@ export function ReportView() {
             ))}
           </div>
         )}
+
+        {/* Fallback info when no visuals exist */}
+        {(!result_json?.kpis?.length && !result_json?.charts?.length && !result_json?.tables?.length && !result_json?.executive_summary) && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-slate-700 shadow-sm">
+            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <TableIcon className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Detailed Report Summary</h3>
+            <p className="text-gray-500 dark:text-slate-400 max-w-md mx-auto">
+              Our AI has analyzed the data but did not generate any visual charts for this specific query. 
+              The raw insights are available in the executive summary above.
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );
