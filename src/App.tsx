@@ -68,7 +68,6 @@ function AppContent() {
             {/* <Route path="/abc-supply/*" element={<ABCSupplyModule />} /> */}
             <Route path="/crm/*" element={<CRMModule />} />
             <Route path="/project-management/*" element={<ProjectManagementModule />} />
-            <Route path="/reporting/*" element={<ReportingModule />} />
           </Routes>
         </div>
       </WidgetProvider>

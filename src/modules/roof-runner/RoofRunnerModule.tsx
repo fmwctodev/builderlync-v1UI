@@ -15,6 +15,7 @@ import Measurements from './pages/Measurements';
 import { PaymentSuccess } from './components/measurements/PaymentSuccess';
 import { PaymentCancel } from './components/measurements/PaymentCancel';
 import Proposals from './pages/Proposals';
+import AiProposalGenerator from './pages/AiProposalGenerator';
 import TemplateBuilderPage from './pages/TemplateBuilderPage';
 import ProposalEditorPage from './pages/ProposalEditorPage';
 import ProposalPreview from './pages/ProposalPreview';
@@ -149,6 +150,7 @@ export function RoofRunnerModule() {
           <Route path="measurements/payment-success" element={<PaymentSuccess />} />
           <Route path="measurements/payment-cancel" element={<PaymentCancel />} />
           <Route path="proposals" element={<Proposals />} />
+          <Route path="proposals/ai-generate" element={<AiProposalGenerator />} />
           <Route path="proposals/template/:templateId" element={<TemplateBuilderPage />} />
           <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
           <Route path="material-orders" element={<MaterialOrders />} />
