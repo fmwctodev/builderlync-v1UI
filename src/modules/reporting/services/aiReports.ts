@@ -15,7 +15,14 @@ export async function generateReport(
   request: GenerateReportRequest
 ): Promise<GenerateReportResponse> {
   try {
-    return await apiClient.post('/ai-reports/generate', request);
+    const response = await apiClient.post<any>('/ai-reports/generate', request);
+    
+    // Handle nested data response from backend ResponseHandler
+    return {
+      success: response.success && (response.data?.success !== false),
+      report_id: response.data?.report_id || response.report_id,
+      error: response.error || response.data?.error
+    };
   } catch (error: any) {
     console.error('Failed to generate report:', error);
     return {
