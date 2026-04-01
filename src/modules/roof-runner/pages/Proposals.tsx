@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Search, X, ChevronDown, Download } from 'lucide-react';
+import { Plus, Search, X, ChevronDown, Download, Sparkles } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
@@ -299,17 +299,45 @@ export default function Proposals() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals & Invoices</h1>
         </div>
 
-        <div>
+        <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => {
-              setCurrentStep('measurement');
-              setShowNewProposalModal(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 shadow-sm"
           >
             <Plus size={16} />
             <span>New Proposal</span>
+            <ChevronDown size={14} className={`ml-1 transition-transform duration-200 ${showNewProposalDropdown ? 'rotate-180' : ''}`} />
           </button>
+
+          {showNewProposalDropdown && (
+            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[60] py-1.5 animate-in fade-in zoom-in-95 duration-200">
+              <button
+                onClick={() => {
+                  setShowNewProposalDropdown(false);
+                  setCurrentStep('measurement');
+                  setShowNewProposalModal(true);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2.5 transition-colors"
+              >
+                <div className="p-1 bg-gray-100 dark:bg-gray-700 rounded">
+                  <Plus size={14} className="text-gray-500" />
+                </div>
+                <span className="font-medium">Manual Proposal</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowNewProposalDropdown(false);
+                  navigate(`${orgPrefix}/proposals/ai-generate`);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2.5 transition-colors"
+              >
+                <div className="p-1 bg-primary-100 dark:bg-primary-900/30 rounded">
+                  <Sparkles size={14} className="text-primary-600 dark:text-primary-400" />
+                </div>
+                <span className="font-semibold">Generate with AI</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,7 +424,7 @@ export default function Proposals() {
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">Loading measurements...</div>
                   </div>
-                ) : measurements.length === 0 ? (
+                ) : (measurements?.length || 0) === 0 ? (
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">No measurement reports found</div>
                   </div>
@@ -541,7 +569,7 @@ export default function Proposals() {
                         const response = await getNearbyJobs(lat, lng, 25);
                         const jobs = response.data.data || [];
                         setNearbyJobs(jobs);
-                        if (jobs.length > 0) {
+                        if ((jobs?.length || 0) > 0) {
                           setAttachToJob(true);
                         }
                       } catch (error) {
@@ -564,7 +592,7 @@ export default function Proposals() {
                 <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">Loading nearby jobs...</div>
               )}
 
-              {nearbyJobs.length > 0 && (
+              {(nearbyJobs?.length || 0) > 0 && (
                 <div className="mb-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -577,7 +605,7 @@ export default function Proposals() {
                       className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Attach to matching job ({nearbyJobs.length} found nearby)
+                      Attach to matching job ({(nearbyJobs?.length || 0)} found nearby)
                     </span>
                   </label>
 
@@ -685,7 +713,7 @@ export default function Proposals() {
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
                   </div>
-                ) : templates.length === 0 ? (
+                ) : (templates?.length || 0) === 0 ? (
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">No templates found</div>
                   </div>
@@ -813,42 +841,40 @@ export default function Proposals() {
                 {creatingProposal ? 'Creating...' : 'Create Proposal'}
               </button>
             </div>
+
           </div>
         </div>
-      )
-      }
+      )}
 
-      {
-        showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-              <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Are you sure you want to delete this proposal? This action cannot be undone.
-                </p>
-              </div>
-              <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setDeletingProposalId(null);
-                  }}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteProposal}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-                >
-                  Delete
-                </button>
-              </div>
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to delete this proposal? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingProposalId(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProposal}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 }

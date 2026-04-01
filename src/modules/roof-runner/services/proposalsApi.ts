@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { CatalogItem } from '../../../shared/store/services/catalogApi';
+import type { GenerateAiProposalRequest, GenerateAiProposalResponse } from '../types/aiProposal';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5175/api';
 
@@ -288,5 +289,17 @@ export const proposalsApi = {
         items: nextItems,
       },
     });
+  },
+
+  async generateAiProposal(data: GenerateAiProposalRequest): Promise<GenerateAiProposalResponse> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/proposals/ai-generate`, data, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error generating AI proposal:', error);
+      throw error;
+    }
   }
 };
