@@ -16,7 +16,8 @@ import type { AIReport, AIReportFilters, ReportScope } from '@/modules/reporting
 import { 
   getAIReports, 
   generateReport, 
-  deleteReport 
+  deleteReport,
+  pollReportStatus
 } from '@/modules/reporting/services/aiReports';
 import { useCurrentOrganization } from '@/shared/context/OrgContext';
 
@@ -42,6 +43,11 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
   const [filters, setFilters] = useState<AIReportFilters>({});
   const [reportResult, setReportResult] = useState<{ answer: string; downloadLink?: string } | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
+
+  // New states for Generation Modal
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollingReport, setPollingReport] = useState<AIReport | null>(null);
+  const [pollingError, setPollingError] = useState<string | null>(null);
 
   // Load reports on mount and when filters change
   useEffect(() => {
@@ -75,12 +81,29 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
 
       if (!result.success) {
         alert('Error: ' + result.error);
-        setIsGenerating(true);
+        setIsGenerating(false);
         return;
       }
 
       setPrompt('');
-      navigate(`/org/${orgSlug}/reporting/ai?reportId=${result.report_id}`);
+      
+      // Instead of navigating, start polling and show modal
+      setIsGenerating(false);
+      setIsPolling(true);
+      setPollingError(null);
+      setPollingReport(null);
+
+      try {
+        const final = await pollReportStatus(result.report_id, (updated) => {
+          setPollingReport(updated);
+        });
+        setPollingReport(final);
+        // Refresh the reports list in background
+        const updatedReports = await getAIReports({ ...filters, search: search || undefined });
+        setReports(updatedReports || []);
+      } catch (err) {
+        setPollingError(err instanceof Error ? err.message : 'Report generation failed');
+      }
     } catch (err) {
       alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setIsGenerating(false);
@@ -308,7 +331,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
 
       {/* Result Modal */}
       {showResultModal && reportResult && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Report Result</h2>
@@ -339,6 +362,124 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                   </a>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generation Progress Modal */}
+      {isPolling && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-gray-200 dark:border-slate-800 overflow-hidden transform animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">AI Report Builder</h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Processing your data request</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsPolling(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              {pollingError ? (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Generation Failed</h4>
+                  <p className="text-red-600 dark:text-red-400 text-sm max-w-xs mx-auto">{pollingError}</p>
+                  <button 
+                    onClick={() => setIsPolling(false)}
+                    className="px-6 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : pollingReport?.status === 'complete' ? (
+                <div className="space-y-6">
+                  <div className="bg-cyan-50 dark:bg-cyan-500/5 border border-cyan-100 dark:border-cyan-500/20 rounded-2xl p-5">
+                    <h4 className="text-sm font-bold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                       <Sparkles className="w-4 h-4" />
+                       Executive Summary
+                    </h4>
+                    <p className="text-gray-700 dark:text-slate-300 text-[15px] leading-relaxed">
+                      {pollingReport.result_json?.executive_summary || "Your report has been generated successfully."}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {pollingReport.download_url && (
+                      <a 
+                        href={pollingReport.download_url}
+                        download
+                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Excel Report
+                      </a>
+                    )}
+                    
+                    {pollingReport.result_json && (pollingReport.result_json.charts?.length > 0 || pollingReport.result_json.tables?.length > 0) && (
+                      <button 
+                        onClick={() => navigate(`/org/${orgSlug}/reporting/${pollingReport.id}`)}
+                        className={`flex-1 py-3 text-white rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95 ${
+                          pollingReport.download_url ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20' : 'bg-primary-600 hover:bg-primary-500 shadow-primary-500/20'
+                        }`}
+                      >
+                        View Full Report
+                      </button>
+                    )}
+
+                    {!pollingReport.download_url && !(pollingReport.result_json && (pollingReport.result_json.charts?.length > 0 || pollingReport.result_json.tables?.length > 0)) && (
+                       <button 
+                         onClick={() => setIsPolling(false)}
+                         className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                       >
+                         Done
+                       </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-6">
+                  <div className="relative w-20 h-20 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-cyan-100 dark:border-slate-800"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <BarChart3 className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Analyzing Data</h4>
+                    <p className="text-gray-500 dark:text-slate-400 text-sm max-w-[280px] mx-auto">
+                      Our AI is processing your business intelligence and building custom visualizations...
+                    </p>
+                  </div>
+
+                  <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1.5 max-w-[240px] mx-auto overflow-hidden">
+                    <div className="bg-cyan-500 h-full w-2/3 animate-pulse rounded-full"></div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 dark:bg-slate-800/50 flex justify-center border-t border-gray-100 dark:border-slate-800">
+               <p className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-1">
+                 Generating in background. You can safely close this window.
+               </p>
             </div>
           </div>
         </div>
