@@ -39,7 +39,7 @@ const navItems = {
     { name: 'Marketing', icon: Megaphone, path: 'marketing', permission: 'marketing' },
     { name: 'File Manager', icon: FolderOpen, path: 'file-manager', permission: null },
     // { name: 'Reputation', icon: Star, path: 'reputation', permission: 'marketing' },
-    // { name: 'Reporting', icon: BarChart2, path: 'reporting', permission: 'reporting' },
+    { name: 'Reporting', icon: BarChart2, path: 'reporting', permission: 'reporting' },
     { name: 'Catalog', icon: Package, path: 'catalog', permission: null },
   ],
   system: [

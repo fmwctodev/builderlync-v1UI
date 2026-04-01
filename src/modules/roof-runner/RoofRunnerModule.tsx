@@ -61,6 +61,9 @@ import { useEffect } from 'react';
 import OutlookCallback from './pages/OutlookCallback';
 import EagleViewCallback from './pages/EagleViewCallback';
 import WorkflowStages from './pages/WorkflowStages';
+import Reporting from './pages/Reporting';
+import { AIReporting } from '../reporting/pages/AIReporting';
+import { ReportView } from '../reporting/pages/ReportView';
 
 const RootRedirect = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -152,7 +155,9 @@ export function RoofRunnerModule() {
           <Route path="file-manager" element={<FileManager />} />
           {/* <Route path="reputation" element={<Reputation />} /> */}
           <Route path="catalog" element={<Catalog />} />
-          {/* <Route path="reporting" element={<BlankPage title="Reporting" />} /> */}
+          <Route path="reporting" element={<Reporting />} />
+          <Route path="reporting/ai" element={<AIReporting />} />
+          <Route path="reporting/:id" element={<ReportView />} />
           <Route path="support" element={<Support />} />
           <Route path="settings/*" element={<Settings />} />
 
