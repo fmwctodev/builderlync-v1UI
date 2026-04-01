@@ -5,6 +5,12 @@ import { store } from './store';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import JobCam from './pages/JobCam';
+import JobDetailWorkspace from './pages/JobDetailWorkspace';
+import JobCamTemplates from './pages/JobCamTemplates';
+import JobCamReportsIndex from './pages/JobCamReportsIndex';
+import JobCamReportBuilder from './pages/JobCamReportBuilder';
+import JobCamChecklist from './pages/JobCamChecklist';
+import JobCamSharing from './pages/JobCamSharing';
 import Measurements from './pages/Measurements';
 import { PaymentSuccess } from './components/measurements/PaymentSuccess';
 import { PaymentCancel } from './components/measurements/PaymentCancel';
@@ -125,6 +131,12 @@ export function RoofRunnerModule() {
           <Route path="ai-agents/*" element={<SierraAiModule />} />
           <Route path="create-agent" element={<CreateAgentWizard />} />
           <Route path="job-cam" element={<JobCam />} />
+          <Route path="job-cam/jobs/:jobId" element={<JobDetailWorkspace />} />
+          <Route path="job-cam/templates" element={<JobCamTemplates />} />
+          <Route path="job-cam/reports" element={<JobCamReportsIndex />} />
+          <Route path="job-cam/reports/new" element={<JobCamReportBuilder />} />
+          <Route path="job-cam/reports/:reportId" element={<JobCamReportBuilder />} />
+          <Route path="job-cam/shared" element={<JobCamSharing />} />
           <Route path="instant-estimator" element={<InstantEstimator />} />
           <Route path="instant-estimator/:id/manage" element={<InstantEstimatorManage />} />
           <Route path="instant-estimator/:id/manage/questions" element={<ManageQuestions />} />
