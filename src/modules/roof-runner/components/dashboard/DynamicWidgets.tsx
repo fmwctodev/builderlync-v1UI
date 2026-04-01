@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../../shared/store';
 import DashboardWidgetCard from './DashboardWidgetCard';
 import { widgetStatsService, WidgetStat } from '../../../../shared/store/services/widgetStatsService';
+import { AIInsightWidget } from './AIInsightWidget';
 
 interface DynamicWidgetProps {
   widgetKey: string;
@@ -133,6 +134,9 @@ export const WidgetComponents: Record<string, React.FC> = {
   'analytics-revenue-per-job': () => <DynamicWidget widgetKey="analytics-revenue-per-job" title="Rev per Job" icon="DollarSign" />,
   'analytics-customer-lifetime-value': () => <DynamicWidget widgetKey="analytics-customer-lifetime-value" title="Lifetime Value" icon="UserCheck" />,
   'analytics-cost-per-acquisition': () => <DynamicWidget widgetKey="analytics-cost-per-acquisition" title="CPA" icon="DollarSign" />,
+
+  // --- AI & INSIGHTS ---
+  'ai-latest-insight': () => <AIInsightWidget />,
 
   // --- STATIC / COMPLEX WIDGETS ---
   recent_activity: () => (
