@@ -26,7 +26,7 @@ const navItems = {
   ],
   tools: [
     { name: 'Sierra AI', icon: Bot, path: 'ai-agents', permission: 'automation' },
-    // { name: 'Job Cam', icon: Camera, path: 'job-cam', permission: 'field_operations' },
+    { name: 'Job Cam', icon: Camera, path: 'job-cam', permission: 'field_operations' },
     { name: 'Instant Estimator', icon: DollarSign, path: 'instant-estimator', permission: 'estimates' },
     { name: 'Measurements', icon: Ruler, path: 'measurements', permission: 'integrations' },
     { name: 'Proposals', icon: FileCheck, path: 'proposals', permission: 'estimates' },
