@@ -4,23 +4,26 @@ import { vapiApi } from '../services/vapiApi';
 
 interface VapiKnowledgeBaseProps {
   agentId: string;
+  refreshKey?: number;
 }
 
-export function VapiKnowledgeBase({ agentId }: VapiKnowledgeBaseProps) {
+export function VapiKnowledgeBase({ agentId, refreshKey = 0 }: VapiKnowledgeBaseProps) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setItems([]);
     loadKnowledgeBase();
-  }, [agentId]);
+  }, [agentId, refreshKey]);
 
   const loadKnowledgeBase = async () => {
     if (!agentId || agentId === 'undefined') return;
     try {
       setLoading(true);
       const response = await vapiApi.getAgentKnowledgeBase(agentId);
-      setItems(response?.data?.documents || []);
+      // Access response.data.documents because backend returns {success: true, data: {documents: ...}}
+      const documents = response?.data?.documents || response?.documents || [];
+      setItems(documents);
     } catch (error) {
       console.error('Error loading Vapi knowledge base:', error);
     } finally {

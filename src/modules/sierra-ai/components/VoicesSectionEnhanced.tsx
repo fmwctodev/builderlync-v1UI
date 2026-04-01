@@ -23,19 +23,26 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
   const [agentVoiceId, setAgentVoiceId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadVoices();
-    if (agentId) {
-      loadAgentVoice();
-    }
+    const initialize = async () => {
+       await loadVoices();
+       if (agentId) {
+         await loadAgentVoice();
+       }
+    };
+    initialize();
   }, [agentId]);
 
   const loadAgentVoice = async () => {
     if (!agentId) return;
     try {
       const response = await vapiApi.getAgentVoice(agentId);
-      if (response?.voice_id) {
-        setAgentVoiceId(response.voice_id);
-        setSelectedVoice(response.voice_id);
+      console.log('Agent voice response:', response);
+      // Backend returns {success: true, data: {voice_id: ...}}
+      const voiceId = response?.data?.voice_id || response?.voice_id;
+      if (voiceId) {
+        console.log('Setting voice to:', voiceId);
+        setAgentVoiceId(voiceId);
+        setSelectedVoice(voiceId);
       }
     } catch (error) {
       console.error('Error loading agent voice:', error);
@@ -46,8 +53,11 @@ export function VoicesSectionEnhanced({ agentId }: VoicesSectionEnhancedProps) {
     try {
       setLoading(true);
       const response = await vapiApi.listVoices();
-      const voiceData = response.data || [];
+      console.log('List voices response:', response);
+      const voiceData = response?.data || response || [];
       setVoices(voiceData);
+      
+      // Don't overwrite if loadAgentVoice already set it
       if (voiceData.length > 0 && !selectedVoice) {
         setSelectedVoice(voiceData[0].voice_id);
       }
