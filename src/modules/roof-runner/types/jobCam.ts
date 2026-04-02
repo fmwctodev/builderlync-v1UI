@@ -185,6 +185,7 @@ export interface JobMediaAuditLog {
   job_photo_id: string;
   action: AuditAction;
   changed_by_user_id: string | null;
+  user_email?: string;
   old_value: Record<string, unknown> | null;
   new_value: Record<string, unknown> | null;
   notes: string | null;

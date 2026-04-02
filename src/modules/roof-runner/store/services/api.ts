@@ -222,5 +222,36 @@ export const apiService = {
   updateLead: async (leadId: string, updates: any) => {
     const response = await apiClient.put(`/instant-estimators/leads/${leadId}`, updates);
     return response.data;
-  }
+  },
+
+  // JobCam
+  getJobsWithMedia: async () => {
+    const response = await apiClient.get('/jobcam/jobs-with-media');
+    return response.data;
+  },
+
+  getJobMedia: async (jobId: string | number, params?: any) => {
+    const response = await apiClient.get(`/jobcam/${jobId}/media`, { params });
+    return response.data;
+  },
+
+  getJobMediaDetail: async (id: string) => {
+    const response = await apiClient.get(`/jobcam/media/${id}`);
+    return response.data;
+  },
+
+  getJobCamStats: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobcam/${jobId}/stats`);
+    return response.data;
+  },
+
+  updateJobMedia: async (id: string, updates: any) => {
+    const response = await apiClient.patch(`/jobcam/media/${id}`, updates);
+    return response.data;
+  },
+
+  deleteJobMedia: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/media/${id}`);
+    return response.data;
+  },
 };

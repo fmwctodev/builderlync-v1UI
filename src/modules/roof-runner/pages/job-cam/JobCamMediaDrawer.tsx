@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight, Check, AlertTriangle,
   Star, Shield, Briefcase, FileText, Tag,
-  History, Download, ZoomIn, RefreshCw
+  History, Download, ZoomIn, RefreshCw, Clock, MessageSquare
 } from 'lucide-react';
 import { updateJobPhoto, logAuditAction, fetchAuditLog } from '../../services/jobCamApi';
 import type { JobPhoto, JobMediaAuditLog, PhotoCategory, PhotoPhase, ReviewStatus } from '../../types/jobCam';
