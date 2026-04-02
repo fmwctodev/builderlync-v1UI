@@ -69,6 +69,29 @@ export function ReportView() {
   }
 
   const { result_json } = report;
+  
+  const rawData = result_json?.raw_data ? (typeof result_json.raw_data === 'string' ? JSON.parse(result_json.raw_data) : result_json.raw_data) : null;
+  const derivedTables = [...(result_json?.tables || [])];
+  
+  if (derivedTables.length === 0 && Array.isArray(rawData) && rawData.length > 0) {
+    const firstRow = rawData[0];
+    const columns = Object.keys(firstRow)
+      .filter(key => key !== 'id' && key !== 'organization_id' && key !== 'is_deleted' && key !== 'created_at' && key !== 'updated_at')
+      .map(key => ({
+        key,
+        header: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        type: (key.includes('price') || key.includes('value') || key.includes('amount')) ? 'currency' : 'text'
+      }));
+      
+    derivedTables.push({
+      id: 'auto-generated-table',
+      title: 'Detailed Data Report',
+      columns,
+      data: rawData
+    });
+  }
+ 
+  const effectiveOrgSlug = orgSlug || report.organization_id || 'demo-bfeohc';
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-slate-900 pb-12">
@@ -76,7 +99,7 @@ export function ReportView() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(`/org/${orgSlug}/reporting`)}
+              onClick={() => navigate(`/org/${effectiveOrgSlug}/reporting`)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
             >
               <ArrowLeft className="w-5 h-5 text-gray-500" />
@@ -120,9 +143,9 @@ export function ReportView() {
                 <FileText className="w-4 h-4" />
                 Executive Summary
               </h2>
-              <p className="text-gray-700 dark:text-slate-300 leading-relaxed text-lg font-medium">
+              <div className="text-gray-700 dark:text-slate-300 leading-relaxed text-lg font-medium whitespace-pre-wrap">
                 {result_json.executive_summary}
-              </p>
+              </div>
             </div>
           </div>
         )}
@@ -145,17 +168,17 @@ export function ReportView() {
           </div>
         )}
 
-        {/* Tables */}
-        {result_json?.tables && result_json.tables.length > 0 && (
+        {/* Tables (including derived) */}
+        {derivedTables.length > 0 && (
           <div className="space-y-8">
-            {result_json.tables.map((table) => (
-              <TableSection key={table.id} table={table} />
+            {derivedTables.map((table, idx) => (
+              <TableSection key={table.id || idx} table={table} />
             ))}
           </div>
         )}
 
         {/* Fallback info when no visuals exist */}
-        {(!result_json?.kpis?.length && !result_json?.charts?.length && !result_json?.tables?.length && !result_json?.executive_summary) && (
+        {(!result_json?.kpis?.length && !result_json?.charts?.length && derivedTables.length === 0 && !result_json?.executive_summary) && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-slate-700 shadow-sm">
             <div className="w-16 h-16 bg-gray-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
               <TableIcon className="w-8 h-8 text-gray-400" />
