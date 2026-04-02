@@ -390,8 +390,8 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-8">
+            {/* Content Container with Responsive Height */}
+            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
               {pollingError ? (
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
@@ -413,9 +413,9 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                        <Sparkles className="w-4 h-4" />
                        Executive Summary
                     </h4>
-                    <p className="text-gray-700 dark:text-slate-300 text-[15px] leading-relaxed">
+                    <div className="text-gray-700 dark:text-slate-300 text-[15px] leading-relaxed whitespace-pre-wrap">
                       {pollingReport.result_json?.executive_summary || "Your report has been generated successfully."}
-                    </p>
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-3">

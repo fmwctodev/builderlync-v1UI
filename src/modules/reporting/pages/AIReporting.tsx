@@ -300,20 +300,18 @@ export function AIReporting() {
                       </div>
                     ) : (
                       <>
-                        <p className={`text-[15px] leading-relaxed ${
-                          msg.type === 'user'
-                            ? 'text-white'
-                            : msg.type === 'system'
-                            ? 'text-red-700 dark:text-red-400'
-                            : 'text-gray-700 dark:text-slate-300'
-                        }`}>
-                          {msg.content}
-                        </p>
+                          <div className={`text-[15px] leading-relaxed whitespace-pre-wrap ${
+                            msg.type === 'user' ? 'text-white' : 
+                            msg.type === 'system' ? 'text-red-700 dark:text-red-400' : 
+                            'text-gray-700 dark:text-slate-300'
+                          }`}>
+                            {msg.content}
+                          </div>
 
                         {msg.type === 'ai' && msg.reportId && (
                           <div className="flex items-center gap-4 mt-6 pt-5 border-t border-gray-100 dark:border-slate-700">
                             <button
-                              onClick={() => navigate(`/org/${orgSlug}/reporting/${msg.reportId}`)}
+                              onClick={() => navigate(`/org/${msg.report?.organization_id || orgSlug}/reporting/${msg.reportId}`)}
                               className="px-4 py-2 bg-cyan-600 text-white hover:bg-cyan-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
                             >
                               View Full Report
