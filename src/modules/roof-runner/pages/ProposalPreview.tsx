@@ -123,6 +123,10 @@ export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isEmbedded = typeof window !== 'undefined' && (
+    window.location.search.includes('embed=1') || 
+    searchParams.get('embed') === '1'
+  );
   const { getOrgPath } = useOrgPath();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
@@ -742,24 +746,26 @@ export default function ProposalPreview() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowConfirm(true)}
-            disabled={downloading}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
-            title="Download PDF"
-          >
-            <Download size={20} />
-          </button>
-          <button
-            onClick={() => navigate(getOrgPath("/proposals"))}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium"
-          >
-            Finish
-          </button>
+      {!isEmbedded && (
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={downloading}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+              title="Download PDF"
+            >
+              <Download size={20} />
+            </button>
+            <button
+              onClick={() => navigate(getOrgPath("/proposals"))}
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium"
+            >
+              Finish
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">

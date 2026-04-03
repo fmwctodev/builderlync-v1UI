@@ -306,4 +306,22 @@ export const proposalsApi = {
       throw err;
     }
   },
+
+  async refineAiProposal(proposalId: string, userMessage: string): Promise<GenerateAiProposalResponse> {
+    try {
+      const resp = await axios.post(`${API_BASE_URL}/proposals/ai-refine`, {
+        proposal_id: proposalId,
+        user_message: userMessage,
+      }, {
+        headers: getAuthHeaders(),
+      });
+      return {
+        success: resp.data.success,
+        ...(resp.data.data || {}),
+      };
+    } catch (err) {
+      console.error('Error refining AI proposal:', err);
+      throw err;
+    }
+  },
 };

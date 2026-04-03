@@ -46,9 +46,11 @@ export const srsApi = {
     return response.json();
   },
 
-  async getBranches(search?: string) {
+  async getBranches(latitude?: number, longitude?: number, radius = 50) {
     const params = new URLSearchParams();
-    if (search) params.append('search', search);
+    if (latitude) params.append('latitude', latitude.toString());
+    if (longitude) params.append('longitude', longitude.toString());
+    if (radius) params.append('radius', radius.toString());
     
     const queryString = params.toString();
     const url = queryString ? `${API_BASE_URL}/srs/branches?${queryString}` : `${API_BASE_URL}/srs/branches`;
