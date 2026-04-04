@@ -162,11 +162,25 @@ const SRSSupplyView: React.FC = () => {
     const loadNearestBranches = async () => {
       if (!isConnected) return;
       try {
-        if (navigator.geolocation) {
+        const savedLocation = localStorage.getItem('srs_shipping_location');
+        let lat, lng;
+
+        if (savedLocation) {
+          const parsed = JSON.parse(savedLocation);
+          lat = parsed.lat;
+          lng = parsed.lng;
+        }
+
+        if (lat && lng) {
+          const response = await srsApi.getBranches(lat, lng, 50);
+          const branches = response.data?.data || response.data || [];
+          setNearestBranches(branches.slice(0, 4));
+          setLoading(prev => ({ ...prev, branches: false }));
+        } else if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               const { latitude, longitude } = position.coords;
-              const response = await srsApi.getBranches(latitude, longitude, 50, 1, 4);
+              const response = await srsApi.getBranches(latitude, longitude, 50);
               const branches = response.data?.data || response.data || [];
               setNearestBranches(branches.slice(0, 4));
               setLoading(prev => ({ ...prev, branches: false }));
@@ -256,12 +270,21 @@ const SRSSupplyView: React.FC = () => {
           <div className="flex justify-between items-start text-white">
             <div>
               <h1 className="text-3xl font-bold">{getGreeting()}, Contractor</h1>
-              <p className="mt-2 text-primary-100">
-                Connected to: <span className="font-semibold">{selectedBranch?.name || selectedBranch?.branchName || 'Selected Branch'}</span>
-              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-primary-100 flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  Connected to: <span className="font-semibold">{selectedBranch?.name || selectedBranch?.branchName || 'Selected Branch'}</span>
+                </p>
+                {localStorage.getItem('srs_shipping_location') && (
+                  <p className="text-primary-200 text-sm flex items-center gap-2 italic">
+                    <MapPin className="h-3 w-3" />
+                    Job Site: {JSON.parse(localStorage.getItem('srs_shipping_location')!).address}
+                  </p>
+                )}
+              </div>
             </div>
-            <button onClick={() => setCurrentView('branches')} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-700 hover:bg-primary-800 rounded-md text-sm font-medium transition">
-              Change Branch
+            <button onClick={() => setCurrentView('branches')} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-700 hover:bg-primary-800 rounded-md text-sm font-medium transition shadow-sm border border-primary-500/30">
+              Change Location / Branch
             </button>
           </div>
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">

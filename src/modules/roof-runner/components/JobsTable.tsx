@@ -30,7 +30,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
 }) => {
   const headers = [
     'Job ID', 'Last updated', 'Time in stage', 'Address', 'Contact', 'Value',
-    'Workflow', 'Stage', 'Close date', 'Lead source', 'Assignees',
+    'Tags', 'Workflow', 'Stage', 'Close date', 'Lead source', 'Assignees',
     'Job owner', 'Tasks', 'Reports', 'Proposals', 'Actions'
   ];
 
@@ -85,6 +85,19 @@ const JobsTable: React.FC<JobsTableProps> = ({
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-green-600 dark:text-green-400">
                         ${job.jobValue?.toLocaleString() || '0'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                          {job.tags && job.tags.length > 0 ? (
+                            job.tags.map(tag => (
+                              <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-primary-300 px-2 py-1 rounded">

@@ -85,7 +85,7 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                       }}
               >
                 {/* Job Cards */}
-                {getJobsByStage(stage).map((job) => {
+                {stageJobs.map((job) => {
                   let dragStartTime = 0;
                   let isDragging = false;
 
@@ -124,16 +124,33 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white">#{job.id}</h4>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(job.created_at || job.createdAt).toLocaleDateString()}
+                          {new Date(job.created_at || job.createdAt || '').toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{job.location}</p>
+                      
+                      {job.tags && job.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {job.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {job.tags.length > 2 && (
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">+{job.tags.length - 2}</span>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-green-600 dark:text-green-400">
                           ${parseFloat(job.job_value || job.jobValue?.toString() || '0').toLocaleString()}
                         </span>
                         <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300">
-                          {job.assigneeUsers?.[0]?.first_name?.charAt(0) || job.assignees[0]?.toString().charAt(0) || 'U'}
+                          {job.assigneeUsers?.[0]?.first_name?.charAt(0) || (Array.isArray(job.assignees) && job.assignees[0]?.toString().charAt(0)) || 'U'}
                         </div>
                       </div>
                     </div>
@@ -141,7 +158,7 @@ const JobsBoardView: React.FC<JobsBoardViewProps> = ({
                 })}
 
                 {/* Empty State */}
-                {getJobsByStage(stage)?.length === 0 && (
+                {stageJobs.length === 0 && (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-8">
                     Drop cards here
                   </div>

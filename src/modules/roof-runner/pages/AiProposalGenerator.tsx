@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Sparkles,
   ArrowLeft,
@@ -14,6 +14,10 @@ import {
   Settings,
   Zap,
   X,
+  Send,
+  MessageSquare,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { getContacts, type Contact } from '../../../shared/store/services/contactsApi';
@@ -55,6 +59,7 @@ const STATUS_MESSAGES = [
 export default function AiProposalGenerator() {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const { currentOrganizationId } = useCurrentOrganization();
 
@@ -85,6 +90,62 @@ export default function AiProposalGenerator() {
   const [createdProposalId, setCreatedProposalId] = useState<string | null>(null);
   const [generatedSections, setGeneratedSections] = useState<GeneratedSectionPreview[]>([]);
   const [sectionsCount, setSectionsCount] = useState(0);
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+  const [userRefinementMessage, setUserRefinementMessage] = useState('');
+  const [isRefining, setIsRefining] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
+  const iframeContainerRef = useRef<HTMLDivElement>(null);
+  const [iframeScale, setIframeScale] = useState(1);
+
+  useEffect(() => {
+    if (step !== 4 || !iframeContainerRef.current) return;
+
+    const updateScale = () => {
+      if (!iframeContainerRef.current) return;
+      const containerWidth = iframeContainerRef.current.clientWidth;
+      const targetWidth = 840; // Proposal is 816px + buffer
+      if (containerWidth < targetWidth) {
+        setIframeScale(containerWidth / targetWidth);
+      } else {
+        setIframeScale(1);
+      }
+    };
+
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(iframeContainerRef.current);
+    updateScale();
+
+    return () => observer.disconnect();
+  }, [step]);
+
+  // Load existing proposal if ID is in URL
+  useEffect(() => {
+    const proposalId = searchParams.get('id');
+    if (proposalId && !createdProposalId) {
+      setCreatedProposalId(proposalId);
+      setStep(4);
+      
+      // Fetch proposal details to sync UI
+      proposalsApi.getProposalById(parseInt(proposalId))
+        .then(proposal => {
+          if (proposal) {
+            setTitle(proposal.title);
+            if (proposal.sections?.settings?.isAiGenerated) {
+              setChatMessages([
+                { role: 'assistant', text: "Welcome back! I've loaded your existing AI proposal. You can continue refining it here." }
+              ]);
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Error loading existing proposal:', err);
+          setSearchParams({}); // Clear invalid ID
+          setStep(1);
+        });
+    }
+  }, []);
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -179,6 +240,7 @@ export default function AiProposalGenerator() {
 
         proposalIdToUse = String(proposal.id);
         setCreatedProposalId(proposalIdToUse);
+        setSearchParams({ id: proposalIdToUse }); // Add ID to URL for persistence
       } else {
         // Optional: Update title if it changed since last attempt
         await proposalsApi.updateProposal(Number(proposalIdToUse), {
@@ -209,11 +271,17 @@ export default function AiProposalGenerator() {
           title: s.title,
           content: s.content,
           order: s.sort_order,
-          expanded: false,
+          expanded: true, // Auto-expand for easy previewing
         }))
       );
 
+      // Initialize chat history with the starting point
+      setChatMessages([
+        { role: 'assistant', text: `I've generated a proposal with ${genResult.sections_generated} sections. How does it look? You can ask me to change anything.` }
+      ]);
+
       setStep(4);
+      setPreviewKey(prev => prev + 1);
       setIsGenerating(false);
     } catch (err) {
       clearInterval(interval);
@@ -221,6 +289,68 @@ export default function AiProposalGenerator() {
       setGenerationError(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
   }
+
+  async function handleRefine() {
+    if (!userRefinementMessage.trim() || !createdProposalId || isRefining) return;
+
+    const message = userRefinementMessage;
+    setUserRefinementMessage('');
+    setChatMessages(prev => [...prev, { role: 'user', text: message }]);
+    setIsRefining(true);
+
+    try {
+      const response = await proposalsApi.refineAiProposal(createdProposalId, message);
+
+      if (response.success && response.sections) {
+        // Update the generated sections with the refined ones
+        setGeneratedSections(prev => {
+          const updated = [...prev];
+          response.sections?.forEach((refined: any) => {
+            const index = updated.findIndex(s => s.title.toLowerCase() === refined.title.toLowerCase());
+            if (index !== -1) {
+              updated[index] = {
+                ...updated[index],
+                content: refined.content,
+                expanded: true // Expand the refined section to show changes
+              };
+            }
+          });
+          return updated;
+        });
+
+        let updateMessage = '';
+        if (response.sections_refined > 0 && response.commands_executed > 0) {
+          updateMessage = `I've updated ${response.sections_refined} sections and executed ${response.commands_executed} structural changes. Check the preview!`;
+        } else if (response.sections_refined > 0) {
+          updateMessage = `I've updated ${response.sections_refined} sections based on your request. Check the preview!`;
+        } else if (response.commands_executed > 0) {
+          updateMessage = `I've executed ${response.commands_executed} changes to your estimate (added items/upgrades). Check the preview!`;
+        } else {
+          updateMessage = `I've reviewed your request but no changes were necessary. How else can I help?`;
+        }
+
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          text: updateMessage 
+        }]);
+        setPreviewKey(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Refinement error:', err);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        text: 'I ran into an error while trying to refine the proposal. Could you try rephrasing your request?' 
+      }]);
+    } finally {
+      setIsRefining(false);
+    }
+  }
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
 
   function toggleSectionExpand(id: string) {
     setGeneratedSections((prev) =>
@@ -244,7 +374,7 @@ export default function AiProposalGenerator() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+        <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => (step > 1 ? setStep((step - 1) as WizardStep) : navigate(-1))}
@@ -272,21 +402,25 @@ export default function AiProposalGenerator() {
                   <button
                     onClick={() => navigateToStep(stepNum)}
                     disabled={isGenerating}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-2 px-1 py-1 transition-all border-b-2 ${
                       isGenerating ? 'cursor-not-allowed' : 'cursor-pointer'
                     } ${
                       isActive
-                        ? 'bg-primary-600 text-white shadow-sm'
+                        ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                         : isDone
-                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                        : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                        ? 'border-transparent text-gray-900 dark:text-gray-100'
+                        : 'border-transparent text-gray-400 dark:text-gray-500'
                     }`}
                   >
-                    {isDone ? <CheckCircle size={12} /> : s.icon}
-                    <span className="hidden sm:inline">{s.label}</span>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      isActive ? 'bg-primary-600 text-white' : isDone ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                    }`}>
+                      {isDone ? <CheckCircle size={10} /> : i + 1}
+                    </span>
+                    <span className="hidden sm:inline text-[11px] font-bold uppercase tracking-wider">{s.label}</span>
                   </button>
                   {i < (stepLabels?.length || 0) - 1 && (
-                    <div className={`w-4 h-px ${isDone ? 'bg-primary-300 dark:bg-primary-700' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                    <div className="mx-2 text-gray-300 dark:text-gray-700 font-light translate-y-[-1px]">/</div>
                   )}
                 </React.Fragment>
               );
@@ -295,7 +429,7 @@ export default function AiProposalGenerator() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="w-full px-6 py-8">
         {/* Step 1: Setup & Contact */}
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -412,7 +546,7 @@ export default function AiProposalGenerator() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6">
               <div className="space-y-3">
                 <label className="block text-sm font-bold text-gray-900 dark:text-white">
-                  Base Template
+                  Base Template <span className="text-error-500">*</span>
                 </label>
                 {templatesLoading ? (
                   <div className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-850">
@@ -502,7 +636,7 @@ export default function AiProposalGenerator() {
               </button>
               <button
                 onClick={runGeneration}
-                disabled={(selectedSections?.length || 0) === 0}
+                disabled={(selectedSections?.length || 0) === 0 || !selectedTemplateId}
                 className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold text-white bg-primary-600 rounded-xl hover:bg-primary-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-slow active:scale-95"
               >
                 <Sparkles size={18} />
@@ -578,85 +712,129 @@ export default function AiProposalGenerator() {
             )}
           </div>
         )}
-
-        {/* Step 4: Done */}
         {step === 4 && (
-          <div className="space-y-8 animate-in slide-in-from-bottom-6 duration-700">
-            <div className="flex items-center gap-4 bg-green-50/50 dark:bg-green-900/10 p-6 rounded-2xl border border-green-100 dark:border-green-900/30">
-              <div className="w-14 h-14 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3">
-                <CheckCircle size={28} className="text-white" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-in slide-in-from-bottom-6 duration-700 w-full group">
+            {/* Left: Chat Pane */}
+            <div className="lg:col-span-3 flex flex-col h-[82vh] bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-500">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <MessageSquare size={16} className="text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Ready</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Success!</h2>
-                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                  We've successfully generated {sectionsCount} custom sections for your proposal.
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">Draft Preview</h3>
-              <div className="grid gap-4">
-                {generatedSections.map((s) => (
-                  <div 
-                    key={s.id} 
-                    className={`bg-white dark:bg-gray-800 rounded-2xl border transition-all duration-300 overflow-hidden ${
-                      s.expanded ? 'ring-2 ring-primary-500/20 border-primary-200 dark:border-primary-800 shadow-lg' : 'border-gray-100 dark:border-gray-700 shadow-sm hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                  >
-                    <button
-                      onClick={() => toggleSectionExpand(s.id)}
-                      className="w-full flex items-center justify-between px-6 py-5 text-left"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                           s.expanded ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40' : 'bg-gray-100 text-gray-500 dark:bg-gray-700'
-                        }`}>
-                           {s.type === 'intro' && <User size={16} />}
-                           {s.type === 'scope' && <Search size={16} />}
-                           {s.type === 'materials' && <Zap size={16} />}
-                           {s.type === 'timeline' && <Settings size={16} />}
-                           {s.type === 'terms' && <CheckCircle size={16} />}
-                           {s.type === 'damage_assessment' && <AlertCircle size={16} />}
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{SECTION_LABELS[s.type as SectionType] || s.type}</span>
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">{s.title}</h4>
-                        </div>
-                      </div>
-                      {s.expanded ? (
-                        <ChevronUp size={20} className="text-primary-500" />
-                      ) : (
-                        <ChevronDown size={20} className="text-gray-400" />
-                      )}
-                    </button>
-                    {s.expanded && (
-                      <div className="px-6 pb-6 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div
-                          className="text-sm text-gray-600 dark:text-gray-300 prose prose-primary prose-sm dark:prose-invert max-w-none bg-gray-50/50 dark:bg-gray-850 p-5 rounded-xl border border-gray-100 dark:border-gray-700 line-clamp-10"
-                          dangerouslySetInnerHTML={{ __html: s.content }}
-                        />
-                      </div>
-                    )}
+              {/* Chat Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                {chatMessages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-${msg.role === 'user' ? 'right' : 'left'}-4 duration-300`}>
+                    <div className={`max-w-[90%] rounded-xl p-3 text-sm leading-relaxed ${
+                      msg.role === 'user' 
+                        ? 'bg-primary-600 text-white rounded-tr-none shadow-sm' 
+                        : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-200 dark:border-gray-700'
+                    }`}>
+                      {msg.text}
+                    </div>
                   </div>
                 ))}
+                {isRefining && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 dark:bg-gray-700/50 rounded-2xl rounded-tl-none p-4 flex items-center gap-2">
+                       <Loader2 size={16} className="animate-spin text-primary-500" />
+                       <span className="text-xs text-gray-500 italic">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="relative">
+                  <textarea
+                    value={userRefinementMessage}
+                    onChange={(e) => setUserRefinementMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleRefine();
+                      }
+                    }}
+                    placeholder="Ask AI to refine something..."
+                    rows={1}
+                    className="w-full pl-5 pr-14 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none overflow-hidden"
+                  />
+                  <button
+                    onClick={handleRefine}
+                    disabled={!userRefinementMessage.trim() || isRefining}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-primary-600 text-white rounded-lg flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 transition-all active:scale-95"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 pb-12">
-              <button
-                onClick={() => navigate(`${orgPrefix}/proposals/editor/${createdProposalId}`)}
-                className="flex items-center justify-center gap-3 px-8 py-4 text-sm font-bold text-white bg-primary-600 rounded-2xl hover:bg-primary-700 shadow-xl shadow-primary-500/20 transition-all hover:-translate-y-0.5"
+            {/* Right: Preview Pane */}
+            <div className="lg:col-span-9 flex flex-col h-[82vh] space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    Proposal Preview
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                   <button
+                    onClick={() => {
+                      const url = `/proposals/preview/${createdProposalId}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                    title="Open in new tab"
+                  >
+                    <ExternalLink size={16} />
+                  </button>
+                   <button
+                    onClick={() => navigate(`${orgPrefix}/proposals/editor/${createdProposalId}`)}
+                    className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95"
+                  >
+                    Edit Details
+                  </button>
+                </div>
+              </div>
+
+              <div 
+                ref={iframeContainerRef}
+                className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden relative flex justify-center"
               >
-                <Sparkles size={18} />
-                Open in Full Editor
-              </button>
-              <button
-                onClick={() => navigate(`${orgPrefix}/proposals`)}
-                className="flex items-center justify-center gap-3 px-8 py-4 text-sm font-bold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
-              >
-                Back to List
-              </button>
+                {createdProposalId ? (
+                  <iframe
+                    key={previewKey}
+                    src={`/proposals/preview/${createdProposalId}?embed=1`}
+                    style={{ 
+                      width: '840px',
+                      height: `${100 / iframeScale}%`,
+                      transform: `scale(${iframeScale})`,
+                      transformOrigin: 'top center',
+                      border: 'none',
+                      transition: 'transform 0.2s ease-in-out'
+                    }}
+                    title="Proposal Preview"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <Loader2 size={32} className="animate-spin mb-4" />
+                    <span>Loading preview...</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

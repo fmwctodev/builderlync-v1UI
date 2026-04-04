@@ -63,10 +63,15 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
 
     try {
       const targetJobId = formData.jobId || jobId;
+      const eventData = {
+        ...formData,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      };
+
       if (editEvent) {
-        await updateJobEvent(targetJobId, editEvent.id, formData);
+        await updateJobEvent(targetJobId, editEvent.id, eventData);
       } else {
-        await createJobEvent(targetJobId, formData);
+        await createJobEvent(targetJobId, eventData);
       }
       onSuccess();
       onClose();

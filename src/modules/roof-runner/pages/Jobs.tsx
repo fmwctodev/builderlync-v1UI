@@ -80,7 +80,8 @@ const Jobs: React.FC = () => {
     editedBy: null,
     jobType: 'residential',
     contactId: null,
-    contactName: null
+    contactName: null,
+    tags: []
   });
 
   const resolveContactId = (job: Job | any): number | null => {
@@ -331,7 +332,8 @@ const Jobs: React.FC = () => {
       editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
       contactId,
-      contactName
+      contactName,
+      tags: job.tags || []
     });
     setShowJobDetails(true);
   };
@@ -364,7 +366,8 @@ const Jobs: React.FC = () => {
       editedBy: job.edited_by || job.editedBy || null,
       jobType: job.jobType || 'residential',
       contactId,
-      contactName
+      contactName,
+      tags: job.tags || []
     });
     setShowJobDetails(true);
   };
@@ -394,7 +397,8 @@ const Jobs: React.FC = () => {
       editedBy: null,
       jobType: 'residential',
       contactId: null,
-      contactName: null
+      contactName: null,
+      tags: []
     });
   };
 

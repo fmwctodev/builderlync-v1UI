@@ -339,7 +339,7 @@ const Calendars: React.FC = () => {
     setLoading(true);
 
     try {
-      const jobId = formData.job ? parseInt(formData.job) : 1;
+      const jobId = formData.job ? parseInt(formData.job) : undefined; const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       // Get Google Calendar credentials
       const refreshToken = localStorage.getItem("google_refresh_token");
@@ -361,7 +361,7 @@ const Calendars: React.FC = () => {
         createdBy: 1,
         createdByName: "Current User",
         refreshToken,
-        googleEmail
+        googleEmail, timeZone
       };
 
       if (editingEvent) {

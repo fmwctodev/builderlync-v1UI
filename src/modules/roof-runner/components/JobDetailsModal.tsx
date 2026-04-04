@@ -78,7 +78,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
       if ((viewingJob as any).contact_name) return (viewingJob as any).contact_name;
     }
 
-    return 'Selected Customer';
+    return 'Select Customer';
   };
 
   const getDisplayContactId = () => {
@@ -479,6 +479,70 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
                       />
+                    </div>
+
+                    {/* Job Tags */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags</label>
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Type tag and press Enter... (e.g. Roofing, Gutters, Siding, Repairs)"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const input = e.target as HTMLInputElement;
+                              const val = input.value.trim();
+                              if (val && !formData.tags?.includes(val)) {
+                                setFormData({
+                                  ...formData,
+                                  tags: [...(formData.tags || []), val]
+                                });
+                                input.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {formData.tags && formData.tags.length > 0 ? (
+                            formData.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300 border border-primary-200 dark:border-primary-800"
+                              >
+                                {tag}
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData({
+                                    ...formData,
+                                    tags: formData.tags?.filter(t => t !== tag)
+                                  })}
+                                  className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-200 dark:hover:bg-primary-800 focus:outline-none"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {['Roofing', 'Gutters', 'Siding', 'Repairs'].map((suggestedTag) => (
+                                <button
+                                  key={suggestedTag}
+                                  type="button"
+                                  onClick={() => setFormData({
+                                    ...formData,
+                                    tags: [...(formData.tags || []), suggestedTag]
+                                  })}
+                                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 border border-dashed border-gray-300 dark:border-gray-700 px-2 py-0.5 rounded-full"
+                                >
+                                  + {suggestedTag}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div>

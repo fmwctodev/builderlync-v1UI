@@ -235,6 +235,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
 
     const resolveSrsUom = (item: any) => {
         return (
+            item.selectedUOM ||
             item.productVariants?.[0]?.unit ||
             item.productVariants?.[0]?.uom ||
             item.productVariants?.[0]?.priceUOM ||
@@ -443,7 +444,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                         productImageUrl: item.productImageUrl || item.productVariants?.[0]?.variantImageURL || "",
                         option: item.selectedOption || "N/A",
                         quantity: item.quantity,
-                        price: item.price || getItemPrice(item.itemNumber) || 0,
+                        price: resolveItemPrice(item),
                         customerItem: item.itemNumber || "XXXX",
                         uom: item.selectedUOM || resolveSrsUom(item)
                     })),
@@ -804,7 +805,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                                                                                     ${(pNum * item.quantity).toFixed(2)}
                                                                                 </div>
                                                                                 <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                                                                    ${pNum.toFixed(2)} / {(item as any).uom || item.uoms?.[0]?.code || 'EA'}
+                                                                                    ${pNum.toFixed(2)} / {(item as any).selectedUOM || resolveSrsUom(item)}
                                                                                 </span>
                                                                                 {hasStatusMessage && (
                                                                                     <span className="mt-1 text-[10px] text-gray-500 dark:text-gray-400">

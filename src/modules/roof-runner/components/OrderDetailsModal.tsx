@@ -76,15 +76,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
     const lines = orderDetails.lines || orderDetails.items || [];
     const orderItems = lines.map((line: any) => {
         // Handle various field names from different APIs/Tables
-        const name = line.itemDescription || line.productDescription || line.description || line.name || 'Item';
-        const desc = line.itemNumber || line.productId || line.productCode || line.sku || '';
+        const name = line.productName || line.itemDescription || line.productDescription || line.description || line.name || 'Item';
+        const desc = line.customerItem || line.itemNumber || line.productId || line.productCode || line.sku || '';
         const qtyValue = line.orderedQty?.value || line.quantity || line.qty || 0;
         const uom = line.orderedQty?.uom || line.uom || line.unitOfMeasure || '';
         const price = line.unitPrice?.value || line.unitPrice || line.price || 0;
         const image = line.productImageUrl || line.imageUrl || line.image || line.productVariants?.[0]?.variantImageURL || "";
+        const option = line.option || line.selectedOption || "";
         
         return {
-            name,
+            name: option ? `${name} — ${option}` : name,
             desc,
             qty: `${qtyValue} ${uom}`,
             price: price,
