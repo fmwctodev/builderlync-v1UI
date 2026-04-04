@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiService } from '../store/services/api';
 import type {
   JobPhoto,
@@ -33,6 +34,40 @@ function mapMediaToJobPhoto(m: any): JobPhoto {
     is_hidden_from_timeline: !!m.is_hidden_from_timeline,
     category: m.category || null,
     phase: m.phase || null,
+  };
+}
+
+function mapDocumentToJobFile(doc: any): JobFile {
+  return {
+    id: `doc_${doc.id}`,
+    user_id: String(doc.created_by_id || doc.user_id || ''),
+    job_id: Number(doc.job_id),
+    file_url: doc.file_url || doc.file_path,
+    storage_path: doc.storage_path || '',
+    file_name: doc.title || doc.file_name || doc.filename || 'Untitled Document',
+    file_size: doc.file_size || null,
+    mime_type: doc.mime_type || (doc.file_url?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'text/plain'),
+    category: doc.category || 'other',
+    description: doc.body || doc.description,
+    created_at: doc.created_at,
+    updated_at: doc.updated_at,
+  };
+}
+
+function mapAttachmentToJobFile(a: any): JobFile {
+  return {
+    id: `att_${a.id}`,
+    user_id: String(a.created_by),
+    job_id: Number(a.job_id),
+    file_url: a.file_url,
+    storage_path: '',
+    file_name: a.file_name || 'Untitled File',
+    file_size: a.file_size,
+    mime_type: null,
+    category: (a.category as any) || 'other',
+    description: a.description,
+    created_at: a.created_at,
+    updated_at: a.updated_at,
   };
 }
 
@@ -85,11 +120,44 @@ export async function fetchPhotoById(id: string): Promise<JobPhoto | null> {
 }
 
 export async function uploadJobPhoto(
-  _file: File,
-  _jobId?: number,
-  _metadata?: Partial<JobPhoto>
+  file: File,
+  jobId: number,
+  metadata?: Partial<JobPhoto>,
+  onProgress?: (progress: number) => void
 ): Promise<JobPhoto> {
-  throw new Error('Upload via backend API not fully implemented in web yet');
+  // 1. Create upload session
+  const session = await apiService.createUploadSession(jobId, {
+    file_name: file.name,
+    mime_type: file.type,
+    category: metadata?.category || 'other',
+    phase: metadata?.phase || null,
+    is_claim_relevant: !!metadata?.is_claim_relevant,
+    is_customer_shareable: !!metadata?.is_customer_shareable
+  });
+
+  const { mediaId, uploadUrl, storageKey } = session;
+
+  // 2. Upload file directly to signed URL
+  await axios.put(uploadUrl, file, {
+    headers: {
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.total) {
+        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress?.(progress);
+      }
+    }
+  });
+
+  // 3. Finalize upload
+  const res = await apiService.finalizeUpload({
+    mediaId,
+    storageKey
+  });
+
+  return mapMediaToJobPhoto(res.data || res);
 }
 
 export async function updateJobPhoto(
@@ -146,49 +214,65 @@ export async function deleteTemplate(_id: string): Promise<void> {}
 
 export async function upsertTemplateItems(_templateId: string, _items: Partial<JobCamTemplateItem>[]): Promise<void> {}
 
-export async function fetchReports(_filters?: { jobId?: number; reportType?: string; status?: string; }): Promise<JobReport[]> {
-  return [];
+export async function fetchReports(filters?: { jobId?: number; reportType?: string; status?: string; }): Promise<JobReport[]> {
+  const res = await apiService.getJobReports(filters?.jobId || 'all');
+  return res.data || res || [];
 }
 
-export async function fetchReportById(_id: string): Promise<JobReport | null> {
-  return null;
+export async function fetchReportById(id: string): Promise<JobReport | null> {
+  const res = await apiService.getJobReportDetail(id);
+  return res.data || res || null;
 }
 
-export async function createReport(_input: CreateReportInput): Promise<JobReport> {
-  throw new Error('Reports via backend API not fully implemented');
+export async function createReport(input: CreateReportInput): Promise<JobReport> {
+  const res = await apiService.createJobReport(input);
+  return res.data || res;
 }
 
-export async function updateReport(_id: string, _patch: Partial<JobReport>): Promise<JobReport> {
-  throw new Error('Reports via backend API not fully implemented');
+export async function updateReport(id: string, patch: Partial<JobReport>): Promise<JobReport> {
+  const res = await apiService.updateJobReport(id, patch);
+  return res.data || res;
 }
 
-export async function deleteReport(_id: string): Promise<void> {}
-
-export async function duplicateReport(_id: string): Promise<JobReport> {
-  throw new Error('Reports via backend API not fully implemented');
+export async function deleteReport(id: string): Promise<void> {
+  await apiService.deleteJobReport(id);
 }
 
-export async function upsertReportSection(_section: Partial<JobReportSection> & { job_report_id: string }): Promise<JobReportSection> {
-  throw new Error('Reports via backend API not fully implemented');
+export async function duplicateReport(id: string): Promise<JobReport> {
+  const res = await apiService.duplicateJobReport(id);
+  return res.data || res;
 }
 
-export async function deleteReportSection(_id: string): Promise<void> {}
+export async function upsertReportSection(section: Partial<JobReportSection> & { job_report_id: string }): Promise<JobReportSection> {
+  const res = await apiService.upsertJobReportSection(section);
+  return res.data || res;
+}
 
-export async function addMediaToReportSection(_reportId: string, _sectionId: string, _photoIds: string[]): Promise<void> {}
+export async function deleteReportSection(id: string): Promise<void> {
+  await apiService.deleteJobReportSection(id);
+}
+
+export async function addMediaToReportSection(_reportId: string, _sectionId: string, _photoIds: string[]): Promise<void> {
+  // Not fully implemented on backend yet as items are usually upserted via report detail save
+}
 
 export async function updateReportMediaCaption(_id: string, _caption: string): Promise<void> {}
 
 export async function removeMediaFromSection(_id: string): Promise<void> {}
 
-export async function fetchShareLinks(_jobId?: number): Promise<JobMediaShareLink[]> {
-  return [];
+export async function fetchShareLinks(jobId?: number): Promise<JobMediaShareLink[]> {
+  const res = await apiService.getJobShareLinks(jobId || 'all');
+  return res.data || res || [];
 }
 
-export async function createShareLink(_input: CreateShareLinkInput): Promise<JobMediaShareLink> {
-  throw new Error('Share links via backend API not fully implemented');
+export async function createShareLink(input: CreateShareLinkInput): Promise<JobMediaShareLink> {
+  const res = await apiService.createJobShareLink(input);
+  return res.data || res;
 }
 
-export async function revokeShareLink(_id: string): Promise<void> {}
+export async function revokeShareLink(id: string): Promise<void> {
+  await apiService.revokeJobShareLink(id);
+}
 
 export async function fetchJobsWithMedia(): Promise<JobWithMediaSummary[]> {
   const response = await apiService.getJobsWithMedia();
@@ -199,18 +283,56 @@ export async function fetchJobsWithMedia(): Promise<JobWithMediaSummary[]> {
   }));
 }
 
-export async function fetchJobFiles(_jobId: number): Promise<JobFile[]> {
-  return [];
+export async function fetchJobFiles(jobId: number): Promise<JobFile[]> {
+  const [docs, attachments] = await Promise.all([
+    apiService.getJobDocuments(jobId),
+    apiService.getJobAttachments(jobId)
+  ]);
+
+  const docList = Array.isArray(docs.data) ? docs.data : (Array.isArray(docs) ? docs : []);
+  const attachList = Array.isArray(attachments.data) ? attachments.data : (Array.isArray(attachments) ? attachments : []);
+
+  const mappedDocs = docList.map(mapDocumentToJobFile);
+  const mappedAttaches = attachList.map(mapAttachmentToJobFile);
+
+  return [...mappedDocs, ...mappedAttaches].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 }
 
-export async function uploadJobFile(_file: File, _input: UploadJobFileInput): Promise<JobFile> {
-  throw new Error('Files via backend API not fully implemented');
+export async function uploadJobFile(file: File, input: UploadJobFileInput): Promise<JobFile> {
+  // 1. Upload binary to local storage/cloud
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('description', input.description || '');
+  formData.append('cloudProvider', 'local');
+
+  const uploadRes = await apiService.uploadDocumentFile(formData);
+  const data = uploadRes.data || uploadRes;
+  const { file_path, original_filename, file_size } = data;
+
+  // 2. Link to job as attachment
+  const attachment = await apiService.createJobAttachment(input.job_id, {
+    file_name: original_filename || file.name,
+    file_url: file_path,
+    file_size: file_size || file.size,
+    category: input.category
+  });
+
+  return mapAttachmentToJobFile(attachment.data || attachment);
 }
 
-export async function deleteJobFile(_id: string): Promise<void> {}
+export async function deleteJobFile(id: string): Promise<void> {
+  if (id.startsWith('doc_')) {
+    await apiService.deleteJobDocument(id.replace('doc_', ''));
+  } else if (id.startsWith('att_')) {
+    await apiService.deleteJobAttachment(id.replace('att_', ''));
+  }
+}
 
-export async function fetchJobActivity(_jobId: number, _limit = 50): Promise<JobActivityEvent[]> {
-  return [];
+export async function fetchJobActivity(jobId: number, _limit = 50): Promise<JobActivityEvent[]> {
+  const res = await apiService.getJobActivity(jobId);
+  return res.data || res || [];
 }
 
 export async function logJobActivity(
@@ -221,3 +343,4 @@ export async function logJobActivity(
   _entityType?: string,
   _metadata?: Record<string, unknown>
 ): Promise<void> {}
+

@@ -254,4 +254,125 @@ export const apiService = {
     const response = await apiClient.delete(`/jobcam/media/${id}`);
     return response.data;
   },
-};
+
+  // JobCam Upload
+  createUploadSession: async (jobId: string | number, data: any) => {
+    const response = await apiClient.post(`/jobcam/${jobId}/upload-session`, data);
+    return response.data;
+  },
+
+  finalizeUpload: async (data: any) => {
+    const response = await apiClient.post('/jobcam/upload/finalize', data);
+    return response.data;
+  },
+
+  deleteUpload: async (mediaId: string) => {
+    const response = await apiClient.delete(`/jobcam/upload/${mediaId}`);
+    return response.data;
+  },
+
+  // Job Documents (JobCam Files)
+  getJobDocuments: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobs/${jobId}/documents`);
+    return response.data;
+  },
+
+  uploadJobDocument: async (jobId: string | number, data: any) => {
+    const response = await apiClient.post(`/job-documents/jobs/${jobId}/documents`, data);
+    return response.data;
+  },
+
+  deleteJobDocument: async (id: string) => {
+    const response = await apiClient.delete(`/documents/${id}`);
+    return response.data;
+  },
+
+  // Job Attachments
+  getJobAttachments: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobs/${jobId}/attachments`);
+    return response.data;
+  },
+
+  createJobAttachment: async (jobId: string | number, data: any) => {
+    const response = await apiClient.post(`/jobs/${jobId}/attachments`, data);
+    return response.data;
+  },
+
+  deleteJobAttachment: async (id: string | number) => {
+    const response = await apiClient.delete(`/jobs/attachments/${id}`);
+    return response.data;
+  },
+
+  // General Document Upload (returns file_path)
+  uploadDocumentFile: async (formData: FormData) => {
+    const response = await apiClient.post('/documents/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // JobCam Reports
+  getJobReports: async (jobId: string | number) => {
+    const response = await apiClient.get('/jobcam/reports', { params: { jobId } });
+    return response.data;
+  },
+
+  getJobReportDetail: async (id: string) => {
+    const response = await apiClient.get(`/jobcam/reports/${id}`);
+    return response.data;
+  },
+
+  createJobReport: async (data: any) => {
+    const response = await apiClient.post('/jobcam/reports', data);
+    return response.data;
+  },
+
+  updateJobReport: async (id: string, data: any) => {
+    const response = await apiClient.patch(`/jobcam/reports/${id}`, data);
+    return response.data;
+  },
+
+  deleteJobReport: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/reports/${id}`);
+    return response.data;
+  },
+
+  duplicateJobReport: async (id: string) => {
+    const response = await apiClient.post(`/jobcam/reports/${id}/duplicate`);
+    return response.data;
+  },
+
+  upsertJobReportSection: async (section: any) => {
+    const response = await apiClient.post('/jobcam/reports/sections', section);
+    return response.data;
+  },
+
+  deleteJobReportSection: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/reports/sections/${id}`);
+    return response.data;
+  },
+
+  // JobCam Share Links
+  getJobShareLinks: async (jobId: string | number) => {
+    const response = await apiClient.get('/jobcam/share-links', { params: { jobId } });
+    return response.data;
+  },
+
+  createJobShareLink: async (data: any) => {
+    const response = await apiClient.post('/jobcam/share-links', data);
+    return response.data;
+  },
+
+  revokeJobShareLink: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/share-links/${id}`);
+    return response.data;
+  },
+
+  // JobCam Activity
+  getJobActivity: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobcam/${jobId}/activity`);
+    return response.data;
+  },
+};
