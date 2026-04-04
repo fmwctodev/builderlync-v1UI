@@ -38,6 +38,16 @@ const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange 
     fetchStaff();
   }, [jobId]);
 
+  const formatDateForInput = (dateString: string | undefined | null): string => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toISOString().split('T')[0];
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
+  };
+
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -266,7 +276,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange 
                         <div className="relative">
                           <input
                             type="date"
-                            value={task.due_date || ''}
+                            value={formatDateForInput(task.due_date)}
                             onChange={(e) => handleUpdateDueDate(task.id, e.target.value)}
                             className="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 pr-8 text-gray-700 dark:text-gray-200"
                           />
