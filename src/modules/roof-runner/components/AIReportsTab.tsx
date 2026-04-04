@@ -17,7 +17,8 @@ import {
   getAIReports, 
   generateReport, 
   deleteReport,
-  pollReportStatus
+  pollReportStatus,
+  downloadReport
 } from '@/modules/reporting/services/aiReports';
 import { useCurrentOrganization } from '@/shared/context/OrgContext';
 
@@ -27,7 +28,8 @@ interface Props {
 
 export function AIReportsTab({ onNavigateToChat }: Props) {
   const navigate = useNavigate();
-  const { currentOrganizationSlug: orgSlug } = useCurrentOrganization();
+  const { currentOrganizationSlug: contextSlug, isLoading: loadingOrg } = useCurrentOrganization();
+  const orgSlug = contextSlug || localStorage.getItem('currentOrganizationSlug');
 
   const [prompt, setPrompt] = useState('');
   const [scope, setScope] = useState<ReportScope>('my');
@@ -140,6 +142,12 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Reports</h1>
         <p className="text-gray-500 dark:text-slate-400 mt-1">Generate intelligent reports from your data using AI</p>
       </div>
+
+      {loadingOrg && !orgSlug && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        </div>
+      )}
 
       {/* Generate Panel */}
       <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
@@ -295,13 +303,18 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                   return (
                     <tr
                       key={report.id}
-                      onClick={() => navigate(`/org/${orgSlug}/reporting/${report.id}`)}
+                      onClick={() => {
+                        const finalSlug = orgSlug || localStorage.getItem('currentOrganizationSlug') || 'default';
+                        navigate(`/org/${finalSlug}/reporting/${report.id}`);
+                      }}
                       className="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Sparkles className="w-4 h-4 text-primary-500" />
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{report.report_name}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
+                            {report.report_name === 'Analyzing data...' || !report.report_name ? (report.prompt || 'Untitled Report') : report.report_name}
+                          </p>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300 capitalize">{report.scope}</td>
@@ -313,12 +326,32 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={(e) => handleDelete(report.id, e)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {report.status === 'complete' && (
+                            <button
+                              onClick={() => {
+                                if (report.download_url) {
+                                  window.open(report.download_url, '_blank');
+                                } else {
+                                  downloadReport(report.id, 'excel');
+                                }
+                              }}
+                              title="Download Report"
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </button>
+                          )}
+                          
+                          <button
+                            onClick={(e) => handleDelete(report.id, e)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 dark:hover:border-red-900/30"
+                            title="Delete Report"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -407,48 +440,52 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                   </button>
                 </div>
               ) : pollingReport?.status === 'complete' ? (
-                <div className="space-y-6">
-                  <div className="bg-cyan-50 dark:bg-cyan-500/5 border border-cyan-100 dark:border-cyan-500/20 rounded-2xl p-5">
-                    <h4 className="text-sm font-bold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                       <Sparkles className="w-4 h-4" />
-                       Executive Summary
-                    </h4>
-                    <div className="text-gray-700 dark:text-slate-300 text-[15px] leading-relaxed whitespace-pre-wrap">
-                      {pollingReport.result_json?.executive_summary || "Your report has been generated successfully."}
-                    </div>
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
+                    <Sparkles className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    {pollingReport.download_url && (
-                      <a 
-                        href={pollingReport.download_url}
-                        download
-                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download Excel Report
-                      </a>
-                    )}
-                    
-                    {pollingReport.result_json && (pollingReport.result_json.charts?.length > 0 || pollingReport.result_json.tables?.length > 0) && (
-                      <button 
-                        onClick={() => navigate(`/org/${orgSlug}/reporting/${pollingReport.id}`)}
-                        className={`flex-1 py-3 text-white rounded-xl font-bold text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95 ${
-                          pollingReport.download_url ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20' : 'bg-primary-600 hover:bg-primary-500 shadow-primary-500/20'
-                        }`}
-                      >
-                        View Full Report
-                      </button>
-                    )}
+                  <div className="space-y-2">
+                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Success!</h4>
+                    <p className="text-gray-600 dark:text-slate-300">
+                      Your report <strong>{pollingReport.report_name}</strong> is ready.
+                    </p>
+                  </div>
 
-                    {!pollingReport.download_url && !(pollingReport.result_json && (pollingReport.result_json.charts?.length > 0 || pollingReport.result_json.tables?.length > 0)) && (
-                       <button 
-                         onClick={() => setIsPolling(false)}
-                         className="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-                       >
-                         Done
-                       </button>
-                    )}
+                  {pollingReport.result_json?.executive_summary && (
+                    <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 text-left border border-gray-100 dark:border-slate-800">
+                      <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-3 italic">
+                        "{pollingReport.result_json.executive_summary}"
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
+                    <button 
+                      onClick={() => {
+                        setIsPolling(false);
+                        const finalSlug = orgSlug || 'default';
+                        navigate(`/org/${finalSlug}/reporting/${pollingReport.id}`);
+                      }}
+                      className="w-full sm:flex-1 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Full Report
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (pollingReport.download_url) {
+                          window.open(pollingReport.download_url, '_blank');
+                        } else {
+                          downloadReport(pollingReport.id, 'excel');
+                        }
+                      }}
+                      className="w-full sm:flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Excel
+                    </button>
                   </div>
                 </div>
               ) : (

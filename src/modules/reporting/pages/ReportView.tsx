@@ -12,7 +12,7 @@ import {
   AreaChart, Area
 } from 'recharts';
 import type { AIReport, ReportChartConfig, ReportTableConfig, ReportKPI } from '@/modules/reporting/types/aiReports';
-import { getAIReportById } from '@/modules/reporting/services/aiReports';
+import { getAIReportById, downloadReport } from '@/modules/reporting/services/aiReports';
 import { useCurrentOrganization } from '@/shared/context/OrgContext';
 
 const COLORS = ['#0891b2', '#0d9488', '#2563eb', '#7c3aed', '#db2777', '#ea580c'];
@@ -20,7 +20,8 @@ const COLORS = ['#0891b2', '#0d9488', '#2563eb', '#7c3aed', '#db2777', '#ea580c'
 export function ReportView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentOrganizationSlug: orgSlug } = useCurrentOrganization();
+  const { currentOrganizationSlug: contextSlug, isLoading: loadingOrg } = useCurrentOrganization();
+  const orgSlug = contextSlug || localStorage.getItem('currentOrganizationSlug');
   const [report, setReport] = useState<AIReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +100,10 @@ export function ReportView() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(`/org/${effectiveOrgSlug}/reporting`)}
+              onClick={() => {
+                const finalSlug = orgSlug || localStorage.getItem('currentOrganizationSlug') || 'default';
+                navigate(`/org/${finalSlug}/reporting`);
+              }}
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
             >
               <ArrowLeft className="w-5 h-5 text-gray-500" />
@@ -116,17 +120,19 @@ export function ReportView() {
           </div>
           
           <div className="flex items-center gap-3">
-            {report.download_url && (
-              <a
-                href={report.download_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-cyan-600/20 active:scale-95"
-              >
-                <Download className="w-4 h-4" />
-                Raw Export
-              </a>
-            )}
+            <button
+              onClick={() => {
+                if (report.download_url) {
+                  window.open(report.download_url, '_blank');
+                } else {
+                  downloadReport(report.id, 'excel');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+            >
+              <Download className="w-5 h-5" />
+              Download Excel Report
+            </button>
           </div>
         </div>
       </div>

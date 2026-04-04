@@ -1,6 +1,6 @@
 // src/modules/reporting/services/aiReports.ts
 
-import { apiClient, buildQueryString } from '@/shared/utils/api';
+import { api, apiClient, buildQueryString } from '@/shared/utils/api';
 import type {
   AIReport,
   AIReportFilters,
@@ -71,6 +71,44 @@ export async function deleteReport(
   reportId: string
 ): Promise<void> {
   await apiClient.delete(`/ai-reports/${reportId}`);
+}
+
+/**
+ * Download a report as Excel or CSV
+ */
+export async function downloadReport(
+  reportId: string,
+  format: 'excel' | 'csv' = 'excel'
+): Promise<void> {
+  try {
+    const response = await api.get(`/ai-reports/${reportId}/download?format=${format}`, {
+      responseType: 'blob'
+    });
+    
+    // Create a URL for the blob
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Extract filename from header if possible, or use a default
+    const contentDisposition = response.headers['content-disposition'];
+    let fileName = `Report_${reportId}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (fileNameMatch && fileNameMatch.length === 2) fileName = fileNameMatch[1];
+    }
+    
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to download report:', error);
+    throw new Error('Failed to download report file');
+  }
 }
 
 /**
