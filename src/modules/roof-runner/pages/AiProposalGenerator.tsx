@@ -318,9 +318,20 @@ export default function AiProposalGenerator() {
           return updated;
         });
 
+        let updateMessage = '';
+        if (response.sections_refined > 0 && response.commands_executed > 0) {
+          updateMessage = `I've updated ${response.sections_refined} sections and executed ${response.commands_executed} structural changes. Check the preview!`;
+        } else if (response.sections_refined > 0) {
+          updateMessage = `I've updated ${response.sections_refined} sections based on your request. Check the preview!`;
+        } else if (response.commands_executed > 0) {
+          updateMessage = `I've executed ${response.commands_executed} changes to your estimate (added items/upgrades). Check the preview!`;
+        } else {
+          updateMessage = `I've reviewed your request but no changes were necessary. How else can I help?`;
+        }
+
         setChatMessages(prev => [...prev, { 
           role: 'assistant', 
-          text: `I've updated ${response.sections_refined} sections based on your request. Check the preview to see the changes!` 
+          text: updateMessage 
         }]);
         setPreviewKey(prev => prev + 1);
       }
