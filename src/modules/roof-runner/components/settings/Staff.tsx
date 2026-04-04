@@ -139,8 +139,10 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (firstName: string | null, lastName: string | null) => {
+    const first = firstName?.charAt(0) ?? '';
+    const last = lastName?.charAt(0) ?? '';
+    return `${first}${last}`.toUpperCase() || '?';
   };
 
   const getAvatarColor = (index: number) => {
