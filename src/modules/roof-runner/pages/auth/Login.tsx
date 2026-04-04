@@ -178,7 +178,7 @@ const Login: React.FC = () => {
             <button
               onClick={() => {
                 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-                const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+                const redirectUri = import.meta.env.VITE_GOOGLE_AUTH_REDIRECT_URI;
                 const scope = encodeURIComponent('openid email profile');
                 const responseType = 'code';
                 const accessType = 'offline';
