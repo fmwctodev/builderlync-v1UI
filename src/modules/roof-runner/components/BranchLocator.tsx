@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MapPin, Phone, Check, Building, Search } from 'lucide-react';
 import { abcSupplyApi } from '../../abc-supply/services/api';
 import { srsApi } from '../services/srsApi';
+import { Search, MapPin, Phone, Check, Building, X, Navigation } from 'lucide-react';
 import { ShipTo } from '../../abc-supply/types';
+import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
 
 interface BranchLocatorProps {
@@ -19,6 +20,12 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
   const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [shippingLocation, setShippingLocation] = useState<{ address: string; lat: number; lng: number } | null>(() => {
+    const saved = localStorage.getItem('srs_shipping_location');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isLocating, setIsLocating] = useState(false);
+  const autocompleteInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -57,7 +64,10 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
           }
         } else if (supplier === 'SRS') {
           // SRS Branch Logic
-          const response = await srsApi.getBranches();
+          const lat = shippingLocation?.lat;
+          const lng = shippingLocation?.lng;
+          
+          const response = await srsApi.getBranches(lat, lng);
           const branches = response.data?.data || response.data || [];
           setAvailableBranches(branches);
           
@@ -81,7 +91,39 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
       }
     };
     init();
-  }, [supplier]);
+  }, [supplier, shippingLocation?.lat, shippingLocation?.lng]);
+
+  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
+    if (isFromAutocomplete && lat && lng) {
+      const loc = { address, lat, lng };
+      setShippingLocation(loc);
+      localStorage.setItem('srs_shipping_location', JSON.stringify(loc));
+    } else {
+      // Just updating the text in the input
+      setShippingLocation(prev => prev ? { ...prev, address } : { address, lat: 0, lng: 0 });
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) return;
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const loc = {
+                address: "Current Location",
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            setShippingLocation(loc);
+            localStorage.setItem('srs_shipping_location', JSON.stringify(loc));
+            setIsLocating(false);
+        },
+        () => {
+            setIsLocating(false);
+            alert("Could not get your location. Please enter an address manually.");
+        }
+    );
+  };
 
   const HandleShipToSelect = (account: ShipTo) => {
     setSelectedShipTo(account);
@@ -167,43 +209,102 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
-        <button onClick={onBack} className="text-white hover:text-white text-sm mb-2">← Back</button>
-        <div className="flex items-center gap-2 mb-4">
-          <MapPin className="h-6 w-6 text-green-400" />
-          <h1 className="text-2xl font-bold text-white">Select Branch</h1>
-        </div>
-        <p className="text-white/80 text-sm">Select your Account and Branch to view specific pricing and availability.</p>
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+        <button onClick={onBack} className="text-gray-600 dark:text-gray-400 hover:text-primary-600 flex items-center gap-1 text-sm font-medium transition-colors">
+          &larr; Back to Dashboard
+        </button>
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary-600" />
+          {supplier} Branch Locator
+        </h1>
+        <div className="w-20"></div> {/* Spacer for balance */}
       </div>
 
-      <div className={`grid grid-cols-1 ${supplier === 'SRS' ? '' : 'lg:grid-cols-3'} gap-6`}>
-        {/* Account Selection - Only for ABC Supply */}
-        {supplier === 'ABC Supply' && (
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">1. Select Account</h2>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Sidebar: Account (ABC) or Location (SRS) */}
+        <div className="lg:col-span-1 space-y-4">
+          {supplier === 'ABC Supply' ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-100 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <Building className="h-5 w-5 text-primary-600" />
+                1. Select Account
+              </h2>
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
                 {shipTos.map(account => (
                   <div
                     key={account.number}
                     onClick={() => HandleShipToSelect(account)}
                     className={`p-3 rounded-md border cursor-pointer transition-colors ${selectedShipTo?.number === account.number ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                   >
-                    <div className="font-medium text-gray-900 dark:text-white">{account.name}</div>
-                    <div className="text-xs text-gray-500">#{account.number}</div>
-                    <div className="text-xs text-gray-500 truncate">{account.address?.line1}, {account.address?.city}</div>
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">{account.name}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-tighter">#{account.number}</div>
+                    <div className="text-[11px] text-gray-500 truncate">{account.address?.city}, {account.address?.state}</div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-primary-100 dark:border-primary-900/40 sticky top-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Navigation className="h-5 w-5 text-primary-600" />
+                Set Location
+              </h2>
+              <p className="text-xs text-gray-500 mb-4">Finding branches near your job site.</p>
+              
+                <div className="space-y-4">
+                  <div className="relative">
+                    <label className="text-[10px] uppercase font-bold text-gray-400 mb-1 block px-1">Job Site Address</label>
+                    <div className="relative">
+                      <GooglePlacesAutocomplete
+                        value={shippingLocation?.address || ''}
+                        onChange={handleAddressChange}
+                        placeholder="Enter Address or Zip"
+                        className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 transition-all font-medium"
+                      />
+                      <MapPin className="absolute left-2.5 top-3 text-primary-500 h-4 w-4 pointer-events-none" />
+                      <button
+                        onClick={handleUseCurrentLocation}
+                        disabled={isLocating}
+                        title="Use Current Location"
+                        className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-primary-600 transition-colors z-20"
+                      >
+                        {isLocating ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full" />
+                        ) : <Navigation className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
 
-        {/* Branch Selection */}
-        <div className={`${supplier === 'SRS' ? 'w-full' : 'lg:col-span-2'} space-y-4`}>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-full">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">2. Select Branch</h2>
+                  {shippingLocation && (
+                    <div className="px-3 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-100 dark:border-primary-800/50 flex items-start gap-2">
+                       <Check className="h-3 w-3 text-primary-600 mt-0.5 flex-shrink-0" />
+                       <div className="text-[11px] text-primary-700 dark:text-primary-300 leading-tight">
+                         Results filtered for branches near: <span className="font-bold">{shippingLocation.address}</span>
+                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <style>{`
+                  .pac-container { 
+                      z-index: 9999 !important; 
+                      border-radius: 8px;
+                      margin-top: 4px;
+                      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                      border: 1px solid #e5e7eb;
+                  }
+                `}</style>
+            </div>
+          )}
+        </div>
+
+        {/* Right Content: Branch List */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 min-h-[600px] border border-gray-100 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                Select Branch Results
+            </h2>
 
             {supplier === 'ABC Supply' && !selectedShipTo ? (
               <div className="text-center py-10 text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
@@ -245,23 +346,28 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
                                 {isSelected && <Check className="h-4 w-4 text-primary-600 flex-shrink-0" />}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Branch #{branchKey}</div>
-                              {branch.address?.city && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {branch.address.city}, {branch.address.state}
-                                </div>
-                              )}
-                              {branch.phoneNumber && (
-                                <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                  <Phone size={10} /> {branch.phoneNumber}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => HandleBranchSelect(branch)}
-                              className={`mt-4 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
-                            >
-                              {isSelected ? 'Selected' : 'Select Branch'}
-                            </button>
+                                {branch.address?.city && (
+                                  <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+                                    {branch.address.city}, {branch.address.state}
+                                  </div>
+                                )}
+                                {branch.phoneNumber && (
+                                  <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                                    <Phone size={8} /> {branch.phoneNumber}
+                                  </div>
+                                )}
+                                {branch.distance > 0 && (
+                                  <div className="mt-2 text-[10px] font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/40 px-1.5 py-0.5 rounded w-fit capitalize">
+                                    {Number(branch.distance).toFixed(1)} miles away
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => HandleBranchSelect(branch)}
+                                className={`mt-3 w-full py-1.5 px-3 rounded text-sm font-medium transition-colors ${isSelected ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'}`}
+                              >
+                                {isSelected ? 'Selected' : 'Select Branch'}
+                              </button>
                           </div>
                         );
                       })}

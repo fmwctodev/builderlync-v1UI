@@ -92,8 +92,8 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
     try {
       const response = await updateContact(contactId, formData);
       onContactUpdated({
-        id: response.data.id,
-        name: response.data.fullName
+        id: response.data.id || contactId,
+        name: response.data.fullName || response.data.full_name || formData.fullName
       });
       setErrors({});
       onClose();

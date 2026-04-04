@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileStack, Plus, ShoppingCart, ChevronDown, ChevronUp, Loader2, Package } from 'lucide-react';
+import { FileStack, Plus, ChevronDown, ChevronUp, Loader2, Package } from 'lucide-react';
 import { srsApi } from '../services/srsApi';
 import Toast from '../../../shared/components/Toast';
 
@@ -54,7 +54,7 @@ const SRSOrderTemplates: React.FC<SRSOrderTemplatesProps> = ({ onBack, branchId 
         itemNumber: p.productId.toString(),
         itemDescription: p.productWebName,
         quantity: p.quantity || 1,
-        uom: p.defaultUOM || 'EA',
+        selectedUOM: p.defaultUOM || 'EA',
         price: 0, // Price will be fetched by the cart/checkout process
         imageUrl: p.productImageUrl,
         supplier: 'SRS'

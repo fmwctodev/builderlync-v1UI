@@ -44,8 +44,7 @@ export interface ContactResponse {
 export interface ContactsListResponse {
   success: boolean;
   data: {
-    contacts: never[];
-    data: Contact[];
+    contacts: Contact[];
     pagination: {
       page: number;
       limit: number;

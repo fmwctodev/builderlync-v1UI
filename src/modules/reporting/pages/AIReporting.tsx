@@ -1,7 +1,7 @@
 // src/modules/reporting/pages/AIReporting.tsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Sparkles, Loader2, Send, Clock, ChevronRight,
   ChevronDown, X,
@@ -25,6 +25,8 @@ function formatRelativeDate(dateStr: string): string {
 
 export function AIReporting() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlReportId = searchParams.get('reportId');
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState('');
@@ -55,7 +57,38 @@ export function AIReporting() {
 
   useEffect(() => {
     loadRecentReports();
-  }, [loadRecentReports]);
+    
+    // Handle loading a report from query params
+    if (urlReportId) {
+       loadReportById(urlReportId);
+    }
+  }, [loadRecentReports, urlReportId]);
+
+  const loadReportById = async (id: string) => {
+    setIsGenerating(true);
+    try {
+      const final = await pollReportStatus(id);
+      if (final.status === 'complete') {
+        const summary = final.result_json?.executive_summary ?? 'Report loaded.';
+        setMessages([
+          { id: crypto.randomUUID(), type: 'user', content: final.prompt || 'View Report', timestamp: new Date(final.created_at) },
+          { 
+            id: crypto.randomUUID(), 
+            type: 'ai', 
+            content: summary, 
+            timestamp: new Date(final.updated_at || final.created_at),
+            reportId: final.id,
+            report: final 
+          }
+        ]);
+        setParentReportId(final.id);
+      }
+    } catch (err) {
+      console.error('Failed to load report:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -267,20 +300,18 @@ export function AIReporting() {
                       </div>
                     ) : (
                       <>
-                        <p className={`text-[15px] leading-relaxed ${
-                          msg.type === 'user'
-                            ? 'text-white'
-                            : msg.type === 'system'
-                            ? 'text-red-700 dark:text-red-400'
-                            : 'text-gray-700 dark:text-slate-300'
-                        }`}>
-                          {msg.content}
-                        </p>
+                          <div className={`text-[15px] leading-relaxed whitespace-pre-wrap ${
+                            msg.type === 'user' ? 'text-white' : 
+                            msg.type === 'system' ? 'text-red-700 dark:text-red-400' : 
+                            'text-gray-700 dark:text-slate-300'
+                          }`}>
+                            {msg.content}
+                          </div>
 
                         {msg.type === 'ai' && msg.reportId && (
                           <div className="flex items-center gap-4 mt-6 pt-5 border-t border-gray-100 dark:border-slate-700">
                             <button
-                              onClick={() => navigate(`/org/${orgSlug}/reporting/${msg.reportId}`)}
+                              onClick={() => navigate(`/org/${msg.report?.organization_id || orgSlug}/reporting/${msg.reportId}`)}
                               className="px-4 py-2 bg-cyan-600 text-white hover:bg-cyan-500 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
                             >
                               View Full Report

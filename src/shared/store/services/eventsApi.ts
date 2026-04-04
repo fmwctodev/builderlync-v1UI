@@ -35,6 +35,7 @@ export interface Event {
   assignedTo?: number;
   createdAt: string;
   updatedAt: string;
+  timeZone?: string;
 }
 
 export interface CreateEventRequest {
@@ -54,6 +55,7 @@ export interface CreateEventRequest {
   createdByName: string;
   assignedTo?: number;
   jobId?: number;
+  timeZone?: string;
 }
 
 export interface EventsResponse {
