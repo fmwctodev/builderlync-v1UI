@@ -134,7 +134,7 @@ export function AIReporting() {
         if (updated.status === 'running') {
           updateMessage(aiMsgId, { isLoading: true });
         }
-      }, 60, 3000);
+      }, 30, 2000); // Poll for 60 seconds max
 
       if (final.status === 'complete') {
         const summary = final.result_json?.executive_summary ?? 'Report generated successfully.';
@@ -156,10 +156,11 @@ export function AIReporting() {
           isLoading: false,
         });
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('AI Reporting Error:', err);
       updateMessage(aiMsgId, {
         type: 'system',
-        content: err instanceof Error ? err.message : 'An unexpected error occurred.',
+        content: err instanceof Error ? err.message : 'An unexpected error occurred during analysis.',
         isLoading: false,
       });
     } finally {
@@ -250,17 +251,17 @@ export function AIReporting() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3 max-w-2xl mx-auto">
                 {SUGGESTED_PROMPTS.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPrompt(p)}
-                    className="group p-5 text-left bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl hover:border-cyan-500/50 hover:bg-cyan-50/10 dark:hover:bg-slate-700/50 transition-all shadow-sm hover:shadow-md"
+                    className="group flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl hover:border-cyan-500/50 hover:bg-cyan-50/5 dark:hover:bg-slate-700/50 transition-all shadow-sm hover:shadow-md"
                   >
-                    <p className="text-gray-600 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white text-sm leading-snug mb-3">{p}</p>
-                    <div className="flex items-center text-cyan-600 dark:text-cyan-400 text-xs font-semibold">
-                      <span>Try this</span>
-                      <ChevronRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                    <p className="text-gray-700 dark:text-slate-200 group-hover:text-gray-900 dark:group-hover:text-white text-[15px] font-medium">{p}</p>
+                    <div className="flex items-center text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0">
+                      <span>Quick Analysis</span>
+                      <ChevronRight className="w-4 h-4 ml-1.5" />
                     </div>
                   </button>
                 ))}
@@ -308,7 +309,28 @@ export function AIReporting() {
                             {msg.content}
                           </div>
 
-                        {msg.type === 'ai' && msg.reportId && (
+                        {msg.type === 'ai' && msg.reportId && msg.report?.result_json && (() => {
+                          try {
+                            const data = msg.report.result_json.raw_data;
+                            if (!data) return false;
+                            
+                            // Handle potential double-stringification
+                            let parsed = data;
+                            if (typeof parsed === 'string') {
+                              parsed = JSON.parse(parsed);
+                            }
+                            
+                            // If it's still a string (e.g. was "[]"), parse again
+                            if (typeof parsed === 'string') {
+                              parsed = JSON.parse(parsed);
+                            }
+
+                            return Array.isArray(parsed) && parsed.length > 0;
+                          } catch (e) {
+                            console.error('Error parsing report data:', e);
+                            return false;
+                          }
+                        })() && (
                           <div className="flex items-center gap-4 mt-6 pt-5 border-t border-gray-100 dark:border-slate-700">
                             <button
                               onClick={() => navigate(`/org/${msg.report?.organization_id || orgSlug}/reporting/${msg.reportId}`)}
@@ -316,18 +338,16 @@ export function AIReporting() {
                             >
                               View Full Report
                             </button>
-                            {msg.report?.result_json && (
-                              <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500 font-medium">
-                                <span className="flex items-center gap-1">
-                                  <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600"></span>
-                                  {msg.report.result_json.kpis?.length ?? 0} Metrics
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600"></span>
-                                  {msg.report.result_json.charts?.length ?? 0} Charts
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500 font-medium">
+                              <span className="flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600"></span>
+                                {msg.report.result_json.kpis?.length ?? 0} Metrics
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600"></span>
+                                {msg.report.result_json.charts?.length ?? 0} Charts
+                              </span>
+                            </div>
                           </div>
                         )}
 
