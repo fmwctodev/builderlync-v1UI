@@ -34,6 +34,8 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
   const [prompt, setPrompt] = useState('');
   const [scope, setScope] = useState<ReportScope>('my');
   const [timeframe, setTimeframe] = useState('last_30_days');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [reports, setReports] = useState<AIReport[]>([]);
@@ -78,7 +80,9 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
       const result = await generateReport({
         prompt: prompt.trim(),
         scope,
-        timeframe: { type: 'preset', preset: timeframe }
+        timeframe: timeframe === 'custom'
+          ? { type: 'custom', start: startDate, end: endDate }
+          : { type: 'preset', preset: timeframe }
       });
 
       if (!result.success) {
@@ -149,77 +153,119 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
         </div>
       )}
 
-      {/* Generate Panel */}
-      <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-primary-500 dark:text-primary-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">Generate Report</span>
-        </div>
-
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe the report you need..."
-            disabled={isGenerating}
-            className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm disabled:opacity-50"
-          />
-
-          <div className="relative">
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as ReportScope)}
-              disabled={isGenerating}
-              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm disabled:opacity-50 cursor-pointer"
-            >
-              {SCOPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
+      {/* Premium Generate Panel */}
+      <div className="relative group overflow-hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-300 hover:border-primary-500/30">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 via-purple-500 to-indigo-500 opacity-70" />
+        
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400 animate-pulse" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Generate Report</span>
           </div>
 
-          <div className="relative">
-            <select
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              disabled={isGenerating}
-              className="appearance-none px-4 pr-10 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm disabled:opacity-50 cursor-pointer"
-            >
-              {TIMEFRAME_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
-          </div>
+          <div className="flex gap-3 items-center">
+            <div className="flex-1 relative group/input">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe the report you need..."
+                disabled={isGenerating}
+                className="w-full px-4 py-3 bg-gray-100/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 outline-none transition-all disabled:opacity-50"
+              />
+            </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={!prompt.trim() || isGenerating}
-            className="flex items-center gap-2 px-5 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg font-medium text-sm"
-          >
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
-        </div>
+            <div className="relative">
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value as ReportScope)}
+                disabled={isGenerating}
+                className="appearance-none pl-4 pr-10 py-3 bg-gray-100/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-700 dark:text-slate-200 text-sm font-semibold focus:outline-none cursor-pointer disabled:opacity-50"
+              >
+                {SCOPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
-          {SUGGESTED_PROMPTS.slice(0, 5).map((p) => (
+            <div className="relative">
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                disabled={isGenerating}
+                className="appearance-none pl-4 pr-10 py-3 bg-gray-100/50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-700 dark:text-slate-200 text-sm font-semibold focus:outline-none cursor-pointer disabled:opacity-50 min-w-[140px]"
+              >
+                {TIMEFRAME_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
             <button
-              key={p}
-              onClick={() => setPrompt(p)}
-              disabled={isGenerating}
-              className="px-3 py-1.5 bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 text-sm rounded-full hover:bg-gray-200 disabled:opacity-50"
+              onClick={handleGenerate}
+              disabled={!prompt.trim() || isGenerating || (timeframe === 'custom' && (!startDate || !endDate))}
+              className={`
+                flex items-center gap-2 px-6 py-3 
+                ${(!prompt.trim() || isGenerating || (timeframe === 'custom' && (!startDate || !endDate))) ? 'bg-gray-200 dark:bg-slate-700' : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-500/25'} 
+                text-white rounded-xl font-bold text-sm transition-all active:scale-95
+              `}
             >
-              {p}
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <span>{isGenerating ? 'Analyzing...' : 'Generate'}</span>
             </button>
-          ))}
+          </div>
+
+          {/* Custom Date Row (Restored but refined) */}
+          {timeframe === 'custom' && (
+            <div className="flex items-center gap-4 py-3 px-4 bg-primary-500/5 dark:bg-primary-500/10 rounded-xl border border-primary-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">Select Range:</span>
+              <div className="flex items-center gap-2">
+                <div className="relative group/date">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within/date:text-primary-500 transition-colors pointer-events-none" />
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 outline-none transition-all"
+                  />
+                </div>
+                <span className="text-gray-400 text-sm font-medium">to</span>
+                <div className="relative group/date">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within/date:text-primary-500 transition-colors pointer-events-none" />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Suggested Prompts (Restored below) */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {SUGGESTED_PROMPTS.slice(0, 4).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPrompt(p)}
+                disabled={isGenerating}
+                className="px-3 py-1.5 bg-gray-100/80 dark:bg-slate-800/80 text-gray-600 dark:text-slate-400 text-xs font-medium rounded-full border border-gray-200 dark:border-slate-700 hover:border-primary-500/50 hover:text-primary-600 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Reports Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+      {/* Reports Table Header */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden mt-8">
         <div className="px-4 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -227,7 +273,7 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search reports..."
+              placeholder="Search history..."
               className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm"
             />
           </div>

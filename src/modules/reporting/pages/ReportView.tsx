@@ -88,11 +88,12 @@ export function ReportView() {
   if (derivedTables.length === 0 && Array.isArray(rawData) && rawData.length > 0) {
     const firstRow = rawData[0];
     const columns = Object.keys(firstRow)
-      .filter(key => key !== 'id' && key !== 'organization_id' && key !== 'is_deleted' && key !== 'created_at' && key !== 'updated_at')
+      .filter(key => key !== 'id' && key !== 'organization_id' && key !== 'is_deleted')
       .map(key => ({
         key,
         header: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        type: (key.includes('price') || key.includes('value') || key.includes('amount')) ? 'currency' : 'text'
+        type: (key.includes('price') || key.includes('value') || key.includes('amount')) ? 'currency' : 
+              (key.endsWith('_at') || key.endsWith('_date') || key === 'issue_date' || key === 'due_date') ? 'date' : 'text'
       }));
       
     derivedTables.push({
@@ -379,6 +380,14 @@ function TableSection({ table }: { table: ReportTableConfig }) {
                     <td key={col.key} className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                       {col.type === 'currency' 
                         ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val) 
+                        : col.type === 'date' && val
+                        ? new Date(val).toLocaleString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
                         : val && typeof val === 'object' ? JSON.stringify(val) : val}
                     </td>
                   );
