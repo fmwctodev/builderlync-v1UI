@@ -175,4 +175,16 @@ export const vapiApi = {
     const response = await api.delete(`/ai-agents/client-tools/${toolId}`);
     return response.data;
   },
+  // Call Logs & Recordings
+  async getCallLogs(agentId?: string) {
+    const response = await api.get('/ai-agents/call-logs', {
+      params: agentId ? { agentId } : {},
+    });
+    return response.data;
+  },
+
+  async updateRecordingStatus(agentId: string, enabled: boolean) {
+    const response = await api.patch(`/ai-agents/${agentId}/recording-status`, { enabled });
+    return response.data;
+  },
 };

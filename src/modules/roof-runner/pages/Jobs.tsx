@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { getJobs, createJob, updateJob, deleteJob, getJobCounts, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
+import { getJobs, createJob, updateJob, deleteJob, getJobCounts, getJobById, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
 import JobsHeader from '../components/JobsHeader';
@@ -19,6 +19,7 @@ const Jobs: React.FC = () => {
   const location = useLocation();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeView, setActiveView] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -433,6 +434,28 @@ const Jobs: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
+
+  // Handle direct job modal opening via query params
+  useEffect(() => {
+    const jobIdParam = searchParams.get('jobId');
+    if (jobIdParam) {
+      const fetchAndOpenJob = async () => {
+        try {
+          const response = await getJobById(Number(jobIdParam));
+          if (response?.data) {
+            handleView(response.data);
+            
+            // Remove the jobId from the URL so it doesn't reopen on refresh
+            searchParams.delete('jobId');
+            setSearchParams(searchParams, { replace: true });
+          }
+        } catch (error) {
+          console.error('Failed to open job from URL:', error);
+        }
+      };
+      fetchAndOpenJob();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchJobs(1);

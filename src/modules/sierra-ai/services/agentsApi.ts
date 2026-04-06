@@ -109,6 +109,7 @@ export interface AIAgent {
   daily_call_limit?: number;
   concurrent_call_limit?: number;
   bursting_enabled?: boolean;
+  recording_enabled?: boolean;
   stats: {
     callsHandled?: number;
     messagesHandled?: number;
@@ -164,6 +165,7 @@ export interface CreateAgentInput {
   daily_call_limit?: number;
   concurrent_call_limit?: number;
   bursting_enabled?: boolean;
+  recording_enabled?: boolean;
 }
 
 export interface UpdateAgentInput extends Partial<CreateAgentInput> {
@@ -256,8 +258,7 @@ export async function createAgent(
 }
 
 export async function updateAgent(
-  input: UpdateAgentInput,
-  userId?: string
+  input: UpdateAgentInput
 ): Promise<AIAgent> {
   const { id, ...updates } = input;
   console.log("input", input);
@@ -314,10 +315,9 @@ export async function duplicateAgent(
  */
 export async function updateAgentStatus(
   id: string,
-  status: 'active' | 'paused' | 'draft',
-  userId?: string
+  status: 'active' | 'paused' | 'draft'
 ): Promise<AIAgent> {
-  return updateAgent({ id, status }, userId);
+  return updateAgent({ id, status });
 }
 
 /**

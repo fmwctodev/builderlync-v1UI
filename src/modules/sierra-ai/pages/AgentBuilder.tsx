@@ -12,9 +12,13 @@ import {
   ArrowLeft,
   Save,
   Code2,
+  FileText,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { fetchAgentById, updateAgent, updateAgentStatus, AIAgent, VoiceConfig, LanguageConfig, SystemTool, DEFAULT_SYSTEM_TOOLS, SecurityOverrides, WebhookConfig, DEFAULT_SECURITY_OVERRIDES, DEFAULT_WEBHOOK_CONFIG } from '../services/agentsApi';
+import { vapiApi } from '../services/vapiApi';
 import { SystemPromptSection } from '../components/SystemPromptSection';
 import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
@@ -23,9 +27,10 @@ import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
 import { WidgetSection } from '../components/WidgetSectionNew';
 import { KnowledgeBaseSection } from '../components/KnowledgeBaseSection';
 import { VoicesSectionEnhanced } from '../components/VoicesSectionEnhanced';
+import { CallLogsTab } from '../components/CallLogsTab';
 import { useAppSelector } from '../../roof-runner/store/hooks';
 
-type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'knowledge-base' | 'voices' | 'tools' | 'security' | 'widget';
+type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'knowledge-base' | 'voices' | 'tools' | 'security' | 'widget' | 'call-logs';
 
 export function AgentBuilder() {
   const { agentId } = useParams();
@@ -51,6 +56,7 @@ export function AgentBuilder() {
   const [dailyCallLimit, setDailyCallLimit] = useState(100000);
   const [concurrentCallLimit, setConcurrentCallLimit] = useState(-1);
   const [burstingEnabled, setBurstingEnabled] = useState(true);
+  const [recordingEnabled, setRecordingEnabled] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
@@ -80,6 +86,7 @@ export function AgentBuilder() {
       setDailyCallLimit(agent.daily_call_limit ?? 100000);
       setConcurrentCallLimit(agent.concurrent_call_limit ?? -1);
       setBurstingEnabled(agent.bursting_enabled ?? true);
+      setRecordingEnabled(agent.recording_enabled ?? false);
     }
   }, [agent]);
 
@@ -123,6 +130,7 @@ export function AgentBuilder() {
         daily_call_limit: dailyCallLimit,
         concurrent_call_limit: concurrentCallLimit,
         bursting_enabled: burstingEnabled,
+        recording_enabled: recordingEnabled,
       });
       setAgent(updated);
       alert('Changes saved successfully');
@@ -167,6 +175,19 @@ export function AgentBuilder() {
     );
   }
 
+  const handleRecordingToggle = async () => {
+    if (!agent) return;
+    try {
+      const newState = !recordingEnabled;
+      setRecordingEnabled(newState);
+      await vapiApi.updateRecordingStatus(agent.id, newState);
+    } catch (error) {
+      console.error('Error updating recording status:', error);
+      setRecordingEnabled(recordingEnabled);
+      alert('Failed to update recording status. Please ensure the "recording_enabled" column exists in the database.');
+    }
+  };
+
   const handleStatusToggle = async () => {
     if (!agent) return;
 
@@ -190,6 +211,7 @@ export function AgentBuilder() {
     { id: 'tools', label: 'Tools', icon: Zap },
     // { id: 'security', label: 'Security', icon: Shield },
     { id: 'widget', label: 'Widget', icon: Code2 },
+    { id: 'call-logs', label: 'Call Logs', icon: FileText },
   ];
 
   return (
@@ -214,6 +236,28 @@ export function AgentBuilder() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Recording Toggle */}
+              <button
+                onClick={handleRecordingToggle}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${recordingEnabled
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-400'
+                  }`}
+                title={recordingEnabled ? 'Call recording is enabled' : 'Call recording is disabled'}
+              >
+                {recordingEnabled ? (
+                  <>
+                    <Mic className="w-4 h-4" />
+                    Recording On
+                  </>
+                ) : (
+                  <>
+                    <MicOff className="w-4 h-4" />
+                    Recording Off
+                  </>
+                )}
+              </button>
+
               {/* Status Toggle */}
               <button
                 onClick={handleStatusToggle}
@@ -388,6 +432,40 @@ export function AgentBuilder() {
               </div>
             </div>
 
+            {/* Security & Settings */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Privacy & Recording
+              </h2>
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-full ${recordingEnabled ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-gray-200 dark:bg-gray-600 text-gray-500'}`}>
+                    {recordingEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">Call Recording</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {recordingEnabled 
+                        ? 'Sierra will record and transcribe all voice conversations.' 
+                        : 'Call recording is currently disabled.'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRecordingToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    recordingEnabled ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      recordingEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Enabled Channels */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -519,7 +597,11 @@ export function AgentBuilder() {
           />
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'knowledge-base' && activeTab !== 'voices' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && (
+        {activeTab === 'call-logs' && (
+          <CallLogsTab agentId={agentId} />
+        )}
+
+        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'knowledge-base' && activeTab !== 'voices' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && activeTab !== 'call-logs' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
