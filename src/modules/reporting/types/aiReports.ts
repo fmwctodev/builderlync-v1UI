@@ -51,7 +51,7 @@ export interface ReportChartConfig {
 export interface ReportTableConfig {
   id: string;
   title: string;
-  columns: { key: string; header: string; type?: 'string' | 'number' | 'currency' }[];
+  columns: { key: string; header: string; type?: 'string' | 'number' | 'currency' | 'date' }[];
   data: any[];
 }
 
