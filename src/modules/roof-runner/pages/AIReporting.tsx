@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Sparkles, Loader2, Send, Clock, ChevronRight,
-  ChevronDown, X,
+  ChevronDown, X, Download, Eye
 } from 'lucide-react';
 import {
   SUGGESTED_PROMPTS, TIMEFRAME_OPTIONS, SCOPE_OPTIONS,
@@ -22,6 +22,7 @@ function formatRelativeDate(dateStr: string): string {
 
 export function AIReporting() {
   const navigate = useNavigate();
+  const orgSlug = localStorage.getItem('currentOrganizationSlug') || 'default';
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState('');
@@ -197,7 +198,7 @@ export function AIReporting() {
             recentReports.map((r) => (
               <button
                 key={r.id}
-                onClick={() => navigate(`/reporting/${r.id}`)}
+                onClick={() => navigate(`/org/${orgSlug}/reporting/${r.id}`)}
                 className="group w-full text-left p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors mb-1"
               >
                 <p className="text-sm text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-white line-clamp-2 leading-snug">
@@ -285,11 +286,22 @@ export function AIReporting() {
                         {msg.type === 'ai' && msg.reportId && (
                           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
                             <button
-                              onClick={() => navigate(`/reporting/${msg.reportId}`)}
-                              className="px-3 py-1.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/30 rounded-lg text-sm font-medium transition-colors"
+                              onClick={() => navigate(`/org/${orgSlug}/reporting/${msg.reportId}`)}
+                              className="px-3 py-1.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                             >
+                              <Eye className="w-4 h-4" />
                               View Full Report
                             </button>
+                            {msg.report?.download_url && (
+                              <a
+                                href={msg.report.download_url}
+                                download
+                                className="px-3 py-1.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Download className="w-4 h-4" />
+                                Download PDF/Excel
+                              </a>
+                            )}
                             {msg.report?.result_json && (
                               <span className="text-xs text-gray-400 dark:text-slate-500">
                                 {msg.report.result_json.kpis?.length ?? 0} KPIs · {msg.report.result_json.charts?.length ?? 0} charts
