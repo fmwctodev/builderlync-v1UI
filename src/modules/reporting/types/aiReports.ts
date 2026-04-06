@@ -26,6 +26,8 @@ export interface ReportResult {
   kpis?: ReportKPI[];
   charts?: ReportChartConfig[];
   tables?: ReportTableConfig[];
+  raw_data?: any;
+  sql_generated?: string;
 }
 
 export interface ReportKPI {
@@ -89,12 +91,11 @@ export interface AIReportFilters {
 }
 
 export const SUGGESTED_PROMPTS = [
-  "Analyze our sales growth over the last 6 months",
-  "Show me which lead sources have the best conversion rate",
-  "Compare job performance between different teams",
-  "Generate an executive summary of our Q1 revenue",
-  "Analyze invoice payment delays by customer",
-  "Provide a breakdown of task completion times"
+  "Get a full list of all contacts with their details",
+  "Show all jobs where the status is marked as won",
+  "Analyze all current sales opportunities and their stages",
+  "Calculate total revenue from all paid invoices and payments",
+  "Display a comprehensive list of every job in the system"
 ];
 
 export const TIMEFRAME_OPTIONS = [

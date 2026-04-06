@@ -327,7 +327,18 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
-                          {report.status === 'complete' && (
+                          {report.status === 'complete' && (() => {
+                            try {
+                              const data = report.result_json?.raw_data;
+                              if (!data) return false;
+                              let parsed = data;
+                              if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                              if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                              return Array.isArray(parsed) && parsed.length > 0;
+                            } catch (e) {
+                              return false;
+                            }
+                          })() && (
                             <button
                               onClick={() => {
                                 if (report.download_url) {
@@ -425,13 +436,13 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
 
             {/* Content Container with Responsive Height */}
             <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              {pollingError ? (
+              {pollingError || pollingReport?.status === 'failed' ? (
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
                     <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Generation Failed</h4>
-                  <p className="text-red-600 dark:text-red-400 text-sm max-w-xs mx-auto">{pollingError}</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm max-w-xs mx-auto">{pollingError || pollingReport?.error_message || 'Report generation failed'}</p>
                   <button 
                     onClick={() => setIsPolling(false)}
                     className="px-6 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
@@ -461,31 +472,53 @@ export function AIReportsTab({ onNavigateToChat }: Props) {
                   )}
                   
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
-                    <button 
-                      onClick={() => {
-                        setIsPolling(false);
-                        const finalSlug = orgSlug || 'default';
-                        navigate(`/org/${finalSlug}/reporting/${pollingReport.id}`);
-                      }}
-                      className="w-full sm:flex-1 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View Full Report
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        if (pollingReport.download_url) {
-                          window.open(pollingReport.download_url, '_blank');
-                        } else {
-                          downloadReport(pollingReport.id, 'excel');
-                        }
-                      }}
-                      className="w-full sm:flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download Excel
-                    </button>
+                    {(() => {
+                      try {
+                        const data = pollingReport.result_json?.raw_data;
+                        if (!data) return false;
+                        let parsed = data;
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                        return Array.isArray(parsed) && parsed.length > 0;
+                      } catch (e) {
+                        return false;
+                      }
+                    })() ? (
+                      <>
+                        <button 
+                          onClick={() => {
+                            setIsPolling(false);
+                            const finalSlug = orgSlug || 'default';
+                            navigate(`/org/${finalSlug}/reporting/${pollingReport.id}`);
+                          }}
+                          className="w-full sm:flex-1 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Full Report
+                        </button>
+                        
+                        <button 
+                          onClick={() => {
+                            if (pollingReport.download_url) {
+                              window.open(pollingReport.download_url, '_blank');
+                            } else {
+                              downloadReport(pollingReport.id, 'excel');
+                            }
+                          }}
+                          className="w-full sm:flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Excel
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={() => setIsPolling(false)}
+                        className="w-full py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl font-bold text-sm transition-colors hover:bg-gray-200"
+                      >
+                        Close
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (

@@ -71,7 +71,18 @@ export function ReportView() {
 
   const { result_json } = report;
   
-  const rawData = result_json?.raw_data ? (typeof result_json.raw_data === 'string' ? JSON.parse(result_json.raw_data) : result_json.raw_data) : null;
+  const rawData = (() => {
+    try {
+      const data = result_json?.raw_data;
+      if (!data) return null;
+      let parsed = data;
+      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  })();
   const derivedTables = [...(result_json?.tables || [])];
   
   if (derivedTables.length === 0 && Array.isArray(rawData) && rawData.length > 0) {
@@ -119,21 +130,23 @@ export function ReportView() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                if (report.download_url) {
-                  window.open(report.download_url, '_blank');
-                } else {
-                  downloadReport(report.id, 'excel');
-                }
-              }}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
-            >
-              <Download className="w-5 h-5" />
-              Download Excel Report
-            </button>
-          </div>
+          {Array.isArray(rawData) && rawData.length > 0 && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (report.download_url) {
+                    window.open(report.download_url, '_blank');
+                  } else {
+                    downloadReport(report.id, 'excel');
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+              >
+                <Download className="w-5 h-5" />
+                Download Excel Report
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
