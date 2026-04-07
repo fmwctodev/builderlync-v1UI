@@ -1019,8 +1019,12 @@ const DIYPage: React.FC = () => {
 
             setIsMenuOpen(false);
             if (exit) {
-                clearAll();
-                setIsInitialListOpen(true);
+                if (initialJobId) {
+                    navigate(`/org/${orgSlug}/jobs?jobId=${initialJobId}`);
+                } else {
+                    clearAll();
+                    setIsInitialListOpen(true);
+                }
             }
         } catch (error) {
             console.error('Failed to save project:', error);
@@ -1046,17 +1050,28 @@ const DIYPage: React.FC = () => {
                             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Roof DIY Designs</h2>
                             <p className="text-gray-500 font-medium">Select an existing design or create a new one</p>
                         </div>
-                        <button
-                            onClick={() => {
-                                clearAll();
-                                setCurrentProjectId(null);
-                                setIsInitialListOpen(false);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-                        >
-                            <Plus className="w-5 h-5" />
-                            Create New DIY
-                        </button>
+                        <div className="flex items-center gap-4">
+                            {initialJobId && (
+                                <button
+                                    onClick={() => navigate(`/org/${orgSlug}/jobs?jobId=${initialJobId}`)}
+                                    className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 transition-colors group mr-4"
+                                >
+                                    <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+                                    <span className="text-sm font-bold">Back to Job</span>
+                                </button>
+                            )}
+                            <button
+                                onClick={() => {
+                                    clearAll();
+                                    setCurrentProjectId(null);
+                                    setIsInitialListOpen(false);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+                            >
+                                <Plus className="w-5 h-5" />
+                                Create New DIY
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid gap-4 max-h-[500px] overflow-y-auto pr-2">
@@ -1150,7 +1165,13 @@ const DIYPage: React.FC = () => {
                     <div className="z-[100] bg-white border-b border-gray-200 h-14 flex items-center justify-between px-6 shadow-md flex-shrink-0">
                         <div className="flex items-center gap-6 h-full">
                             <button
-                                onClick={() => navigate(-1)}
+                                onClick={() => {
+                                    if (initialJobId) {
+                                        navigate(`/org/${orgSlug}/jobs?jobId=${initialJobId}`);
+                                    } else {
+                                        navigate(-1);
+                                    }
+                                }}
                                 className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 transition-colors group"
                             >
                                 <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />

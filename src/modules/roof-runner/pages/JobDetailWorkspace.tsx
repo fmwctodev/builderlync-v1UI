@@ -14,7 +14,8 @@ import FilesTab from './job-cam/tabs/FilesTab';
 import ActivityTab from './job-cam/tabs/ActivityTab';
 import UploadMediaModal, { type UploadFile } from '../components/job-cam/UploadMediaModal';
 import ShareModal from '../components/job-cam/ShareModal';
-import { uploadJobPhoto } from '../services/jobCamApi';
+import { uploadJobPhoto, fetchJobFiles } from '../services/jobCamApi';
+import type { JobFile } from '../types/jobCam';
 
 type Tab = 'photos' | 'checklist' | 'reports' | 'files' | 'activity';
 
@@ -33,6 +34,7 @@ const JobDetailWorkspace: React.FC = () => {
 
   const [job, setJob] = useState<Job | null>(null);
   const [photos, setPhotos] = useState<JobPhoto[]>([]);
+  const [files, setFiles] = useState<JobFile[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('photos');
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -41,13 +43,15 @@ const JobDetailWorkspace: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [jobsData, photosData] = await Promise.all([
+      const [jobsData, photosData, filesData] = await Promise.all([
         getJobs(1, 200),
         fetchJobMediaByJob(numericJobId),
+        fetchJobFiles(numericJobId),
       ]);
       const found = jobsData.data.data.find((j: Job) => j.id === numericJobId);
       setJob(found ?? null);
       setPhotos(photosData);
+      setFiles(filesData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -157,13 +161,14 @@ const JobDetailWorkspace: React.FC = () => {
           <PhotosTab
             jobId={numericJobId}
             photos={photos}
+            files={files}
             setPhotos={setPhotos}
             onUploadClick={() => setShowUpload(true)}
             onRefresh={load}
           />
         )}
         {activeTab === 'checklist' && (
-          <ChecklistTab jobId={numericJobId} photos={photos} />
+          <ChecklistTab jobId={numericJobId} photos={photos} files={files} />
         )}
         {activeTab === 'reports' && (
           <ReportsTab jobId={numericJobId} />

@@ -1,4 +1,4 @@
-export type PhotoCategory = 'before' | 'during' | 'after' | 'damage' | 'inspection' | 'completion' | 'claim';
+export type PhotoCategory = 'before' | 'during' | 'after' | 'damage' | 'inspection' | 'completion' | 'claim' | 'material' | 'receipt' | 'other';
 export type PhotoPhase = 'pre_install' | 'during_install' | 'post_install' | 'damage_assessment' | 'claim';
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 export type ProcessingStatus = 'uploading' | 'uploaded' | 'processing' | 'ready' | 'failed';
