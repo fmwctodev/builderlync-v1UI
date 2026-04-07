@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import type {
   JobPhoto, JobMediaFilters, BulkUpdatePayload,
-  PhotoCategory, ReviewStatus
+  PhotoCategory, ReviewStatus, JobFile
 } from '../../../types/jobCam';
 import { bulkUpdateJobPhotos } from '../../../services/jobCamApi';
 import MediaCard from '../../../components/job-cam/MediaCard';
@@ -44,24 +44,47 @@ const categoryColor: Record<string, string> = {
   inspection: 'bg-purple-100 text-purple-700',
   completion: 'bg-teal-100 text-teal-700',
   claim: 'bg-orange-100 text-orange-700',
+  material: 'bg-blue-100 text-blue-700',
+  receipt: 'bg-stone-100 text-stone-700',
+  other: 'bg-gray-100 text-gray-700',
 };
 
 interface Props {
   jobId: number;
   photos: JobPhoto[];
+  files?: JobFile[];
   setPhotos: (photos: JobPhoto[] | ((prev: JobPhoto[]) => JobPhoto[])) => void;
   onUploadClick: () => void;
   onRefresh: () => void;
 }
 
-const PhotosTab: React.FC<Props> = ({ photos, setPhotos, onUploadClick, onRefresh }) => {
+const PhotosTab: React.FC<Props> = ({ photos, files = [], setPhotos, onUploadClick, onRefresh }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<JobMediaFilters>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerPhoto, setDrawerPhoto] = useState<JobPhoto | null>(null);
+  
+  // Merge image files into photos view
+  const imageFilesAsPhotos: JobPhoto[] = files
+    .filter(f => f.mime_type?.startsWith('image/'))
+    .map(f => ({
+      id: f.id,
+      file_url: f.file_url,
+      thumbnail_url: f.file_url,
+      file_name: f.file_name,
+      capture_date: f.created_at,
+      category: (f.category as PhotoCategory) || 'other',
+      review_status: 'approved' as ReviewStatus,
+      is_customer_shareable: true,
+      is_marketing_approved: false,
+      is_claim_relevant: false,
+      source: 'attachment' as any
+    })) as unknown as JobPhoto[];
 
-  const filteredPhotos = photos.filter(p => {
+  const allMedia = [...photos, ...imageFilesAsPhotos];
+
+  const filteredPhotos = allMedia.filter(p => {
     if (filters.category && p.category !== filters.category) return false;
     if (filters.reviewStatus && p.review_status !== filters.reviewStatus) return false;
     if (filters.isClaimRelevant && !p.is_claim_relevant) return false;

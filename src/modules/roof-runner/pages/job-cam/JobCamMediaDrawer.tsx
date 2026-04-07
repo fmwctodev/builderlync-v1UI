@@ -35,6 +35,9 @@ const categoryColors: Record<PhotoCategory, string> = {
   inspection: 'bg-purple-100 text-purple-700',
   completion: 'bg-teal-100 text-teal-700',
   claim: 'bg-orange-100 text-orange-700',
+  material: 'bg-blue-100 text-blue-700',
+  receipt: 'bg-stone-100 text-stone-700',
+  other: 'bg-gray-100 text-gray-700',
 };
 
 const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, onPrev }) => {
@@ -443,19 +446,17 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
                     </p>
                     <div className="grid grid-cols-1 gap-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Review Status</span>
-                        <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm ${
-                          photo.review_status === 'approved' ? 'bg-green-100 text-green-700' :
-                          photo.review_status === 'rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
-                          {photo.review_status}
-                        </span>
+                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Storage ID</span>
+                         <span className="text-xs font-mono text-gray-400 truncate max-w-[200px]">{photo.id}</span>
                       </div>
                       <div className="h-px bg-gray-50 dark:bg-gray-700" />
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Storage ID</span>
-                        <span className="text-xs font-mono text-gray-400 truncate max-w-[200px]">{photo.id}</span>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cloud Storage Path</span>
+                        <div className="bg-gray-50 dark:bg-gray-900 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <p className="text-[10px] font-mono text-gray-400 break-all select-all">
+                            {photo.file_url.split('?')[0]}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

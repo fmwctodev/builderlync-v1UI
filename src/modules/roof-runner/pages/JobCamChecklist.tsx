@@ -2,9 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Circle, AlertCircle, ChevronLeft,
-  Camera, RefreshCw, Image, ChevronDown, ChevronUp
+  Camera, RefreshCw, Image, ChevronDown, ChevronUp, ListChecks
 } from 'lucide-react';
-import { fetchTemplates, fetchJobMediaByJob } from '../services/jobCamApi';
+import { fetchTemplates, fetchJobMediaByJob, fetchJobShotlist, createJobShotlist } from '../services/jobCamApi';
 import { getJobs, Job } from '../../../shared/store/services/jobsApi';
 import type { JobCamTemplate, JobCamTemplateItem, JobPhoto } from '../types/jobCam';
 import JobCamMediaDrawer from './JobCamMediaDrawer';
@@ -30,8 +30,10 @@ const JobCamChecklist: React.FC = () => {
   const [templates, setTemplates] = useState<JobCamTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<JobCamTemplate | null>(null);
   const [photos, setPhotos] = useState<JobPhoto[]>([]);
+  const [activeShotlist, setActiveShotlist] = useState<any>(null);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [drawerPhoto, setDrawerPhoto] = useState<JobPhoto | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
@@ -40,45 +42,73 @@ const JobCamChecklist: React.FC = () => {
     setLoading(true);
     try {
       const numericJobId = Number(jobId);
-      const [jobsData, shotlistTemplates, jobPhotos] = await Promise.all([
+      const [jobsData, shotlistTemplates, jobPhotos, shotlist] = await Promise.all([
         getJobs(1, 200),
         fetchTemplates('shotlist'),
         fetchJobMediaByJob(numericJobId),
+        fetchJobShotlist(numericJobId),
       ]);
 
       const foundJob = jobsData.data.data.find((j: Job) => j.id === numericJobId);
       setJob(foundJob ?? null);
       setTemplates(shotlistTemplates);
       setPhotos(jobPhotos);
+      setActiveShotlist(shotlist);
 
-      if (shotlistTemplates.length > 0 && !selectedTemplate) {
-        setSelectedTemplate(shotlistTemplates[0]);
+      if (!shotlist && shotlistTemplates.length > 0 && !selectedTemplate) {
+        const defaultTpl = shotlistTemplates.find(t => t.is_default) || shotlistTemplates[0];
+        setSelectedTemplate(defaultTpl);
       }
     } catch (e) {
       console.error('Error loading checklist:', e);
     } finally {
       setLoading(false);
     }
-  }, [jobId, selectedTemplate]);
+  }, [jobId]);
 
   useEffect(() => { load(); }, [jobId]);
 
   useEffect(() => {
-    if (!selectedTemplate?.items) return;
-    const items: ReviewItem[] = (selectedTemplate.items ?? []).map(item => {
+    const itemsSrc = activeShotlist?.items || selectedTemplate?.items || [];
+    if (!itemsSrc.length) {
+      setReviewItems([]);
+      return;
+    }
+
+    const items: ReviewItem[] = (itemsSrc).map((item: any) => {
       const linked = photos.filter(p => {
-        if (p.checklist_item_id === item.id) return true;
+        // Match by item ID or category/phase if it's a template preview
+        if (activeShotlist) {
+          // If we have an active shotlist, only match by actual checklist_item_id
+          // or manually linked ID from the join
+          return p.checklist_item_id === item.id;
+        }
+
         if (item.category && p.category === item.category) return true;
+        if (item.phase && p.phase === item.phase) return true;
         return false;
       });
 
-      let status: ItemStatus = 'missing';
-      if (linked.length > 0) {
-        const hasPending = linked.some(p => p.review_status === 'pending');
-        status = hasPending ? 'needs_review' : 'complete';
+      let status: ItemStatus = item.status || 'missing';
+      if (activeShotlist) {
+         if (linked.length > 0 && status === 'missing') {
+             status = 'complete';
+         }
+      } else {
+        if (linked.length > 0) {
+          const hasPending = linked.some(p => p.review_status === 'pending');
+          status = hasPending ? 'needs_review' : 'complete';
+        }
       }
 
-      return { templateItem: item, linkedPhotos: linked, status };
+      return { 
+        templateItem: {
+           ...item,
+           name: item.title || item.name // Handle difference between template and item
+        } as any, 
+        linkedPhotos: linked, 
+        status 
+      };
     });
 
     setReviewItems(items);
@@ -88,7 +118,7 @@ const JobCamChecklist: React.FC = () => {
       toExpand.add(i.templateItem.phase ?? 'general');
     });
     setExpandedSections(toExpand);
-  }, [selectedTemplate, photos]);
+  }, [selectedTemplate, photos, activeShotlist]);
 
   const groupedItems = reviewItems.reduce<Record<string, ReviewItem[]>>((acc, item) => {
     const key = item.templateItem.phase ?? 'general';
@@ -119,6 +149,20 @@ const JobCamChecklist: React.FC = () => {
     });
   };
 
+  const handleCreateShotlist = async () => {
+    if (!jobId || !selectedTemplate) return;
+    setCreating(true);
+    try {
+      const numericJobId = Number(jobId);
+      await createJobShotlist(numericJobId, selectedTemplate.name, selectedTemplate.id);
+      await load();
+    } catch (e) {
+      console.error('Error creating shotlist:', e);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -135,22 +179,36 @@ const JobCamChecklist: React.FC = () => {
         </button>
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            Checklist Review
+            Inspection Checklist
           </h1>
           {job && <p className="text-sm text-gray-500 dark:text-gray-400">{job.name} &bull; {job.location}</p>}
         </div>
       </div>
 
-      {templates.length > 0 && (
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Shot list template:</label>
-          <select
-            value={selectedTemplate?.id ?? ''}
-            onChange={e => setSelectedTemplate(templates.find(t => t.id === e.target.value) ?? null)}
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none"
-          >
-            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+      {!activeShotlist && templates.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-5 flex flex-col items-center text-center">
+          <ListChecks size={32} className="text-amber-500 mb-3" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No active checklist</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-md">
+            Create an active checklist for this job to track documentation progress.
+            Choose a template below to get started.
+          </p>
+          <div className="flex items-center gap-3 w-full max-w-sm">
+            <select
+              value={selectedTemplate?.id ?? ''}
+              onChange={e => setSelectedTemplate(templates.find(t => t.id === e.target.value) ?? null)}
+              className="flex-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none"
+            >
+              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <button
+              onClick={handleCreateShotlist}
+              disabled={creating || !selectedTemplate}
+              className="px-5 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium disabled:opacity-50 transition-colors"
+            >
+              {creating ? 'Creating...' : 'Create'}
+            </button>
+          </div>
         </div>
       )}
 

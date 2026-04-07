@@ -375,4 +375,47 @@ export const apiService = {
     const response = await apiClient.get(`/jobcam/${jobId}/activity`);
     return response.data;
   },
-};
+
+  // JobCam Templates
+  getJobCamTemplates: async (type?: string) => {
+    const response = await apiClient.get('/jobcam/templates', { params: { type } });
+    return response.data;
+  },
+
+  getJobCamTemplateDetail: async (id: string) => {
+    const response = await apiClient.get(`/jobcam/templates/${id}`);
+    return response.data;
+  },
+
+  createJobCamTemplate: async (data: any) => {
+    const response = await apiClient.post('/jobcam/templates', data, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+
+  updateJobCamTemplate: async (id: string, data: any) => {
+    const response = await apiClient.patch(`/jobcam/templates/${id}`, data);
+    return response.data;
+  },
+
+  deleteJobCamTemplate: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/templates/${id}`);
+    return response.data;
+  },
+
+  upsertJobCamTemplateItems: async (templateId: string, items: any[]) => {
+    const response = await apiClient.post(`/jobcam/templates/${templateId}/items`, items);
+    return response.data;
+  },
+
+  getJobShotlist: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobcam/${jobId}/shotlist`);
+    return response.data;
+  },
+
+  createJobShotlist: async (jobId: string | number, data: any) => {
+    const response = await apiClient.post(`/jobcam/${jobId}/shotlist`, data);
+    return response.data;
+  },
+};

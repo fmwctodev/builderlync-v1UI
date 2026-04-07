@@ -21,6 +21,31 @@ import type {
   UploadJobFileInput,
 } from '../types/jobCam';
 
+const API_ROOT = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3202/api').replace(/\/api$/, '');
+const GCS_BUCKET_URL = `https://storage.googleapis.com/builderlync-test`;
+
+function getFullUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  
+  // If it's already an absolute URL, just ensure it's encoded for spaces
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url.replace(/ /g, '%20');
+  }
+  
+  // Encode the relative path
+  const encodedPath = url.split('/').map(segment => encodeURIComponent(segment)).join('/');
+  
+  // High confidence prefixes for GCS
+  if (url.startsWith('documents/') || url.startsWith('staff-images/') || url.startsWith('job-cam/')) {
+    return `${GCS_BUCKET_URL}/${encodedPath}`;
+  }
+  
+  // Fallback to local static
+  const cleanPath = url.startsWith('/') ? url.slice(1) : url;
+  const encodedCleanPath = cleanPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+  return `${API_ROOT}/static/${encodedCleanPath}`;
+}
+
 function mapMediaToJobPhoto(m: any): JobPhoto {
   return {
     ...m,
@@ -34,6 +59,8 @@ function mapMediaToJobPhoto(m: any): JobPhoto {
     is_hidden_from_timeline: !!m.is_hidden_from_timeline,
     category: m.category || null,
     phase: m.phase || null,
+    file_url: getFullUrl(m.file_url),
+    thumbnail_url: m.thumbnail_url ? getFullUrl(m.thumbnail_url) : getFullUrl(m.file_url),
   };
 }
 
@@ -42,7 +69,7 @@ function mapDocumentToJobFile(doc: any): JobFile {
     id: `doc_${doc.id}`,
     user_id: String(doc.created_by_id || doc.user_id || ''),
     job_id: Number(doc.job_id),
-    file_url: doc.file_url || doc.file_path,
+    file_url: getFullUrl(doc.file_url || doc.file_path),
     storage_path: doc.storage_path || '',
     file_name: doc.title || doc.file_name || doc.filename || 'Untitled Document',
     file_size: doc.file_size || null,
@@ -59,7 +86,7 @@ function mapAttachmentToJobFile(a: any): JobFile {
     id: `att_${a.id}`,
     user_id: String(a.created_by),
     job_id: Number(a.job_id),
-    file_url: a.file_url,
+    file_url: getFullUrl(a.file_url),
     storage_path: '',
     file_name: a.file_name || 'Untitled File',
     file_size: a.file_size,
@@ -74,7 +101,7 @@ function mapAttachmentToJobFile(a: any): JobFile {
 export async function fetchJobCamOverviewStats(): Promise<JobCamOverviewStats> {
   const res = await apiService.getJobCamStats('all');
   const stats = res?.data || res;
-  
+
   if (!stats) return {
     jobsWithMediaThisWeek: 0,
     jobsMissingRequiredShots: 0,
@@ -194,25 +221,44 @@ export async function fetchAuditLog(_photoId: string): Promise<JobMediaAuditLog[
   return [];
 }
 
-export async function fetchTemplates(_type?: string): Promise<JobCamTemplate[]> {
-  return [];
+export async function fetchTemplates(type?: string): Promise<JobCamTemplate[]> {
+  const res = await apiService.getJobCamTemplates(type);
+  const data = res.data?.data || res.data || res || [];
+  return Array.isArray(data) ? data : [];
 }
 
-export async function fetchTemplateById(_id: string): Promise<JobCamTemplate | null> {
-  return null;
+export async function fetchTemplateById(id: string): Promise<JobCamTemplate | null> {
+  const res = await apiService.getJobCamTemplateDetail(id);
+  return res.data?.data || res.data || res;
 }
 
-export async function createTemplate(_input: Partial<JobCamTemplate>): Promise<JobCamTemplate> {
-  throw new Error('Templates via backend API not fully implemented');
+export async function createTemplate(input: Partial<JobCamTemplate>): Promise<JobCamTemplate> {
+  const res = await apiService.createJobCamTemplate(input);
+  return res.data?.data || res.data || res;
 }
 
-export async function updateTemplate(_id: string, _patch: Partial<JobCamTemplate>): Promise<JobCamTemplate> {
-  throw new Error('Templates via backend API not fully implemented');
+export async function updateTemplate(id: string, patch: Partial<JobCamTemplate>): Promise<JobCamTemplate> {
+  const res = await apiService.updateJobCamTemplate(id, patch);
+  return res.data?.data || res.data || res;
 }
 
-export async function deleteTemplate(_id: string): Promise<void> {}
+export async function deleteTemplate(id: string): Promise<void> {
+  await apiService.deleteJobCamTemplate(id);
+}
 
-export async function upsertTemplateItems(_templateId: string, _items: Partial<JobCamTemplateItem>[]): Promise<void> {}
+export async function upsertTemplateItems(templateId: string, items: Partial<JobCamTemplateItem>[]): Promise<void> {
+  await apiService.upsertJobCamTemplateItems(templateId, items);
+}
+
+export async function fetchJobShotlist(jobId: number): Promise<any> {
+  const res = await apiService.getJobShotlist(jobId);
+  return res.data?.data || res.data || res;
+}
+
+export async function createJobShotlist(jobId: number, name: string, templateId?: string): Promise<any> {
+  const res = await apiService.createJobShotlist(jobId, { name, templateId });
+  return res.data?.data || res.data || res;
+}
 
 export async function fetchReports(filters?: { jobId?: number; reportType?: string; status?: string; }): Promise<JobReport[]> {
   const res = await apiService.getJobReports(filters?.jobId || 'all');
@@ -256,9 +302,9 @@ export async function addMediaToReportSection(_reportId: string, _sectionId: str
   // Not fully implemented on backend yet as items are usually upserted via report detail save
 }
 
-export async function updateReportMediaCaption(_id: string, _caption: string): Promise<void> {}
+export async function updateReportMediaCaption(_id: string, _caption: string): Promise<void> { }
 
-export async function removeMediaFromSection(_id: string): Promise<void> {}
+export async function removeMediaFromSection(_id: string): Promise<void> { }
 
 export async function fetchShareLinks(jobId?: number): Promise<JobMediaShareLink[]> {
   const res = await apiService.getJobShareLinks(jobId || 'all');
@@ -295,7 +341,7 @@ export async function fetchJobFiles(jobId: number): Promise<JobFile[]> {
   const mappedDocs = docList.map(mapDocumentToJobFile);
   const mappedAttaches = attachList.map(mapAttachmentToJobFile);
 
-  return [...mappedDocs, ...mappedAttaches].sort((a, b) => 
+  return [...mappedDocs, ...mappedAttaches].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 }
@@ -342,5 +388,5 @@ export async function logJobActivity(
   _entityId?: string,
   _entityType?: string,
   _metadata?: Record<string, unknown>
-): Promise<void> {}
+): Promise<void> { }
 
