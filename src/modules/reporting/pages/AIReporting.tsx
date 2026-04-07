@@ -12,6 +12,7 @@ import {
 import type { AIReport, ChatMessage, ReportScope } from '@/modules/reporting/types/aiReports';
 import { generateReport, getAIReports, pollReportStatus } from '@/modules/reporting/services/aiReports';
 import { useCurrentOrganization } from '@/shared/context/OrgContext';
+import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -42,6 +43,14 @@ export function AIReporting() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { currentOrganizationSlug: orgSlug } = useCurrentOrganization();
+  
+  const isAiReportsEnabled = useFeatureFlag('ai-reports');
+
+  useEffect(() => {
+    if (isAiReportsEnabled === false) {
+      navigate(`/org/${orgSlug}/dashboard`);
+    }
+  }, [isAiReportsEnabled, navigate, orgSlug]);
 
   const loadRecentReports = useCallback(async () => {
     setLoadingRecent(true);

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Logo from '../../../../shared/components/Logo';
 import { canAccessModule } from '../../../../shared/utils/permissions';
+import { useFeatureFlag } from '../../../../shared/hooks/useFeatureFlag';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -53,10 +54,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
 
-  const renderNavSection = (items: typeof navItems.manage, label?: string) => {
-    const visibleItems = items.filter(item => 
-      !item.permission || canAccessModule(item.permission as any)
-    );
+  const isJobCamEnabled = useFeatureFlag('job-cam');
+  const isAiReportsEnabled = useFeatureFlag('ai-reports');
+
+  const renderNavSection = (items: any[], label?: string) => {
+    const visibleItems = items.filter(item => {
+      if (item.name === 'Job Cam' && !isJobCamEnabled) return false;
+      if (item.name === 'Reporting' && !isAiReportsEnabled) return false;
+      return !item.permission || canAccessModule(item.permission as any);
+    });
 
     if (visibleItems.length === 0) return null;
 

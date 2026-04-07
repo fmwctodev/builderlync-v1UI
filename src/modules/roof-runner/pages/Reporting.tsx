@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
+import { useParams, useNavigate } from 'react-router-dom';
 import { AIReporting } from './AIReporting';
 import { AIReportsTab } from '../components/AIReportsTab';
 
 const Reporting: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  
+  const isAiReportsEnabled = useFeatureFlag('ai-reports');
+
+  useEffect(() => {
+    if (isAiReportsEnabled === false) {
+      navigate(`/org/${orgSlug}/dashboard`);
+    }
+  }, [isAiReportsEnabled, navigate, orgSlug]);
+
   const initialTab = searchParams.get('tab') || 'ai-reporting';
   const [activeTab, setActiveTab] = useState(initialTab);
 

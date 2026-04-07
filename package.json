@@ -33,6 +33,7 @@
     "nodemon": "^3.1.10",
     "otplib": "^13.2.1",
     "papaparse": "^5.4.1",
+    "posthog-js": "^1.364.7",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.9.1",

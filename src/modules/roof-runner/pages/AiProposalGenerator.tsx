@@ -56,9 +56,19 @@ const STATUS_MESSAGES = [
   'Finalizing sections...',
 ];
 
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
+
 export default function AiProposalGenerator() {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
+  
+  const isAiProposalEnabled = useFeatureFlag('ai-proposal');
+
+  useEffect(() => {
+    if (isAiProposalEnabled === false) {
+      navigate(`/org/${orgSlug}/proposals`);
+    }
+  }, [isAiProposalEnabled, navigate, orgSlug]);
   const [searchParams, setSearchParams] = useSearchParams();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const { currentOrganizationId } = useCurrentOrganization();
@@ -279,6 +289,14 @@ export default function AiProposalGenerator() {
       setChatMessages([
         { role: 'assistant', text: `I've generated a proposal with ${genResult.sections_generated} sections. How does it look? You can ask me to change anything.` }
       ]);
+
+      // Track event
+      analytics.capture('ai_proposal_generated', {
+        proposal_id: proposalIdToUse,
+        sections_count: genResult.sections_generated,
+        contact_id: selectedContact?.id,
+        template_id: selectedTemplateId,
+      });
 
       setStep(4);
       setPreviewKey(prev => prev + 1);
