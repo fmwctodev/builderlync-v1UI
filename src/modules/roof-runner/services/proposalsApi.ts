@@ -154,9 +154,10 @@ export const proposalsApi = {
     }
   },
 
-  async getProposalById(id: number): Promise<Proposal> {
+  async getProposalById(id: number, hydrate: boolean = false): Promise<Proposal> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/proposals/${id}?select=report.response_data.ReportIds`, {
+      const url = `${API_BASE_URL}/proposals/${id}?select=report.response_data.ReportIds${hydrate ? '&hydrate=true' : ''}`;
+      const response = await axios.get(url, {
         headers: getAuthHeaders(),
       });
       return response.data.data;
