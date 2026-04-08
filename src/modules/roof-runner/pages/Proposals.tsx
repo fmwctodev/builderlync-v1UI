@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Plus, Search, X, ChevronDown, Download, Sparkles } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
 import { templateApi } from '../services/templateApi';
 import { proposalsApi } from '../services/proposalsApi';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
@@ -17,6 +18,9 @@ export default function Proposals() {
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
   const [activeTab, setActiveTab] = useState(initialTab);
+  
+  const isAiProposalEnabled = useFeatureFlag('ai-proposal');
+
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
@@ -324,18 +328,21 @@ export default function Proposals() {
                 </div>
                 <span className="font-medium">Manual Proposal</span>
               </button>
-              <button
-                onClick={() => {
-                  setShowNewProposalDropdown(false);
-                  navigate(`${orgPrefix}/proposals/ai-generate`);
-                }}
-                className="w-full text-left px-4 py-2.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 bg-primary-100 dark:bg-primary-900/30 rounded">
-                  <Sparkles size={14} className="text-primary-600 dark:text-primary-400" />
-                </div>
-                <span className="font-semibold">Generate with AI</span>
-              </button>
+              
+              {isAiProposalEnabled && (
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    navigate(`${orgPrefix}/proposals/ai-generate`);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2.5 transition-colors"
+                >
+                  <div className="p-1 bg-primary-100 dark:bg-primary-900/30 rounded">
+                    <Sparkles size={14} className="text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <span className="font-semibold">Generate with AI</span>
+                </button>
+              )}
             </div>
           )}
         </div>

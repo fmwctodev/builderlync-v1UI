@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Eye,
   ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { getContacts, type Contact } from '../../../shared/store/services/contactsApi';
@@ -28,6 +29,7 @@ import {
   SECTION_LABELS,
   type SectionType,
 } from '../types/aiProposal';
+import { analytics } from '../../../shared/utils/analytics';
 
 type WizardStep = 1 | 2 | 3 | 4;
 
@@ -56,9 +58,19 @@ const STATUS_MESSAGES = [
   'Finalizing sections...',
 ];
 
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
+
 export default function AiProposalGenerator() {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
+  
+  const isAiProposalEnabled = useFeatureFlag('ai-proposal');
+
+  useEffect(() => {
+    if (isAiProposalEnabled === false) {
+      navigate(`/org/${orgSlug}/proposals`);
+    }
+  }, [isAiProposalEnabled, navigate, orgSlug]);
   const [searchParams, setSearchParams] = useSearchParams();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const { currentOrganizationId } = useCurrentOrganization();
@@ -90,11 +102,13 @@ export default function AiProposalGenerator() {
   const [createdProposalId, setCreatedProposalId] = useState<string | null>(null);
   const [generatedSections, setGeneratedSections] = useState<GeneratedSectionPreview[]>([]);
   const [sectionsCount, setSectionsCount] = useState(0);
-  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; text: string; suggestions?: any[] }[]>([]);
   const [userRefinementMessage, setUserRefinementMessage] = useState('');
   const [isRefining, setIsRefining] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
+  
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
+  const [previewKey, setPreviewKey] = useState(0);
   const [iframeScale, setIframeScale] = useState(1);
 
   useEffect(() => {
@@ -144,8 +158,6 @@ export default function AiProposalGenerator() {
         });
     }
   }, []);
-
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -280,6 +292,14 @@ export default function AiProposalGenerator() {
         { role: 'assistant', text: `I've generated a proposal with ${genResult.sections_generated} sections. How does it look? You can ask me to change anything.` }
       ]);
 
+      // Track event
+      analytics.capture('ai_proposal_generated', {
+        proposal_id: proposalIdToUse,
+        sections_count: genResult.sections_generated,
+        contact_id: selectedContact?.id,
+        template_id: selectedTemplateId,
+      });
+
       setStep(4);
       setPreviewKey(prev => prev + 1);
       setIsGenerating(false);
@@ -290,48 +310,97 @@ export default function AiProposalGenerator() {
     }
   }
 
-  async function handleRefine() {
-    if (!userRefinementMessage.trim() || !createdProposalId || isRefining) return;
+  async function handleRefine(explicitMessage?: string, selectedItem?: any) {
+    const message = explicitMessage || userRefinementMessage;
+    if (!message.trim() || !createdProposalId || isRefining) return;
 
-    const message = userRefinementMessage;
-    setUserRefinementMessage('');
-    setChatMessages(prev => [...prev, { role: 'user', text: message }]);
+    if (!explicitMessage) setUserRefinementMessage('');
+    
+    // Only add to chat if it's not already added (handleAddCatalogItem adds it)
+    if (!explicitMessage) {
+      setChatMessages(prev => [...prev, { role: 'user', text: message }]);
+    }
+    
     setIsRefining(true);
 
     try {
-      const response = await proposalsApi.refineAiProposal(createdProposalId, message);
+      // Get ABC branch info from local storage
+      let abcBranchId = undefined;
+      let abcShipToNumber = undefined;
+      let srsBranchId = undefined;
+      const savedBranch = localStorage.getItem('abc_selected_branch');
+      const savedShipTo = localStorage.getItem('abc_selected_shipto');
+      const savedSrsBranch = localStorage.getItem('srs_selected_branch');
+      
+      if (savedBranch) {
+        try {
+          const branchObj = JSON.parse(savedBranch);
+          abcBranchId = branchObj.id || branchObj.number;
+        } catch (e) {
+          console.error('Error parsing abc_selected_branch:', e);
+        }
+      }
 
-      if (response.success && response.sections) {
-        // Update the generated sections with the refined ones
-        setGeneratedSections(prev => {
-          const updated = [...prev];
-          response.sections?.forEach((refined: any) => {
-            const index = updated.findIndex(s => s.title.toLowerCase() === refined.title.toLowerCase());
-            if (index !== -1) {
-              updated[index] = {
-                ...updated[index],
-                content: refined.content,
-                expanded: true // Expand the refined section to show changes
-              };
-            }
+      if (savedShipTo) {
+        try {
+          const shipToObj = JSON.parse(savedShipTo);
+          abcShipToNumber = shipToObj.number;
+        } catch (e) {
+          console.error('Error parsing abc_selected_shipto:', e);
+        }
+      }
+
+      if (savedSrsBranch) {
+        try {
+          const srsBranchObj = JSON.parse(savedSrsBranch);
+          srsBranchId = srsBranchObj.id;
+        } catch (e) {
+          console.error('Error parsing srs_selected_branch:', e);
+        }
+      }
+
+      const response = await proposalsApi.refineAiProposal(createdProposalId, message, {
+        abc_branch_id: abcBranchId,
+        abc_ship_to_number: abcShipToNumber,
+        srs_branch_id: srsBranchId
+      }, selectedItem);
+
+      if (response.success) {
+        // Update the generated sections with the refined ones if any
+        if (response.sections && response.sections.length > 0) {
+          setGeneratedSections(prev => {
+            const updated = [...prev];
+            response.sections?.forEach((refined: any) => {
+              const index = updated.findIndex(s => s.title.toLowerCase() === refined.title.toLowerCase());
+              if (index !== -1) {
+                updated[index] = {
+                  ...updated[index],
+                  content: refined.content,
+                  expanded: true 
+                };
+              }
+            });
+            return updated;
           });
-          return updated;
-        });
+        }
 
-        let updateMessage = '';
-        if (response.sections_refined > 0 && response.commands_executed > 0) {
-          updateMessage = `I've updated ${response.sections_refined} sections and executed ${response.commands_executed} structural changes. Check the preview!`;
-        } else if (response.sections_refined > 0) {
-          updateMessage = `I've updated ${response.sections_refined} sections based on your request. Check the preview!`;
-        } else if (response.commands_executed > 0) {
-          updateMessage = `I've executed ${response.commands_executed} changes to your estimate (added items/upgrades). Check the preview!`;
-        } else {
-          updateMessage = `I've reviewed your request but no changes were necessary. How else can I help?`;
+        let updateMessage = response.explanation;
+        if (!updateMessage) {
+            if (response.sections_refined > 0 && response.commands_executed > 0) {
+              updateMessage = `I've updated ${response.sections_refined} sections and executed ${response.commands_executed} structural changes. Check the preview!`;
+            } else if (response.sections_refined > 0) {
+              updateMessage = `I've updated ${response.sections_refined} sections based on your request. Check the preview!`;
+            } else if (response.commands_executed > 0) {
+              updateMessage = `I've executed ${response.commands_executed} changes to your estimate (added items/upgrades). Check the preview!`;
+            } else {
+              updateMessage = `I've reviewed your request but no changes were necessary. How else can I help?`;
+            }
         }
 
         setChatMessages(prev => [...prev, { 
           role: 'assistant', 
-          text: updateMessage 
+          text: updateMessage,
+          suggestions: response.catalog_suggestions
         }]);
         setPreviewKey(prev => prev + 1);
       }
@@ -345,6 +414,18 @@ export default function AiProposalGenerator() {
       setIsRefining(false);
     }
   }
+
+   async function handleAddCatalogItem(item: any) {
+    if (!createdProposalId || isRefining) return;
+    
+    // Add the user message to chat immediately for visual feedback
+    const precisionMessage = `Add "${item.name}" (ID: ${item.id}) to my estimate.`;
+    setChatMessages(prev => [...prev, { role: 'user', text: precisionMessage }]);
+    
+    // Use the refined flow with the full item object
+    handleRefine(precisionMessage, item);
+  }
+
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -741,6 +822,51 @@ export default function AiProposalGenerator() {
                         : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-200 dark:border-gray-700'
                     }`}>
                       {msg.text}
+                      {msg.suggestions && msg.suggestions.length > 0 && (
+                        <div className="mt-4 space-y-2 border-t border-gray-100 dark:border-gray-700 pt-4 animate-in slide-in-from-bottom-2 duration-500">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Choose an item to add:</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {msg.suggestions.map((item, i) => (
+                              <button
+                                key={item.id || i}
+                                onClick={() => handleAddCatalogItem(item)}
+                                className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary-500 hover:bg-primary-50/10 transition-all text-left group relative"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.name}</div>
+                                    {item.source && item.source !== 'Local Catalog' && (
+                                      <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase bg-primary-100 text-primary-700 border border-primary-200">
+                                        {item.source}
+                                      </span>
+                                    )}
+                                    {item.item_type && (
+                                      <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                                        item.item_type.toLowerCase() === 'labor' 
+                                          ? 'bg-amber-100 text-amber-700 border border-amber-200' 
+                                          : 'bg-blue-100 text-blue-700 border border-blue-200'
+                                      }`}>
+                                        {item.item_type}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 leading-relaxed italic">{item.description || 'No description'}</div>
+                                  <div className="text-[11px] font-black text-primary-600 mt-1 flex items-center gap-1">
+                                    {(() => {
+                                      const cost = item.pre_tax_cost ?? item.preTaxCost;
+                                      if (cost === undefined || cost === null || cost === '') return 'Price not set';
+                                      return `$${Number(cost).toLocaleString('en-US', { minimumFractionDigits: 2 })} / ${item.unit || 'unit'}`;
+                                    })()}
+                                  </div>
+                                </div>
+                                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 group-hover:bg-primary-600 group-hover:text-white transition-all shadow-sm">
+                                  <Plus size={14} />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -756,28 +882,30 @@ export default function AiProposalGenerator() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <div className="relative">
-                  <textarea
-                    value={userRefinementMessage}
-                    onChange={(e) => setUserRefinementMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleRefine();
-                      }
-                    }}
-                    placeholder="Ask AI to refine something..."
-                    rows={1}
-                    className="w-full pl-5 pr-14 py-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none overflow-hidden"
-                  />
-                  <button
-                    onClick={handleRefine}
-                    disabled={!userRefinementMessage.trim() || isRefining}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-primary-600 text-white rounded-lg flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 transition-all active:scale-95"
-                  >
-                    <Send size={16} />
-                  </button>
+              <div className="p-5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <textarea
+                      value={userRefinementMessage}
+                      onChange={(e) => setUserRefinementMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleRefine();
+                        }
+                      }}
+                      placeholder="Ask AI to add materials from ABC, SRS, or QXO..."
+                      rows={1}
+                      className="w-full pl-5 pr-12 py-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none overflow-hidden"
+                    />
+                    <button
+                      onClick={() => handleRefine()}
+                      disabled={!userRefinementMessage.trim() || isRefining}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary-600 text-white rounded-lg flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 transition-all active:scale-95"
+                    >
+                      <Send size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

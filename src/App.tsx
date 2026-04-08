@@ -29,6 +29,8 @@ import PublicBilling from './modules/roof-runner/pages/PublicBilling';
 import PaymentSuccess from './modules/roof-runner/pages/PaymentSuccess';
 import PaymentCancel from './modules/roof-runner/pages/PaymentCancel';
 
+import { analytics } from './shared/utils/analytics';
+
 function AppContent() {
   const { user, token } = useAppSelector((state) => state.auth);
   const location = useLocation();
@@ -38,9 +40,15 @@ function AppContent() {
   useEffect(() => {
     if (user && token) {
       oneSignalService.syncAuthenticatedUser(user);
+      analytics.identify(user.id, {
+        email: user.email,
+        name: user.full_name || user.fullName,
+        role: user.role,
+      });
       return;
     }
     oneSignalService.clearAuthenticatedUser();
+    analytics.reset();
   }, [user, token]);
 
   return (

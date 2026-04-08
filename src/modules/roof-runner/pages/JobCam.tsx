@@ -9,6 +9,7 @@ import type { JobWithMediaSummary } from '../types/jobCam';
 import JobCard from '../components/job-cam/JobCard';
 import EmptyStateActionCard from '../components/job-cam/EmptyStateActionCard';
 import { formatDistanceToNow } from 'date-fns';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
 
 type ViewMode = 'grid' | 'list';
 type FilterTab = 'all' | 'pending';
@@ -22,6 +23,14 @@ const JobCam: React.FC = () => {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  
+  const isJobCamEnabled = useFeatureFlag('job-cam');
+
+  useEffect(() => {
+    if (!loading && !isJobCamEnabled) {
+      navigate(`/org/${orgSlug}/dashboard`);
+    }
+  }, [isJobCamEnabled, loading, navigate, orgSlug]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,8 +45,10 @@ const JobCam: React.FC = () => {
   }, []);
 
   useEffect(() => { 
-    load(); 
-  }, [load]);
+    if (isJobCamEnabled) {
+      load(); 
+    }
+  }, [load, isJobCamEnabled]);
 
   const filtered = jobs.filter(j => {
     if (search) {
