@@ -254,7 +254,7 @@ export default function ProposalPreview() {
   const loadProposal = async () => {
     try {
       setLoading(true);
-      const data = await proposalsApi.getProposalById(Number(id));
+      const data = await proposalsApi.getProposalById(Number(id), true);
       setProposal(data);
     } catch (error) {
       console.error("Error loading proposal:", error);

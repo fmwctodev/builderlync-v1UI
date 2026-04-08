@@ -18,6 +18,8 @@ import {
   ExternalLink,
   Loader,
   Download,
+  Braces,
+  Info,
 } from "lucide-react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
@@ -117,6 +119,25 @@ interface Section {
   };
 }
 
+const AVAILABLE_SHORTCODES = [
+  { group: 'Customer', items: [
+    { label: 'Full Name', value: '{{customerName}}' },
+    { label: 'Address', value: '{{customerAddress}}' },
+    { label: 'Phone', value: '{{customerPhone}}' },
+    { label: 'Email', value: '{{customerEmail}}' },
+  ]},
+  { group: 'Company', items: [
+    { label: 'Business Name', value: '{{companyName}}' },
+    { label: 'Business Phone', value: '{{companyPhone}}' },
+    { label: 'Representative', value: '{{representativeName}}' },
+  ]},
+  { group: 'Project', items: [
+    { label: 'Total Price', value: '{{totalPrice}}' },
+    { label: 'Proposal Date', value: '{{proposalDate}}' },
+    { label: 'Job Type', value: '{{jobType}}' },
+  ]}
+];
+
 interface UploadingPhoto {
   id: string;
   sectionId: string;
@@ -133,6 +154,7 @@ export default function ProposalBuilder({
   const [activeSubsection, setActiveSubsection] = useState("Option 1");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showShortcodeReference, setShowShortcodeReference] = useState(false);
   const [activeTab, setActiveTab] = useState("Estimate");
   const [triggerFocus, setTriggerFocus] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -2078,6 +2100,15 @@ export default function ProposalBuilder({
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
               </button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <button 
+                type="button" 
+                onClick={() => setShowShortcodeReference(true)} 
+                title="Dynamic Shortcodes"
+                className="flex items-center justify-center w-7 h-7 rounded text-xs text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/40 transition-colors"
+              >
+                <Braces size={14} />
+              </button>
             </div>
             <div
               ref={editorRef}
@@ -2465,7 +2496,56 @@ export default function ProposalBuilder({
                   </div>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {/* Shortcode Reference Button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowShortcodeReference(!showShortcodeReference)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      showShortcodeReference 
+                        ? "bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800" 
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    <Info size={16} />
+                    <span>Shortcodes</span>
+                  </button>
+
+                  {showShortcodeReference && (
+                    <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[70] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Reference Guide</h3>
+                        <button onClick={() => setShowShortcodeReference(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                      </div>
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                        {AVAILABLE_SHORTCODES.map(group => (
+                          <div key={group.group}>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 px-1">{group.group}</div>
+                            <div className="space-y-1">
+                              {group.items.map(item => (
+                                <div key={item.value} className="flex items-center justify-between p-1.5 rounded hover:bg-gray-50 dark:hover:bg-primary-900/10 group transition-colors">
+                                  <span className="text-xs text-gray-700 dark:text-gray-300">{item.label}</span>
+                                  <code className="text-[10px] font-mono text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-primary-100 dark:border-primary-800 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
+                                    {item.value}
+                                  </code>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 italic">
+                          Tip: Use these anywhere to pull live project data. Found in the editor under <Braces size={10} className="inline" /> icon.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
+                <div className="flex gap-2">
                 {proposalStatus !== 'sent' && (
                   <button
                     onClick={handleSave}
@@ -2542,11 +2622,11 @@ export default function ProposalBuilder({
                     className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium flex items-center gap-2"
                   >
                     <Send size={16} />
-                    Send
                   </button>
                 )}
               </div>
             </div>
+          </div>
 
             {/* Template Preview */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">

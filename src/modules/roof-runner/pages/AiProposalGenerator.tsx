@@ -16,9 +16,11 @@ import {
   X,
   Send,
   MessageSquare,
+  Plus,
+  Trash2,
+  Edit2,
   Eye,
   ExternalLink,
-  Plus,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { getContacts, type Contact } from '../../../shared/store/services/contactsApi';
@@ -92,6 +94,14 @@ export default function AiProposalGenerator() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedSections, setSelectedSections] = useState<SectionType[]>(['intro', 'scope', 'materials', 'timeline', 'terms']);
   const [customInstructions, setCustomInstructions] = useState('');
+  
+  // Dynamic Sections state
+  const [availableSections, setAvailableSections] = useState<{id: string, label: string}[]>(
+    ALL_SECTIONS.map(s => ({ id: s, label: SECTION_LABELS[s] }))
+  );
+  const [newSectionName, setNewSectionName] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionLabel, setEditingSectionLabel] = useState('');
 
   // Step 3 / generation state
   const [statusIndex, setStatusIndex] = useState(0);
@@ -219,10 +229,48 @@ export default function AiProposalGenerator() {
     setSelectedSections([...ALL_SECTIONS]);
   }
 
-  function toggleSection(section: SectionType) {
+  function toggleSection(sectionId: string) {
     setSelectedSections((prev) =>
-      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]
+      prev.includes(sectionId as any) ? prev.filter((s) => s !== sectionId) : [...prev, sectionId as any]
     );
+  }
+
+  function addNewSection() {
+    if (!newSectionName.trim()) return;
+    const newId = newSectionName.trim().toLowerCase().replace(/\s+/g, '_');
+    
+    // Check if ID already exists
+    if (availableSections.some(s => s.id === newId)) {
+      setNewSectionName('');
+      return;
+    }
+
+    const newSection = { id: newId, label: newSectionName.trim() };
+    setAvailableSections(prev => [...prev, newSection]);
+    setSelectedSections(prev => [...prev, newId as any]);
+    setNewSectionName('');
+  }
+
+  function deleteSection(id: string) {
+    setAvailableSections(prev => prev.filter(s => s.id !== id));
+    setSelectedSections(prev => prev.filter(s => s !== id));
+  }
+
+  function startEditingSection(id: string, label: string) {
+    setEditingSectionId(id);
+    setEditingSectionLabel(label);
+  }
+
+  function saveSectionLabel() {
+    if (!editingSectionId || !editingSectionLabel.trim()) {
+      setEditingSectionId(null);
+      return;
+    }
+
+    setAvailableSections(prev => prev.map(s => 
+      s.id === editingSectionId ? { ...s, label: editingSectionLabel.trim() } : s
+    ));
+    setEditingSectionId(null);
   }
 
   async function runGeneration() {
@@ -261,11 +309,17 @@ export default function AiProposalGenerator() {
       }
 
       // 2. Generate AI sections via backend proxy
+      // Map IDs to their current display labels so backend knows the topic for custom sections
+      const sectionsWithLabels = selectedSections.map(id => {
+        const found = availableSections.find(s => s.id === id);
+        return found ? found.label : id;
+      });
+
       const genResult = await proposalsApi.generateAiProposal({
         organization_id: currentOrganizationId || '',
         proposal_id: proposalIdToUse,
         contact_id: selectedContact?.id,
-        sections_to_generate: selectedSections,
+        sections_to_generate: sectionsWithLabels as any,
         custom_instructions: customInstructions || undefined,
       });
 
@@ -659,35 +713,82 @@ export default function AiProposalGenerator() {
                    Checklist for AI Generation
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {ALL_SECTIONS.map((s) => (
-                    <label
-                      key={s}
-                      className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer group ${
-                        selectedSections.includes(s)
+                  {availableSections.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`flex items-center gap-3 p-4 rounded-xl border transition-all group relative ${
+                        selectedSections.includes(s.id as any)
                           ? 'bg-primary-50/30 border-primary-200 dark:bg-primary-900/10 dark:border-primary-800'
                           : 'bg-white border-gray-100 dark:bg-gray-750 dark:border-gray-700 hover:border-primary-200 dark:hover:border-primary-800'
                       }`}
                     >
-                      <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
-                        selectedSections.includes(s)
-                          ? 'bg-primary-600 border-primary-600 text-white'
-                          : 'bg-white border-gray-300 group-hover:border-primary-400'
-                      }`}>
-                        {selectedSections.includes(s) && <CheckCircle size={14} className="fill-current" />}
+                      <div 
+                        className="flex-1 flex items-center gap-3 cursor-pointer"
+                        onClick={() => toggleSection(s.id)}
+                      >
+                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
+                          selectedSections.includes(s.id as any)
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white border-gray-300 group-hover:border-primary-400'
+                        }`}>
+                          {selectedSections.includes(s.id as any) && <CheckCircle size={14} className="fill-current" />}
+                        </div>
+                        
+                        {editingSectionId === s.id ? (
+                          <input
+                            autoFocus
+                            value={editingSectionLabel}
+                            onChange={(e) => setEditingSectionLabel(e.target.value)}
+                            onBlur={saveSectionLabel}
+                            onKeyDown={(e) => e.key === 'Enter' && saveSectionLabel()}
+                            className="bg-white dark:bg-gray-800 border-b border-primary-500 focus:outline-none text-sm font-medium w-full"
+                          />
+                        ) : (
+                          <span className={`text-sm font-medium transition-colors ${
+                            selectedSections.includes(s.id as any) ? 'text-primary-900 dark:text-primary-100' : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {s.label}
+                          </span>
+                        )}
                       </div>
-                      <input
-                        type="checkbox"
-                        className="hidden"
-                        checked={selectedSections.includes(s)}
-                        onChange={() => toggleSection(s)}
-                      />
-                      <span className={`text-sm font-medium transition-colors ${
-                        selectedSections.includes(s) ? 'text-primary-900 dark:text-primary-100' : 'text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {SECTION_LABELS[s]}
-                      </span>
-                    </label>
+
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); startEditingSection(s.id, s.label); }}
+                          className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
+                          title="Rename section"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); deleteSection(s.id); }}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                          title="Delete section"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
                   ))}
+
+                  {/* Add New Section Input */}
+                  <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-900/10">
+                    <input
+                      type="text"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addNewSection()}
+                      placeholder="Add custom section..."
+                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1"
+                    />
+                    <button
+                      onClick={addNewSection}
+                      disabled={!newSectionName.trim()}
+                      className="p-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-all"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 

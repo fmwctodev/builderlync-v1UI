@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   X,
@@ -14,12 +14,33 @@ import {
   Save,
   GripVertical,
   Upload,
+  Braces,
+  Info,
 } from "lucide-react";
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import { getCatalogItems, CatalogItem as APICatalogItem } from '../../../../shared/store/services/catalogApi';
 import { getBusinessInfo } from '../../../../shared/store/services/businessInfoApi';
 import { templateApi } from '../../services/templateApi';
+
+const AVAILABLE_SHORTCODES = [
+  { group: 'Customer', items: [
+    { label: 'Full Name', value: '{{customerName}}' },
+    { label: 'Address', value: '{{customerAddress}}' },
+    { label: 'Phone', value: '{{customerPhone}}' },
+    { label: 'Email', value: '{{customerEmail}}' },
+  ]},
+  { group: 'Company', items: [
+    { label: 'Business Name', value: '{{companyName}}' },
+    { label: 'Business Phone', value: '{{companyPhone}}' },
+    { label: 'Representative', value: '{{representativeName}}' },
+  ]},
+  { group: 'Project', items: [
+    { label: 'Total Price', value: '{{totalPrice}}' },
+    { label: 'Proposal Date', value: '{{proposalDate}}' },
+    { label: 'Job Type', value: '{{jobType}}' },
+  ]}
+];
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -242,6 +263,7 @@ const getAccessToken = () => {
   }: EditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempValue, setTempValue] = useState(value);
+    const [showShortcodeMenu, setShowShortcodeMenu] = useState(false);
     const [formatState, setFormatState] = useState({
       bold: false,
       italic: false,
@@ -484,6 +506,14 @@ const getAccessToken = () => {
           refreshToolbarState();
         };
 
+        const insertShortcode = (code: string) => {
+          editorRef.current?.focus();
+          document.execCommand("insertText", false, code);
+          const html = sanitizeRichHtml(editorRef.current?.innerHTML || "");
+          setTempValue(html);
+          setShowShortcodeMenu(false);
+        };
+
         const insertBullet = () => {
           editorRef.current?.focus();
           const selection = window.getSelection();
@@ -718,7 +748,37 @@ const getAccessToken = () => {
                 onClick={toggleHighlight}
                 title="Highlight"
                 className={`flex items-center justify-center w-7 h-7 rounded text-xs font-semibold transition-colors ${formatState.highlight ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-              ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+                            ><span style={{background:"#fef08a",padding:"0 2px",borderRadius:"2px",color:"#333",lineHeight:1}}>H</span></button>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              {/* Shortcodes */}
+              <div className="relative">
+                <button type="button" 
+                  onClick={() => { setShowShortcodeMenu(p => !p); setShowFontMenu(false); setShowHeadingMenu(false); }}
+                  title="Insert variable"
+                  className={`flex items-center justify-center w-7 h-7 rounded transition-colors ${showShortcodeMenu ? "bg-primary-600 text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                >
+                  <Braces className="w-4 h-4" />
+                </button>
+                {showShortcodeMenu && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto p-2">
+                    <h4 className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Placeholders</h4>
+                    {AVAILABLE_SHORTCODES.map(group => (
+                      <div key={group.group} className="mb-2">
+                        <div className="px-2 py-1 text-[9px] font-semibold text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded">{group.group}</div>
+                        {group.items.map(item => (
+                          <button key={item.value} type="button"
+                            onClick={() => insertShortcode(item.value)}
+                            className="w-full text-left px-2 py-1.5 text-xs hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 transition-colors flex items-center justify-between group"
+                          >
+                            <span>{item.label}</span>
+                            <span className="text-[10px] text-gray-400 group-hover:text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity">{item.value}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* Link */}
               <button type="button" onClick={insertLink} title="Insert link"
                 className="flex items-center justify-center w-7 h-7 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -929,6 +989,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [searchingCatalog, setSearchingCatalog] = useState(false);
   const [searchingUpgradeCatalog, setSearchingUpgradeCatalog] = useState(false);
+  const [showShortcodeReference, setShowShortcodeReference] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isTemplateLocked, setIsTemplateLocked] = useState(false);
@@ -1041,7 +1102,8 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
           const contentUpgrades = data.content.upgrades || [];
           const latestCatalogItems = catalogItemsRef.current || [];
 
-          setSections(contentSections);
+          const sortedSections = [...contentSections].sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+          setSections(sortedSections);
           setItems(syncLiveCatalogPricing(contentItems, latestCatalogItems));
           setUpgrades(
             contentUpgrades.map((upgrade: Upgrade) => ({
@@ -1054,9 +1116,16 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
             const loadedOptionTitle = limitChars(data.content.settings.optionTitle || "", MAX_OPTION_TITLE_CHARS);
             setOptionTitle(loadedOptionTitle);
             // Update subsection name to match option title
-            setSections(prev => prev.map(s => 
-              s.id === 'estimate' ? { ...s, subsections: [loadedOptionTitle || "Option 1", "Summary"] } : s
-            ));
+            setSections((prev) =>
+              prev.map((s) =>
+                s.id === "estimate" || s.type === "estimate"
+                  ? {
+                      ...s,
+                      subsections: [loadedOptionTitle || "Option 1", "Summary"],
+                    }
+                  : s
+              )
+            );
             setOptionDescription(data.content.settings.optionDescription || "");
             setItemSectionTitle(data.content.settings.itemSectionTitle || "Item");
             setUpgradesTitle(data.content.settings.upgradesTitle || "Upgrades");
@@ -1988,6 +2057,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               <Plus size={16} />
               <span className="text-sm">Add section</span>
             </button>
+
           </div>
         </div>
       </div>
@@ -2014,7 +2084,55 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Shortcode Reference Button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowShortcodeReference(!showShortcodeReference)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  showShortcodeReference 
+                    ? "bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                <Info size={16} />
+                <span>Shortcodes</span>
+              </button>
+
+              {showShortcodeReference && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[70] p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Reference Guide</h3>
+                    <button onClick={() => setShowShortcodeReference(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                  </div>
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                    {AVAILABLE_SHORTCODES.map(group => (
+                      <div key={group.group}>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 px-1">{group.group}</div>
+                        <div className="space-y-1">
+                          {group.items.map(item => (
+                            <div key={item.value} className="flex items-center justify-between p-1.5 rounded hover:bg-gray-50 dark:hover:bg-primary-900/10 group transition-colors">
+                              <span className="text-xs text-gray-700 dark:text-gray-300">{item.label}</span>
+                              <code className="text-[10px] font-mono text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-800 px-1.5 py-0.5 rounded border border-primary-100 dark:border-primary-800 group-hover:bg-white dark:group-hover:bg-gray-800 transition-colors">
+                                {item.value}
+                              </code>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 italic">
+                      Tip: You can also find these in the text editor toolbar under the <Braces size={10} className="inline" /> icon.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
             <button
               onClick={handleSave}
               disabled={saving || isTemplateLocked}
