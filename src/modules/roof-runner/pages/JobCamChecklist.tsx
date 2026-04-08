@@ -381,6 +381,9 @@ const JobCamChecklist: React.FC = () => {
             setPhotos(ps => ps.map(p => p.id === updated.id ? updated : p));
             setDrawerPhoto(updated);
           }}
+          onDelete={() => {
+            load();
+          }}
         />
       )}
     </div>

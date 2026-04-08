@@ -3,7 +3,7 @@ import {
   FolderOpen, Upload, Trash2, Download, FileText,
   File, RefreshCw
 } from 'lucide-react';
-import { fetchJobFiles, uploadJobFile, deleteJobFile } from '../../../services/jobCamApi';
+import { fetchJobFiles, uploadJobFile, deleteJobFile, getJobFileDownloadUrl } from '../../../services/jobCamApi';
 import type { JobFile, JobFileCategory } from '../../../types/jobCam';
 import EmptyStateActionCard from '../../../components/job-cam/EmptyStateActionCard';
 import { formatDistanceToNow } from 'date-fns';
@@ -85,11 +85,17 @@ const FilesTab: React.FC<Props> = ({ jobId }) => {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this file?')) return;
     try {
-      await deleteJobFile(id);
+      await deleteJobFile(id, jobId);
       setFiles(prev => prev.filter(f => f.id !== id));
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleDownload = (file: JobFile) => {
+    const url = getJobFileDownloadUrl(file.id, jobId);
+    if (!url) return;
+    window.open(url, '_blank');
   };
 
   if (loading) {
@@ -101,99 +107,99 @@ const FilesTab: React.FC<Props> = ({ jobId }) => {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-          {files.length} document{files.length !== 1 ? 's' : ''}
-        </p>
-        <div className="flex items-center gap-3">
-          <select
-            value={uploadCategory}
-            onChange={e => setUploadCategory(e.target.value as JobFileCategory)}
-            className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-bold"
-          >
-            {FILE_CATEGORIES.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md disabled:opacity-50"
-          >
-            <Upload size={16} />
-            {uploading ? 'Uploading...' : 'Upload File'}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
-            className="hidden"
-            onChange={handleUpload}
+    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 md:pb-24">
+        <div className="flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+            {files.length} document{files.length !== 1 ? 's' : ''}
+          </p>
+          <div className="flex items-center gap-3">
+            <select
+              value={uploadCategory}
+              onChange={e => setUploadCategory(e.target.value as JobFileCategory)}
+              className="text-sm border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-bold"
+            >
+              {FILE_CATEGORIES.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md disabled:opacity-50"
+            >
+              <Upload size={16} />
+              {uploading ? 'Uploading...' : 'Upload File'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={handleUpload}
+            />
+          </div>
+        </div>
+
+        {files.length === 0 ? (
+          <EmptyStateActionCard
+            icon={FolderOpen}
+            title="No files yet"
+            description="Upload contracts, permits, inspection documents, and other job files."
+            actionLabel="Upload File"
+            onAction={() => fileInputRef.current?.click()}
           />
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/50 shadow-sm overflow-hidden">
+              {files.map(file => {
+                const Icon = fileIcon(file.mime_type);
+                return (
+                  <div 
+                    key={file.id} 
+                    onClick={() => handleDownload(file)}
+                    className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border border-gray-100 dark:border-gray-700 group-hover:scale-110 transition-transform">
+                      <Icon size={22} className="text-primary-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-primary-600 transition-colors uppercase tracking-tight">{file.file_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${categoryColor[file.category]}`}>
+                          {file.category}
+                        </span>
+                        {file.file_size && (
+                          <span className="text-xs font-medium text-gray-400">{formatFileSize(file.file_size)}</span>
+                        )}
+                        <span className="mx-2 text-gray-300 dark:text-gray-600 font-bold">&bull;</span>
+                        <span className="text-xs font-medium text-gray-400">
+                          {formatDistanceToNow(new Date(file.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDownload(file); }}
+                        className="p-2.5 bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 rounded-lg text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-all hover:scale-105"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(file.id); }}
+                        className="p-2.5 bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 rounded-lg text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-all hover:scale-105"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
-
-      {files.length === 0 ? (
-        <EmptyStateActionCard
-          icon={FolderOpen}
-          title="No files yet"
-          description="Upload contracts, permits, inspection documents, and other job files."
-          actionLabel="Upload File"
-          onAction={() => fileInputRef.current?.click()}
-        />
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/50 shadow-sm overflow-hidden">
-          {files.map(file => {
-            const Icon = fileIcon(file.mime_type);
-            return (
-              <div key={file.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-all group">
-                <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border border-gray-100 dark:border-gray-700 group-hover:scale-110 transition-transform">
-                  <Icon size={22} className="text-primary-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-primary-600 transition-colors uppercase tracking-tight">{file.file_name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${categoryColor[file.category]}`}>
-                      {file.category}
-                    </span>
-                    {file.file_size && (
-                      <span className="text-xs font-medium text-gray-400">{formatFileSize(file.file_size)}</span>
-                    )}
-                    <span className="mx-2 text-gray-300 dark:text-gray-600 font-bold">&bull;</span>
-                    <span className="text-xs font-medium text-gray-400">
-                      {formatDistanceToNow(new Date(file.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <a
-                    href={file.file_url}
-                    download={file.file_name}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
-                    title="Download"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <Download size={16} />
-                  </a>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(file.id); }}
-                    className="p-2 text-gray-400 hover:text-red-500 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
+    );
+  };
 
 export default FilesTab;

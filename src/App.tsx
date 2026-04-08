@@ -13,10 +13,9 @@ import { ProjectManagementModule } from './modules/project-management/ProjectMan
 import { RoofRunnerModule } from './modules/roof-runner/RoofRunnerModule';
 // import { AIAgentsModule } from './modules/ai-agents/AIAgentsModule';
 
-import { ReportingModule } from './modules/reporting/ReportingModule';
 import { SuperAdminModule } from './modules/super-admin/SuperAdminModule';
 import PublicEstimator from './modules/roof-runner/pages/PublicEstimator';
-import DIYPage from './modules/roof-runner/pages/DIYPage';
+import PublicGallery from './modules/roof-runner/pages/PublicGallery';
 import { PublicFormPage } from './modules/marketing/pages/PublicFormPage';
 import OAuthCallback from './shared/components/OAuthCallback';
 import ABCSupplyCallback from './shared/components/ABCSupplyCallback';
@@ -34,7 +33,7 @@ import { analytics } from './shared/utils/analytics';
 function AppContent() {
   const { user, token } = useAppSelector((state) => state.auth);
   const location = useLocation();
-  const LightThemePages = ['/estimator/', '/forms/public/'];
+  const LightThemePages = ['/estimator/', '/forms/public/', '/share/', '/shared/'];
   const forceLightTheme = LightThemePages.some((page) => location.pathname.startsWith(page));
 
   useEffect(() => {
@@ -63,6 +62,8 @@ function AppContent() {
             <Route path="/proposal/sign" element={<ProposalSigningPage />} />
             <Route path="/proposal/view" element={<ProposalSigningPage />} />
             <Route path="/estimator/:publicUrl" element={<PublicEstimator />} />
+            <Route path="/share/:token" element={<PublicGallery />} />
+            <Route path="/shared/:token" element={<PublicGallery />} />
             <Route path="/pitch" element={<PitchTool />} />
             <Route path="/forms/public/:publicId" element={<PublicFormPage />} />
             <Route path="/auth/google/callback" element={<OAuthCallback />} />

@@ -250,6 +250,20 @@ export const apiService = {
     return response.data;
   },
 
+  bulkUpdateJobMedia: async (mediaIds: string[], updates: any) => {
+    const response = await apiClient.post('/jobcam/media/bulk-update', { mediaIds, updates });
+    return response.data;
+  },
+
+  bulkDeleteJobMedia: async (mediaIds: string[]) => {
+    // We can use the bulk-update endpoint and set is_deleted: true
+    const response = await apiClient.post('/jobcam/media/bulk-update', {
+      mediaIds,
+      updates: { is_deleted: true, deleted_at: new Date().toISOString() }
+    });
+    return response.data;
+  },
+
   deleteJobMedia: async (id: string) => {
     const response = await apiClient.delete(`/jobcam/media/${id}`);
     return response.data;
@@ -287,6 +301,10 @@ export const apiService = {
     return response.data;
   },
 
+  downloadJobDocument: (id: string) => {
+    return `${API_BASE_URL}/documents/${id}/download?token=${localStorage.getItem('token')}`;
+  },
+
   // Job Attachments
   getJobAttachments: async (jobId: string | number) => {
     const response = await apiClient.get(`/jobs/${jobId}/attachments`);
@@ -298,9 +316,13 @@ export const apiService = {
     return response.data;
   },
 
-  deleteJobAttachment: async (id: string | number) => {
-    const response = await apiClient.delete(`/jobs/attachments/${id}`);
+  deleteJobAttachment: async (jobId: string | number, id: string | number) => {
+    const response = await apiClient.delete(`/jobs/${jobId}/attachments/${id}`);
     return response.data;
+  },
+
+  downloadJobAttachment: (jobId: string | number, id: string | number) => {
+    return `${API_BASE_URL}/jobs/${jobId}/attachments/${id}/download?token=${localStorage.getItem('token')}`;
   },
 
   // General Document Upload (returns file_path)
@@ -416,6 +438,42 @@ export const apiService = {
 
   createJobShotlist: async (jobId: string | number, data: any) => {
     const response = await apiClient.post(`/jobcam/${jobId}/shotlist`, data);
+    return response.data;
+  },
+
+  // JobCam Galleries
+  getJobGalleries: async (jobId: string | number) => {
+    const response = await apiClient.get(`/jobcam/${jobId}/galleries`);
+    return response.data;
+  },
+
+  createJobGallery: async (jobId: string | number, data: any) => {
+    const response = await apiClient.post(`/jobcam/${jobId}/galleries`, data);
+    return response.data;
+  },
+
+  getGalleryItems: async (id: string) => {
+    const response = await apiClient.get(`/jobcam/galleries/${id}/items`);
+    return response.data;
+  },
+
+  deleteJobGallery: async (id: string) => {
+    const response = await apiClient.delete(`/jobcam/galleries/${id}`);
+    return response.data;
+  },
+
+  addMediaToGallery: async (galleryId: string, mediaIds: string[]) => {
+    const response = await apiClient.post(`/jobcam/galleries/${galleryId}/media`, { mediaIds });
+    return response.data;
+  },
+
+  removeMediaFromGallery: async (galleryId: string, mediaId: string) => {
+    const response = await apiClient.delete(`/jobcam/galleries/${galleryId}/media/${mediaId}`);
+    return response.data;
+  },
+
+  getPublicShareDetails: async (token: string) => {
+    const response = await apiClient.get(`/jobcam/public/share/${token}`);
     return response.data;
   },
 };

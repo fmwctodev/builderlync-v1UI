@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, CreditCard as Edit2, Copy, Archive, Trash2, ChevronDown, ChevronUp, CheckSquare, FileText, Settings, RefreshCw, X, GripVertical, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit2, Copy, Archive, ChevronDown, ChevronUp, CheckSquare, FileText, Settings, RefreshCw, X, GripVertical, Save, ChevronLeft } from 'lucide-react';
 import {
   fetchTemplates,
   createTemplate,
@@ -293,6 +293,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, type, onSave,
 };
 
 const JobCamTemplates: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TemplateType>('shotlist');
   const [templates, setTemplates] = useState<JobCamTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,7 +314,7 @@ const JobCamTemplates: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (saved: JobCamTemplate) => {
+  const handleSave = async (_saved: JobCamTemplate) => {
     setEditorTemplate(undefined);
     load();
   };
@@ -355,20 +356,28 @@ const JobCamTemplates: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Templates</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Manage reusable shot lists, report structures, and job presets
-          </p>
-        </div>
+      <div className="flex items-center gap-4">
         <button
-          onClick={() => setEditorTemplate(null)}
-          className="flex items-center gap-2 text-sm px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 transition-all shadow-sm flex-shrink-0"
         >
-          <Plus size={15} />
-          New Template
+          <ChevronLeft size={20} />
         </button>
+        <div className="flex-1 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Templates</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Manage reusable shot lists, report structures, and job presets
+            </p>
+          </div>
+          <button
+            onClick={() => setEditorTemplate(null)}
+            className="flex items-center gap-2 text-sm px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+          >
+            <Plus size={15} />
+            New Template
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">

@@ -7,10 +7,11 @@ import type {
   JobPhoto, JobMediaFilters, BulkUpdatePayload,
   PhotoCategory, ReviewStatus, JobFile
 } from '../../../types/jobCam';
-import { bulkUpdateJobPhotos } from '../../../services/jobCamApi';
+import { bulkUpdateJobPhotos, bulkDeleteJobPhotos, addMediaToGallery } from '../../../services/jobCamApi';
 import MediaCard from '../../../components/job-cam/MediaCard';
 import BulkActionBar from '../../../components/job-cam/BulkActionBar';
 import EmptyStateActionCard from '../../../components/job-cam/EmptyStateActionCard';
+import GallerySelectModal from '../../../components/job-cam/GallerySelectModal';
 import JobCamMediaDrawer from '../JobCamMediaDrawer';
 import { format } from 'date-fns';
 
@@ -58,12 +59,13 @@ interface Props {
   onRefresh: () => void;
 }
 
-const PhotosTab: React.FC<Props> = ({ photos, files = [], setPhotos, onUploadClick, onRefresh }) => {
+const PhotosTab: React.FC<Props> = ({ jobId, photos, files = [], setPhotos, onUploadClick, onRefresh }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<JobMediaFilters>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerPhoto, setDrawerPhoto] = useState<JobPhoto | null>(null);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
   
   // Merge image files into photos view
   const imageFilesAsPhotos: JobPhoto[] = files
@@ -117,8 +119,34 @@ const PhotosTab: React.FC<Props> = ({ photos, files = [], setPhotos, onUploadCli
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} photos? This will remove them permanently from all sources.`)) return;
+    try {
+      await bulkDeleteJobPhotos(Array.from(selected));
+      setSelected(new Set());
+      onRefresh();
+    } catch (e) {
+      console.error('Bulk delete failed:', e);
+    }
+  };
+
+  const handleAddToGallery = async (galleryId: string) => {
+    if (selected.size === 0) return;
+    try {
+      await addMediaToGallery(galleryId, Array.from(selected));
+      setSelected(new Set());
+      setShowGalleryModal(false);
+      onRefresh();
+    } catch (e) {
+      console.error('Failed to add to gallery:', e);
+      alert('Failed to add photos to gallery');
+    }
+  };
+
   const groupedByDate = filteredPhotos.reduce<Record<string, JobPhoto[]>>((acc, photo) => {
-    const key = format(new Date(photo.capture_date), 'MMMM d, yyyy');
+    const dateToFormat = photo.capture_date || photo.created_at;
+    const key = dateToFormat ? format(new Date(dateToFormat), 'MMMM d, yyyy') : 'Unknown Date';
     if (!acc[key]) acc[key] = [];
     acc[key].push(photo);
     return acc;
@@ -243,6 +271,8 @@ const PhotosTab: React.FC<Props> = ({ photos, files = [], setPhotos, onUploadCli
         <BulkActionBar
           count={selected.size}
           onAction={handleBulkAction}
+          onDelete={handleBulkDelete}
+          onAddToGallery={() => setShowGalleryModal(true)}
           onSelectAll={() => setSelected(new Set(filteredPhotos.map(p => p.id)))}
           onClear={() => setSelected(new Set())}
         />
@@ -307,10 +337,21 @@ const PhotosTab: React.FC<Props> = ({ photos, files = [], setPhotos, onUploadCli
             setPhotos((ps: JobPhoto[]) => ps.map(p => p.id === updated.id ? updated : p));
             setDrawerPhoto(updated);
           }}
+          onDelete={(id: string) => {
+            setPhotos((ps: JobPhoto[]) => ps.filter(p => p.id !== id));
+            onRefresh();
+          }}
           onNext={drawerIndex < filteredPhotos.length - 1 ? () => setDrawerPhoto(filteredPhotos[drawerIndex + 1]) : undefined}
           onPrev={drawerIndex > 0 ? () => setDrawerPhoto(filteredPhotos[drawerIndex - 1]) : undefined}
         />
       )}
+
+      <GallerySelectModal
+        open={showGalleryModal}
+        onClose={() => setShowGalleryModal(false)}
+        onSelect={handleAddToGallery}
+        jobId={jobId}
+      />
     </div>
   );
 };
