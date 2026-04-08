@@ -91,80 +91,82 @@ const ReportsTab: React.FC<Props> = ({ jobId }) => {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider">
-          {reports.length} report{reports.length !== 1 ? 's' : ''}
-        </p>
-        <div className="relative">
-          <button
-            onClick={() => setShowCreateMenu(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md"
-          >
-            <Plus size={16} />
-            New Report
-          </button>
-          {showCreateMenu && (
-            <CreateReportMenu onSelect={handleCreate} onClose={() => setShowCreateMenu(false)} />
-          )}
-        </div>
-      </div>
-
-      {reports.length === 0 ? (
-        <EmptyStateActionCard
-          icon={FileText}
-          title="No reports for this job"
-          description="Create inspection, progress, completion, or claim reports with photos from this job."
-          actionLabel="Create Report"
-          onAction={() => setShowCreateMenu(true)}
-        />
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/50 shadow-sm overflow-hidden">
-          {reports.map(report => (
-            <div
-              key={report.id}
-              className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-all group"
-              onClick={() => navigate(`/org/${orgSlug}/job-cam/reports/${report.id}`)}
+    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 md:pb-24">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full uppercase tracking-wider">
+            {reports.length} report{reports.length !== 1 ? 's' : ''}
+          </p>
+          <div className="relative">
+            <button
+              onClick={() => setShowCreateMenu(s => !s)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md"
             >
-              <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border border-gray-100 dark:border-gray-700 group-hover:scale-110 transition-transform">
-                <FileText size={22} className="text-primary-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-primary-600 transition-colors uppercase tracking-tight">{report.title}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${reportTypeConfig[report.report_type].color}`}>
-                    {reportTypeConfig[report.report_type].label}
-                  </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${statusConfig[report.status].color}`}>
-                    {statusConfig[report.status].label}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  {report.sections?.length ?? 0} section{(report.sections?.length ?? 0) !== 1 ? 's' : ''}
-                  <span className="mx-2 text-gray-300 dark:text-gray-600 font-bold">&bull;</span>
-                  {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                <button
-                  onClick={() => handleDuplicate(report.id)}
-                  className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
-                  title="Duplicate"
-                >
-                  <Copy size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(report.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+              <Plus size={16} />
+              New Report
+            </button>
+            {showCreateMenu && (
+              <CreateReportMenu onSelect={handleCreate} onClose={() => setShowCreateMenu(false)} />
+            )}
+          </div>
         </div>
-      )}
+
+        {reports.length === 0 ? (
+          <EmptyStateActionCard
+            icon={FileText}
+            title="No reports for this job"
+            description="Create inspection, progress, completion, or claim reports with photos from this job."
+            actionLabel="Create Report"
+            onAction={() => setShowCreateMenu(true)}
+          />
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/50 shadow-sm overflow-hidden">
+            {reports.map(report => (
+              <div
+                key={report.id}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-all group"
+                onClick={() => navigate(`/org/${orgSlug}/job-cam/reports/${report.id}`)}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border border-gray-100 dark:border-gray-700 group-hover:scale-110 transition-transform">
+                  <FileText size={22} className="text-primary-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-primary-600 transition-colors uppercase tracking-tight">{report.title}</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${reportTypeConfig[report.report_type].color}`}>
+                      {reportTypeConfig[report.report_type].label}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${statusConfig[report.status].color}`}>
+                      {statusConfig[report.status].label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                    {report.sections?.length ?? 0} section{(report.sections?.length ?? 0) !== 1 ? 's' : ''}
+                    <span className="mx-2 text-gray-300 dark:text-gray-600 font-bold">&bull;</span>
+                    {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleDuplicate(report.id)}
+                    className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
+                    title="Duplicate"
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 rounded-xl hover:bg-white dark:hover:bg-gray-700 transition-all shadow-sm border border-transparent hover:border-gray-100/50"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

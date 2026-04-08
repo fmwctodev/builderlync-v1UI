@@ -200,7 +200,11 @@ export async function bulkUpdateJobPhotos(
   mediaIds: string[],
   patch: BulkUpdatePayload
 ): Promise<void> {
-  await apiService.updateJobMedia('bulk-update', { mediaIds, updates: patch });
+  await apiService.bulkUpdateJobMedia(mediaIds, patch);
+}
+
+export async function bulkDeleteJobPhotos(mediaIds: string[]): Promise<void> {
+  await apiService.bulkDeleteJobMedia(mediaIds);
 }
 
 export async function deleteJobPhoto(id: string): Promise<void> {
@@ -368,12 +372,21 @@ export async function uploadJobFile(file: File, input: UploadJobFileInput): Prom
   return mapAttachmentToJobFile(attachment.data || attachment);
 }
 
-export async function deleteJobFile(id: string): Promise<void> {
+export async function deleteJobFile(id: string, jobId: number): Promise<void> {
   if (id.startsWith('doc_')) {
     await apiService.deleteJobDocument(id.replace('doc_', ''));
   } else if (id.startsWith('att_')) {
-    await apiService.deleteJobAttachment(id.replace('att_', ''));
+    await apiService.deleteJobAttachment(jobId, id.replace('att_', ''));
   }
+}
+
+export function getJobFileDownloadUrl(id: string, jobId: number): string {
+  if (id.startsWith('doc_')) {
+    return apiService.downloadJobDocument(id.replace('doc_', ''));
+  } else if (id.startsWith('att_')) {
+    return apiService.downloadJobAttachment(jobId, id.replace('att_', ''));
+  }
+  return '';
 }
 
 export async function fetchJobActivity(jobId: number, _limit = 50): Promise<JobActivityEvent[]> {
@@ -390,3 +403,38 @@ export async function logJobActivity(
   _metadata?: Record<string, unknown>
 ): Promise<void> { }
 
+export async function fetchJobGalleries(jobId: number): Promise<any[]> {
+  const res = await apiService.getJobGalleries(jobId);
+  return res.data || res || [];
+}
+
+export async function createJobGallery(jobId: number, data: { name: string; description?: string }): Promise<any> {
+  const res = await apiService.createJobGallery(jobId, data);
+  return res.data || res;
+}
+
+export async function deleteJobGallery(galleryId: string): Promise<void> {
+  await apiService.deleteJobGallery(galleryId);
+}
+
+export async function fetchGalleryItems(galleryId: string): Promise<any[]> {
+  const res = await apiService.getGalleryItems(galleryId);
+  return res.data || res || [];
+}
+
+export async function addMediaToGallery(galleryId: string, mediaIds: string[]): Promise<void> {
+  await apiService.addMediaToGallery(galleryId, mediaIds);
+}
+
+export async function removeMediaFromGallery(galleryId: string, mediaId: string): Promise<void> {
+  await apiService.removeMediaFromGallery(galleryId, mediaId);
+}
+
+export async function fetchPublicShareDetails(token: string): Promise<any> {
+  const res = await apiService.getPublicShareDetails(token);
+  const data = res.data || res;
+  if (data.media) {
+    data.media = data.media.map(mapMediaToJobPhoto);
+  }
+  return data;
+}

@@ -12,16 +12,18 @@ import ChecklistTab from './job-cam/tabs/ChecklistTab';
 import ReportsTab from './job-cam/tabs/ReportsTab';
 import FilesTab from './job-cam/tabs/FilesTab';
 import ActivityTab from './job-cam/tabs/ActivityTab';
+import GalleriesTab from './job-cam/tabs/GalleriesTab';
 import UploadMediaModal, { type UploadFile } from '../components/job-cam/UploadMediaModal';
 import ShareModal from '../components/job-cam/ShareModal';
 import { uploadJobPhoto, fetchJobFiles } from '../services/jobCamApi';
 import type { JobFile } from '../types/jobCam';
 
-type Tab = 'photos' | 'checklist' | 'reports' | 'files' | 'activity';
+type Tab = 'photos' | 'checklist' | 'galleries' | 'reports' | 'files' | 'activity';
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: 'photos', label: 'Photos', icon: Camera },
   { key: 'checklist', label: 'Checklist', icon: CheckSquare },
+  { key: 'galleries', label: 'Galleries', icon: FolderOpen },
   { key: 'reports', label: 'Reports', icon: FileText },
   { key: 'files', label: 'Files', icon: FolderOpen },
   { key: 'activity', label: 'Activity', icon: Activity },
@@ -31,6 +33,7 @@ const JobDetailWorkspace: React.FC = () => {
   const { jobId, orgSlug } = useParams<{ jobId: string; orgSlug: string }>();
   const navigate = useNavigate();
   const numericJobId = Number(jobId);
+  const isValidId = !isNaN(numericJobId) && jobId !== 'undefined';
 
   const [job, setJob] = useState<Job | null>(null);
   const [photos, setPhotos] = useState<JobPhoto[]>([]);
@@ -39,6 +42,12 @@ const JobDetailWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [showShare, setShowShare] = useState(false);
+
+  useEffect(() => {
+    if (!isValidId) {
+      navigate(`/org/${orgSlug}/job-cam`);
+    }
+  }, [isValidId, navigate, orgSlug]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,7 +165,7 @@ const JobDetailWorkspace: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden bg-gray-50/50 dark:bg-gray-900/50">
+      <div className="flex-1 overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 flex flex-col">
         {activeTab === 'photos' && (
           <PhotosTab
             jobId={numericJobId}
@@ -169,6 +178,9 @@ const JobDetailWorkspace: React.FC = () => {
         )}
         {activeTab === 'checklist' && (
           <ChecklistTab jobId={numericJobId} photos={photos} files={files} />
+        )}
+        {activeTab === 'galleries' && (
+          <GalleriesTab jobId={numericJobId} />
         )}
         {activeTab === 'reports' && (
           <ReportsTab jobId={numericJobId} />

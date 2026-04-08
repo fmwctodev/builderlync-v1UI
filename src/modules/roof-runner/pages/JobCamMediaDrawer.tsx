@@ -4,14 +4,15 @@ import {
   Star, Shield, Briefcase, Tag,
   Clock, Trash2, Download, ZoomIn, History, RefreshCw
 } from 'lucide-react';
-import { updateJobPhoto, logAuditAction, fetchAuditLog } from '../services/jobCamApi';
+import { updateJobPhoto, logAuditAction, fetchAuditLog, deleteJobPhoto } from '../services/jobCamApi';
 import type { JobPhoto, JobMediaAuditLog, PhotoCategory, PhotoPhase, ReviewStatus } from '../types/jobCam';
 import { format } from 'date-fns';
 
-interface Props {
+interface JobCamMediaDrawerProps {
   photo: JobPhoto;
   onClose: () => void;
   onUpdate: (updated: JobPhoto) => void;
+  onDelete?: (id: string) => void;
   onNext?: () => void;
   onPrev?: () => void;
 }
@@ -27,7 +28,7 @@ const phaseLabel: Record<PhotoPhase, string> = {
   claim: 'Claim',
 };
 
-const categoryColors: Record<PhotoCategory, string> = {
+const categoryColors: Partial<Record<PhotoCategory, string>> = {
   before: 'bg-primary-100 text-primary-700',
   during: 'bg-amber-100 text-amber-700',
   after: 'bg-green-100 text-green-700',
@@ -37,7 +38,7 @@ const categoryColors: Record<PhotoCategory, string> = {
   claim: 'bg-orange-100 text-orange-700',
 };
 
-const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, onPrev }) => {
+const JobCamMediaDrawer: React.FC<JobCamMediaDrawerProps> = ({ photo, onClose, onUpdate, onDelete, onNext, onPrev }) => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'audit'>('details');
@@ -119,17 +120,65 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
   const addTag = () => {
     const t = tagInput.trim();
     if (t && !form.tags.includes(t)) {
-      setForm(f => ({ ...f, tags: [...f.tags, t] }));
+      setForm((f: any) => ({ ...f, tags: [...f.tags, t] }));
     }
     setTagInput('');
   };
 
   const removeTag = (tag: string) => {
-    setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }));
+    setForm((f: any) => ({ ...f, tags: f.tags.filter((t: string) => t !== tag) }));
   };
 
-  const toggleReviewStatus = (status: ReviewStatus) => {
-    setForm(f => ({ ...f, review_status: f.review_status === status ? 'pending' : status }));
+  const toggleReviewStatus = async (status: ReviewStatus) => {
+    const nextStatus = form.review_status === status ? 'pending' : status;
+    setForm(f => ({ ...f, review_status: nextStatus }));
+    
+    // Immediate save for review status
+    setSaving(true);
+    try {
+      if (nextStatus !== photo.review_status) {
+        await logAuditAction(photo.id, 'review_status_change', { review_status: photo.review_status }, { review_status: nextStatus });
+        const updated = await updateJobPhoto(photo.id, { review_status: nextStatus });
+        onUpdate(updated);
+      }
+    } catch (e) {
+      console.error('Review update failed:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Permanently delete this media?')) return;
+    setSaving(true);
+    try {
+      await deleteJobPhoto(photo.id);
+      onDelete?.(photo.id);
+      onClose();
+    } catch (e) {
+      console.error('Delete failed:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(photo.file_url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = photo.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download failed:', e);
+      // Fallback
+      window.open(photo.file_url, '_blank');
+    }
   };
 
   return (
@@ -147,16 +196,13 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href={photo.file_url}
-              download={photo.file_name}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={handleDownload}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
               title="Download Original"
             >
               <Download size={18} />
-            </a>
+            </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors">
               <X size={18} />
             </button>
@@ -469,15 +515,12 @@ const JobCamMediaDrawer: React.FC<Props> = ({ photo, onClose, onUpdate, onNext, 
 
         <div className="p-5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-3">
              <button
-               onClick={() => {
-                if(confirm("Confirm deletion of this photo and all associated metadata?")) {
-                    alert("Delete functionality pending service integration.");
-                }
-               }}
-               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all font-bold uppercase tracking-widest text-xs"
+               onClick={handleDelete}
+               disabled={saving}
+               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-all font-bold uppercase tracking-widest text-xs disabled:opacity-50"
              >
                 <Trash2 size={16} />
-                Delete Media
+                {saving ? 'Deleting...' : 'Delete Media'}
              </button>
         </div>
       </div>
