@@ -307,11 +307,13 @@ export const proposalsApi = {
     }
   },
 
-  async refineAiProposal(proposalId: string, userMessage: string): Promise<GenerateAiProposalResponse> {
+  async refineAiProposal(proposalId: string, userMessage: string, supplierContext?: any, selectedItem?: any): Promise<GenerateAiProposalResponse> {
     try {
       const resp = await axios.post(`${API_BASE_URL}/proposals/ai-refine`, {
         proposal_id: proposalId,
         user_message: userMessage,
+        supplier_context: supplierContext,
+        selected_item: selectedItem,
       }, {
         headers: getAuthHeaders(),
       });
@@ -322,6 +324,20 @@ export const proposalsApi = {
     } catch (err) {
       console.error('Error refining AI proposal:', err);
       throw err;
+    }
+  },
+  
+  async searchCatalogItems(query: string): Promise<{ data: any[] }> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/catalog/items?search=${encodeURIComponent(query)}&limit=20`, {
+        headers: getAuthHeaders(),
+      });
+      return {
+        data: response.data.data?.items || []
+      };
+    } catch (error) {
+      console.error('Error searching catalog items:', error);
+      return { data: [] };
     }
   },
 };
