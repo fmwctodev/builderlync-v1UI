@@ -234,6 +234,32 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
 
                     {/* Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {supplier === 'SRS' && orderDetails.srs_response && (
+                            <div className="md:col-span-2 bg-[#050914] p-5 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <FileText className="w-12 h-12 text-white" />
+                                </div>
+                                <h4 className="flex items-center gap-2.5 text-[11px] font-black text-white uppercase tracking-[0.2em] mb-4">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                                    System Integration Details
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Transaction ID</span>
+                                        <code className="text-[14px] font-mono font-bold text-primary-500 tracking-tight">
+                                            {orderDetails.srs_response.transactionID || orderDetails.transaction_id || '---'}
+                                        </code>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">SRS Order ID</span>
+                                        <code className="text-[14px] font-mono font-bold text-white tracking-tight">
+                                            {orderDetails.srs_response.orderID || '---'}
+                                        </code>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
                             <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-3">
                                 <MapPin className="h-4 w-4 text-gray-500" /> Delivery Address

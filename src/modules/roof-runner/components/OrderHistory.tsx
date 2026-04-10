@@ -212,7 +212,27 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
                         </div>
                       </div>
 
-                      {((order as any).confirmationNumber || (order as any).confirmationId) && (
+                      {/* SRS Specific Technical IDs */}
+                      {supplier === 'SRS' && (order as any).srs_response && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3">
+                          <div className="text-[10px] font-bold">
+                            <span className="text-gray-400 uppercase tracking-widest mr-1.5">TX ID:</span>
+                            <span className="text-primary-600 dark:text-primary-400 font-mono text-[12px] tracking-tight">
+                              {(order as any).srs_response.transactionID || (order as any).transaction_id}
+                            </span>
+                          </div>
+                          {(order as any).srs_response.orderID && (
+                            <div className="text-[10px] font-bold">
+                              <span className="text-gray-400 uppercase tracking-widest mr-1.5">SRS ID:</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-mono text-[12px] tracking-tight">
+                                {(order as any).srs_response.orderID}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {supplier !== 'SRS' && ((order as any).confirmationNumber || (order as any).confirmationId) && (
                         <div className="text-sm text-gray-500 mb-2">
                           Confirmation #: <span className="text-gray-700 dark:text-gray-300">{(order as any).confirmationNumber || (order as any).confirmationId}</span>
                         </div>

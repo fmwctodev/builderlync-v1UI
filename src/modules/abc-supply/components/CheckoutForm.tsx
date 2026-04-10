@@ -287,6 +287,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             />
           </div>
 
+          {supplier === 'SRS' && (
+            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-lg p-3">
+              <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed italic">
+                <strong>Tax & Delivery Disclaimer:</strong> Tax and delivery fees are estimated in this interface. Final calculation is performed by SRS Distribution upon order submission.
+              </p>
+            </div>
+          )}
+
           <div className="flex space-x-4 pt-4">
             <button
               type="button"

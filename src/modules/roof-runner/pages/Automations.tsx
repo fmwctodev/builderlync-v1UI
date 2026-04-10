@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, X, Filter, Search, Folder, ExternalLink, Sparkles, MoreVertical, Plus, Settings } from "lucide-react";
+import { ChevronDown, ChevronRight, X, Filter, Search, Folder, ExternalLink, Sparkles, MoreVertical, Plus, Settings, Zap } from "lucide-react";
 import AutomationModal from '../components/AutomationModal';
 import AutomationEditor from '../components/AutomationEditor';
 import WorkflowTemplateLibraryModal from '../components/WorkflowTemplateLibraryModal';
+import AutomationOverview from '../components/AutomationOverview';
 import { WorkflowTemplate } from '../../../shared/store/services/workflowTemplateApi';
 import ComingSoonOverlay from '../../../shared/components/ComingSoonOverlay';
 
 export default function Automations() {
+  const [mainTab, setMainTab] = useState('Workflows');
   const [activeTab, setActiveTab] = useState('All Workflows');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
@@ -152,94 +154,143 @@ export default function Automations() {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
-        <div className="flex justify-between items-center py-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workflow List</h1>
+      {/* Top Header - Premium Midnight Theme */}
+      <div className="bg-[#050914] px-6 py-3.5 flex items-center justify-between border-b border-white/5">
+        <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setShowFolderModal(true)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              Create Folder
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-              onClick={() => console.log('Build using AI clicked')}
-            >
-              <Sparkles className="w-4 h-4" />
-              Build using AI
-            </button>
-            <div className="relative">
-              <button 
-                onClick={() => setShowCreateDropdown(!showCreateDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+             <Zap className="w-5 h-5 text-primary-500 fill-primary-500/20" />
+             <h1 className="text-lg font-black text-white uppercase tracking-tighter">Automation</h1>
+          </div>
+          
+          <div className="flex bg-white/5 p-1 rounded-2xl gap-1 border border-white/5">
+            {[
+              { id: 'Workflows', label: 'Workflows' },
+              { id: 'Overview', label: 'Overview', beta: true },
+              { id: 'Global Settings', label: 'Global Workflow Settings' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setMainTab(tab.id)}
+                className={`relative px-5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2.5 ${
+                  mainTab === tab.id
+                    ? 'bg-white text-black shadow-xl'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
               >
-                <Plus className="w-4 h-4" />
-                Create Workflow
-                <ChevronDown className="w-4 h-4" />
+                {tab.label}
+                {tab.beta && (
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter transition-all ${
+                    mainTab === tab.id ? 'bg-amber-400 text-black' : 'bg-primary-600 text-white'
+                  }`}>
+                    Beta
+                  </span>
+                )}
               </button>
-              
-              {showCreateDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-                  <div className="py-1">
-                    <button
-                      onClick={() => { 
-                        setShowCreateDropdown(false); 
-                        navigate('builder');
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                    >
-                      Start from Scratch
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCreateDropdown(false);
-                        setShowTemplateModal(true);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                    >
-                      Select from Template
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-8">
-          {[
-            { id: 'All Workflows', label: 'All Workflows' },
-            { id: 'Needs Review', label: `Needs Review (0)` },
-            { id: 'Deleted', label: 'Deleted' },
-            { id: 'smart-list', label: 'smart_list.model...' },
-            { id: 'new-smart-list', label: '+ New Smart List', secondary: true }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === 'new-smart-list') {
-                  setActiveTab('smart-list');
-                  setIsDrawerOpen(true);
-                } else {
-                  setActiveTab(tab.id);
-                }
-              }}
-              className={`pb-3 text-sm font-medium border-b-2 transition-all ${
-                activeTab === tab.id
-                  ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              } ${tab.secondary ? 'text-gray-400 font-normal hover:text-primary-600' : ''}`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        
+        <div className="flex items-center gap-6">
+           {/* Automation Updates Indicator */}
+           <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-2xl border border-white/5 transition-all group">
+             <div className="relative">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                <div className="absolute inset-0 bg-blue-400 animate-ping opacity-20 rounded-full" />
+             </div>
+             <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest group-hover:text-white transition-colors">Automation Updates</span>
+           </button>
         </div>
       </div>
 
+      {mainTab === 'Workflows' && (
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+          <div className="flex justify-between items-center py-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workflow List</h1>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowFolderModal(true)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Create Folder
+              </button>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                onClick={() => console.log('Build using AI clicked')}
+              >
+                <Sparkles className="w-4 h-4" />
+                Build using AI
+              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Workflow
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                
+                {showCreateDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                    <div className="py-1">
+                      <button
+                        onClick={() => { 
+                          setShowCreateDropdown(false); 
+                          navigate('builder');
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        Start from Scratch
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateDropdown(false);
+                          setShowTemplateModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        Select from Template
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-8">
+            {[
+              { id: 'All Workflows', label: 'All Workflows' },
+              { id: 'Needs Review', label: `Needs Review (0)` },
+              { id: 'Deleted', label: 'Deleted' },
+              { id: 'smart-list', label: 'smart_list.model...' },
+              { id: 'new-smart-list', label: '+ New Smart List', secondary: true }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === 'new-smart-list') {
+                    setActiveTab('smart-list');
+                    setIsDrawerOpen(true);
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                className={`pb-3 text-sm font-medium border-b-2 transition-all ${
+                  activeTab === tab.id
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                } ${tab.secondary ? 'text-gray-400 font-normal hover:text-primary-600' : ''}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto p-6 relative">
-        {activeTab === 'All Workflows' && (
+        {mainTab === 'Workflows' && activeTab === 'All Workflows' && (
           <>
             {/* Controls */}
             <div className="flex justify-between items-center mb-6">
@@ -354,7 +405,7 @@ export default function Automations() {
           </>
         )}
 
-        {activeTab === 'Needs Review' && (
+        {mainTab === 'Workflows' && activeTab === 'Needs Review' && (
           <>
             <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">
               Workflows with errors in the past 30 days which are not resolved are listed below.
@@ -386,7 +437,7 @@ export default function Automations() {
           </>
         )}
 
-        {activeTab === 'Deleted' && (
+        {mainTab === 'Workflows' && activeTab === 'Deleted' && (
           <>
             <div className="flex justify-between items-center mb-6">
               <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -430,7 +481,7 @@ export default function Automations() {
           </>
         )}
 
-        {activeTab === 'smart-list' && (
+        {mainTab === 'Workflows' && activeTab === 'smart-list' && (
           <>
             <div className="flex justify-between items-center mb-6">
               <div className="flex gap-2">
@@ -501,6 +552,48 @@ export default function Automations() {
               </table>
             </div>
           </>
+        )}
+
+        {mainTab === 'Overview' && <AutomationOverview />}
+
+        {mainTab === 'Global Settings' && (
+          <div className="max-w-[800px] mx-auto py-12 space-y-8 animate-in fade-in duration-500">
+             <div className="flex items-center justify-between border-b pb-6">
+                <div>
+                   <h2 className="text-2xl font-bold text-gray-900">Global Workflow Settings</h2>
+                   <p className="text-gray-500 mt-1 font-medium">Manage system-wide defaults for all automations</p>
+                </div>
+                <button className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm shadow-xl shadow-primary-500/20 hover:bg-primary-700 active:scale-95 transition-all">Save Changes</button>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-8">
+                <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+                   <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                     <Settings className="w-4 h-4 text-primary-500" /> General Defaults
+                   </h3>
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                         <div>
+                            <p className="text-sm font-bold text-gray-700">Allow Multiple Enrollment</p>
+                            <p className="text-xs text-gray-500">Enable contacts to enter multiple times</p>
+                         </div>
+                         <div className="w-10 h-5 bg-gray-200 rounded-full relative">
+                            <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                         </div>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                         <div>
+                            <p className="text-sm font-bold text-gray-700">Stop on Response</p>
+                            <p className="text-xs text-gray-500">Halt workflow if client replies</p>
+                         </div>
+                         <div className="w-10 h-5 bg-primary-600 rounded-full relative">
+                            <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
         )}
       </div>
 
