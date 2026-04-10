@@ -1074,7 +1074,7 @@ export default function TemplateBuilder({ templateId, onClose }: TemplateBuilder
         name: templateName,
         content,
       });
-      console.log("Template saved successfully!");
+      window.dispatchEvent(new CustomEvent('template-saved'));
     } catch (error) {
       console.error("Error saving template:", error);
     } finally {
