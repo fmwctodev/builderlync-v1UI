@@ -28,12 +28,15 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
   const autocompleteInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const init = async () => {
       setLoading(true);
       try {
         if (supplier === 'ABC Supply') {
           // 1. Fetch ShipTos (User's accounts)
           const accounts = await abcSupplyApi.getShipTos();
+          if (!isMounted) return;
           setShipTos(accounts);
 
           // 2. Load persisted selections
@@ -45,9 +48,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
             const matchedAccount = accounts.find(a => a.number === parsedShipTo.number);
             if (matchedAccount) {
               setSelectedShipTo(matchedAccount);
-              // If ShipTo selected, set available branches
               const branches = matchedAccount.branches || [];
-              // Filter to only 'abc' storefront if needed, or take all
               setAvailableBranches(branches);
 
               if (savedBranch) {
@@ -59,48 +60,71 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
               }
             }
           } else if (accounts.length === 1) {
-            // Auto-select if only one account
             HandleShipToSelect(accounts[0]);
           }
         } else if (supplier === 'SRS') {
-          // SRS Branch Logic
+          // SRS Branch Logic - Only fetch if we have coordinates
           const lat = shippingLocation?.lat;
           const lng = shippingLocation?.lng;
-          
-          const response = await srsApi.getBranches(lat, lng);
-          const branches = response.data?.data || response.data || [];
-          setAvailableBranches(branches);
-          
-          const savedBranch = localStorage.getItem('srs_selected_branch');
-          if (savedBranch) {
-            try {
-              const parsedBranch = JSON.parse(savedBranch);
-              const matchedBranch = branches.find((b: any) => b.id === parsedBranch.id || b.branchCode === parsedBranch.id);
-              if (matchedBranch) {
-                setSelectedBranch(matchedBranch);
+
+          if (typeof lat === 'number' && typeof lng === 'number' && (Math.abs(lat) > 0.0001 || Math.abs(lng) > 0.0001)) {
+            const response = await srsApi.getBranches(lat, lng);
+            if (!isMounted) return;
+
+            if (response && response.success) {
+              const branches = response.data || [];
+              const branchesArray = Array.isArray(branches) ? branches : (Array.isArray(response.data?.data) ? response.data.data : []);
+              setAvailableBranches(branchesArray);
+              
+              if (branchesArray.length > 0) {
+                const savedBranch = localStorage.getItem('srs_selected_branch');
+                if (savedBranch) {
+                  try {
+                    const parsedBranch = JSON.parse(savedBranch);
+                    const matchedBranch = branchesArray.find((b: any) => (b.id === parsedBranch.id || b.branchCode === parsedBranch.id || b.number === parsedBranch.id));
+                    if (matchedBranch) {
+                      setSelectedBranch(matchedBranch);
+                    }
+                  } catch (e) {}
+                }
               }
-            } catch (e) {
-              console.error(e);
+            } else {
+              setAvailableBranches([]);
             }
+          } else {
+            // No coordinates, clear branches
+            setAvailableBranches([]);
           }
         }
       } catch (error) {
-        console.error("Failed to load locator data", error);
+        if (isMounted) {
+          console.error("Failed to load locator data", error);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     init();
+
+    return () => {
+      isMounted = false;
+    };
   }, [supplier, shippingLocation?.lat, shippingLocation?.lng]);
 
   const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
-    if (isFromAutocomplete && lat && lng) {
+    if (isFromAutocomplete && typeof lat === 'number' && typeof lng === 'number') {
       const loc = { address, lat, lng };
       setShippingLocation(loc);
       localStorage.setItem('srs_shipping_location', JSON.stringify(loc));
     } else {
-      // Just updating the text in the input
-      setShippingLocation(prev => prev ? { ...prev, address } : { address, lat: 0, lng: 0 });
+      // Manual typing - keep existing coordinates if they exist to prevent UI reset
+      setShippingLocation(prev => ({
+        address,
+        lat: prev?.lat ?? 0,
+        lng: prev?.lng ?? 0
+      }));
     }
   };
 
@@ -187,14 +211,7 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
     setPagination(prev => ({ ...prev, page: 1 }));
   }, [searchQuery]);
 
-  if (loading) {
-    return (
-      <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-lg">
-        <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-gray-500">Loading your account details...</p>
-      </div>
-    );
-  }
+  // Removed top-level loading return to prevent flickering
 
   // If no ShipTos found for ABC
   if (supplier === 'ABC Supply' && shipTos.length === 0) {
@@ -324,9 +341,41 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
                   />
                 </div>
 
-                {paginatedBranches.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No branches found for "{searchQuery}".
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                    <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-medium text-gray-400 uppercase tracking-widest">Fetching local branches...</p>
+                  </div>
+                ) : isLocating ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-primary-500/50">
+                    <div className="relative mb-4">
+                      <Navigation className="w-12 h-12 animate-pulse" />
+                      <div className="absolute inset-0 bg-primary-400/20 rounded-full animate-ping" />
+                    </div>
+                    <p className="text-sm font-bold uppercase tracking-widest">Determining Location...</p>
+                    <p className="text-xs text-gray-400 mt-2">Checking GPS signal for nearby branches</p>
+                  </div>
+                ) : supplier === 'SRS' && (!shippingLocation?.lat || !shippingLocation?.lng) ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-blue-500/50">
+                    <Navigation className="w-12 h-12 mb-4 animate-bounce" />
+                    <p className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white mb-2">Ready to locate</p>
+                    <p className="text-xs text-gray-400 mb-6 max-w-[200px] text-center">Enter an address above or use your GPS to find stores near you.</p>
+                    <button
+                      onClick={handleUseCurrentLocation}
+                      disabled={isLocating}
+                      className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm shadow-xl shadow-primary-600/20 active:scale-95 transition-all group"
+                    >
+                      <Navigation className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                      Auto-Detect My Location
+                    </button>
+                  </div>
+                ) : paginatedBranches.length === 0 ? (
+                  <div className="text-center py-12 px-6">
+                    <X className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">
+                      {searchQuery ? `No branches found for "${searchQuery}"` : "No SRS branches found in this area."}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">Try increasing the search radius or checking a different zip code.</p>
                   </div>
                 ) : (
                   <>

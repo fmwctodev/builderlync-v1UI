@@ -48,9 +48,14 @@ export const srsApi = {
 
   async getBranches(latitude?: number, longitude?: number, radius = 50) {
     const params = new URLSearchParams();
-    if (latitude) params.append('latitude', latitude.toString());
-    if (longitude) params.append('longitude', longitude.toString());
-    if (radius) params.append('radius', radius.toString());
+    
+    const hasCoords = typeof latitude === 'number' && typeof longitude === 'number';
+    
+    if (hasCoords) {
+      params.append('latitude', latitude.toString());
+      params.append('longitude', longitude.toString());
+      if (radius) params.append('radius', radius.toString());
+    }
     
     const queryString = params.toString();
     const url = queryString ? `${API_BASE_URL}/srs/branches?${queryString}` : `${API_BASE_URL}/srs/branches`;
