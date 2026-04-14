@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ExternalLink, Building2, Phone, Mail, MapPin, Hash, Calendar, X, RefreshCw, CheckCircle2, User } from 'lucide-react';
+import { Check, ExternalLink, Building2, Phone, Mail, MapPin, Hash, Calendar, X, RefreshCw, CheckCircle2, User, Sparkles, Copy, Monitor } from 'lucide-react';
 import axios from 'axios';
 import { connectQuickBooks, getQuickBooksStatus, disconnectQuickBooks } from '../../../../shared/store/services/quickbooksApi';
 import { getTwilioStatus, TwilioStatus } from '../../../../shared/store/services/twilioApi';
@@ -50,6 +50,8 @@ const Integrations: React.FC = () => {
   const [showTwilioModal, setShowTwilioModal] = React.useState(false);
   const [showSrsModal, setShowSrsModal] = React.useState(false);
   const [showEagleViewModal, setShowEagleViewModal] = React.useState(false);
+  const [showMcpModal, setShowMcpModal] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
 
   React.useEffect(() => {
@@ -344,6 +346,8 @@ const Integrations: React.FC = () => {
         const data = await res.json();
         if (data.data?.authUrl) window.location.href = data.data.authUrl;
       } catch (err) { console.error(err); } finally { setLoading(null); }
+    } else if (integrationId === 'mcp') {
+      setShowMcpModal(true);
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -581,6 +585,13 @@ const Integrations: React.FC = () => {
       connected: oneDriveStatus.connected,
       companyInfo: oneDriveStatus.email ? { Email: oneDriveStatus.email } : null,
     },
+    {
+      id: 'mcp',
+      name: 'Builderlync MCP',
+      description: 'Model Context Protocol (MCP) allows your AI tools (like Claude) to securely access your Builderlync data.',
+      category: 'Developer',
+      connected: false,
+    },
   ];
 
   const getCategoryColor = (category: string) => {
@@ -591,6 +602,7 @@ const Integrations: React.FC = () => {
       'Imaging': 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300',
       'Marketing': 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-300',
       'Productivity': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300',
+      'Developer': 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300',
     };
     return colors[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   };
@@ -818,7 +830,7 @@ const Integrations: React.FC = () => {
 
               {/* Extra fields from SRS API response */}
               {srsStatus.profile.customer_details && (() => {
-                const knownKeys = ['customerName','homeBranch','email','emailAddress','phone','phoneNumber','city','state','validIndicator'];
+                const knownKeys = ['customerName', 'homeBranch', 'email', 'emailAddress', 'phone', 'phoneNumber', 'city', 'state', 'validIndicator'];
                 const extras = Object.entries(srsStatus.profile.customer_details).filter(([k, v]) => !knownKeys.includes(k) && v !== null && v !== undefined && v !== '');
                 return extras.length > 0 ? (
                   <details className="mt-1">
@@ -864,6 +876,122 @@ const Integrations: React.FC = () => {
         onSuccess={() => fetchEagleViewStatus()}
         currentCredits={eagleViewStatus.credits}
       />
+
+      {showMcpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            <div className="flex-shrink-0 bg-gradient-to-br from-primary-600 to-primary-700 px-6 py-4 text-white flex items-center gap-4">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-xl font-bold">Builderlync MCP Integration</h2>
+                <p className="text-primary-50 text-xs">Connect your AI assistant to your CRM data</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600">
+                    <Monitor className="w-4 h-4" />
+                  </div>
+                  Setup Instructions
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950 flex items-center justify-center text-[10px] font-bold text-primary-600 mt-0.5 border border-primary-100 dark:border-primary-900">1</div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Download and install <a href="https://claude.ai/download" target="_blank" className="text-primary-600 hover:underline font-medium">Claude Desktop</a>.
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950 flex items-center justify-center text-[10px] font-bold text-primary-600 mt-0.5 border border-primary-100 dark:border-primary-900">2</div>
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Open your configuration file located at:</p>
+                      <code className="block p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700 text-[10px] font-mono text-gray-500 break-all">
+                        %APPDATA%\Claude\claude_desktop_config.json
+                      </code>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-50 dark:bg-primary-950 flex items-center justify-center text-[10px] font-bold text-primary-600 mt-0.5 border border-primary-100 dark:border-primary-900">3</div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Copy the JSON below and paste it into the <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">mcpServers</code> section.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Configuration JSON</h3>
+                  <button
+                    onClick={() => {
+                      const mcpUrl = import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp.builderlync.com/api/v1/mcp';
+                      const token = localStorage.getItem('token') || 'YOUR_AUTH_TOKEN';
+                      const json = JSON.stringify({
+                        "mcpServers": {
+                          "builderlync": {
+                            "command": "npx",
+                            "args": ["mcp-remote", mcpUrl, "--transport", "http", "--header", `Authorization:Bearer ${token}`]
+                          }
+                        },
+                        "preferences": {
+                          "coworkScheduledTasksEnabled": false,
+                          "ccdScheduledTasksEnabled": false,
+                          "coworkWebSearchEnabled": true,
+                          "sidebarMode": "chat"
+                        }
+                      }, null, 2);
+                      navigator.clipboard.writeText(json);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${copied
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                      }`}
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? 'Copied!' : 'Copy JSON'}
+                  </button>
+                </div>
+                <div className="relative group">
+                  <pre className="bg-gray-900 text-gray-300 p-4 rounded-xl text-[10px] font-mono border border-gray-800 shadow-inner max-h-[160px] overflow-auto">
+                    {`{
+  "mcpServers": {
+    "builderlync": {
+      "command": "npx",
+      "args": [
+        "mcp-remote", 
+        "${(import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp...').substring(0, 30)}...",
+        "--transport", "http",
+        "--header", "Authorization:Bearer ${localStorage.getItem('token')?.substring(0, 15)}..."
+      ]
+    }
+  },
+  "preferences": {
+    "coworkWebSearchEnabled": true,
+    ...
+  }
+}`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => setShowMcpModal(false)}
+                className="flex-1 rounded-xl bg-primary-600 hover:bg-primary-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-200 dark:shadow-none transition-all active:scale-[0.98]"
+              >
+                Close & Start Integration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
