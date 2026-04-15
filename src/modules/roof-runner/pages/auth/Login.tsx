@@ -15,6 +15,12 @@ const Login: React.FC = () => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const { loading, error, user, requires2FA } = useAppSelector((state) => state.auth);
+  const hasBillingAccess = !!(
+    user?.is_beta_user ||
+    user?.has_active_subscription ||
+    user?.subscription_status === 'active' ||
+    user?.subscription_status === 'trialing'
+  );
   const successMessage = location.state?.message;
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -34,15 +40,20 @@ const Login: React.FC = () => {
     if (requires2FA) {
       setShow2FAModal(true);
     } else if (user) {
+      if (!hasBillingAccess) {
+        navigate(`/billing?email=${encodeURIComponent(user.email || email)}`, { replace: true });
+        return;
+      }
+
       const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
       if (orgSlug) {
         localStorage.setItem('currentOrganizationSlug', orgSlug);
-        navigate(`/org/${orgSlug}`);
+        navigate(`/org/${orgSlug}`, { replace: true });
       } else {
-        navigate('/auth/login');
+        navigate('/auth/login', { replace: true });
       }
     }
-  }, [user, requires2FA, navigate]);
+  }, [user, requires2FA, navigate, email, hasBillingAccess]);
 
   useEffect(() => {
     if (successMessage) {
