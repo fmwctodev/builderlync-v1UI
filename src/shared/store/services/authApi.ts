@@ -60,6 +60,8 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   is_beta_user?: boolean;
+  subscription_status?: string | null;
+  has_active_subscription?: boolean;
   user_metadata?: {
     organization_id?: string | number;
     [key: string]: any;

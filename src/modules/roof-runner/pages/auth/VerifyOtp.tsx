@@ -13,6 +13,12 @@ const VerifyOtp: React.FC = () => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const { loading, error, user } = useAppSelector((state) => state.auth);
+  const hasBillingAccess = !!(
+    user?.is_beta_user ||
+    user?.has_active_subscription ||
+    user?.subscription_status === 'active' ||
+    user?.subscription_status === 'trialing'
+  );
   const email = location.state?.email;
   const from = location.state?.from || 'signup';
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -27,9 +33,14 @@ const VerifyOtp: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      if (hasBillingAccess) {
+        navigate('/', { replace: true });
+        return;
+      }
+
+      navigate(`/billing?email=${encodeURIComponent(email)}`, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, email, navigate, hasBillingAccess]);
 
   useEffect(() => {
     if (error) {

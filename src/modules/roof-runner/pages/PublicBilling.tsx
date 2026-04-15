@@ -1,9 +1,33 @@
-import React from 'react';
-import { Check, X, Building, Zap, Rocket, HelpCircle } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Check, X, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from '../../../shared/store/hooks';
+import { logoutAndRedirect } from '../../../shared/utils/auth';
 
 const PublicBilling: React.FC = () => {
   const navigate = useNavigate();
+  const { user, token } = useAppSelector((state) => state.auth);
+  console.log("user", user);
+  const hasBillingAccess = !!(
+    user?.is_beta_user ||
+    user?.has_active_subscription ||
+    user?.subscription_status === 'active' ||
+    user?.subscription_status === 'trialing'
+  );
+
+  useEffect(() => {
+    if (!user || !token || !hasBillingAccess) {
+      return;
+    }
+
+    const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+    if (orgSlug) {
+      navigate(`/org/${orgSlug}`, { replace: true });
+      return;
+    }
+
+    navigate('/', { replace: true });
+  }, [user, token, hasBillingAccess, navigate]);
 
   const plans = [
     {
@@ -112,6 +136,17 @@ const PublicBilling: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div className="flex justify-end mb-8">
+          <button
+            type="button"
+            onClick={logoutAndRedirect}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-white/10"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
@@ -129,8 +164,8 @@ const PublicBilling: React.FC = () => {
             <div
               key={idx}
               className={`relative rounded-2xl p-8 border transition-all duration-300 ${plan.highlight
-                  ? 'bg-[#151515] border-red-600 shadow-2xl shadow-red-900/10 scale-105 z-10'
-                  : 'bg-[#111111] border-gray-800 hover:border-gray-700'
+                ? 'bg-[#151515] border-red-600 shadow-2xl shadow-red-900/10 scale-105 z-10'
+                : 'bg-[#111111] border-gray-800 hover:border-gray-700'
                 }`}
             >
               {plan.tag && (
@@ -151,8 +186,8 @@ const PublicBilling: React.FC = () => {
 
               <button
                 className={`w-full py-4 rounded-xl font-bold transition-all ${plan.highlight
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
-                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20'
+                  : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                   }`}
                 onClick={() => {
                   if (plan.name === 'Enterprise') window.location.href = 'mailto:sales@builderlync.com';

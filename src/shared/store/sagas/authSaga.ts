@@ -17,22 +17,11 @@ function* registerSaga(action: PayloadAction<RegisterRequest>): Generator<any, v
     const response = yield call(authApi.register, action.payload);
     console.log('Registration response:', response);
 
-    if (response.message === 'PENDING_PAYMENT') {
-      console.log('Redirecting to billing for payment');
-      window.location.href = `/billing?email=${encodeURIComponent(action.payload.email)}`;
-      return;
-    }
-
     console.log('Setting registration email:', action.payload.email);
     yield put(registerSuccess({ message: response.message, email: action.payload.email }));
   } catch (error: any) {
     console.error('Registration error in saga:', error);
     const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
-
-    if (errorMessage === 'INVALID_BETA_CODE') {
-      window.location.href = '/billing';
-      return;
-    }
 
     yield put(registerFailure(errorMessage));
   }
@@ -98,6 +87,17 @@ function* verifyRegistrationOtpSaga(action: PayloadAction<VerifyRegistrationOtpR
     const response = yield call(authApi.verifyRegistrationOtp, action.payload);
     console.log(response)
     yield put(verifyRegistrationOtpSuccess(response.data));
+
+    const hasBillingAccess = !!(
+      response.data.user?.is_beta_user ||
+      response.data.user?.has_active_subscription ||
+      response.data.user?.subscription_status === 'active' ||
+      response.data.user?.subscription_status === 'trialing'
+    );
+
+    if (!hasBillingAccess) {
+      window.location.href = `/billing?email=${encodeURIComponent(action.payload.email)}`;
+    }
   } catch (error: any) {
     console.log('OTP verification error:', error);
     const message = error.response?.data?.error || error.response?.data?.message || error.message || error || 'OTP verification failed';
