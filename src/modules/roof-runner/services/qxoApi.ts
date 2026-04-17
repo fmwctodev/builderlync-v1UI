@@ -25,6 +25,7 @@ export const qxoApi = {
     if (params.branchId) searchParams.append('branchId', params.branchId);
     if (params.accountId) searchParams.append('accountId', params.accountId);
     if (params.pageSize) searchParams.append('pageSize', params.pageSize.toString());
+    searchParams.append('includePrices', 'true');
     
     const response = await fetch(`${API_BASE_URL}/qxo/products?${searchParams.toString()}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }

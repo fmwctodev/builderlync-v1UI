@@ -9,31 +9,46 @@ import posthog from 'posthog-js';
 export function useFeatureFlag(flag: string): boolean {
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     if (!posthog.__loaded) {
-      console.log(`[FeatureFlag] PostHog not loaded yet, defaulting "${flag}" to TRUE`);
-      return true;
+      // Don't log this on every mount to avoid spam, but keep it for the very first check if needed
+      return false;
     }
     const val = posthog.isFeatureEnabled(flag);
-    console.log(`[FeatureFlag] Initial check for "${flag}":`, val);
-    return val === undefined ? true : Boolean(val);
+    // Return false by default if undefined or not found
+    return val === undefined ? false : Boolean(val);
   });
 
   useEffect(() => {
-    console.log(`[FeatureFlag] Registering onFeatureFlags listener for "${flag}"`);
-
-    posthog.onFeatureFlags(() => {
+    const checkFlag = () => {
       const val = posthog.isFeatureEnabled(flag);
       const resolved = val === undefined ? false : Boolean(val);
-
-      // Log the full PostHog state for debugging
-      console.log(`[FeatureFlag] Flags loaded from PostHog:`);
-      console.log(`  - Flag key:      "${flag}"`);
-      console.log(`  - Raw value:     `, val);
-      console.log(`  - Resolved:      `, resolved);
-      console.log(`  - Distinct ID:   `, posthog.get_distinct_id());
       
+      console.log(`[FeatureFlag] Update for "${flag}":`, {
+        raw: val,
+        resolved,
+        distinctId: posthog.get_distinct_id()
+      });
+
       setIsEnabled(resolved);
-    });
+    };
+
+    // Initial check in case it loaded between state init and effect
+    if (posthog.__loaded) {
+      checkFlag();
+    }
+
+    // Register listener for flag updates
+    const unregister = posthog.onFeatureFlags(checkFlag);
+    
+    // Cleanup listener on unmount
+    return () => {
+      if (typeof unregister === 'function') {
+        unregister();
+      }
+    };
   }, [flag]);
+
+  return isEnabled;
+}
 
   return isEnabled;
 }

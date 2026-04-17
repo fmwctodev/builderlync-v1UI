@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Plan, Subscription, Invoice, RevenueMetrics } from '../types/billing';
+import { Plan, Subscription, Invoice } from '../types/billing';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
