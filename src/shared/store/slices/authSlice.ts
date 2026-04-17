@@ -37,7 +37,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    registerRequest: (state, action: PayloadAction<any>) => {
+    registerRequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
     },
@@ -54,7 +54,7 @@ const authSlice = createSlice({
       state.error = action.payload;
       state.registrationEmail = null;
     },
-    loginRequest: (state) => {
+    loginRequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
       state.requires2FA = false;
@@ -82,7 +82,7 @@ const authSlice = createSlice({
       state.requires2FA = false;
       state.tempToken = null;
     },
-    verify2FARequest: (state) => {
+    verify2FARequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
     },
@@ -110,7 +110,7 @@ const authSlice = createSlice({
         state.attemptsRemaining = 5;
       }
     },
-    forgotPasswordRequest: (state) => {
+    forgotPasswordRequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
     },
@@ -122,7 +122,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    verifyOtpRequest: (state) => {
+    verifyOtpRequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
     },
@@ -134,7 +134,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    resetPasswordRequest: (state) => {
+    resetPasswordRequest: (state, _action: PayloadAction<any>) => {
       state.loading = true;
       state.error = null;
     },

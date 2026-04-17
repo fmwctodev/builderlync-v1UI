@@ -17,7 +17,8 @@ const VerifyOtp: React.FC = () => {
     user?.is_beta_user ||
     user?.has_active_subscription ||
     user?.subscription_status === 'active' ||
-    user?.subscription_status === 'trialing'
+    user?.subscription_status === 'trialing' ||
+    user?.user_type === 'staff'
   );
   const email = location.state?.email;
   const from = location.state?.from || 'signup';
