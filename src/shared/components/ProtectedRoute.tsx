@@ -13,7 +13,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     user?.is_beta_user ||
     user?.has_active_subscription ||
     user?.subscription_status === 'active' ||
-    user?.subscription_status === 'trialing'
+    user?.subscription_status === 'trialing' ||
+    user?.user_type === 'staff'
   );
 
   if (!user || !token) {

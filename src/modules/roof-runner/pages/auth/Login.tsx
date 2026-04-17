@@ -19,7 +19,8 @@ const Login: React.FC = () => {
     user?.is_beta_user ||
     user?.has_active_subscription ||
     user?.subscription_status === 'active' ||
-    user?.subscription_status === 'trialing'
+    user?.subscription_status === 'trialing' ||
+    user?.user_type === 'staff'
   );
   const successMessage = location.state?.message;
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);

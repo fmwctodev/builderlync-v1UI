@@ -92,7 +92,8 @@ function* verifyRegistrationOtpSaga(action: PayloadAction<VerifyRegistrationOtpR
       response.data.user?.is_beta_user ||
       response.data.user?.has_active_subscription ||
       response.data.user?.subscription_status === 'active' ||
-      response.data.user?.subscription_status === 'trialing'
+      response.data.user?.subscription_status === 'trialing' ||
+      response.data.user?.user_type === 'staff'
     );
 
     if (!hasBillingAccess) {
