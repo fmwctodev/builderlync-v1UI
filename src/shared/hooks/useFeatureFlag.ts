@@ -49,6 +49,3 @@ export function useFeatureFlag(flag: string): boolean {
 
   return isEnabled;
 }
-
-  return isEnabled;
-}
