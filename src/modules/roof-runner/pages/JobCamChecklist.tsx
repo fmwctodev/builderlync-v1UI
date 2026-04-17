@@ -2,9 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Circle, AlertCircle, ChevronLeft,
-  Camera, RefreshCw, Image, ChevronDown, ChevronUp, ListChecks
+  Camera, RefreshCw, Image, ChevronDown, ChevronUp, ListChecks, Trash2, PlusCircle, Check
 } from 'lucide-react';
-import { fetchTemplates, fetchJobMediaByJob, fetchJobShotlist, createJobShotlist } from '../services/jobCamApi';
+import { 
+  fetchTemplates, fetchJobMediaByJob, fetchJobShotlist, createJobShotlist,
+  updateShotlistItem, deleteShotlistItem, addItemToShotlist
+} from '../services/jobCamApi';
 import { getJobs, Job } from '../../../shared/store/services/jobsApi';
 import type { JobCamTemplate, JobCamTemplateItem, JobPhoto } from '../types/jobCam';
 import JobCamMediaDrawer from './JobCamMediaDrawer';
@@ -36,6 +39,12 @@ const JobCamChecklist: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [drawerPhoto, setDrawerPhoto] = useState<JobPhoto | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  
+  // Add Item Modal state
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemPhase, setNewItemPhase] = useState('general');
+  const [isAdding, setIsAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!jobId) return;
@@ -77,10 +86,7 @@ const JobCamChecklist: React.FC = () => {
 
     const items: ReviewItem[] = (itemsSrc).map((item: any) => {
       const linked = photos.filter(p => {
-        // Match by item ID or category/phase if it's a template preview
         if (activeShotlist) {
-          // If we have an active shotlist, only match by actual checklist_item_id
-          // or manually linked ID from the join
           return p.checklist_item_id === item.id;
         }
 
@@ -104,7 +110,7 @@ const JobCamChecklist: React.FC = () => {
       return { 
         templateItem: {
            ...item,
-           name: item.title || item.name // Handle difference between template and item
+           name: item.title || item.name 
         } as any, 
         linkedPhotos: linked, 
         status 
@@ -113,11 +119,13 @@ const JobCamChecklist: React.FC = () => {
 
     setReviewItems(items);
 
-    const toExpand = new Set<string>();
-    items.filter(i => i.status === 'missing' || i.status === 'needs_review').forEach(i => {
-      toExpand.add(i.templateItem.phase ?? 'general');
-    });
-    setExpandedSections(toExpand);
+    if (expandedSections.size === 0) {
+        const toExpand = new Set<string>();
+        items.filter(i => i.status === 'missing' || i.status === 'needs_review').forEach(i => {
+          toExpand.add(i.templateItem.phase ?? 'general');
+        });
+        setExpandedSections(toExpand);
+    }
   }, [selectedTemplate, photos, activeShotlist]);
 
   const groupedItems = reviewItems.reduce<Record<string, ReviewItem[]>>((acc, item) => {
@@ -160,6 +168,45 @@ const JobCamChecklist: React.FC = () => {
       console.error('Error creating shotlist:', e);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!window.confirm('Are you sure you want to remove this item from the checklist?')) return;
+    try {
+      await deleteShotlistItem(itemId);
+      await load();
+    } catch (e) {
+      console.error('Error deleting item:', e);
+    }
+  };
+
+  const handleManualComplete = async (itemId: string) => {
+    try {
+      await updateShotlistItem(itemId, { status: 'complete' });
+      await load();
+    } catch (e) {
+      console.error('Error updating item status:', e);
+    }
+  };
+
+  const handleAddItem = async () => {
+    if (!newItemName.trim() || !activeShotlist) return;
+    setIsAdding(true);
+    try {
+      await addItemToShotlist(activeShotlist.id, {
+        title: newItemName,
+        phase: newItemPhase,
+        is_required: true,
+        sort_order: reviewItems.length + 1
+      });
+      setIsAddItemOpen(false);
+      setNewItemName('');
+      await load();
+    } catch (e) {
+      console.error('Error adding item:', e);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -360,16 +407,113 @@ const JobCamChecklist: React.FC = () => {
                                   Review
                                 </button>
                               )}
+                              {activeShotlist && (
+                                <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-100 dark:border-gray-700">
+                                  {item.status !== 'complete' && (
+                                    <button
+                                      onClick={() => handleManualComplete(item.templateItem.id)}
+                                      className="p-1.5 text-gray-400 hover:text-green-600 transition-colors"
+                                      title="Mark as complete"
+                                    >
+                                      <CheckCircle2 size={14} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeleteItem(item.templateItem.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Delete item"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
                       );
                     })}
+                    {activeShotlist && (
+                      <button 
+                        onClick={() => {
+                          setNewItemPhase(phase);
+                          setIsAddItemOpen(true);
+                        }}
+                        className="w-full py-3 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all border-t border-dashed border-gray-100 dark:border-gray-700"
+                      >
+                        <PlusCircle size={14} />
+                        Add custom task to this section
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
+          {activeShotlist && (
+            <button
+              onClick={() => {
+                setNewItemPhase('general');
+                setIsAddItemOpen(true);
+              }}
+              className="w-full py-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-600 hover:border-primary-300 dark:hover:border-primary-500/50 transition-all"
+            >
+              <PlusCircle size={18} />
+              Add Generic Task
+            </button>
+          )}
+        </div>
+      )}
+
+      {isAddItemOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 dark:text-white">Add Custom Task</h3>
+              <button onClick={() => setIsAddItemOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title</label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newItemName}
+                  onChange={e => setNewItemName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="e.g. Roof Ridge Vent Detail"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phase / Category</label>
+                <select
+                  value={newItemPhase}
+                  onChange={e => setNewItemPhase(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none"
+                >
+                  {Object.entries(phaseLabel).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setIsAddItemOpen(false)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddItem}
+                  disabled={isAdding || !newItemName.trim()}
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                >
+                  {isAdding ? 'Adding...' : 'Add Task'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
