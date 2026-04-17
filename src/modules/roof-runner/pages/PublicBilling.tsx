@@ -8,7 +8,10 @@ const PublicBilling: React.FC = () => {
   const navigate = useNavigate();
   const { user, token } = useAppSelector((state) => state.auth);
   console.log("user", user);
+  const isStaff = user?.user_type === 'staff' || !!user?.parentId;
+  
   const hasBillingAccess = !!(
+    isStaff ||
     user?.is_beta_user ||
     user?.has_active_subscription ||
     user?.subscription_status === 'active' ||
@@ -16,6 +19,17 @@ const PublicBilling: React.FC = () => {
   );
 
   useEffect(() => {
+    // Staff users should never see the billing page, they should be redirected to the dashboard
+    if (isStaff && user && token) {
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        navigate(`/org/${orgSlug}`, { replace: true });
+        return;
+      }
+      navigate('/', { replace: true });
+      return;
+    }
+
     if (!user || !token || !hasBillingAccess) {
       return;
     }
@@ -27,7 +41,8 @@ const PublicBilling: React.FC = () => {
     }
 
     navigate('/', { replace: true });
-  }, [user, token, hasBillingAccess, navigate]);
+  }, [user, token, hasBillingAccess, isStaff, navigate]);
+
 
   const plans = [
     {

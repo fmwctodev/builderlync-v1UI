@@ -441,6 +441,27 @@ export const apiService = {
     return response.data;
   },
 
+  updateShotlistItem: async (itemId: string, updates: any) => {
+    const response = await apiClient.patch(`/jobcam/shotlist/items/${itemId}`, updates);
+    return response.data;
+  },
+
+  addItemToShotlist: async (shotlistId: string, item: any) => {
+    const response = await apiClient.post(`/jobcam/shotlist/${shotlistId}/items`, item);
+    return response.data;
+  },
+
+  deleteShotlistItem: async (itemId: string) => {
+    const response = await apiClient.delete(`/jobcam/shotlist/items/${itemId}`);
+    return response.data;
+  },
+
+  reorderShotlistItems: async (items: { id: string; sort_order: number }[]) => {
+    const response = await apiClient.post(`/jobcam/shotlist/items/reorder`, { items });
+    return response.data;
+  },
+
+
   // JobCam Galleries
   getJobGalleries: async (jobId: string | number) => {
     const response = await apiClient.get(`/jobcam/${jobId}/galleries`);

@@ -54,7 +54,7 @@ const authSlice = createSlice({
       state.error = action.payload;
       state.registrationEmail = null;
     },
-    loginRequest: (state, _action: PayloadAction<any>) => {
+    loginRequest: (state, _action: PayloadAction<{ email: string; password: string }>) => {
       state.loading = true;
       state.error = null;
       state.requires2FA = false;

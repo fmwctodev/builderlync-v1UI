@@ -264,6 +264,27 @@ export async function createJobShotlist(jobId: number, name: string, templateId?
   return res.data?.data || res.data || res;
 }
 
+export async function updateShotlistItem(itemId: string, updates: any): Promise<any> {
+  const res = await apiService.updateShotlistItem(itemId, updates);
+  return res.data?.data || res.data || res;
+}
+
+export async function addItemToShotlist(shotlistId: string, item: any): Promise<any> {
+  const res = await apiService.addItemToShotlist(shotlistId, item);
+  return res.data?.data || res.data || res;
+}
+
+export async function deleteShotlistItem(itemId: string): Promise<any> {
+  const res = await apiService.deleteShotlistItem(itemId);
+  return res.data?.data || res.data || res;
+}
+
+export async function reorderShotlistItems(items: { id: string; sort_order: number }[]): Promise<any> {
+  const res = await apiService.reorderShotlistItems(items);
+  return res.data?.data || res.data || res;
+}
+
+
 export async function fetchReports(filters?: { jobId?: number; reportType?: string; status?: string; }): Promise<JobReport[]> {
   const res = await apiService.getJobReports(filters?.jobId || 'all');
   return res.data || res || [];

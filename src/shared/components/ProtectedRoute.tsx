@@ -14,7 +14,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     user?.has_active_subscription ||
     user?.subscription_status === 'active' ||
     user?.subscription_status === 'trialing' ||
-    user?.user_type === 'staff'
+    user?.user_type === 'staff' ||
+    !!user?.parentId
   );
 
   if (!user || !token) {
