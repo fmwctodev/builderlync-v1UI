@@ -9,6 +9,7 @@ interface CheckoutFormProps {
   loading: boolean;
   supplier?: string;
   srsCustomerProfile?: any | null;
+  initialData?: Partial<CheckoutFormData>;
 }
 
 export interface CheckoutFormData {
@@ -31,27 +32,46 @@ export interface CheckoutFormData {
   };
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, supplier, srsCustomerProfile }) => {
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, supplier, srsCustomerProfile, initialData }) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     jobId: null,
-    deliveryService: 'OTG', // Default to Our Truck Ground
+    deliveryService: supplier === 'QXO' ? 'D' : 'OTG', // Default to Delivery for QXO
     contact: {
-      name: '',
-      email: '',
-      phone: ''
+      name: initialData?.contact?.name || '',
+      email: initialData?.contact?.email || '',
+      phone: initialData?.contact?.phone || ''
     },
-    deliveryDate: '',
-    instructions: '',
+    deliveryDate: initialData?.deliveryDate || '',
+    instructions: initialData?.instructions || '',
     customerCode: '',
     shippingAddress: {
-      name: '',
-      line1: '',
-      city: '',
-      state: '',
-      zipCode: ''
+      name: initialData?.shippingAddress?.name || '',
+      line1: initialData?.shippingAddress?.line1 || '',
+      city: initialData?.shippingAddress?.city || '',
+      state: initialData?.shippingAddress?.state || '',
+      zipCode: initialData?.shippingAddress?.zipCode || ''
     }
   });
+
+  // Sync initialData when the form opens
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData(prev => ({
+        ...prev,
+        contact: {
+          ...prev.contact,
+          ...initialData.contact
+        },
+        shippingAddress: {
+          ...prev.shippingAddress,
+          ...initialData.shippingAddress
+        },
+        deliveryDate: initialData.deliveryDate || prev.deliveryDate,
+        instructions: initialData.instructions || prev.instructions
+      }));
+    }
+  }, [isOpen, initialData]);
 
   useEffect(() => {
     // Fetch jobs
@@ -113,23 +133,25 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Associate with Job (Optional)
-            </label>
-            <select
-              value={formData.jobId || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, jobId: e.target.value ? Number(e.target.value) : null }))}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
-            >
-              <option value="">No job selected</option>
-              {jobs.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.location || `Job #${job.id}`}
-                </option>
-              ))}
-            </select>
-          </div>
+          {supplier !== 'QXO' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Associate with Job (Optional)
+              </label>
+              <select
+                value={formData.jobId || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, jobId: e.target.value ? Number(e.target.value) : null }))}
+                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.location || `Job #${job.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -140,16 +162,27 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
               onChange={(e) => updateField('deliveryService', '', e.target.value)}
               className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
             >
-              <option value="OTG">Our Truck Ground (OTG)</option>
-              <option value="COM">Common Carrier (COM)</option>
-              <option value="CPU">Customer Pickup (CPU)</option>
-              <option value="EXP">Express Pickup (EXP)</option>
-              <option value="OTR">Our Truck Roof (OTR)</option>
-              <option value="OTW">Our Truck Window (OTW)</option>
-              <option value="TPC">Third-Party Carrier (TPC)</option>
+              {supplier === 'QXO' ? (
+                <>
+                  <option value="D">Delivery (D)</option>
+                  <option value="P">Pickup / Will Call (P)</option>
+                </>
+              ) : (
+                <>
+                  <option value="OTG">Our Truck Ground (OTG)</option>
+                  <option value="COM">Common Carrier (COM)</option>
+                  <option value="CPU">Customer Pickup (CPU)</option>
+                  <option value="EXP">Express Pickup (EXP)</option>
+                  <option value="OTR">Our Truck Roof (OTR)</option>
+                  <option value="OTW">Our Truck Window (OTW)</option>
+                  <option value="TPC">Third-Party Carrier (TPC)</option>
+                </>
+              )}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Note: Delivery Services available are dependent on the branch and are subject to change at the discretion of the branch.
+              {supplier === 'QXO' 
+                ? "Select your preferred fulfillment method for this order."
+                : "Note: Delivery Services available are dependent on the branch and are subject to change at the discretion of the branch."}
             </p>
           </div>
 
@@ -183,30 +216,34 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             </div>
           </div>
 
-          {supplier === 'SRS' && (
+          {(supplier === 'SRS' || supplier === 'QXO') && (
             <>
-              {storedSrsCode ? (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
-                  <div className="font-medium">SRS customer code connected</div>
-                  <div className="mt-1 text-gray-900 dark:text-white">{storedSrsCode}</div>
-                  <div className="mt-2 text-xs text-green-700/80 dark:text-green-200/80">
-                    Manage this in Integrations if you need to change it.
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Customer Code (Required for SRS)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter your SRS Customer Code"
-                    value={formData.customerCode}
-                    onChange={(e) => updateField('customerCode', '', e.target.value)}
-                    required
-                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-                  />
-                </div>
+              {supplier === 'SRS' && (
+                <>
+                  {storedSrsCode ? (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200">
+                      <div className="font-medium">SRS customer code connected</div>
+                      <div className="mt-1 text-gray-900 dark:text-white">{storedSrsCode}</div>
+                      <div className="mt-2 text-xs text-green-700/80 dark:text-green-200/80">
+                        Manage this in Integrations if you need to change it.
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Customer Code (Required for SRS)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter your SRS Customer Code"
+                        value={formData.customerCode}
+                        onChange={(e) => updateField('customerCode', '', e.target.value)}
+                        required
+                        className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               <div>

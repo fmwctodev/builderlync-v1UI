@@ -13,6 +13,7 @@ import {
   Box,
   AlertCircle,
   ExternalLink,
+  MapPin,
 } from "lucide-react";
 import { Product, ShipTo, OrderHistoryItem } from "../../abc-supply/types";
 import { abcSupplyApi } from "../../abc-supply/services/api";
@@ -188,28 +189,29 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
 
     try {
       const res = await qxoApi.getItemPrices({ skus: skus as string[] });
-      if (res.success && res.data) {
-        const pricingData =
-          res.data?.data || res.data?.priceInfo || res.data || {};
-        console.log("[CART DEBUG] QXO Live Prices Fetch Result:", pricingData);
+      
+      // The backend returns { success: true, data: { status: true, data: { ...pricing... } } }
+      const pricingData = res.data?.data || res.data || {};
+      console.log("[CART DEBUG] QXO Live Prices Fetch Result:", pricingData);
 
-        const newPrices: Record<string, number> = {};
-        Object.keys(pricingData).forEach((sku) => {
-          const uoms = pricingData[sku];
-          if (uoms) {
-            const firstUom = Object.keys(uoms)[0];
-            const price = uoms[firstUom];
-            if (price) newPrices[sku] = price;
-          }
-        });
-
-        if (Object.keys(newPrices).length > 0) {
-          console.log(
-            "[CART DEBUG] Updating itemPrices with QXO data:",
-            newPrices,
-          );
-          setItemPrices((prev) => ({ ...prev, ...newPrices }));
+      const newPrices: Record<string, number> = {};
+      Object.keys(pricingData).forEach((sku) => {
+        const uoms = pricingData[sku];
+        if (uoms) {
+          // Find the correct UOM from the item in cart if possible
+          const cartItem = items.find(i => ((i as any).skuId || i.itemNumber || i.productId) === sku);
+          const targetUom = (cartItem as any)?.selectedUOM || (cartItem as any)?.uom || Object.keys(uoms)[0];
+          const price = uoms[targetUom] || uoms[Object.keys(uoms)[0]];
+          if (price) newPrices[sku] = price;
         }
+      });
+
+      if (Object.keys(newPrices).length > 0) {
+        console.log(
+          "[CART DEBUG] Updating itemPrices with QXO data:",
+          newPrices,
+        );
+        setItemPrices((prev) => ({ ...prev, ...newPrices }));
       }
     } catch (e) {
       console.error("Failed to fetch QXO prices:", e);
@@ -593,6 +595,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           },
         };
 
+        console.log("[DEBUG] SRS Order Payload:", JSON.stringify(orderData, null, 2));
         const srsResponse = await srsApi.createOrder(orderData);
 
         if (
@@ -646,19 +649,30 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         await abcSupplyApi.createOrder(orderData);
       } else if (supplier === "QXO") {
         const orderData = {
-          accountId:
-            qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
-          branchId: selectedBranch?.id || selectedBranch?.number,
-          items: items.map((item) => ({
-            productId: item.itemNumber,
+          apiSiteId: "homeSite", // Updated from 'becn' to match login siteId
+          accountId: qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
+          shipping: {
+            shippingMethod: checkoutData.deliveryService === 'P' ? 'P' : 'D',
+            shippingBranch: selectedBranch?.id || selectedBranch?.number,
+            address: {
+              address1: checkoutData.shippingAddress?.line1 || "",
+              city: checkoutData.shippingAddress?.city || "",
+              postalCode: checkoutData.shippingAddress?.zipCode?.substring(0, 10) || "",
+              state: checkoutData.shippingAddress?.state || "",
+            }
+          },
+          contact: {
+            name: checkoutData.contact?.name || "Customer",
+            phone: checkoutData.contact?.phone || ""
+          },
+          lineItems: items.map((item) => ({
+            itemNumber: item.itemNumber || item.productId,
             quantity: item.quantity,
-            unitPrice: item.price || getItemPrice(item.itemNumber) || 0,
-            uom: (item as any).selectedUOM || "EA",
+            unitOfMeasure: (item as any).selectedUOM || (item as any).uom || "EA",
           })),
-          shippingAddress: checkoutData.shippingAddress,
-          contact: checkoutData.contact,
-          notes: checkoutData.instructions,
+          notes: checkoutData.instructions || "",
         };
+        console.log("[DEBUG] QXO Order Payload being sent to backend:", JSON.stringify(orderData, null, 2));
         const res = await qxoApi.createOrder(orderData);
         if (!res.success)
           throw new Error(res.message || "Failed to submit QXO order");
@@ -887,29 +901,32 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               {/* Shipping Address Inputs - Simplified for Cart view, full form in Checkout */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Shipping Preview
+                  {supplier === 'QXO' ? 'Destination Zip Code' : 'Shipping Preview'}
                 </label>
-                <input
-                  type="text"
-                  placeholder="Zip Code for Tax Est."
-                  value={shipToAddress.zipCode}
-                  onChange={(e) =>
-                    setShipToAddress({
-                      ...shipToAddress,
-                      zipCode: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={supplier === 'QXO' ? "Enter zip code for tax estimation" : "Zip Code for Tax Est."}
+                    value={shipToAddress.zipCode}
+                    onChange={(e) =>
+                      setShipToAddress({
+                        ...shipToAddress,
+                        zipCode: e.target.value.replace(/[^0-9]/g, '').slice(0, 10),
+                      })
+                    }
+                    className="w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                </div>
               </div>
 
-              {/* SRS Disclaimer */}
-              {supplier === "SRS" && (
+              {/* QXO Disclaimer */}
+              {supplier === "QXO" && (
                 <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-lg p-3">
                   <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed italic">
-                    <strong>Tax & Delivery Disclaimer:</strong> Tax and delivery
-                    fees are estimated in this interface. Final calculation is
-                    performed by SRS Distribution upon order submission.
+                    <strong>Tax & Availability Notice:</strong> Sales tax is calculated based on the delivery destination. Final availability and delivery charges will be confirmed by Beacon Pro+ upon order submission.
                   </p>
                 </div>
               )}
@@ -1130,13 +1147,12 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                 {supplier === "SRS" && (
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight italic">
                     * Tax and delivery fees are estimated. Final calculation is
-                    performed by SRS upon order submission. This estimate is
-                    provided for informational purposes only.
+                    performed by SRS upon order submission.
                   </p>
                 )}
-                <div className="flex justify-between font-semibold">
-                  <span className="text-gray-900 dark:text-white">Total:</span>
-                  <span className="text-gray-900 dark:text-white">
+                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-bold text-gray-900 dark:text-white">
+                  <span>Total</span>
+                  <span className="text-primary-600 dark:text-primary-400">
                     ${total.toFixed(2)}
                   </span>
                 </div>
@@ -1145,12 +1161,13 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               <button
                 onClick={handleProceedToCheckout}
                 disabled={!selectedBranch || items.length === 0}
-                className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 text-sm font-bold uppercase tracking-widest text-white bg-primary-600 rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Proceed to Checkout
               </button>
             </div>
           )}
+
         </div>
       </div>
 
@@ -1225,6 +1242,15 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         loading={loading}
         supplier={supplier}
         srsCustomerProfile={srsCustomerProfile}
+        initialData={{
+          shippingAddress: {
+            name: shipToAddress.name || "",
+            line1: shipToAddress.line1 || "",
+            city: shipToAddress.city || "",
+            state: shipToAddress.state || "",
+            zipCode: shipToAddress.zipCode || "",
+          },
+        }}
       />
     </div>
   );

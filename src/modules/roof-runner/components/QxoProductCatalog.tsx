@@ -35,8 +35,9 @@ export default function QxoProductCatalog({ onBack }: { onBack?: () => void }) {
         accountId: selectedBranch?.accountId
       });
       
-      // Correct extraction: ResponseHandler.success wraps in 'data', then qxoService wraps in 'data'
-      const pricingData = res.data?.data || res.data?.priceInfo || res.data || {};
+      // The backend now returns { success: true, data: { status: true, data: { ...pricing... } } }
+      // due to ResponseHandler.success + service pattern.
+      const pricingData = res.data?.data || res.data || {};
       console.log('[DEBUG] QXO Received Pricing Data:', pricingData);
       
       if (res.success) {
@@ -45,15 +46,17 @@ export default function QxoProductCatalog({ onBack }: { onBack?: () => void }) {
             const sku = item.skuId || item.itemNumber || item.productId;
             const uoms = pricingData[sku];
             if (uoms) {
-              let price = item.unitPrice;
-              if (item.uom && uoms[item.uom]) {
-                price = uoms[item.uom];
-              } else {
-                const firstUom = Object.keys(uoms)[0];
-                price = uoms[firstUom];
-              }
-              console.log(`[DEBUG] Updating SKU ${sku} price to: ${price}`);
-              return { ...item, unitPrice: price };
+              const uomList = Object.keys(uoms);
+              const currentUom = item.uom || item.currentSKU?.currentUOM || uomList[0];
+              const price = uoms[currentUom] || uoms[uomList[0]];
+              
+              console.log(`[DEBUG] Updating SKU ${sku} price to: ${price} (${currentUom})`);
+              return { 
+                ...item, 
+                unitPrice: price, 
+                uom: currentUom,
+                allPrices: uoms 
+              };
             }
             return item;
           });
@@ -368,11 +371,16 @@ export default function QxoProductCatalog({ onBack }: { onBack?: () => void }) {
                                     <span>Updating price...</span>
                                 </div>
                             ) : price > 0 ? (
-                              <span className="text-sm font-black text-gray-900 dark:text-white">
-                                ${price.toFixed(2)} <span className="text-[10px] font-normal text-gray-500">/ {uom}</span>
-                              </span>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-black text-gray-900 dark:text-white">
+                                  ${price.toFixed(2)} <span className="text-[10px] font-normal text-gray-500">/ {uom}</span>
+                                </span>
+                                {product.allPrices && Object.keys(product.allPrices).length > 1 && (
+                                  <span className="text-[9px] text-primary-500 font-medium">Multiple UOMs available</span>
+                                )}
+                              </div>
                             ) : (
-                                <span className="text-xs text-gray-400 font-medium italic">Login for price</span>
+                                <span className="text-xs text-gray-400 font-medium italic">Price on request</span>
                             )}
                             
                             {(() => {
