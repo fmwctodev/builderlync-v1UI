@@ -60,6 +60,7 @@ import VerifyOtp from './pages/auth/VerifyOtp';
 import SetPassword from './pages/auth/SetPassword';
 import { ProtectedRoute } from '../../shared/components/ProtectedRoute';
 import { AuthRoute } from '../../shared/components/AuthRoute';
+import { FeatureFlag } from '../../shared/components/FeatureFlag';
 import { OrgProvider } from '../../shared/context/OrgContext';
 import { FormBuilder } from '../marketing/pages/FormBuilder';
 import { FormSubmissions } from '../marketing/pages/FormSubmissions';
@@ -120,8 +121,8 @@ export function RoofRunnerModule() {
         <Route path="proposals/preview/:id" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
         <Route path="proposal/view" element={<PublicProposalView />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
-        <Route path="org/:orgSlug/automation/builder" element={<ProtectedRoute><OrgProvider><WorkflowBuilder /></OrgProvider></ProtectedRoute>} />
-        <Route path="org/:orgSlug/automation/builder/:id" element={<ProtectedRoute><OrgProvider><WorkflowBuilder /></OrgProvider></ProtectedRoute>} />
+        <Route path="org/:orgSlug/automation/builder" element={<ProtectedRoute><OrgProvider><FeatureFlag flag="automation-tab" fallback={<Navigate to={`/org/${localStorage.getItem('currentOrganizationSlug') || ''}/dashboard`} replace />}><WorkflowBuilder /></FeatureFlag></OrgProvider></ProtectedRoute>} />
+        <Route path="org/:orgSlug/automation/builder/:id" element={<ProtectedRoute><OrgProvider><FeatureFlag flag="automation-tab" fallback={<Navigate to={`/org/${localStorage.getItem('currentOrganizationSlug') || ''}/dashboard`} replace />}><WorkflowBuilder /></FeatureFlag></OrgProvider></ProtectedRoute>} />
         <Route path="org/:orgSlug" element={<ProtectedRoute><OrgProvider><Layout /></OrgProvider></ProtectedRoute>}>
           <Route path="diy" element={<DIYPage />} />
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -159,7 +160,7 @@ export function RoofRunnerModule() {
           <Route path="proposals/editor/:proposalId" element={<ProposalEditorPage />} />
           <Route path="material-orders" element={<MaterialOrders />} />
           <Route path="work-orders" element={<WorkOrders />} />
-          <Route path="automation" element={<Automations />} />
+          <Route path="automation" element={<FeatureFlag flag="automation-tab" fallback={<Navigate to="../dashboard" replace />}><Automations /></FeatureFlag>} />
           <Route path="opportunities" element={<Opportunities />} />
           <Route path="marketing" element={<Marketing />} />
           <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />

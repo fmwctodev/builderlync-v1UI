@@ -161,11 +161,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
 
   const isJobCamEnabled = useFeatureFlag("job-cam");
   const isAiReportsEnabled = useFeatureFlag("ai-reports");
+  const isAutomationTabEnabled = useFeatureFlag("automation-tab");
 
   const renderNavSection = (items: any[], label?: string) => {
     const visibleItems = items.filter((item) => {
       if (item.name === "Job Cam" && !isJobCamEnabled) return false;
       if (item.name === "Reporting" && !isAiReportsEnabled) return false;
+      if (item.name === "Automation" && !isAutomationTabEnabled) return false;
       return !item.permission || canAccessModule(item.permission as any);
     });
 
