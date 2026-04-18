@@ -24,12 +24,23 @@ export const analytics = {
 
   identify: (userId: string | number, properties: Record<string, any> = {}) => {
     if (!POSTHOG_KEY) return;
-    posthog.identify(String(userId), properties);
+    
+    // Ensure standard PostHog properties are set
+    const enrichedProperties = {
+      ...properties,
+      $email: properties.email,
+      $name: properties.name || properties.full_name,
+    };
+
+    posthog.identify(String(userId), enrichedProperties);
+    
+    // Force an immediate reload of feature flags now that the user is identified
+    posthog.reloadFeatureFlags();
+
     console.log('[Analytics] User identified with PostHog:');
     console.log('  - User ID:   ', userId);
-    console.log('  - Email:     ', properties.email ?? '(not provided)');
-    console.log('  - Name:      ', properties.name ?? '(not provided)');
-    console.log('  - All props: ', properties);
+    console.log('  - Email:     ', properties.email ?? enrichedProperties.$email ?? '(not provided)');
+    console.log('  - Properties:', enrichedProperties);
     console.log('  - Distinct ID after identify:', posthog.get_distinct_id());
   },
 
