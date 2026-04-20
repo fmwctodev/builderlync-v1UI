@@ -61,12 +61,12 @@ export function ZoneSubscriptionsPanel({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-blue-500" />
+          <Shield className="w-4 h-4 text-primary-500" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Zone Alerts
           </span>
           {activeCount > 0 && (
-            <span className="px-1.5 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+            <span className="px-1.5 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded-full">
               {activeCount}
             </span>
           )}
@@ -91,7 +91,7 @@ export function ZoneSubscriptionsPanel({
               key={sub.id}
               className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${
                 sub.is_active
-                  ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10'
+                  ? 'border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/10'
                   : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 opacity-60'
               }`}
             >
@@ -114,7 +114,7 @@ export function ZoneSubscriptionsPanel({
                   title={sub.is_active ? 'Pause' : 'Resume'}
                 >
                   {sub.is_active ? (
-                    <Bell className="w-3.5 h-3.5 text-blue-500" />
+                    <Bell className="w-3.5 h-3.5 text-primary-500" />
                   ) : (
                     <BellOff className="w-3.5 h-3.5 text-gray-400" />
                   )}
@@ -135,7 +135,7 @@ export function ZoneSubscriptionsPanel({
               <select
                 value={selectedZoneId}
                 onChange={(e) => setSelectedZoneId(e.target.value)}
-                className="w-full px-2.5 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2.5 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">
                   {zonesLoading ? 'Loading zones...' : 'Select a forecast zone'}
@@ -155,7 +155,7 @@ export function ZoneSubscriptionsPanel({
                     type="checkbox"
                     checked={notifyPush}
                     onChange={(e) => setNotifyPush(e.target.checked)}
-                    className="rounded text-blue-600"
+                    className="rounded text-primary-600"
                   />
                   <Monitor className="w-3 h-3" />
                   Browser
@@ -165,7 +165,7 @@ export function ZoneSubscriptionsPanel({
                     type="checkbox"
                     checked={notifyEmail}
                     onChange={(e) => setNotifyEmail(e.target.checked)}
-                    className="rounded text-blue-600"
+                    className="rounded text-primary-600"
                   />
                   <Mail className="w-3 h-3" />
                   Email
@@ -182,7 +182,7 @@ export function ZoneSubscriptionsPanel({
                 <button
                   onClick={handleAddSubscription}
                   disabled={!selectedZoneId || isSubmitting}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Adding...' : 'Add Zone'}
                 </button>
@@ -191,7 +191,7 @@ export function ZoneSubscriptionsPanel({
           ) : (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 border border-dashed border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-primary-600 dark:text-primary-400 border border-dashed border-primary-300 dark:border-primary-700 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Zone Subscription

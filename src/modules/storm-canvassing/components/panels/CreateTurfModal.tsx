@@ -58,8 +58,8 @@ export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-primary-50 dark:bg-primary-900/10 rounded-lg">
+              <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Create Turf</h2>
           </div>
@@ -90,7 +90,7 @@ export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. North Austin Zone A"
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               autoFocus
             />
           </div>
@@ -104,7 +104,7 @@ export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description..."
               rows={2}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             />
           </div>
 
@@ -115,7 +115,7 @@ export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose
             <select
               value={stormEventId}
               onChange={(e) => setStormEventId(e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">None (standalone turf)</option>
               {stormEvents.map((event) => (
@@ -160,7 +160,7 @@ export function CreateTurfModal({ stormEvents, drawnGeometry, onConfirm, onClose
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Turf'}
             </button>

@@ -56,7 +56,7 @@ export default function ProposalBuilder() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function ProposalBuilder() {
         <p className="text-red-500 dark:text-red-400">{error || 'Proposal not found'}</p>
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
         >
           <ArrowLeft className="w-4 h-4" />
           Go back

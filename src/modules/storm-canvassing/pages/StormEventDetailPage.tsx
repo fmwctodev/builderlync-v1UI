@@ -101,7 +101,7 @@ export function StormEventDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -112,7 +112,7 @@ export function StormEventDetailPage() {
         <p className="text-gray-500 dark:text-gray-400">Storm event not found.</p>
         <button
           onClick={() => navigate('/storm-canvassing/events')}
-          className="mt-4 text-blue-600 hover:underline text-sm"
+          className="mt-4 text-primary-600 hover:underline text-sm"
         >
           Back to Events
         </button>
@@ -135,8 +135,8 @@ export function StormEventDetailPage() {
 
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-            <CloudLightning className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="p-2.5 bg-primary-50 dark:bg-primary-900/10 rounded-xl">
+            <CloudLightning className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{event.name}</h1>
@@ -158,7 +158,7 @@ export function StormEventDetailPage() {
           <button
             onClick={handleMatchDoors}
             disabled={isMatching}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
             {isMatching ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -244,7 +244,7 @@ export function StormEventDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <MapPin className="w-4 h-4 text-blue-600" />
+              <MapPin className="w-4 h-4 text-primary-600" />
               Canvassing Turfs
             </h2>
             {turfs.length === 0 ? (
@@ -252,7 +252,7 @@ export function StormEventDetailPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">No turfs assigned to this event yet.</p>
                 <button
                   onClick={() => navigate('/storm-canvassing/turfs')}
-                  className="mt-3 text-sm text-blue-600 hover:underline"
+                  className="mt-3 text-sm text-primary-600 hover:underline"
                 >
                   Go to Turfs Manager
                 </button>
@@ -309,7 +309,7 @@ export function StormEventDetailPage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Layers className="w-4 h-4 text-blue-600" />
+              <Layers className="w-4 h-4 text-primary-600" />
               Storm Layers ({event.layers?.length || 0})
             </h2>
             {!event.layers || event.layers.length === 0 ? (

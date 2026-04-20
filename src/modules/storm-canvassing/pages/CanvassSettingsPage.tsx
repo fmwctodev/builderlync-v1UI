@@ -220,7 +220,7 @@ export function CanvassSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -277,7 +277,7 @@ export function CanvassSettingsPage() {
                   onChange={(e) =>
                     setFormState((prev) => ({ ...prev, allowGpsTracking: e.target.checked }))
                   }
-                  className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                 />
                 <div>
                   <span className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -297,7 +297,7 @@ export function CanvassSettingsPage() {
                   onChange={(e) =>
                     setFormState((prev) => ({ ...prev, offlineSyncEnabled: e.target.checked }))
                   }
-                  className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  className="w-5 h-5 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                 />
                 <div>
                   <span className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -325,7 +325,7 @@ export function CanvassSettingsPage() {
                   }
                   min={10}
                   max={500}
-                  className="w-full max-w-xs px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full max-w-xs px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -335,8 +335,8 @@ export function CanvassSettingsPage() {
         {activeTab === 'providers' && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Cloud className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                <Cloud className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Storm Data Provider
@@ -356,7 +356,7 @@ export function CanvassSettingsPage() {
                       defaultStormProvider: e.target.value as StormProvider,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {stormProviders.map((provider) => (
                     <option key={provider.id} value={provider.id}>
@@ -379,7 +379,7 @@ export function CanvassSettingsPage() {
                         setFormState((prev) => ({ ...prev, hailtraceApiKey: e.target.value }))
                       }
                       placeholder="Enter your HailTrace API key"
-                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     <button
                       onClick={handleTestStormProvider}
@@ -404,7 +404,7 @@ export function CanvassSettingsPage() {
                         setFormState((prev) => ({ ...prev, hailReconApiKey: e.target.value }))
                       }
                       placeholder="Enter your Hail Recon API key"
-                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     <button
                       onClick={handleTestStormProvider}
@@ -428,7 +428,7 @@ export function CanvassSettingsPage() {
                       defaultContactProvider: e.target.value as ContactProvider,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {contactProviders.map((provider) => (
                     <option key={provider.id} value={provider.id}>
@@ -445,8 +445,8 @@ export function CanvassSettingsPage() {
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                  <Zap className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -470,8 +470,8 @@ export function CanvassSettingsPage() {
                         onClick={() => setFormState((prev) => ({ ...prev, noaaMode: mode }))}
                         className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                           formState.noaaMode === mode
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-primary-400'
                         }`}
                       >
                         {mode === 'mock' ? 'Mock (Demo)' : 'Live (NOAA NWS)'}
@@ -479,7 +479,7 @@ export function CanvassSettingsPage() {
                     ))}
                   </div>
                   {formState.noaaMode === 'live' && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                    <p className="text-xs text-primary-600 dark:text-primary-400 mt-2">
                       Live mode uses the free NOAA NWS Alerts API — no API key required.
                     </p>
                   )}
@@ -501,7 +501,7 @@ export function CanvassSettingsPage() {
                         hailThresholdInches: parseFloat(e.target.value),
                       }))
                     }
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-primary-600"
                   />
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
                     <span>0.1" (Trace)</span>
@@ -525,7 +525,7 @@ export function CanvassSettingsPage() {
                       setFormState((prev) => ({ ...prev, mrmsBaseUrl: e.target.value }))
                     }
                     placeholder="https://mrms.ncep.noaa.gov/data/2D/"
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
                   />
                 </div>
               </div>
@@ -543,7 +543,7 @@ export function CanvassSettingsPage() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Select the states to monitor for active storm alerts
                     {formState.operatingStates.length > 0 && (
-                      <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full font-medium">
+                      <span className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs rounded-full font-medium">
                         {formState.operatingStates.length} selected
                       </span>
                     )}
@@ -561,8 +561,8 @@ export function CanvassSettingsPage() {
                       title={state.name}
                       className={`px-2 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                         selected
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600'
+                          ? 'bg-primary-600 border-primary-600 text-white'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-400 hover:text-primary-600'
                       }`}
                     >
                       {state.code}
@@ -578,12 +578,12 @@ export function CanvassSettingsPage() {
                     return (
                       <span
                         key={code}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs rounded-full border border-blue-200 dark:border-blue-700"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 text-xs rounded-full border border-primary-200 dark:border-primary-700"
                       >
                         {state?.name ?? code}
                         <button
                           onClick={() => toggleState(code)}
-                          className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-200"
+                          className="ml-0.5 hover:text-primary-900 dark:hover:text-primary-200"
                         >
                           &times;
                         </button>
@@ -684,7 +684,7 @@ export function CanvassSettingsPage() {
                       contactRevealCacheHours: parseInt(e.target.value) || 0,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   How long to cache revealed contacts before re-charging
@@ -705,7 +705,7 @@ export function CanvassSettingsPage() {
                     }))
                   }
                   min={1}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -771,7 +771,7 @@ export function CanvassSettingsPage() {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {isSaving ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />

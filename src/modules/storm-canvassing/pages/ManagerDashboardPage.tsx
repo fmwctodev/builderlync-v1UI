@@ -34,7 +34,7 @@ function KPICard({
   color?: string;
 }) {
   const colors: Record<string, string> = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600',
+    blue: 'bg-primary-50 dark:bg-primary-900/20 text-primary-600',
     green: 'bg-green-50 dark:bg-green-900/20 text-green-600',
     orange: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600',
     gray: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
@@ -195,7 +195,7 @@ export function ManagerDashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-6 h-6 text-blue-600" />
+            <Activity className="w-6 h-6 text-primary-600" />
             Manager Dashboard
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -213,7 +213,7 @@ export function ManagerDashboardPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -307,7 +307,7 @@ export function ManagerDashboardPage() {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <MapPin className="w-4 h-4 text-primary-600" />
                   Turf Progress
                 </h2>
                 {activeTurfs.length === 0 ? (
@@ -393,7 +393,7 @@ export function ManagerDashboardPage() {
                         key={rep.user_id}
                         className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50"
                       >
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs font-semibold shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-semibold shrink-0">
                           {(rep.full_name || rep.email || '?')
                             .split(' ')
                             .map((n) => n[0])
@@ -421,15 +421,15 @@ export function ManagerDashboardPage() {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
+                  <TrendingUp className="w-4 h-4 text-primary-600" />
                   Today's Stats
                 </h2>
                 <div className="space-y-3">
                   {[
-                    { label: 'Turfs In Progress', value: kpis.turfs_in_progress, icon: <Clock className="w-4 h-4 text-blue-500" /> },
+                    { label: 'Turfs In Progress', value: kpis.turfs_in_progress, icon: <Clock className="w-4 h-4 text-primary-500" /> },
                     { label: 'Turfs Completed', value: kpis.turfs_completed, icon: <CheckCircle className="w-4 h-4 text-green-500" /> },
                     { label: 'Appointments Set', value: kpis.total_appointments, icon: <Target className="w-4 h-4 text-orange-500" /> },
-                    { label: 'Interested Contacts', value: kpis.total_interested, icon: <TrendingUp className="w-4 h-4 text-blue-500" /> },
+                    { label: 'Interested Contacts', value: kpis.total_interested, icon: <TrendingUp className="w-4 h-4 text-primary-500" /> },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">

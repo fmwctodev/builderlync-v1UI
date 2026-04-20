@@ -72,12 +72,12 @@ function SubscriptionCard({
           <div
             className={`p-2 rounded-lg ${
               sub.is_active
-                ? 'bg-blue-100 dark:bg-blue-900/30'
+                ? 'bg-primary-100 dark:bg-primary-900/30'
                 : 'bg-gray-100 dark:bg-gray-700'
             }`}
           >
             {sub.is_active ? (
-              <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             ) : (
               <BellOff className="w-4 h-4 text-gray-400" />
             )}
@@ -101,7 +101,7 @@ function SubscriptionCard({
             <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
               <span>Min severity: {sub.min_severity}</span>
               <span>{sub.event_types.length} event type{sub.event_types.length !== 1 ? 's' : ''}</span>
-              {sub.notify_push && <span className="text-blue-500">Push on</span>}
+              {sub.notify_push && <span className="text-primary-500">Push on</span>}
             </div>
 
             {activeAlerts.length > 0 && (
@@ -243,7 +243,7 @@ function AddZoneModal({
                 <select
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 >
                   {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -260,14 +260,14 @@ function AddZoneModal({
                     value={zoneSearch}
                     onChange={(e) => setZoneSearch(e.target.value)}
                     placeholder="Search by name or zone code..."
-                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                   />
                 </div>
               </div>
 
               {loadingZones ? (
                 <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                  <RefreshCw className="w-5 h-5 animate-spin text-primary-500" />
                 </div>
               ) : (
                 <div className="max-h-52 overflow-y-auto space-y-1 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -277,7 +277,7 @@ function AddZoneModal({
                       onClick={() => setSelectedZone(zone)}
                       className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
                         selectedZone?.code === zone.code
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
                           : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
@@ -300,7 +300,7 @@ function AddZoneModal({
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                   placeholder="TXZ001"
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
                 />
               </div>
 
@@ -314,7 +314,7 @@ function AddZoneModal({
                 <button
                   onClick={handleProceed}
                   disabled={!selectedZone && !manualCode.trim()}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
                 >
                   Configure →
                 </button>
@@ -322,13 +322,13 @@ function AddZoneModal({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-sm text-blue-900 dark:text-blue-200">
+                  <MapPin className="w-4 h-4 text-primary-600" />
+                  <span className="font-medium text-sm text-primary-900 dark:text-primary-200">
                     {selectedZone?.name || manualCode}
                   </span>
-                  <span className="font-mono text-xs text-blue-600">
+                  <span className="font-mono text-xs text-primary-600">
                     {selectedZone?.code || manualCode}
                   </span>
                 </div>
@@ -345,7 +345,7 @@ function AddZoneModal({
                       onClick={() => setConfig((c) => ({ ...c, min_severity: sev }))}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                         config.min_severity === sev
-                          ? 'bg-blue-600 border-blue-600 text-white'
+                          ? 'bg-primary-600 border-primary-600 text-white'
                           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                     >
@@ -373,7 +373,7 @@ function AddZoneModal({
                               : c.event_types.filter((t) => t !== et),
                           }))
                         }
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                        className="w-4 h-4 text-primary-600 rounded border-gray-300"
                       />
                       <span className="text-gray-700 dark:text-gray-300">{et}</span>
                     </label>
@@ -386,7 +386,7 @@ function AddZoneModal({
                   type="checkbox"
                   checked={config.notify_push}
                   onChange={(e) => setConfig((c) => ({ ...c, notify_push: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                  className="w-4 h-4 text-primary-600 rounded border-gray-300"
                 />
                 <span className="text-gray-700 dark:text-gray-300">Enable push notifications</span>
               </label>
@@ -401,7 +401,7 @@ function AddZoneModal({
                 <button
                   onClick={handleAdd}
                   disabled={isSaving || config.event_types.length === 0}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
                 >
                   {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
                   Subscribe
@@ -513,7 +513,7 @@ export function ZoneAlertsTab({ organizationId, userId, operatingStates }: Props
             <div className="text-xs text-gray-500">Subscriptions</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{totalActive}</div>
+            <div className="text-2xl font-bold text-primary-600">{totalActive}</div>
             <div className="text-xs text-gray-500">Active</div>
           </div>
           {alertingZones > 0 && (
@@ -534,7 +534,7 @@ export function ZoneAlertsTab({ organizationId, userId, operatingStates }: Props
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Add Zone
@@ -544,7 +544,7 @@ export function ZoneAlertsTab({ organizationId, userId, operatingStates }: Props
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : subscriptions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
@@ -555,7 +555,7 @@ export function ZoneAlertsTab({ organizationId, userId, operatingStates }: Props
           </p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Add Your First Zone

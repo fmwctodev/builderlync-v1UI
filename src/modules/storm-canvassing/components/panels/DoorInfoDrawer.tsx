@@ -145,10 +145,10 @@ export function DoorInfoDrawer({
           )}
 
           {upcomingHail.length > 0 && nearbyAlerts.length === 0 && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="p-3 bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-800 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <CloudRain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                <CloudRain className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                <h4 className="text-sm font-medium text-primary-700 dark:text-primary-400">
                   Hail Forecast
                 </h4>
               </div>

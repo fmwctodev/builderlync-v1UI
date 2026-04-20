@@ -128,7 +128,7 @@ export function AssignRepsModal({
         <div className="p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
             </div>
           ) : members.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -153,7 +153,7 @@ export function AssignRepsModal({
                     onClick={() => toggleMember(member.user_id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       isSelected
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+                        ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                     }`}
                   >
@@ -164,7 +164,7 @@ export function AssignRepsModal({
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {displayName}
                         {isCurrentlyAssigned && (
-                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                          <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">
                             currently assigned
                           </span>
                         )}
@@ -176,7 +176,7 @@ export function AssignRepsModal({
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                         isSelected
-                          ? 'border-blue-600 bg-blue-600'
+                          ? 'border-primary-600 bg-primary-600'
                           : 'border-gray-300 dark:border-gray-600'
                       }`}
                     >
@@ -202,7 +202,7 @@ export function AssignRepsModal({
             <button
               onClick={handleSave}
               disabled={isSubmitting || !hasChanges}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : `Save (${selected.size} reps)`}
             </button>

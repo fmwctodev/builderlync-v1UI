@@ -43,7 +43,7 @@ export function StormEventSelector({
         className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors disabled:opacity-50"
       >
         <div className="flex items-center gap-3">
-          <Cloud className="w-5 h-5 text-blue-500" />
+          <Cloud className="w-5 h-5 text-primary-500" />
           <div className="text-left">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               {selectedEvent ? selectedEvent.name : 'Select Storm Event'}

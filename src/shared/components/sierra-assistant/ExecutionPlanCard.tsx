@@ -22,16 +22,16 @@ const ACTION_LABELS: Record<string, string> = {
 const ACTION_COLORS: Record<string, string> = {
   create_contact: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   update_contact: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  create_opportunity: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  move_opportunity: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  create_opportunity: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
+  move_opportunity: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
   create_task: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   update_task: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   create_event: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   update_event: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   cancel_event: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   draft_email: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  send_email: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  send_sms: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  send_email: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
+  send_sms: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
   remember: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 

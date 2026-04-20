@@ -17,7 +17,7 @@ export function UserLocationMarker({
     <Marker longitude={lng} latitude={lat} anchor="center">
       <div className="relative">
         <div
-          className="w-6 h-6 bg-blue-500 rounded-full border-3 border-white shadow-lg flex items-center justify-center"
+          className="w-6 h-6 bg-primary-600 rounded-full border-3 border-white shadow-lg flex items-center justify-center"
           style={{
             transform: heading !== undefined ? `rotate(${heading}deg)` : undefined,
           }}
@@ -28,12 +28,12 @@ export function UserLocationMarker({
               style={{
                 borderLeft: '4px solid transparent',
                 borderRight: '4px solid transparent',
-                borderBottom: '8px solid #3B82F6',
+                borderBottom: '8px solid #DC2626',
               }}
             />
           )}
         </div>
-        <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-30" />
+        <div className="absolute inset-0 bg-primary-600 rounded-full animate-ping opacity-30" />
       </div>
     </Marker>
   );

@@ -171,7 +171,7 @@ export default function Automations() {
                       }}
                       className="w-full text-left px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                      <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600">
                          <Grid className="w-4 h-4" />
                       </div>
                       <span className="font-medium">Browse Templates</span>
@@ -298,8 +298,8 @@ export default function Automations() {
                   <svg viewBox="0 0 800 200" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                     <defs>
                       <linearGradient id="gradientArea" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="rgba(59, 130, 246, 0.2)" />
-                        <stop offset="100%" stopColor="rgba(59, 130, 246, 0)" />
+                        <stop offset="0%" stopColor="rgba(220, 38, 38, 0.2)" />
+                        <stop offset="100%" stopColor="rgba(220, 38, 38, 0)" />
                       </linearGradient>
                       <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="4" result="blur" />
@@ -314,19 +314,19 @@ export default function Automations() {
                     <path 
                       d="M 0,80 C 100,50 150,45 250,60 C 350,75 400,90 500,85 C 600,80 650,20 700,40 C 750,60 780,180 800,195" 
                       fill="none" 
-                      stroke="#3b82f6" 
+                      stroke="#dc2626" 
                       strokeWidth="3" 
                       className="drop-shadow-md brightness-110"
                     />
                     
                     {/* Points on Graph */}
-                    <circle cx="0" cy="80" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="150" cy="46" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="300" cy="67" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="450" cy="86" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="600" cy="81" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="710" cy="45" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
-                    <circle cx="800" cy="195" r="4" fill="white" stroke="#3b82f6" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="0" cy="80" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="150" cy="46" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="300" cy="67" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="450" cy="86" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="600" cy="81" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="710" cy="45" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
+                    <circle cx="800" cy="195" r="4" fill="white" stroke="#dc2626" strokeWidth="2" className="cursor-pointer hover:r-6 transition-all" />
                   </svg>
                 </div>
                 

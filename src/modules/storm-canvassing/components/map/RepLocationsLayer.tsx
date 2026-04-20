@@ -49,7 +49,7 @@ export function RepLocationsLayer({ repLocations, currentUserId }: RepLocationsL
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg border-2 transition-opacity ${
                   stale
                     ? 'bg-gray-400 border-gray-300 opacity-50'
-                    : 'bg-blue-600 border-white'
+                    : 'bg-primary-600 border-white'
                 }`}
                 title={`${rep.full_name || rep.email} — ${rep.today_visits} visits today`}
               >

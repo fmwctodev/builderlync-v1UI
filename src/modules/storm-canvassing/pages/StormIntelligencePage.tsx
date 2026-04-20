@@ -77,15 +77,15 @@ export function StormIntelligencePage() {
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-              <Radar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-xl">
+              <Radar className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Storm Intelligence</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {currentTab?.description}
                 {operatingStates.length > 0 && (
-                  <span className="ml-2 text-blue-600 dark:text-blue-400">
+                  <span className="ml-2 text-primary-600 dark:text-primary-400">
                     Monitoring: {operatingStates.join(', ')}
                   </span>
                 )}
@@ -108,7 +108,7 @@ export function StormIntelligencePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary-600 text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >

@@ -895,7 +895,7 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                 <div className="px-8 py-5 border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50">
                   <h3 className="font-bold text-gray-700 dark:text-gray-200 text-lg flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-blue-500" />
+                    <MessageSquare className="w-5 h-5 text-primary-500" />
                     Communication
                   </h3>
                 </div>
@@ -989,10 +989,10 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                     </thead>
                     <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/50">
                       {[
-                        { initial: 'HK', color: 'bg-amber-400', contact: 'hello, a direct questi...', reason: 'Website Form S...', date: 'Apr 19th', time: '12:46:38 pm' },
-                        { initial: 'T', color: 'bg-orange-500', contact: 'test', reason: 'Website Form S...', date: 'Apr 16th', time: '3:01:50 pm' },
-                        { initial: 'T', color: 'bg-orange-500', contact: 'test', reason: 'Website Form S...', date: 'Apr 15th', time: '4:22:01 pm' },
-                        { initial: 'KS', color: 'bg-blue-600', contact: 'k\'leigh searcy', reason: 'Website Form S...', date: 'Apr 14th', time: '1:47:57 pm' }
+                        { initial: 'HK', color: 'bg-primary-400', contact: 'hello, a direct questi...', reason: 'Website Form S...', date: 'Apr 19th', time: '12:46:38 pm' },
+                        { initial: 'T', color: 'bg-red-500', contact: 'test', reason: 'Website Form S...', date: 'Apr 16th', time: '3:01:50 pm' },
+                        { initial: 'T', color: 'bg-red-500', contact: 'test', reason: 'Website Form S...', date: 'Apr 15th', time: '4:22:01 pm' },
+                        { initial: 'KS', color: 'bg-primary-600', contact: 'k\'leigh searcy', reason: 'Website Form S...', date: 'Apr 14th', time: '1:47:57 pm' }
                       ].map((row, i) => (
                         <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
                           <td className="py-4 px-6">
@@ -1135,7 +1135,7 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                               <button className="text-primary-600 dark:text-primary-400 font-bold text-sm hover:underline hover:text-primary-700 mr-2 transition-colors">
                                 View Details
                               </button>
-                              <button className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all shadow-sm">
+                              <button className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all shadow-sm">
                                 <RotateCcw className="w-4 h-4" />
                               </button>
                               <button className="p-1.5 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all shadow-sm">

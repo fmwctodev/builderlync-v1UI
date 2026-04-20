@@ -79,7 +79,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
             title="Sierra AI Assistant (⌘⇧K)"
             className={`p-2 rounded-md transition-colors flex items-center gap-1.5 text-sm font-medium ${
               panelOpen
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
             }`}
           >
@@ -102,7 +102,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={`https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=4F46E5&color=fff&rounded=true&size=48`}
+                      src={`https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=dc2626&color=fff&rounded=true&size=48`}
                       alt="User Avatar"
                       className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm"
                     />

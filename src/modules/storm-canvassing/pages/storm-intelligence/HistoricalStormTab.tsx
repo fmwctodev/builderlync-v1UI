@@ -74,7 +74,7 @@ function ObservationCard({ obs }: { obs: StationHailObservation }) {
         </div>
         {obs.precipitationMm != null && (
           <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-blue-500 shrink-0" />
+            <Droplets className="w-4 h-4 text-primary-500 shrink-0" />
             <div>
               <div className="text-xs text-gray-400">Precip</div>
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -85,7 +85,7 @@ function ObservationCard({ obs }: { obs: StationHailObservation }) {
         )}
         {obs.windSpeedKph != null && (
           <div className="flex items-center gap-2">
-            <Wind className="w-4 h-4 text-blue-400 shrink-0" />
+            <Wind className="w-4 h-4 text-primary-400 shrink-0" />
             <div>
               <div className="text-xs text-gray-400">Wind</div>
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -147,7 +147,7 @@ function StationObservationsPanel({ stationId, stationName }: { stationId: strin
           <button
             onClick={load}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
             {isLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <History className="w-3 h-3" />}
             Load History
@@ -231,14 +231,14 @@ export function HistoricalStormTab({ operatingStates }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <History className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <History className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-200 mb-1">
+            <h3 className="font-semibold text-sm text-primary-900 dark:text-primary-200 mb-1">
               Historical Storm Path Reconstruction
             </h3>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
+            <p className="text-xs text-primary-700 dark:text-primary-300">
               Search for an address to find nearby NWS observation stations and retrieve historical hail
               observation records. This combines station observation data with P-VTEC hazard codes to
               show when and where hail warnings were active.
@@ -256,13 +256,13 @@ export function HistoricalStormTab({ operatingStates }: Props) {
             onChange={(e) => setSearchState((prev) => ({ ...prev, address: e.target.value }))}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Enter address, city, or ZIP code..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <button
           onClick={handleSearch}
           disabled={isSearching || !searchState.address.trim()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 text-sm font-medium"
         >
           {isSearching ? (
             <RefreshCw className="w-4 h-4 animate-spin" />

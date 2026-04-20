@@ -41,7 +41,7 @@ function SeverityBadge({ severity }: { severity: NWSSeverity }) {
 function AlertTypeIcon({ alert }: { alert: ParsedHailAlert }) {
   if (alert.isTornadoRelated) return <Tornado className="w-4 h-4 text-red-500" />;
   if (alert.isHailRelated) return <CloudLightning className="w-4 h-4 text-orange-500" />;
-  return <Wind className="w-4 h-4 text-blue-500" />;
+  return <Wind className="w-4 h-4 text-primary-500" />;
 }
 
 function AlertCard({ alert }: { alert: ParsedHailAlert }) {
@@ -203,7 +203,7 @@ export function RealTimeAlertsTab({ operatingStates }: Props) {
           <select
             value={minSeverity}
             onChange={(e) => setMinSeverity(e.target.value as NWSSeverity)}
-            className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="Minor">Min: Minor</option>
             <option value="Moderate">Min: Moderate</option>
@@ -215,7 +215,7 @@ export function RealTimeAlertsTab({ operatingStates }: Props) {
               type="checkbox"
               checked={filterHailOnly}
               onChange={(e) => setFilterHailOnly(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-gray-300"
+              className="w-4 h-4 text-primary-600 rounded border-gray-300"
             />
             Hail/Thunderstorm only
           </label>
@@ -229,7 +229,7 @@ export function RealTimeAlertsTab({ operatingStates }: Props) {
           <button
             onClick={fetchAlerts}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -239,7 +239,7 @@ export function RealTimeAlertsTab({ operatingStates }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total Alerts', value: alerts.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+          { label: 'Total Alerts', value: alerts.length, color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20' },
           { label: 'Extreme / Severe', value: `${extremeCount} / ${severeCount}`, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
           { label: 'Hail Events', value: hailCount, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', icon: <CloudLightning className="w-4 h-4" /> },
           { label: 'Tornado Events', value: tornadoCount, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', icon: <Zap className="w-4 h-4" /> },
@@ -260,7 +260,7 @@ export function RealTimeAlertsTab({ operatingStates }: Props) {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">

@@ -32,7 +32,7 @@ const OUTCOME_CONFIG = {
   NO_ANSWER: { label: 'No Answer', color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400', icon: <Clock className="w-3 h-3" /> },
   NOT_HOME: { label: 'Not Home', color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400', icon: <Home className="w-3 h-3" /> },
   INTERESTED: { label: 'Interested', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" /> },
-  APPOINTMENT_SET: { label: 'Appointment Set', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: <Calendar className="w-3 h-3" /> },
+  APPOINTMENT_SET: { label: 'Appointment Set', color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400', icon: <Calendar className="w-3 h-3" /> },
   NOT_INTERESTED: { label: 'Not Interested', color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', icon: <XCircle className="w-3 h-3" /> },
   FOLLOW_UP: { label: 'Follow Up', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: <MessageSquare className="w-3 h-3" /> },
   CALLBACK_REQUESTED: { label: 'Callback', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: <Phone className="w-3 h-3" /> },
@@ -131,7 +131,7 @@ export function DoorDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -140,7 +140,7 @@ export function DoorDetailPage() {
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500 dark:text-gray-400">Door not found.</p>
-        <button onClick={() => navigate(-1)} className="mt-4 text-blue-600 hover:underline text-sm">
+        <button onClick={() => navigate(-1)} className="mt-4 text-primary-600 hover:underline text-sm">
           Go Back
         </button>
       </div>
@@ -161,8 +161,8 @@ export function DoorDetailPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
         <div className="flex items-start gap-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl shrink-0">
-            <Home className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="p-3 bg-primary-50 dark:bg-primary-900/10 rounded-xl shrink-0">
+            <Home className="w-6 h-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -219,7 +219,7 @@ export function DoorDetailPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
               activeTab === tab
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -288,7 +288,7 @@ export function DoorDetailPage() {
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-              <User className="w-4 h-4 text-blue-600" />
+              <User className="w-4 h-4 text-primary-600" />
               Contact Information
             </h3>
 
@@ -303,13 +303,13 @@ export function DoorDetailPage() {
                 {door.revealed_contact.phones.map((phone) => (
                   <div key={phone} className="flex items-center gap-2 text-sm">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    <a href={`tel:${phone}`} className="text-blue-600 hover:underline">{phone}</a>
+                    <a href={`tel:${phone}`} className="text-primary-600 hover:underline">{phone}</a>
                   </div>
                 ))}
                 {door.revealed_contact.emails.map((email) => (
                   <div key={email} className="flex items-center gap-2 text-sm">
                     <Mail className="w-4 h-4 text-gray-400" />
-                    <a href={`mailto:${email}`} className="text-blue-600 hover:underline">{email}</a>
+                    <a href={`mailto:${email}`} className="text-primary-600 hover:underline">{email}</a>
                   </div>
                 ))}
 
@@ -322,7 +322,7 @@ export function DoorDetailPage() {
                   <button
                     onClick={handleCreateContact}
                     disabled={isCreatingContact}
-                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                   >
                     <Plus className="w-4 h-4" />
                     {isCreatingContact ? 'Creating...' : 'Add to CRM'}
@@ -341,10 +341,10 @@ export function DoorDetailPage() {
                 <button
                   onClick={handleRevealContact}
                   disabled={isRevealing}
-                  className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 border border-primary-600 text-primary-600 rounded-lg text-sm font-medium hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-50"
                 >
                   {isRevealing ? (
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <User className="w-4 h-4" />
                   )}
@@ -364,7 +364,7 @@ export function DoorDetailPage() {
                 onClick={() => navigate(`/contacts?prefill_address=${encodeURIComponent(door.address1 + ', ' + door.city + ', ' + door.state)}`)}
                 className="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <User className="w-4 h-4 text-blue-600" />
+                <User className="w-4 h-4 text-primary-600" />
                 New Contact
               </button>
               <button
@@ -385,7 +385,7 @@ export function DoorDetailPage() {
                 onClick={() => navigate(`/calendar/new?address=${encodeURIComponent(door.address1)}`)}
                 className="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <Calendar className="w-4 h-4 text-blue-600" />
+                <Calendar className="w-4 h-4 text-primary-600" />
                 Schedule Appt
               </button>
             </div>

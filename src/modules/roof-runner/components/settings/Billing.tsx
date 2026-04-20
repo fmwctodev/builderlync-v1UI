@@ -127,8 +127,8 @@ const Billing: React.FC<BillingProps> = ({ userRole = 'Owner' }) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">AI Credits</h4>
@@ -138,7 +138,7 @@ const Billing: React.FC<BillingProps> = ({ userRole = 'Owner' }) => {
             <button
               onClick={() => handleBuyCredits('ai')}
               disabled={loadingAi || userRole !== 'Owner'}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium transition-colors"
+              className="px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium transition-colors"
             >
               {loadingAi ? (
                 <span>Loading...</span>
