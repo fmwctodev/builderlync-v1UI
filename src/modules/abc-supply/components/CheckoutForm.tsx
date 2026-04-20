@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { abcSupplyApi } from '../services/api';
+import { qxoApi } from '../../roof-runner/services/qxoApi';
 
 interface CheckoutFormProps {
   isOpen: boolean;
@@ -30,6 +31,9 @@ export interface CheckoutFormData {
     state: string;
     zipCode: string;
   };
+  jobName?: string;
+  jobNumber?: string;
+  extendedPO?: string;
 }
 
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, loading, supplier, srsCustomerProfile, initialData }) => {
@@ -51,12 +55,23 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
       city: initialData?.shippingAddress?.city || '',
       state: initialData?.shippingAddress?.state || '',
       zipCode: initialData?.shippingAddress?.zipCode || ''
-    }
+    },
+    extendedPO: ''
   });
 
-  // Sync initialData when the form opens
+  const [qxoJobConfig, setQxoJobConfig] = useState<any>(null);
+  const [fetchingQxoConfig, setFetchingQxoConfig] = useState(false);
+
+  const [hasSynced, setHasSynced] = useState(false);
+
+  // Sync initialData only once when the form opens
   useEffect(() => {
-    if (isOpen && initialData) {
+    if (!isOpen) {
+      setHasSynced(false);
+      return;
+    }
+
+    if (isOpen && initialData && !hasSynced) {
       setFormData(prev => ({
         ...prev,
         contact: {
@@ -68,10 +83,12 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
           ...initialData.shippingAddress
         },
         deliveryDate: initialData.deliveryDate || prev.deliveryDate,
-        instructions: initialData.instructions || prev.instructions
+        instructions: initialData.instructions || prev.instructions,
+        jobNumber: initialData.jobNumber || prev.jobNumber
       }));
+      setHasSynced(true);
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, hasSynced]);
 
   useEffect(() => {
     // Fetch jobs
@@ -104,19 +121,127 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
     }
   }, [isOpen, supplier, srsCustomerProfile]);
 
+  useEffect(() => {
+    const accountId = initialData?.jobNumber || "678204";
+    
+    // Prevent redundant fetches if we already have the config for this account
+    if (isOpen && supplier === 'QXO' && qxoJobConfig?.accountId !== accountId) {
+      const fetchQxoConfig = async () => {
+        if (fetchingQxoConfig) return; // Prevent concurrent identical calls
+        
+        setFetchingQxoConfig(true);
+        try {
+          const res = await qxoApi.getJobs(accountId);
+          if (res.success && res.data) {
+            const config = res.data.data || res.data;
+            setQxoJobConfig({
+              ...config,
+              accountId: accountId, // Store current accountId to track state
+              hasJobs: config.hasJobs ?? (config.jobs && config.jobs.length > 0)
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch QXO job config:", e);
+        } finally {
+          setFetchingQxoConfig(false);
+        }
+      };
+      fetchQxoConfig();
+    }
+  }, [isOpen, supplier, initialData?.jobNumber]);
+
+  const onJobAccountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    const selectedJob = (qxoJobConfig?.jobs || []).find((j: any) => j.jobNumber === val);
+    
+    setFormData(prev => {
+      const newData = { ...prev, jobId: val ? 999 : null, jobNumber: val };
+      
+      // Rule 3 & 4: Auto-fill job name if selected from dropdown
+      if (selectedJob && (qxoJobConfig?.hasJobNumber === false || qxoJobConfig?.hasJobAccount === false) && qxoJobConfig?.hasJobs) {
+        newData.jobName = selectedJob.jobName;
+      } else if (selectedJob && qxoJobConfig?.hasJobAccount && !qxoJobConfig?.hasJobNumber && qxoJobConfig?.hasJobs) {
+        newData.jobName = selectedJob.jobName;
+      }
+      
+      return newData;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    let finalData = { ...formData };
+
+    if (supplier === 'QXO') {
+      // For QXO, we use the specific jobName/jobNumber set in previous steps
+      // No extra mapping needed here as we update them real-time
+    } else {
+      // Find selected job details to pass along for others
+      const selectedJob = jobs.find(j => j.id === formData.jobId);
+      finalData = {
+        ...formData,
+        jobName: selectedJob?.location || selectedJob?.name || "",
+        jobNumber: selectedJob?.jobNumber || selectedJob?.id?.toString() || ""
+      };
+    }
+    
+    onSubmit(finalData);
   };
 
   const updateField = (section: keyof CheckoutFormData, field: string, value: string) => {
+    let finalValue = value;
+    
+    // Auto-uppercase state if it's the state field
+    if (section === 'shippingAddress' && field === 'state') {
+      finalValue = value.toUpperCase();
+    }
+
     setFormData(prev => ({
       ...prev,
       [section]: typeof prev[section] === 'object'
-        ? { ...prev[section], [field]: value }
-        : value
+        ? { ...prev[section], [field]: finalValue }
+        : finalValue
     }));
   };
+
+  const isQxo = supplier === 'QXO';
+  const addressLimit = 30;
+  const stateLimit = 2;
+  
+  const addressLength = formData.shippingAddress?.line1?.length || 0;
+  const stateLength = formData.shippingAddress?.state?.length || 0;
+  
+  const isAddressInvalid = isQxo && addressLength > addressLimit;
+  const isStateInvalid = isQxo && stateLength > stateLimit;
+
+  // QXO Dynamic Validation & Indicators
+  const config = qxoJobConfig || {};
+  const showExtendedPO = isQxo && config.showExtendedPO;
+  const isPoRequired = isQxo ? (showExtendedPO ? config.extendedPORequired : config.poRequired) : false;
+  
+  const isPoMissing = isQxo && (
+    (showExtendedPO && isPoRequired && !formData.extendedPO) ||
+    (!showExtendedPO && isPoRequired && !formData.jobNumber)
+  );
+
+  const showJobDropdown = isQxo && config.hasJobs;
+
+  const showJobNameField = isQxo && !(config.hasJobNumber && config.hasJobs);
+
+  const jobNameRequired = isQxo && (
+    (config.hasJobAccount && !config.hasJobNumber && !config.hasJobs) ||
+    (config.hasJobAccount && !config.hasJobNumber && config.hasJobs)
+  );
+  
+  const jobAccountRequired = isQxo && config.hasJobNumber && config.hasJobs;
+  
+  const isJobMissing = isQxo && (
+    (jobAccountRequired && !formData.jobNumber) ||
+    (jobNameRequired && !formData.jobName)
+  );
+
+  const isFormValid = !isAddressInvalid && !isStateInvalid && !isJobMissing && !isPoMissing;
 
   if (!isOpen) return null;
 
@@ -133,15 +258,60 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {supplier !== 'QXO' && (
+          {fetchingQxoConfig && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex items-center space-x-3">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-sm text-blue-700 dark:text-blue-300">Loading your account configuration...</p>
+            </div>
+          )}
+
+          {isQxo ? (
+            <div className="space-y-4">
+              {showJobDropdown && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Job Account {jobAccountRequired && <span className="text-red-500">*</span>}
+                  </label>
+                  <select
+                    value={formData.jobNumber || ''}
+                    onChange={onJobAccountChange}
+                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                  >
+                    <option value="">Select Job Account</option>
+                    {(qxoJobConfig?.jobs || []).map((job: any) => (
+                      <option key={job.jobNumber} value={job.jobNumber}>
+                        {job.jobName} ({job.jobNumber})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {showJobNameField && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Job Name {jobNameRequired && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.jobName || ''}
+                    onChange={(e) => updateField('jobName', '', e.target.value)}
+                    placeholder="Enter Job Name"
+                    required={jobNameRequired}
+                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Associate with Job (Optional)
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Associate with Job
               </label>
               <select
                 value={formData.jobId || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, jobId: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
               >
                 <option value="">No job selected</option>
                 {jobs.map((job) => (
@@ -216,6 +386,22 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             </div>
           </div>
 
+          {isQxo && qxoJobConfig && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {showExtendedPO ? 'Extended PO' : 'PO Number'} {isPoRequired && <span className="text-red-500">*</span>}
+              </label>
+              <input
+                type="text"
+                placeholder={showExtendedPO ? "Enter Extended PO" : "Enter PO Number"}
+                value={showExtendedPO ? formData.extendedPO : formData.jobNumber} // Reusing jobNumber field for standard PO for QXO in UI
+                onChange={(e) => showExtendedPO ? updateField('extendedPO', '', e.target.value) : updateField('jobNumber', '', e.target.value)}
+                required={isPoRequired}
+                className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-red-500"
+              />
+            </div>
+          )}
+
           {(supplier === 'SRS' || supplier === 'QXO') && (
             <>
               {supplier === 'SRS' && (
@@ -257,14 +443,27 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                     required
                     className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500 md:col-span-2"
                   />
-                  <input
-                    type="text"
-                    placeholder="Street Address"
-                    value={formData.shippingAddress?.line1}
-                    onChange={(e) => updateField('shippingAddress', 'line1', e.target.value)}
-                    required
-                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500 md:col-span-2"
-                  />
+                  <div className="md:col-span-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-medium text-gray-500">Street Address</label>
+                      {isQxo && (
+                        <span className={`text-[10px] font-mono ${isAddressInvalid ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                          {addressLength}/{addressLimit}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Street Address"
+                      value={formData.shippingAddress?.line1}
+                      onChange={(e) => updateField('shippingAddress', 'line1', e.target.value)}
+                      required
+                      className={`w-full p-3 bg-white border ${isAddressInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500`}
+                    />
+                    {isAddressInvalid && (
+                      <p className="text-[10px] text-red-500 mt-1">Street address must be 30 characters or less for QXO orders.</p>
+                    )}
+                  </div>
                   <input
                     type="text"
                     placeholder="City"
@@ -274,22 +473,37 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                     className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="State"
-                      value={formData.shippingAddress?.state}
-                      onChange={(e) => updateField('shippingAddress', 'state', e.target.value)}
-                      required
-                      className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="ZIP Code"
-                      value={formData.shippingAddress?.zipCode}
-                      onChange={(e) => updateField('shippingAddress', 'zipCode', e.target.value)}
-                      required
-                      className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-                    />
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-medium text-gray-500">State (2 chars)</label>
+                        {isQxo && (
+                          <span className={`text-[10px] font-mono ${isStateInvalid ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                            {stateLength}/{stateLimit}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="ST"
+                        value={formData.shippingAddress?.state}
+                        onChange={(e) => updateField('shippingAddress', 'state', e.target.value)}
+                        required
+                        className={`w-full p-3 bg-white border ${isStateInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500`}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-medium text-gray-500">ZIP Code</label>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="ZIP Code"
+                        value={formData.shippingAddress?.zipCode}
+                        onChange={(e) => updateField('shippingAddress', 'zipCode', e.target.value)}
+                        required
+                        className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -342,8 +556,8 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium"
+              disabled={loading || !isFormValid}
+              className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             >
               {loading ? 'Processing...' : 'Place Order'}
             </button>

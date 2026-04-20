@@ -189,7 +189,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
 
     try {
       const res = await qxoApi.getItemPrices({ skus: skus as string[] });
-      
+
       // The backend returns { success: true, data: { status: true, data: { ...pricing... } } }
       const pricingData = res.data?.data || res.data || {};
       console.log("[CART DEBUG] QXO Live Prices Fetch Result:", pricingData);
@@ -199,8 +199,13 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         const uoms = pricingData[sku];
         if (uoms) {
           // Find the correct UOM from the item in cart if possible
-          const cartItem = items.find(i => ((i as any).skuId || i.itemNumber || i.productId) === sku);
-          const targetUom = (cartItem as any)?.selectedUOM || (cartItem as any)?.uom || Object.keys(uoms)[0];
+          const cartItem = items.find(
+            (i) => ((i as any).skuId || i.itemNumber || i.productId) === sku,
+          );
+          const targetUom =
+            (cartItem as any)?.selectedUOM ||
+            (cartItem as any)?.uom ||
+            Object.keys(uoms)[0];
           const price = uoms[targetUom] || uoms[Object.keys(uoms)[0]];
           if (price) newPrices[sku] = price;
         }
@@ -595,7 +600,10 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           },
         };
 
-        console.log("[DEBUG] SRS Order Payload:", JSON.stringify(orderData, null, 2));
+        console.log(
+          "[DEBUG] SRS Order Payload:",
+          JSON.stringify(orderData, null, 2),
+        );
         const srsResponse = await srsApi.createOrder(orderData);
 
         if (
@@ -648,34 +656,103 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         // @ts-ignore
         await abcSupplyApi.createOrder(orderData);
       } else if (supplier === "QXO") {
+        // QXO Specific Address Sanitization (Strict Swagger limits)
+        const formatQxoAddress = (addr: any) => {
+          const line1 = addr.line1 || "";
+          let address1 = String(line1).substring(0, 30);
+          let address2 =
+            line1.length > 30 ? String(line1).substring(30, 60) : "";
+
+          const stateMap: Record<string, string> = {
+            HARYANA: "HR",
+            PUNJAB: "PB",
+            DELHI: "DL",
+            RAJASTHAN: "RJ",
+            UP: "UP",
+            "UTTAR PRADESH": "UP",
+            CALIFORNIA: "CA",
+            TEXAS: "TX",
+            "NEW YORK": "NY",
+          };
+
+          const stateInput = (addr.state || "").toUpperCase().trim();
+          const stateCode = stateMap[stateInput] || stateInput.substring(0, 2);
+
+          return {
+            address1,
+            address2: address2 || undefined,
+            city: String(addr.city || "").substring(0, 25),
+            postalCode: String(addr.zipCode || addr.postal || "").substring(
+              0,
+              10,
+            ),
+            state: stateCode,
+          };
+        };
+
+        const sanitizedAddress = formatQxoAddress(
+          checkoutData.shippingAddress || {},
+        );
+
         const orderData = {
-          apiSiteId: "homeSite", // Updated from 'becn' to match login siteId
-          accountId: qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
+          apiSiteId: "RRE",
+          accountId: String(
+            qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
+          ).substring(0, 6),
+          job: {
+            jobName: String(checkoutData.jobName || "Default Job").substring(
+              0,
+              15,
+            ),
+            jobNumber: String(checkoutData.jobNumber || "00001").substring(
+              0,
+              7,
+            ),
+          },
+          purchaseOrderNo: checkoutData.extendedPO
+            ? undefined
+            : (checkoutData.jobNumber || `PO-${Date.now()}`).substring(0, 22),
+          extendedPO: checkoutData.extendedPO
+            ? String(checkoutData.extendedPO).substring(0, 50)
+            : undefined,
           shipping: {
-            shippingMethod: checkoutData.deliveryService === 'P' ? 'P' : 'D',
-            shippingBranch: selectedBranch?.id || selectedBranch?.number,
-            address: {
-              address1: checkoutData.shippingAddress?.line1 || "",
-              city: checkoutData.shippingAddress?.city || "",
-              postalCode: checkoutData.shippingAddress?.zipCode?.substring(0, 10) || "",
-              state: checkoutData.shippingAddress?.state || "",
-            }
+            shippingMethod: checkoutData.deliveryService === "P" ? "P" : "D",
+            shippingBranch: String(
+              selectedBranch?.id || selectedBranch?.number || "",
+            ).substring(0, 4),
+            address: sanitizedAddress,
           },
           contact: {
-            name: checkoutData.contact?.name || "Customer",
-            phone: checkoutData.contact?.phone || ""
+            name: String(checkoutData.contact?.name || "Customer"),
+            phone: String(checkoutData.contact?.phone || ""),
           },
           lineItems: items.map((item) => ({
-            itemNumber: item.itemNumber || item.productId,
+            itemNumber: String(item.itemNumber || item.productId).substring(
+              0,
+              6,
+            ),
             quantity: item.quantity,
-            unitOfMeasure: (item as any).selectedUOM || (item as any).uom || "EA",
+            unitOfMeasure: String(
+              (item as any).selectedUOM || (item as any).uom || "EA",
+            ).substring(0, 3),
+            description: String(
+              item.familyName || item.itemDescription || "",
+            ).substring(0, 128),
           })),
-          notes: checkoutData.instructions || "",
+          specialInstruction: String(checkoutData.instructions || "").substring(
+            0,
+            234,
+          ),
         };
-        console.log("[DEBUG] QXO Order Payload being sent to backend:", JSON.stringify(orderData, null, 2));
+
+        console.log(
+          "[DEBUG] QXO Order Payload (Swagger Compliant):",
+          JSON.stringify(orderData, null, 2),
+        );
         const res = await qxoApi.createOrder(orderData);
-        if (!res.success)
+        if (!res.success) {
           throw new Error(res.message || "Failed to submit QXO order");
+        }
       }
 
       setShowCheckoutForm(false);
@@ -901,17 +978,25 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               {/* Shipping Address Inputs - Simplified for Cart view, full form in Checkout */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {supplier === 'QXO' ? 'Destination Zip Code' : 'Shipping Preview'}
+                  {supplier === "QXO"
+                    ? "Destination Zip Code"
+                    : "Shipping Preview"}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={supplier === 'QXO' ? "Enter zip code for tax estimation" : "Zip Code for Tax Est."}
+                    placeholder={
+                      supplier === "QXO"
+                        ? "Enter zip code for tax estimation"
+                        : "Zip Code for Tax Est."
+                    }
                     value={shipToAddress.zipCode}
                     onChange={(e) =>
                       setShipToAddress({
                         ...shipToAddress,
-                        zipCode: e.target.value.replace(/[^0-9]/g, '').slice(0, 10),
+                        zipCode: e.target.value
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 10),
                       })
                     }
                     className="w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 text-sm"
@@ -926,7 +1011,10 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               {supplier === "QXO" && (
                 <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-lg p-3">
                   <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed italic">
-                    <strong>Tax & Availability Notice:</strong> Sales tax is calculated based on the delivery destination. Final availability and delivery charges will be confirmed by Beacon Pro+ upon order submission.
+                    <strong>Tax & Availability Notice:</strong> Sales tax is
+                    calculated based on the delivery destination. Final
+                    availability and delivery charges will be confirmed by
+                    Beacon Pro+ upon order submission.
                   </p>
                 </div>
               )}
@@ -1167,7 +1255,6 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
               </button>
             </div>
           )}
-
         </div>
       </div>
 
@@ -1245,11 +1332,20 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
         initialData={{
           shippingAddress: {
             name: shipToAddress.name || "",
-            line1: shipToAddress.line1 || "",
+            line1: shipToAddress.addressLine1 || "",
             city: shipToAddress.city || "",
             state: shipToAddress.state || "",
             zipCode: shipToAddress.zipCode || "",
           },
+          contact: {
+            name: "",
+            email: "",
+            phone: "",
+          },
+          deliveryDate: "",
+          instructions: "",
+          jobNumber:
+            qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
         }}
       />
     </div>
