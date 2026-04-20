@@ -86,5 +86,12 @@ export const qxoApi = {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     return response.json();
+  },
+  
+  async getJobs(accountId: string) {
+    const response = await fetch(`${API_BASE_URL}/qxo/jobs?accountId=${accountId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.json();
   }
 };
