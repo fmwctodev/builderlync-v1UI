@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
-import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Phone, Building } from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Phone, Building, AlertTriangle, Settings, ArrowRight } from 'lucide-react';
 import { qxoApi } from '../services/qxoApi';
 import QxoBranchLocator from './QxoBranchLocator';
 import QxoProductCatalog from './QxoProductCatalog';
@@ -148,141 +148,186 @@ const QxoSupplyView: React.FC = () => {
       );
     }
 
-    if (!selectedBranch) {
-      return (
-        <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-full mb-4">
-            <Building className="h-10 w-10 text-primary-600 dark:text-primary-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Connect to a Branch</h2>
-          <p className="text-gray-500 dark:text-gray-400 max-w-md text-center mb-8">
-            Please select your preferred QXO branch to view local product availability, access your custom pricing, and place material orders.
-          </p>
-          <button
-            onClick={() => setCurrentView('branches')}
-            className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <MapPin className="h-5 w-5" />
-            Find a Branch
-          </button>
-        </div>
-      );
-    }
-
-    return (
+    const renderDashboardOverview = () => (
       <div className="space-y-6">
         <section className="bg-primary-700 dark:bg-primary-800 rounded-lg p-6 md:p-8">
-          <div className="flex justify-between items-start text-white">
-            <div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="text-white">
               <h1 className="text-3xl font-bold">{getGreeting()}, Contractor</h1>
-              <p className="mt-2 text-primary-100">
-                Connected to: <span className="font-semibold">{selectedBranch?.name || selectedBranch?.branchName || 'Selected Branch'}</span>
+              <p className="mt-2 text-primary-100 italic">
+                Welcome to your Beacon Pro+ Contractor Portal.
               </p>
             </div>
-            <button onClick={() => setCurrentView('branches')} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary-800 hover:bg-primary-900 rounded-md text-sm font-medium transition">
-              <Building className="h-4 w-4" /> Change Branch
-            </button>
+            
+            {selectedBranch && (
+              <button onClick={() => setCurrentView('branches')} className="flex items-center gap-2 px-4 py-2 bg-primary-800 hover:bg-primary-900 rounded-md text-white text-sm font-medium transition shadow-sm border border-primary-600">
+                <Building className="h-4 w-4" /> Change Branch
+              </button>
+            )}
           </div>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div onClick={() => setCurrentView('products')} className="bg-white/10 hover:bg-white/20 rounded-lg p-4 flex items-center transition cursor-pointer group text-white">
-              <div className="h-10 w-10 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="h-5 w-5" />
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div 
+              onClick={() => isConnected && selectedBranch && setCurrentView('products')} 
+              className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!selectedBranch || !isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <div className="h-12 w-12 flex-shrink-0 bg-primary-50 rounded-lg flex items-center justify-center">
+                <ShoppingBag className="h-6 w-6 text-primary-600" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium">Browse Products</h3>
-                <p className="text-sm opacity-80">Search our catalog</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition">Browse Products</h3>
+                <p className="text-sm text-primary-600">Search catalog</p>
               </div>
             </div>
-            <div onClick={() => setCurrentView('branches')} className="bg-white/10 hover:bg-white/20 rounded-lg p-4 flex items-center transition cursor-pointer group text-white">
-              <div className="h-10 w-10 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center">
-                <MapPin className="h-5 w-5" />
+
+            <div 
+              onClick={() => setCurrentView('branches')} 
+              className="bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group"
+            >
+              <div className="h-12 w-12 flex-shrink-0 bg-primary-50 rounded-lg flex items-center justify-center">
+                <MapPin className="h-6 w-6 text-primary-600" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium">Find Branches</h3>
-                <p className="text-sm opacity-80">Locate nearest stores</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition">Find Branches</h3>
+                <p className="text-sm text-primary-600">Locate stores</p>
               </div>
             </div>
-            <div onClick={() => setCurrentView('orders')} className="bg-white/10 hover:bg-white/20 rounded-lg p-4 flex items-center transition cursor-pointer group text-white">
-              <div className="h-10 w-10 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center">
-                <ClipboardList className="h-5 w-5" />
+
+            <div 
+              onClick={() => isConnected && selectedBranch && setCurrentView('orders')} 
+              className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!isConnected || !selectedBranch ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <div className="h-12 w-12 flex-shrink-0 bg-primary-50 rounded-lg flex items-center justify-center">
+                <ClipboardList className="h-6 w-6 text-primary-600" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium">View Orders</h3>
-                <p className="text-sm opacity-80">Check status and history</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition">View Orders</h3>
+                <p className="text-sm text-primary-600">Order history</p>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
-              <button onClick={() => setCurrentView('orders')} className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition">
-                View all <ChevronRight className="h-4 w-4 ml-1" />
-              </button>
-            </div>
-            <div className="p-6">
-              {loading.orders ? <p className="text-center py-6 text-gray-500">Loading recent orders...</p> : recentOrders.length > 0 ? (
-                <div className="space-y-4">
-                  {recentOrders.map((order, index) => (
-                    <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-sm text-gray-500">Order #{order.orderNumber}</span>
-                          <p className="font-medium text-gray-900 dark:text-white">{order.branchCityState}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-center py-6 text-gray-500">No recent orders found.</p>}
-            </div>
-          </section>
-
-          <div className="space-y-6">
-            <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Selected Branch</h2>
-              </div>
-              <div className="p-6 flex flex-col items-center text-center">
-                <div className="h-16 w-16 bg-primary-50 dark:bg-primary-900/20 text-primary-600 rounded-2xl flex items-center justify-center mb-4">
-                  <Building className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                  {selectedBranch?.name || selectedBranch?.branchName}
+        {/* Warning Banner */}
+        {(!isConnected || !selectedBranch) && (
+          <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-4">
+            <div className="p-4 bg-gray-800/50 border-b border-gray-700 flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-base font-bold text-yellow-500">
+                  {!isConnected ? 'Account Connection Required' : 'Branch Selection Required'}
                 </h3>
-                <p className="text-sm font-medium text-gray-500 mb-2">Branch #{selectedBranch?.id || selectedBranch?.branchNumber}</p>
-                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                   <p>{selectedBranch?.address?.address1 || selectedBranch?.address?.addressLine1}</p>
-                   {(selectedBranch?.address?.address2 || selectedBranch?.address?.addressLine2) && <p>{selectedBranch?.address?.address2 || selectedBranch?.address?.addressLine2}</p>}
-                   <p>{selectedBranch?.address?.city}, {selectedBranch?.address?.state} {selectedBranch?.address?.postalCode}</p>
-                </div>
-                {selectedBranch?.phone && (
-                  <div className="mt-4 flex items-center gap-2 text-primary-600 font-medium">
-                    <Phone className="h-4 w-4" />
-                    <span>{selectedBranch.phone}</span>
-                  </div>
-                )}
-                <button onClick={() => setCurrentView('branches')} className="mt-6 w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
-                  Change Branch
+                <p className="text-sm text-gray-400 mt-1">
+                  {!isConnected
+                    ? 'Please connect your QXO (Beacon) account in settings to access custom pricing and ordering.'
+                    : 'Select your preferred QXO branch to view local product availability and access your custom pricing.'}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex flex-col md:flex-row gap-4 md:items-center text-sm">
+              {!isConnected ? (
+                <button 
+                  onClick={() => navigate(`/org/${orgSlug}/settings/integrations`)}
+                  className="flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Go to Integration Settings</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setCurrentView('branches')}
+                  className="flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors"
+                >
+                  <MapPin className="h-4 w-4" />
+                  <span>Find a Branch Now</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isConnected && selectedBranch && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
+                <button onClick={() => setCurrentView('orders')} className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition">
+                  View all <ChevronRight className="h-4 w-4 ml-1" />
                 </button>
               </div>
+              <div className="p-6">
+                {loading.orders ? (
+                  <p className="text-center py-6 text-gray-500">Loading recent orders...</p>
+                ) : recentOrders.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentOrders.map((order, index) => (
+                      <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-sm text-gray-500">Order #{order.orderNumber}</span>
+                            <p className="font-medium text-gray-900 dark:text-white">{order.branchCityState}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500">No recent orders found.</p>
+                    <button onClick={() => setCurrentView('products')} className="mt-3 text-primary-600 text-sm font-bold">Start Shopping</button>
+                  </div>
+                )}
+              </div>
             </section>
 
-            <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
-                <button onClick={() => setCurrentView('products')} className="text-primary-600 text-sm font-medium hover:text-primary-700 transition">View all</button>
-              </div>
-              <div className="p-4">
-                {loading.products ? <p className="text-center py-4 text-gray-500">Loading products...</p> : featuredProducts.length > 0 ? (
-                   <div className="text-center py-4 text-gray-500">No products available.</div>
-                ) : <div className="text-center py-4 text-gray-500">No products available.</div>}
-              </div>
-            </section>
+            <div className="space-y-6">
+              <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Selected Branch</h2>
+                </div>
+                <div className="p-6 flex flex-col items-center text-center">
+                  <div className="h-16 w-16 bg-primary-50 dark:bg-primary-900/20 text-primary-600 rounded-2xl flex items-center justify-center mb-4">
+                    <Building className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                    {selectedBranch?.name || selectedBranch?.branchName}
+                  </h3>
+                  <p className="text-sm font-medium text-gray-500 mb-2">Branch #{selectedBranch?.id || selectedBranch?.branchNumber}</p>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                     <p>{selectedBranch?.address?.address1 || selectedBranch?.address?.addressLine1}</p>
+                     {(selectedBranch?.address?.address2 || selectedBranch?.address?.addressLine2) && <p>{selectedBranch?.address?.address2 || selectedBranch?.address?.addressLine2}</p>}
+                     <p>{selectedBranch?.address?.city}, {selectedBranch?.address?.state} {selectedBranch?.address?.postalCode}</p>
+                  </div>
+                  {selectedBranch?.phone && (
+                    <div className="mt-4 flex items-center gap-2 text-primary-600 font-medium">
+                      <Phone className="h-4 w-4" />
+                      <span>{selectedBranch.phone}</span>
+                    </div>
+                  )}
+                  <button onClick={() => setCurrentView('branches')} className="mt-6 w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
+                    Change Branch
+                  </button>
+                </div>
+              </section>
+
+              <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
+                  <button onClick={() => setCurrentView('products')} className="text-primary-600 text-sm font-medium hover:text-primary-700 transition">View all</button>
+                </div>
+                <div className="p-4">
+                  {loading.products ? <p className="text-center py-4 text-gray-500 text-sm">Loading products...</p> : (
+                    <div className="text-center py-4 text-gray-400 text-sm italic">
+                      Explore our full catalog to see relevant items for your area.
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -291,7 +336,7 @@ const QxoSupplyView: React.FC = () => {
   if (currentView === 'products') return <QxoProductCatalog onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'orders') return <QxoOrderHistory onBack={() => setCurrentView('dashboard')} />;
   
-  return renderDashboard();
+  return renderDashboardOverview();
 };
 
 export default QxoSupplyView;

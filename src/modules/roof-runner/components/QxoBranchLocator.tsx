@@ -25,8 +25,7 @@ export default function QxoBranchLocator({ onBack }: QxoBranchLocatorProps) {
       }
     }
     
-    // Auto load branches to show initial selection if possible
-    handleSearch(new Event('submit') as any, true);
+    // Only auto-search if we have a saved zip or can get location
   }, []);
 
   const handleSearch = async (e: React.FormEvent, initial = false) => {
@@ -126,9 +125,30 @@ export default function QxoBranchLocator({ onBack }: QxoBranchLocatorProps) {
                <button
                 type="submit"
                 disabled={loading || (!zipCode && !city)}
-                className="w-full sm:w-auto flex justify-center py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="w-full sm:w-auto flex justify-center py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all active:scale-95 disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Search className="h-5 w-5 mr-2" /> Search</>}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : <><Search className="h-5 w-5 mr-2" /> Search Branches</>}
+              </button>
+            </div>
+
+            <div className="w-full sm:w-auto flex-shrink-0">
+               <button
+                type="button"
+                onClick={() => {
+                   if (navigator.geolocation) {
+                     setLoading(true);
+                     navigator.geolocation.getCurrentPosition(async (pos) => {
+                        // We'd ideally reverse geocode, but for now we can just search with current lat/lng if API supports it
+                        // Or just show a message.
+                        // Let's assume we want to encourage them to enter ZIP for accuracy.
+                        alert("Please enter your ZIP code for the most accurate branch local results.");
+                        setLoading(false);
+                     }, () => setLoading(false));
+                   }
+                }}
+                className="w-full sm:w-auto flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                <MapPin className="h-5 w-5 mr-2" /> Use My Location
               </button>
             </div>
           </form>

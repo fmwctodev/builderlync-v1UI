@@ -18,7 +18,7 @@ export interface CatalogItem {
   measurements?: string;
   coverage: number;
   supplier?: string;
-  supplierType?: 'abc' | 'srs' | null;
+  supplierType?: 'abc' | 'srs' | 'qxo' | null;
   productId?: string;
   productData?: any;
   branchId?: string;

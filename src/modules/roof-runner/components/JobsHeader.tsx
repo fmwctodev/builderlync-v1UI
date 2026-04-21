@@ -118,6 +118,7 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
             <option value="all">All Jobs</option>
             <option value="residential">Residential</option>
             <option value="commercial">Commercial</option>
+            <option value="multifamily">Multifamily</option>
             <option value="insurance">Insurance</option>
             <option value="instant-estimator">Instant Estimates</option>
           </select>

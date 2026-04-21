@@ -4,7 +4,7 @@ import {
   BarChart3, Target, Share2, TrendingUp, Plus,
   Image, Video, FileText, Smile, Hash, Tag, Link2, MapPin,
   Bold, Italic, ChevronDown, Sparkles, X, Calendar, Settings,
-  Eye, Trash2, Edit2, Mail, MessageSquare
+  Eye, Trash2, Edit2, Mail, MessageSquare, XCircle, Copy
 } from 'lucide-react';
 import CampaignModal from '../components/CampaignModal';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
@@ -308,6 +308,33 @@ const CampaignsTab: React.FC = () => {
     }
   };
 
+  const handleCancelCampaign = async (id: string) => {
+    if (!confirm('Are you sure you want to cancel this scheduled campaign?')) return;
+
+    try {
+      await campaignsApi.cancelCampaign(id);
+      setToast({ show: true, message: 'Campaign cancelled successfully', type: 'success' });
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error cancelling campaign:', error);
+      setToast({ show: true, message: 'Failed to cancel campaign', type: 'error' });
+    }
+  };
+
+  const handleDuplicateCampaign = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await campaignsApi.duplicateCampaign(id);
+      setToast({ show: true, message: 'Campaign duplicated successfully!', type: 'success' });
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error duplicating campaign:', error);
+      setToast({ show: true, message: 'Failed to duplicate campaign', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
@@ -572,6 +599,13 @@ const CampaignsTab: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <button
+                          onClick={() => handleDuplicateCampaign(campaign.id)}
+                          className="text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                          title="Duplicate"
+                        >
+                          <Copy size={18} />
+                        </button>
+                        <button
                           onClick={() => {
                             setSelectedCampaign(campaign);
                             setShowDetailsModal(true);
@@ -583,11 +617,21 @@ const CampaignsTab: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleEditCampaign(campaign)}
-                          className="text-green-600 hover:text-green-700 dark:text-green-400"
-                          title="Edit"
+                          disabled={campaign.status === 'sending'}
+                          className={`text-green-600 hover:text-green-700 dark:text-green-400 ${campaign.status === 'sending' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title={campaign.status === 'sending' ? 'Cannot edit while sending' : 'Edit'}
                         >
                           <Edit2 size={18} />
                         </button>
+                        {['scheduled', 'sending'].includes(campaign.status) && (
+                          <button
+                            onClick={() => handleCancelCampaign(campaign.id)}
+                            className="text-orange-600 hover:text-orange-700 dark:text-orange-400"
+                            title="Cancel/Stop Campaign"
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteCampaign(campaign.id)}
                           className="text-red-600 hover:text-red-700 dark:text-red-400"

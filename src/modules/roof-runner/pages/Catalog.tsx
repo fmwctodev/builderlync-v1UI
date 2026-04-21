@@ -6,6 +6,7 @@ import CatalogItemSidebar from '../components/catalog/CatalogItemSidebar';
 import Pagination from '../components/Pagination';
 import { srsService } from '../services/srsService';
 import { proposalsApi, Proposal } from '../services/proposalsApi';
+import { qxoApi } from '../services/qxoApi';
 
 interface ColumnVisibility {
   itemType: boolean;
@@ -53,6 +54,7 @@ export default function Catalog() {
   const [addingToProposalId, setAddingToProposalId] = useState<number | null>(null);
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
+  const [qxoIntegrated, setQxoIntegrated] = useState<boolean | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
@@ -102,6 +104,7 @@ export default function Catalog() {
   useEffect(() => {
     fetchABCSupplyStatus();
     checkSrsIntegration();
+    fetchQxoStatus();
     loadSettings();
   }, [])
 
@@ -168,6 +171,20 @@ export default function Catalog() {
       setSrsIntegrated(isConnected);
     } catch (error) {
       setSrsIntegrated(false);
+    }
+  };
+  
+  const fetchQxoStatus = async () => {
+    try {
+      const response = await qxoApi.getStatus();
+      if (response && response.success) {
+        setQxoIntegrated(response.data?.connected || false);
+      } else {
+        setQxoIntegrated(false);
+      }
+    } catch (error) {
+      console.error('Error fetching QXO status:', error);
+      setQxoIntegrated(false);
     }
   };
 
@@ -636,20 +653,49 @@ export default function Catalog() {
           
           {/* Connect Section */}
           <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Connect</h3>
-            <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
-              <Link size={16} className="text-gray-500 dark:text-gray-400" />
-              <span className="text-gray-900 dark:text-white">ABC Supply</span>
-              {abcSupplyIntegrated !== null && (
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  abcSupplyIntegrated 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                }`}>
-                  {abcSupplyIntegrated ? 'Connected' : 'Not Connected'}
-                </span>
-              )}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                <Link size={16} className="text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-900 dark:text-white">ABC Supply</span>
+                {abcSupplyIntegrated !== null && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    abcSupplyIntegrated 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                  }`}>
+                    {abcSupplyIntegrated ? 'Connected' : 'Not Connected'}
+                  </span>
+                )}
+              </button>
+              
+              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                <Link size={16} className="text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-900 dark:text-white">QXO</span>
+                {qxoIntegrated !== null && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    qxoIntegrated 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                  }`}>
+                    {qxoIntegrated ? 'Connected' : 'Not Connected'}
+                  </span>
+                )}
+              </button>
+
+              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+                <Link size={16} className="text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-900 dark:text-white">SRS</span>
+                {srsIntegrated !== null && (
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    srsIntegrated 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                  }`}>
+                    {srsIntegrated ? 'Connected' : 'Not Connected'}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -1309,8 +1355,8 @@ export default function Catalog() {
         onSave={handleSaveItem}
         isCreating={isCreatingNew}
         abcSupplyConnected={Boolean(abcSupplyIntegrated)}
-        // srsConnected={Boolean(srsIntegrated)}
-        srsConnected={true}
+        srsConnected={Boolean(srsIntegrated)}
+        qxoConnected={Boolean(qxoIntegrated)}
       />
 
       {toast && (

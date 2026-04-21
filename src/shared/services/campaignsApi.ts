@@ -102,6 +102,12 @@ export const campaignsApi = {
     });
   },
 
+  async cancelCampaign(id: string): Promise<void> {
+    await axios.post(`${API_BASE_URL}/campaigns/${id}/cancel`, {}, {
+      headers: getAuthHeaders()
+    });
+  },
+
   async pauseCampaign(id: string): Promise<void> {
     await axios.put(`${API_BASE_URL}/campaigns/${id}`, { status: 'paused' }, {
       headers: getAuthHeaders()
