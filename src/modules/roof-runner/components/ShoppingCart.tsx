@@ -663,20 +663,9 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           let address2 =
             line1.length > 30 ? String(line1).substring(30, 60) : "";
 
-          const stateMap: Record<string, string> = {
-            HARYANA: "HR",
-            PUNJAB: "PB",
-            DELHI: "DL",
-            RAJASTHAN: "RJ",
-            UP: "UP",
-            "UTTAR PRADESH": "UP",
-            CALIFORNIA: "CA",
-            TEXAS: "TX",
-            "NEW YORK": "NY",
-          };
-
-          const stateInput = (addr.state || "").toUpperCase().trim();
-          const stateCode = stateMap[stateInput] || stateInput.substring(0, 2);
+          // Brian Hahn (QXO) confirmed: Only North American (US/Canada) addresses are valid.
+          // We remove the Indian state mappings to avoid sending invalid state codes like "HR".
+          const stateCode = String(addr.state || "").toUpperCase().trim().substring(0, 2);
 
           return {
             address1,
@@ -702,11 +691,11 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
           job: {
             jobName: String(checkoutData.jobName || "Default Job").substring(
               0,
-              15,
+              25,
             ),
             jobNumber: String(checkoutData.jobNumber || "00001").substring(
               0,
-              7,
+              10,
             ),
           },
           purchaseOrderNo: checkoutData.extendedPO
@@ -716,7 +705,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             ? String(checkoutData.extendedPO).substring(0, 50)
             : undefined,
           shipping: {
-            shippingMethod: checkoutData.deliveryService === "P" ? "P" : "D",
+            shippingMethod: checkoutData.deliveryService,
             shippingBranch: String(
               selectedBranch?.id || selectedBranch?.number || "",
             ).substring(0, 4),
@@ -760,7 +749,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
       onCheckout();
     } catch (error) {
       console.error("Checkout failed:", error);
-      alert("Order failed. Please try again.");
+      alert(`Order failed: ${error instanceof Error ? error.message : "Please try again."}`);
     } finally {
       setLoading(false);
     }

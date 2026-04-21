@@ -19,6 +19,7 @@ interface GooglePlacesAutocompleteProps {
   ) => void;
   placeholder?: string;
   className?: string;
+  countries?: string[];
 }
 
 interface Suggestion {
@@ -37,7 +38,8 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
   value,
   onChange,
   placeholder = "Enter address",
-  className = ""
+  className = "",
+  countries = []
 }) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -76,13 +78,18 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
 
     if (inputValue.length > 2 && isLoaded && serviceRef.current) {
       const allSuggestions: Suggestion[] = [];
+      
+      const requestOptions: any = {
+        input: inputValue
+      };
+      
+      if (countries.length > 0) {
+        requestOptions.componentRestrictions = { country: countries };
+      }
 
       // Get city predictions
       serviceRef.current.getPlacePredictions(
-        {
-          input: inputValue,
-          types: ['(cities)']
-        },
+        { ...requestOptions, types: ['(cities)'] },
         (cityPredictions: Suggestion[] | null) => {
           if (cityPredictions) {
             allSuggestions.push(...cityPredictions);
@@ -90,10 +97,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
 
           // Get address predictions
           serviceRef.current.getPlacePredictions(
-            {
-              input: inputValue,
-              types: ['address']
-            },
+            { ...requestOptions, types: ['address'] },
             (addressPredictions: Suggestion[] | null) => {
               if (addressPredictions) {
                 allSuggestions.push(...addressPredictions);

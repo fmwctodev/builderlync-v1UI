@@ -5,26 +5,30 @@ export const EMBEDDED_PIPELINE_IDS = {
   RESIDENTIAL: '1',
   COMMERCIAL: '2',
   INSURANCE: '3',
+  MULTIFAMILY: '4',
 } as const;
 
-export const EMBEDDED_PIPELINE_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance'];
+export const EMBEDDED_PIPELINE_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance', 'Multifamily'];
 
 export const EMBEDDED_PIPELINE_COLORS: Record<JobType, string> = {
   Residential: '#10b981',
   Commercial: '#2563eb',
   Insurance: '#ea580c',
+  Multifamily: '#9333ea',
 };
 
 export const EMBEDDED_PIPELINE_ICONS = {
   Residential: Home,
   Commercial: Building2,
   Insurance: Shield,
+  Multifamily: Building2, // Reusing Building2 or could use another suitable icon
 };
 
 export const EMBEDDED_PIPELINE_NAMES: Record<JobType, string> = {
   Residential: 'Residential',
   Commercial: 'Commercial',
   Insurance: 'Insurance',
+  Multifamily: 'Multifamily',
 };
 
 export const DEFAULT_PIPELINE_STAGES = [
@@ -49,6 +53,8 @@ export function getEmbeddedPipelineId(jobType: JobType): string {
       return EMBEDDED_PIPELINE_IDS.COMMERCIAL;
     case 'Insurance':
       return EMBEDDED_PIPELINE_IDS.INSURANCE;
+    case 'Multifamily':
+      return EMBEDDED_PIPELINE_IDS.MULTIFAMILY;
     default:
       return EMBEDDED_PIPELINE_IDS.COMMERCIAL;
   }
@@ -70,6 +76,8 @@ export function getJobTypeFromPipelineId(pipelineId: string): JobType | null {
       return 'Commercial';
     case EMBEDDED_PIPELINE_IDS.INSURANCE:
       return 'Insurance';
+    case EMBEDDED_PIPELINE_IDS.MULTIFAMILY:
+      return 'Multifamily';
     default:
       return null;
   }
