@@ -14,6 +14,7 @@ interface CatalogItemSidebarProps {
   isCreating?: boolean;
   abcSupplyConnected?: boolean;
   srsConnected?: boolean;
+  qxoConnected?: boolean;
 }
 
 const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
@@ -24,6 +25,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   isCreating = false,
   abcSupplyConnected = false,
   srsConnected = false,
+  qxoConnected = false,
 }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -36,13 +38,17 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   const [abcSearchLoading, setAbcSearchLoading] = useState(false);
   const [srsSearchResults, setSrsSearchResults] = useState<any[]>([]);
   const [srsSearchLoading, setSrsSearchLoading] = useState(false);
+  const [qxoSearchResults, setQxoSearchResults] = useState<any[]>([]);
+  const [qxoSearchLoading, setQxoSearchLoading] = useState(false);
   const searchDebounceRef = useRef<number | null>(null);
   
   const supplierIntegrations = {
     'ABC Supply': abcSupplyConnected,
+    'SRS': srsConnected,
+    'QXO': qxoConnected,
   };
   
-  const supplierOptions = ['ABC Supply', 'SRS'];
+  const supplierOptions = ['ABC Supply', 'SRS', 'QXO'];
   
   const renderSupplierName = (name: string) => {
     if (name === 'ABC Supply') {
@@ -57,6 +63,15 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     }
     if (name === 'SRS') {
       return <span className="font-bold text-orange-600">SRS</span>;
+    }
+    if (name === 'QXO') {
+      return (
+        <span className="font-bold tracking-tight">
+          <span className="text-gray-900 dark:text-white">Q</span>
+          <span className="text-blue-600">X</span>
+          <span className="text-gray-900 dark:text-white">O</span>
+        </span>
+      );
     }
     return <span className="text-gray-900 dark:text-white">{name}</span>;
   };
@@ -161,6 +176,12 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       return;
     }
 
+    if (supplierName === 'QXO' && !qxoConnected) {
+      setShowAddSupplier(false);
+      navigate(`${orgPrefix}/settings/integrations`);
+      return;
+    }
+
     const newSuppliers = [...selectedSuppliers, { name: supplierName }];
     setSelectedSuppliers(newSuppliers);
     if (supplierName !== 'ABC Supply' && supplierName !== 'SRS') {
@@ -198,6 +219,16 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       });
       return;
     }
+    if (removedSupplier?.name === 'QXO') {
+      setQxoSearchResults([]);
+      handleImmediatePatchSave({
+        supplier: supplierValue,
+        supplierType: null,
+        productId: '',
+        productData: null,
+      });
+      return;
+    }
     handleImmediateSave('supplier', supplierValue);
   };
 
@@ -214,6 +245,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     if (query.length < 2) {
       setAbcSearchResults([]);
       setSrsSearchResults([]);
+      setQxoSearchResults([]);
       return;
     }
 
@@ -248,6 +280,22 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
           setSrsSearchResults([]);
         } finally {
           setSrsSearchLoading(false);
+        }
+      }, 300);
+    }
+
+    if (newSuppliers[index]?.name === 'QXO') {
+      if (!qxoConnected) return;
+
+      searchDebounceRef.current = window.setTimeout(async () => {
+        try {
+          setQxoSearchLoading(true);
+          const result = await qxoApi.searchProducts(query);
+          setQxoSearchResults(result?.data || []);
+        } catch {
+          setQxoSearchResults([]);
+        } finally {
+          setQxoSearchLoading(false);
         }
       }, 300);
     }
@@ -296,6 +344,23 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     });
   };
 
+  const selectQxoProduct = (index: number, product: any) => {
+    const newSuppliers = [...selectedSuppliers];
+    const label = `${product.itemDescription || product.brand || 'Product'} (${product.itemNumber})`;
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: label };
+    setSelectedSuppliers(newSuppliers);
+    setQxoSearchResults([]);
+
+    const hasValidSelection = Boolean(product?.itemNumber);
+
+    handleImmediatePatchSave({
+      supplier: hasValidSelection ? 'QXO' : '',
+      supplierType: hasValidSelection ? 'qxo' : null,
+      productId: hasValidSelection ? String(product.itemNumber || '') : '',
+      productData: hasValidSelection ? product : null,
+    });
+  };
+
   const clearAbcProductSelection = (index: number) => {
     const newSuppliers = [...selectedSuppliers];
     newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
@@ -318,6 +383,20 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
     setSelectedSuppliers(newSuppliers);
     setSrsSearchResults([]);
+
+    handleImmediatePatchSave({
+      supplier: '',
+      supplierType: null,
+      productId: '',
+      productData: null,
+    });
+  };
+
+  const clearQxoProductSelection = (index: number) => {
+    const newSuppliers = [...selectedSuppliers];
+    newSuppliers[index] = { ...newSuppliers[index], searchQuery: '' };
+    setSelectedSuppliers(newSuppliers);
+    setQxoSearchResults([]);
 
     handleImmediatePatchSave({
       supplier: '',
@@ -569,9 +648,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                   {selectedSuppliers.map((supplier, index) => {
                     const abcProductSelected = Boolean(formData.supplierType === 'abc' && formData.productId);
                     const srsProductSelected = Boolean(formData.supplierType === 'srs' && formData.productId);
+                    const qxoProductSelected = Boolean(formData.supplierType === 'qxo' && formData.productId);
                     const selectedAbcProduct = abcProductSelected ? (formData.productData as Product | null) : null;
                     const selectedSrsProduct = srsProductSelected ? (formData.productData as any) : null;
-                    const isIntegrated = (supplier.name === 'ABC Supply' && abcProductSelected) || (supplier.name === 'SRS' && srsProductSelected);
+                    const selectedQxoProductData = qxoProductSelected ? (formData.productData as any) : null;
+                    const isIntegrated = (supplier.name === 'ABC Supply' && abcProductSelected) || (supplier.name === 'SRS' && srsProductSelected) || (supplier.name === 'QXO' && qxoProductSelected);
                     
                     return (
                       <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-700">
@@ -597,9 +678,9 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                   : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                               }`}>
-                                {isIntegrated ? 'Connected' : (supplier.name === 'ABC Supply' && abcSupplyConnected ? 'Select Product' : 'Not Connected')}
+                                {isIntegrated ? 'Connected' : (supplierIntegrations[supplier.name as keyof typeof supplierIntegrations] ? 'Select Product' : 'Not Connected')}
                               </span>
-                              {!isIntegrated && !(supplier.name === 'ABC Supply' && abcSupplyConnected) && (
+                              {!isIntegrated && !supplierIntegrations[supplier.name as keyof typeof supplierIntegrations] && (
                                 <button
                                   onClick={() => navigate(`${orgPrefix}/settings/integrations`)}
                                   className="text-primary-600 dark:text-primary-400 hover:underline"
@@ -678,6 +759,30 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                               </button>
                             </div>
                           </div>
+                        ) : supplier.name === 'QXO' && qxoProductSelected ? (
+                          <div className="mt-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected product</p>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {selectedQxoProductData?.itemDescription || selectedQxoProductData?.brand || formData.name || 'Product'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              #{formData.productId || selectedQxoProductData?.itemNumber || 'N/A'}
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                onClick={() => clearQxoProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded-lg hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+                              >
+                                Remove product
+                              </button>
+                              <button
+                                onClick={() => clearQxoProductSelection(index)}
+                                className="px-3 py-1.5 text-xs border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 dark:border-primary-700 dark:text-primary-300 dark:hover:bg-primary-900/20"
+                              >
+                                Add another
+                              </button>
+                            </div>
+                          </div>
                         ) : (
                           <div className="relative mt-3">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
@@ -732,6 +837,30 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                                   </div>
                                 )}
                                 {!srsSearchLoading && (supplier.searchQuery || '').trim().length >= 2 && srsSearchResults.length === 0 && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">No products found.</p>
+                                )}
+                              </div>
+                            )}
+                            {supplier.name === 'QXO' && (
+                              <div className="mt-2">
+                                {qxoSearchLoading && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Searching products...</p>
+                                )}
+                                {!qxoSearchLoading && qxoSearchResults.length > 0 && (
+                                  <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                                    {qxoSearchResults.map((product) => (
+                                      <button
+                                        key={product.itemNumber}
+                                        onClick={() => selectQxoProduct(index, product)}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                                      >
+                                        <div className="font-medium text-gray-900 dark:text-white">{product.itemDescription || product.brand || 'Product'}</div>
+                                        <div className="text-gray-500 dark:text-gray-400">#{product.itemNumber}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!qxoSearchLoading && (supplier.searchQuery || '').trim().length >= 2 && qxoSearchResults.length === 0 && (
                                   <p className="text-xs text-gray-500 dark:text-gray-400">No products found.</p>
                                 )}
                               </div>

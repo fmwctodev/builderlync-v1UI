@@ -273,14 +273,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Job Type <span className="text-red-500">*</span>
                       </label>
-                      <div className="flex space-x-4">
                         <label className="flex items-center space-x-2 cursor-pointer">
                           <input
                             type="radio"
                             name="jobType"
                             value="residential"
                             checked={formData.jobType === 'residential'}
-                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
                             className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
@@ -291,7 +290,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                             name="jobType"
                             value="commercial"
                             checked={formData.jobType === 'commercial'}
-                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
                             className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
@@ -300,14 +299,24 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           <input
                             type="radio"
                             name="jobType"
+                            value="multifamily"
+                            checked={formData.jobType === 'multifamily'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Multifamily</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
                             value="insurance"
                             checked={formData.jobType === 'insurance'}
-                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' })}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
                             className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
                         </label>
-                      </div>
                       {validationErrors.jobType && (
                         <p className="mt-1 text-xs text-red-500">{validationErrors.jobType}</p>
                       )}

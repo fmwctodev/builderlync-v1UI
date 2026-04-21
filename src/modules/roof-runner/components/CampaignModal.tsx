@@ -35,8 +35,29 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   });
 
   useEffect(() => {
+    const fetchInitialEstimate = async (audience: any) => {
+      try {
+        const estimate = await campaignsApi.getRecipientEstimate({
+          filter_type: audience.filter_type,
+          job_statuses: audience.filter_type === 'status' ? audience.job_statuses : undefined,
+          opportunity_stages: audience.filter_type === 'opportunities' ? audience.opportunity_stages : undefined,
+          tags: audience.tags,
+        });
+        setRecipientData(estimate);
+      } catch (error) {
+        console.error('Error fetching initial recipient estimate:', error);
+      }
+    };
+
     if (show) {
       if (editingCampaign) {
+        // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
+        let formattedDate = '';
+        if (editingCampaign.scheduled_date) {
+          const date = new Date(editingCampaign.scheduled_date);
+          formattedDate = date.toISOString().slice(0, 16);
+        }
+
         setFormData({
           name: editingCampaign.name,
           type: editingCampaign.type,
@@ -49,9 +70,14 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             estimated_count: 0,
           },
           tags: editingCampaign.tags || [],
-          scheduled_date: editingCampaign.scheduled_date,
+          scheduled_date: formattedDate,
         });
         setCampaignType(editingCampaign.type);
+        setSendImmediately(!editingCampaign.scheduled_date);
+        
+        if (editingCampaign.target_audience) {
+          fetchInitialEstimate(editingCampaign.target_audience);
+        }
       } else {
         setFormData({
           name: '',
@@ -67,6 +93,8 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           tags: [],
         });
         setCampaignType('email');
+        setSendImmediately(true);
+        setRecipientData({ count: 0, recipients: [] });
       }
     }
   }, [show, editingCampaign]);

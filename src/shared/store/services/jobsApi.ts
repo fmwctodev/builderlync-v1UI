@@ -89,7 +89,7 @@ export interface Job {
   editedByName: string | null;
   editedBy: number | null;
   edited_by?: number | null;
-  jobType?: 'residential' | 'commercial' | 'insurance';
+  jobType?: 'residential' | 'commercial' | 'insurance' | 'multifamily';
   contactId?: number | null;
   contact_id?: number | null;
   opportunity_id?: string | null;
@@ -140,7 +140,7 @@ export interface CreateJobRequest {
   claimDetails: string;
   createdBy: number | null;
   editedBy?: number | null;
-  jobType?: 'residential' | 'commercial' | 'insurance';
+  jobType?: 'residential' | 'commercial' | 'insurance' | 'multifamily';
   contactId?: number | null;
   contactName?: string | null;
   opportunity_id?: string | null;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package, Plus, Loader2, Image as ImageIcon, ChevronLeft, Building, ShoppingCart, Minus } from 'lucide-react';
+import { Search, Package, Plus, Loader2, Image as ImageIcon, ChevronLeft, Building, ShoppingCart, Minus, AlertTriangle, ArrowRight } from 'lucide-react';
 import { qxoApi } from '../services/qxoApi';
 import ShoppingCartComponent from './ShoppingCart';
 
@@ -235,6 +235,31 @@ export default function QxoProductCatalog({ onBack }: { onBack?: () => void }) {
             )}
           </button>
         </div>
+
+        {/* Branch Warning Banner */}
+        {!selectedBranch && (
+          <div className="mx-8 mt-6 bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-2">
+            <div className="p-4 bg-gray-800/50 border-b border-gray-700 flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-base font-bold text-yellow-500">Branch Selection Required</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  You must select a Beacon Pro+ branch to search inventory and see your custom pricing.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex items-center text-sm">
+              <button 
+                onClick={onBack}
+                className="flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors font-bold"
+              >
+                <Building className="h-4 w-4" />
+                <span>Go to Dashboard to Select Branch</span>
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
         
         <div className="p-8 border-b border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-6">
@@ -261,10 +286,21 @@ export default function QxoProductCatalog({ onBack }: { onBack?: () => void }) {
 
         <div className="flex-1 overflow-x-auto bg-gray-50/50 dark:bg-gray-900/50">
           {!selectedBranch ? (
-            <div className="text-center py-20 m-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-              <Package className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Branch Required</h3>
-              <p className="mt-2 text-gray-500 max-w-md mx-auto">Please select a Beacon Pro+ branch from the Dashboard before searching the catalog.</p>
+            <div className="text-center py-20 m-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-inner flex flex-col items-center">
+              <div className="h-20 w-20 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center justify-center mb-6 text-gray-300 dark:text-gray-500">
+                <Building className="h-10 w-10" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select a Branch to Search</h3>
+              <p className="mt-2 text-gray-500 max-w-sm mx-auto mb-8">
+                Pricing and product availability vary by location. Please select your local Beacon Pro+ branch first.
+              </p>
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-primary-500/20 active:scale-95"
+              >
+                <Building className="h-5 w-5" />
+                Go to Dashboard
+              </button>
             </div>
           ) : showAccountPrompt ? (
             <div className="max-w-md mx-auto my-12 py-12 px-8 bg-white dark:bg-gray-800 rounded-2xl border-2 border-primary-100 dark:border-primary-900/30 shadow-xl text-center">
