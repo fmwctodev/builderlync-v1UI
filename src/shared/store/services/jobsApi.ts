@@ -101,6 +101,9 @@ export interface Job {
   deleted_by?: number | null;
   deleted_at?: string | null;
   tags?: string[];
+  pipelineId?: string | null;
+  stageId?: string | null;
+  pipelineName?: string | null;
 }
 
 export interface JobsResponse {
@@ -145,6 +148,8 @@ export interface CreateJobRequest {
   contactName?: string | null;
   opportunity_id?: string | null;
   tags?: string[];
+  pipelineId?: string | null;
+  stageId?: string | null;
 }
 
 class JobsApiService {

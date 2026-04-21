@@ -30,7 +30,7 @@ const JobsTable: React.FC<JobsTableProps> = ({
 }) => {
   const headers = [
     'Job ID', 'Last updated', 'Time in stage', 'Address', 'Contact', 'Value',
-    'Tags', 'Workflow', 'Stage', 'Close date', 'Lead source', 'Assignees',
+    'Tags', 'Workflow', 'Job Type', 'Stage', 'Close date', 'Lead source', 'Assignees',
     'Job owner', 'Tasks', 'Reports', 'Proposals', 'Actions'
   ];
 
@@ -101,7 +101,12 @@ const JobsTable: React.FC<JobsTableProps> = ({
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-blue-700 dark:text-primary-300 px-2 py-1 rounded">
-                          🏠 {job.jobType || 'residential'}
+                          🏠 {job.pipelineName || (job.pipelineId ? 'Default Workflow' : 'External Job')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                          {job.jobType || 'Residential'}
                         </span>
                       </td>
                       <td className="px-4 py-3">

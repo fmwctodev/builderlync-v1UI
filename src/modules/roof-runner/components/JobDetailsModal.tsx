@@ -18,6 +18,8 @@ import InvoicesTab from './InvoicesTab';
 import JobCostingTab from './JobCostingTab';
 import AttachmentsTab from './AttachmentsTab';
 import InstantEstimateTab from './InstantEstimateTab';
+import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
+import Toast from './Toast';
 
 interface JobDetailsModalProps {
   isOpen: boolean;
@@ -50,6 +52,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   setModalMessage,
   onCreateOpportunity
 }) => {
+  const { data: pipelines } = useGetPipelinesQuery();
   const { orgSlug } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Job details');
@@ -142,8 +145,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   if (!isOpen) return null;
 
   console.log('Staff data in modal:', staff);
-  console.log('Staff length:', staff?.length);
-  console.log('Staff sample:', staff?.[0]);
+  const activePipeline = pipelines?.find(p => p.id === formData.pipelineId) || pipelines?.find(p => p.is_default);
+  const activeStages = activePipeline?.stages || [];
 
   const stages = [
     'Inspection/Estimate Booked',
@@ -161,6 +164,27 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     'Job Started',
     'Job Complete'
   ];
+
+  // If we have dynamic stages from a pipeline, use them; otherwise fallback to the hardcoded list
+  const displayStages = activeStages.length > 0 
+    ? activeStages.map(s => ({ id: s.id, name: s.name }))
+    : stages.map(s => ({ id: '', name: s }));
+
+  const handleStageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    
+    if (activeStages.length > 0) {
+      const selectedStage = activeStages.find(s => s.name === selectedValue);
+      setFormData({ 
+        ...formData, 
+        workflowStages: selectedValue,
+        stageId: selectedStage?.id || null,
+        pipelineId: activePipeline?.id || null
+      });
+    } else {
+      setFormData({ ...formData, workflowStages: selectedValue });
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -426,11 +450,11 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         <div className="space-y-2">
                           <select
                             value={formData.workflowStages}
-                            onChange={(e) => setFormData({ ...formData, workflowStages: e.target.value })}
+                            onChange={handleStageChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           >
-                            {stages.map(stage => (
-                              <option key={stage} value={stage}>{stage}</option>
+                            {displayStages.map(stage => (
+                              <option key={stage.id || stage.name} value={stage.name}>{stage.name}</option>
                             ))}
                           </select>
                           {validationErrors.workflowStages && (
