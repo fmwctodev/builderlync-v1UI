@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { abcSupplyApi } from '../services/api';
 import { qxoApi } from '../../roof-runner/services/qxoApi';
+import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
 
 interface CheckoutFormProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     jobId: null,
-    deliveryService: supplier === 'QXO' ? 'D' : 'OTG', // Default to Delivery for QXO
+    deliveryService: supplier === 'QXO' ? 'O' : 'OTG', // Default to Delivery for QXO
     contact: {
       name: initialData?.contact?.name || '',
       email: initialData?.contact?.email || '',
@@ -166,6 +167,34 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
       
       return newData;
     });
+  };
+
+  const handleAddressSelect = (
+    address: string,
+    isFromAutocomplete: boolean,
+    lat?: number,
+    lng?: number,
+    components?: any
+  ) => {
+    if (isFromAutocomplete && components) {
+      const street = components.street_number 
+        ? `${components.street_number} ${components.route || ''}`.trim()
+        : components.route || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        shippingAddress: {
+          ...prev.shippingAddress,
+          name: prev.shippingAddress?.name || '', // preserve name
+          line1: street || address.split(',')[0],
+          city: components.city || '',
+          state: components.state || '',
+          zipCode: components.zip || ''
+        }
+      }));
+    } else {
+      updateField('shippingAddress', 'line1', address);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -334,7 +363,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
             >
               {supplier === 'QXO' ? (
                 <>
-                  <option value="D">Delivery (D)</option>
+                  <option value="O">Delivery/Order (O)</option>
                   <option value="P">Pickup / Will Call (P)</option>
                 </>
               ) : (
@@ -452,28 +481,42 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                         </span>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Street Address"
-                      value={formData.shippingAddress?.line1}
-                      onChange={(e) => updateField('shippingAddress', 'line1', e.target.value)}
-                      required
-                      className={`w-full p-3 bg-white border ${isAddressInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500`}
-                    />
+                    {isQxo ? (
+                      <GooglePlacesAutocomplete
+                        value={formData.shippingAddress?.line1 || ''}
+                        onChange={handleAddressSelect}
+                        placeholder="Start typing your address..."
+                        countries={['us', 'ca']}
+                        className={`w-full p-3 bg-white border ${isAddressInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500`}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Street Address"
+                        value={formData.shippingAddress?.line1}
+                        onChange={(e) => updateField('shippingAddress', 'line1', e.target.value)}
+                        required
+                        className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                      />
+                    )}
                     {isAddressInvalid && (
                       <p className="text-[10px] text-red-500 mt-1">Street address must be 30 characters or less for QXO orders.</p>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={formData.shippingAddress?.city}
-                    onChange={(e) => updateField('shippingAddress', 'city', e.target.value)}
-                    required
-                    className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={formData.shippingAddress?.city}
+                      onChange={(e) => updateField('shippingAddress', 'city', e.target.value)}
+                      required
+                      disabled={isQxo}
+                      className={`w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500 ${isQxo ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed' : ''}`}
+                    />
+                    {isQxo && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-primary-500 uppercase tracking-tighter">Auto-filled</span>}
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="relative">
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[10px] font-medium text-gray-500">State (2 chars)</label>
                         {isQxo && (
@@ -488,10 +531,12 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                         value={formData.shippingAddress?.state}
                         onChange={(e) => updateField('shippingAddress', 'state', e.target.value)}
                         required
-                        className={`w-full p-3 bg-white border ${isStateInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500`}
+                        disabled={isQxo}
+                        className={`w-full p-3 bg-white border ${isStateInvalid ? 'border-red-500' : 'border-gray-300'} dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500 ${isQxo ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed' : ''}`}
                       />
+                      {isQxo && <span className="absolute right-3 top-[70%] -translate-y-1/2 text-[9px] font-bold text-primary-500 uppercase tracking-tighter">Auto</span>}
                     </div>
-                    <div>
+                    <div className="relative">
                       <div className="flex justify-between items-center mb-1">
                         <label className="text-[10px] font-medium text-gray-500">ZIP Code</label>
                       </div>
@@ -501,10 +546,17 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                         value={formData.shippingAddress?.zipCode}
                         onChange={(e) => updateField('shippingAddress', 'zipCode', e.target.value)}
                         required
-                        className="w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                        disabled={isQxo}
+                        className={`w-full p-3 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-red-500 ${isQxo ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed' : ''}`}
                       />
+                      {isQxo && <span className="absolute right-3 top-[70%] -translate-y-1/2 text-[9px] font-bold text-primary-500 uppercase tracking-tighter">Auto</span>}
                     </div>
                   </div>
+                  {isQxo && (
+                    <p className="text-[10px] text-gray-500 mt-2 italic md:col-span-2">
+                      Note: Currently, QXO only support valid North American (US and Canada) addresses for order fulfillment.
+                    </p>
+                  )}
                 </div>
               </div>
             </>

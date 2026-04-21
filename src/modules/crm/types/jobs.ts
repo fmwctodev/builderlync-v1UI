@@ -1,4 +1,4 @@
-export type JobType = 'Residential' | 'Commercial' | 'Industrial';
+export type JobType = 'Residential' | 'Commercial' | 'Industrial' | 'Multifamily';
 
 export type JobStage = 
   | 'New Job'

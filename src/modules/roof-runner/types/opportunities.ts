@@ -1,6 +1,6 @@
 export type OpportunityStatus = 'open' | 'won' | 'lost' | 'abandoned';
 
-export type JobType = 'Residential' | 'Commercial' | 'Insurance';
+export type JobType = 'Residential' | 'Commercial' | 'Insurance' | 'Multifamily';
 
 export type PipelineType = 'system' | 'custom';
 
@@ -137,12 +137,13 @@ export const OPPORTUNITY_SOURCES = [
   'Other'
 ] as const;
 
-export const JOB_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance'];
+export const JOB_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance', 'Multifamily'];
 
 export const JOB_TYPE_COLORS: Record<JobType, string> = {
   Residential: '#10b981',
   Commercial: '#2563eb',
   Insurance: '#ea580c',
+  Multifamily: '#9333ea',
 };
 
 export const STAGE_COLORS = [
