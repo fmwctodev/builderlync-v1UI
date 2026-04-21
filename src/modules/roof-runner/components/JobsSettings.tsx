@@ -60,6 +60,18 @@ const JobsSettings: React.FC = () => {
     }
   };
 
+  const handleMakeDefault = async (workflow: Pipeline) => {
+    try {
+      await updatePipeline({ 
+        id: workflow.id, 
+        data: { is_default: true } 
+      }).unwrap();
+      setActiveMenuId(null);
+    } catch (error) {
+      console.error('Failed to set default pipeline:', error);
+    }
+  };
+
   const handleCreate = async () => {
     if (!newWorkflowName.trim()) return;
     
@@ -156,15 +168,16 @@ const JobsSettings: React.FC = () => {
                             <Edit2 className="w-4 h-4" />
                             <span>Edit</span>
                           </button>
-                          {/* <button className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <Star className="w-4 h-4" />
-                            <span>Make default</span>
-                          </button>
+                          {!workflow.is_default && (
+                            <button
+                              onClick={() => handleMakeDefault(workflow)}
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Star className="w-4 h-4" />
+                              <span>Make default</span>
+                            </button>
+                          )}
                           <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                          <button className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                          </button> */}
                         </div>
                       )}
                     </div>

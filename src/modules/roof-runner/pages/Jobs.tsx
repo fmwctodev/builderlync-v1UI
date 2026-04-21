@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation, useSearchParams } from 'react-rout
 import { getJobs, createJob, updateJob, deleteJob, getJobCounts, getJobById, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
+import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
 import JobsHeader from '../components/JobsHeader';
 import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
@@ -45,6 +46,9 @@ const Jobs: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [jobCounts, setJobCounts] = useState<any>(null);
   const PAGE_SIZE = 50;
+  
+  const { data: pipelines } = useGetPipelinesQuery();
+  const defaultPipeline = pipelines?.find(p => p.is_default);
 
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
     sortBy: 'Last updated (newest)',
@@ -64,6 +68,8 @@ const Jobs: React.FC = () => {
     assignees: [],
     jobOwner: null,
     workflowStages: 'New lead',
+    pipelineId: null,
+    stageId: null,
     closeDate: new Date().toISOString().split('T')[0],
     jobValue: '',
     source: '',
@@ -229,6 +235,7 @@ const Jobs: React.FC = () => {
         await updateJob(viewingJob.id!, jobData);
 
         if (previousStage !== newStage && viewingJob.id) {
+          /*
           try {
             const createdTasks = await autoCreateTasksForStage(viewingJob.id, newStage);
             if (createdTasks.length > 0) {
@@ -243,6 +250,8 @@ const Jobs: React.FC = () => {
             console.error('Error auto-creating tasks:', taskError);
             setModalMessage({ message: 'Job updated, but some tasks could not be created', type: 'success' });
           }
+          */
+          setModalMessage({ message: 'Job updated successfully!', type: 'success' });
         } else {
           setModalMessage({ message: 'Job updated successfully!', type: 'success' });
         }
@@ -259,6 +268,7 @@ const Jobs: React.FC = () => {
         const newJobId = newJob.id;
 
         if (newJobId) {
+          /*
           try {
             const createdTasks = await autoCreateTasksForStage(newJobId, newStage);
             if (createdTasks.length > 0) {
@@ -273,6 +283,8 @@ const Jobs: React.FC = () => {
             console.error('Error auto-creating tasks:', taskError);
             setModalMessage({ message: 'Job created successfully!', type: 'success' });
           }
+          */
+          setModalMessage({ message: 'Job created successfully!', type: 'success' });
 
           // Set the newly created job as viewingJob so tabs can access it
           setViewingJob(newJob);
@@ -334,7 +346,9 @@ const Jobs: React.FC = () => {
       jobType: job.jobType || 'residential',
       contactId,
       contactName,
-      tags: job.tags || []
+      tags: job.tags || [],
+      pipelineId: job.pipelineId || job.pipeline_id || null,
+      stageId: job.stageId || job.stage_id || null,
     });
     setShowJobDetails(true);
   };
@@ -399,7 +413,9 @@ const Jobs: React.FC = () => {
       jobType: 'residential',
       contactId: null,
       contactName: null,
-      tags: []
+      tags: [],
+      pipelineId: null,
+      stageId: null
     });
   };
 
