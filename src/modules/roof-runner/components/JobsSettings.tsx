@@ -1,7 +1,8 @@
-import { Plus, X, MoreHorizontal, Edit2, Star, Trash2, Home, Hammer, Shield } from 'lucide-react';
+import { Plus, X, MoreHorizontal, Edit2, Star, Trash2, Home, Hammer, Shield, Lock } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetPipelinesQuery, useUpdatePipelineMutation, useCreatePipelineMutation, Pipeline } from '../../../shared/store/services/pipelinesApi';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 const JobsSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -147,37 +148,42 @@ const JobsSettings: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => navigate(`/org/${orgSlug}/jobs/settings/stages`)}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all duration-200 border border-gray-200 dark:border-gray-600"
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all duration-200 border border-gray-200 dark:border-gray-600 flex items-center gap-2"
                     >
-                      Manage
+                      {!hasPermission('jobs', 'manage') && <Lock className="w-3 h-3 text-gray-400" />}
+                      {hasPermission('jobs', 'manage') ? 'Manage' : 'View Stages'}
                     </button>
                     <div className="relative">
-                      <button
-                        onClick={() => setActiveMenuId(activeMenuId === workflow.id ? null : workflow.id)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                      </button>
+                      {(hasPermission('jobs', 'manage') || !workflow.is_default) && (
+                        <button
+                          onClick={() => setActiveMenuId(activeMenuId === workflow.id ? null : workflow.id)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                        </button>
+                      )}
 
                       {activeMenuId === workflow.id && (
                         <div ref={menuRef} className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1">
-                          <button
-                            onClick={() => handleEdit(workflow)}
-                            className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Edit</span>
-                          </button>
+                          {hasPermission('jobs', 'manage') && (
+                            <button
+                              onClick={() => handleEdit(workflow)}
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>Edit</span>
+                            </button>
+                          )}
                           {!workflow.is_default && (
                             <button
                               onClick={() => handleMakeDefault(workflow)}
-                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium text-primary-600 dark:text-primary-400"
                             >
                               <Star className="w-4 h-4" />
                               <span>Make default</span>
                             </button>
                           )}
-                          <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                          {hasPermission('jobs', 'manage') && <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>}
                         </div>
                       )}
                     </div>
@@ -195,13 +201,15 @@ const JobsSettings: React.FC = () => {
           </div>
         </div>
 
-        <button 
-          onClick={() => setIsCreating(true)}
-          className="mt-6 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create a workflow</span>
-        </button>
+        {hasPermission('jobs', 'manage') && (
+          <button 
+            onClick={() => setIsCreating(true)}
+            className="mt-6 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:scale-[1.02] flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create a workflow</span>
+          </button>
+        )}
       </div>
 
       {/* Lead Sources */}
@@ -274,8 +282,13 @@ const JobsSettings: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Job costing access</h3>
         <p className="text-gray-600 dark:text-gray-400 mb-4">By default job costing is only accessible to managers (and higher roles), to make it available to everyone in your team, please uncheck the box</p>
 
-        <label className="flex items-center">
-          <input type="checkbox" defaultChecked className="mr-3" />
+        <label className={`flex items-center ${!hasPermission('jobs', 'manage') ? 'opacity-50 cursor-not-allowed' : ''}`}>
+          <input 
+            type="checkbox" 
+            defaultChecked 
+            className="mr-3" 
+            disabled={!hasPermission('jobs', 'manage')}
+          />
           <span className="text-gray-900 dark:text-white">Only managers</span>
         </label>
       </div>

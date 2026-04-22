@@ -13,6 +13,8 @@ import {
   X
 } from 'lucide-react';
 import { useGetPipelinesQuery, useUpdatePipelineMutation, Pipeline, PipelineStage } from '../../../shared/store/services/pipelinesApi';
+import { hasPermission } from '../../../shared/utils/permissions';
+import { Lock } from 'lucide-react';
 
 const WorkflowStages: React.FC = () => {
   const navigate = useNavigate();
@@ -237,8 +239,17 @@ const WorkflowStages: React.FC = () => {
               </div>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center bg-white dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm">
-              <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-              <span>Changes auto-saved</span>
+              {hasPermission('jobs', 'manage') ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                  <span>Changes auto-saved</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 mr-2 text-amber-500" />
+                  <span>Read Only Mode</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -330,14 +341,18 @@ const WorkflowStages: React.FC = () => {
                                       {stage.name.includes('**') && (
                                         <span className="text-[10px] bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 px-1.5 py-0.5 rounded-full uppercase font-bold border border-primary-200 dark:border-primary-800">Hot</span>
                                       )}
-                                      <Edit2 
-                                        onClick={() => startEditing(stage.id, stage.name)}
-                                        className="w-3.5 h-3.5 text-gray-300 hover:text-primary-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
-                                      />
-                                      <Trash2 
-                                        onClick={() => removeStageRow(stage.name)}
-                                        className="w-3.5 h-3.5 text-gray-300 hover:text-red-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
-                                      />
+                                      {hasPermission('jobs', 'manage') && (
+                                        <>
+                                          <Edit2 
+                                            onClick={() => startEditing(stage.id, stage.name)}
+                                            className="w-3.5 h-3.5 text-gray-300 hover:text-primary-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
+                                          />
+                                          <Trash2 
+                                            onClick={() => removeStageRow(stage.name)}
+                                            className="w-3.5 h-3.5 text-gray-300 hover:text-red-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" 
+                                          />
+                                        </>
+                                      )}
                                     </>
                                   )}
                                 </div>
@@ -347,16 +362,16 @@ const WorkflowStages: React.FC = () => {
                                   <input
                                     type="checkbox"
                                     checked={isEnabled}
-                                    onChange={() => toggleStage(cat.id, stage.name, wfIdx)}
-                                    className={`w-6 h-6 rounded-md border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 cursor-pointer shadow-sm transition-all ${stage.required ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                    disabled={stage.required}
+                                    onChange={() => hasPermission('jobs', 'manage') && toggleStage(cat.id, stage.name, wfIdx)}
+                                    className={`w-6 h-6 rounded-md border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 cursor-pointer shadow-sm transition-all ${stage.required || !hasPermission('jobs', 'manage') ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                    disabled={stage.required || !hasPermission('jobs', 'manage')}
                                   />
                                 </div>
                               ))}
                             </div>
                           );
                         })}
-                        {!pipelines.length ? null : (
+                        {!pipelines.length || !hasPermission('jobs', 'manage') ? null : (
                           addingToCategory === cat.id ? (
                             <div className="flex items-center space-x-2 px-12 py-3">
                               <input

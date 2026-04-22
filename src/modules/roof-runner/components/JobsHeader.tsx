@@ -172,7 +172,7 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
           <List className="w-4 h-4" />
           <span>List View</span>
         </button>
-        {(hasPermission('jobs', 'manage') || hasPermission('projects', 'manage')) && (
+        {(hasPermission('jobs', 'view') || hasPermission('jobs', 'manage') || hasPermission('projects', 'view') || hasPermission('projects', 'manage')) && (
           <button
             onClick={() => setActiveView('settings')}
             className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${activeView === 'settings'
