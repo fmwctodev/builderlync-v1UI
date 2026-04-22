@@ -589,7 +589,7 @@ const Jobs: React.FC = () => {
             />
           )}
 
-          {activeView === 'settings' && hasPermission('jobs', 'manage') && <JobsSettings />}
+          {activeView === 'settings' && (hasPermission('jobs', 'view') || hasPermission('jobs', 'manage') || hasPermission('projects', 'view') || hasPermission('projects', 'manage')) && <JobsSettings />}
         </div>
 
         <FiltersSidebar
