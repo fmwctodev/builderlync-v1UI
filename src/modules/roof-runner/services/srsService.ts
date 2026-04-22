@@ -19,9 +19,17 @@ interface SRSUser {
   isActive: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
 
 class SRSService {
+  private getHeaders() {
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  }
+
   async authenticate(credentials: SRSCredentials): Promise<{ success: boolean; user?: SRSUser; message?: string }> {
     try {
       const result = await this.saveCustomerProfile(
@@ -44,7 +52,9 @@ class SRSService {
 
   async getBranches(): Promise<SRSBranch[]> {
     try {
-      const response = await fetch('/api/srs/branches');
+      const response = await fetch(`${API_BASE_URL}/srs/branches`, {
+        headers: this.getHeaders()
+      });
       
       if (response.ok) {
         const data = await response.json();
@@ -66,13 +76,22 @@ class SRSService {
     }
   }
 
-  async searchProducts(query: string, page = 1, limit = 50): Promise<{ data: any[]; pagination?: any }> {
+  async searchProducts(query: string, page = 1, limit = 50, branchCode?: string): Promise<{ data: any[]; pagination?: any }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/srs/items/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+      const url = new URL(`${API_BASE_URL}/srs/items`);
+      url.searchParams.append('search', query);
+      url.searchParams.append('page', page.toString());
+      url.searchParams.append('limit', limit.toString());
+      if (branchCode) {
+        url.searchParams.append('branchCode', branchCode);
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: this.getHeaders()
+      });
       
       if (response.ok) {
         const result = await response.json();
-        // Handle nested data structure: result.data.data
         if (result.success && result.data) {
           return {
             data: result.data.data || [],
@@ -92,7 +111,7 @@ class SRSService {
   async getCustomerProfile(): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
       const response = await fetch(`${API_BASE_URL}/srs/customer`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: this.getHeaders()
       });
       return response.json();
     } catch (error) {
@@ -108,10 +127,7 @@ class SRSService {
     try {
       const response = await fetch(`${API_BASE_URL}/srs/validate-customer`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({ accountNumber, invoiceNumber, invoiceDate })
       });
       return response.json();
@@ -128,10 +144,7 @@ class SRSService {
     try {
       const response = await fetch(`${API_BASE_URL}/srs/customer`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({ accountNumber, invoiceNumber, invoiceDate })
       });
       return response.json();
@@ -144,7 +157,7 @@ class SRSService {
     try {
       const response = await fetch(`${API_BASE_URL}/srs/customer`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: this.getHeaders()
       });
       return response.json();
     } catch (error) {

@@ -148,7 +148,7 @@ const QxoSupplyView: React.FC = () => {
       );
     }
 
-    const renderDashboardOverview = () => (
+    return (
       <div className="space-y-6">
         <section className="bg-primary-700 dark:bg-primary-800 rounded-lg p-6 md:p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -336,7 +336,7 @@ const QxoSupplyView: React.FC = () => {
   if (currentView === 'products') return <QxoProductCatalog onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'orders') return <QxoOrderHistory onBack={() => setCurrentView('dashboard')} />;
   
-  return renderDashboardOverview();
+  return renderDashboard();
 };
 
 export default QxoSupplyView;

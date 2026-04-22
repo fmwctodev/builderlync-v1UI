@@ -15,6 +15,7 @@ export const campaignsApi = {
   async createCampaign(data: CampaignFormData, sendNow: boolean): Promise<Campaign> {
     const payload = {
       ...data,
+      scheduled_date: data.scheduled_date || null,
       status: sendNow ? 'sending' : data.scheduled_date ? 'scheduled' : 'draft',
       sent_at: sendNow ? new Date().toISOString() : null,
     };
@@ -23,17 +24,16 @@ export const campaignsApi = {
       headers: getAuthHeaders()
     });
 
-    if (sendNow) {
-      await axios.post(`${API_BASE_URL}/campaigns/${response.data.data.id}/send`, {}, {
-        headers: getAuthHeaders()
-      });
-    }
-
     return response.data.data;
   },
 
   async updateCampaign(id: string, data: Partial<CampaignFormData>): Promise<Campaign> {
-    const response = await axios.put(`${API_BASE_URL}/campaigns/${id}`, data, {
+    const payload = {
+      ...data,
+      scheduled_date: data.scheduled_date || null
+    };
+
+    const response = await axios.put(`${API_BASE_URL}/campaigns/${id}`, payload, {
       headers: getAuthHeaders()
     });
 
@@ -132,6 +132,13 @@ export const campaignsApi = {
   async checkCredentials(service?: 'email' | 'sms'): Promise<{ email: boolean; sms: boolean }> {
     const params = service ? `?service=${service}` : '';
     const response = await axios.get(`${API_BASE_URL}/auth/user/credentials/check${params}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data.data;
+  },
+
+  async getRecipientEstimate(filters: any): Promise<{ count: number; recipients: any[] }> {
+    const response = await axios.post(`${API_BASE_URL}/campaigns/estimate`, filters, {
       headers: getAuthHeaders()
     });
     return response.data.data;

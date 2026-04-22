@@ -217,6 +217,7 @@ const CampaignsTab: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [campaignStats, setCampaignStats] = useState<any>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'email' | 'sms'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | CampaignStatus>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -227,6 +228,29 @@ const CampaignsTab: React.FC = () => {
   useEffect(() => {
     loadCampaigns();
   }, [filterType, filterStatus, currentPage]);
+
+  useEffect(() => {
+    if (showDetailsModal && selectedCampaign) {
+      loadCampaignDetails(selectedCampaign.id);
+    }
+  }, [showDetailsModal]);
+
+  const loadCampaignDetails = async (id: string) => {
+    try {
+      setIsDetailsLoading(true);
+      const [details, stats] = await Promise.all([
+        campaignsApi.getCampaign(id),
+        campaignsApi.getCampaignStats(id)
+      ]);
+      
+      setSelectedCampaign(details);
+      setCampaignStats(stats);
+    } catch (error) {
+      console.error('Error loading campaign details:', error);
+    } finally {
+      setIsDetailsLoading(false);
+    }
+  };
 
   const loadCampaigns = async () => {
     try {
@@ -245,30 +269,10 @@ const CampaignsTab: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Check credentials before creating campaign
-      const credentials = await campaignsApi.checkCredentials();
-
-      if (data.type === 'email' && !credentials.email) {
-        setToast({
-          show: true,
-          message: 'Please configure your email credentials in settings before creating email campaigns.',
-          type: 'error'
-        });
-        return;
-      }
-
-      if (data.type === 'sms' && !credentials.sms) {
-        setToast({
-          show: true,
-          message: 'Please configure your SMS credentials in settings before creating SMS campaigns.',
-          type: 'error'
-        });
-        return;
-      }
-
       if (editingCampaign) {
         await campaignsApi.updateCampaign(editingCampaign.id, data);
-        setToast({ show: true, message: 'Campaign updated successfully!', type: 'success' });
+        const message = sendNow ? 'Campaign sent successfully!' : 'Campaign updated successfully!';
+        setToast({ show: true, message, type: 'success' });
       } else {
         await campaignsApi.createCampaign(data, sendNow);
         const message = sendNow
@@ -361,15 +365,18 @@ const CampaignsTab: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      <CampaignModal
-        show={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditingCampaign(null);
-        }}
-        onSave={handleSaveCampaign}
-        editingCampaign={editingCampaign}
-      />
+      {showModal && (
+        <CampaignModal
+          key={editingCampaign?.id || 'new-campaign'}
+          show={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditingCampaign(null);
+          }}
+          onSave={handleSaveCampaign}
+          editingCampaign={editingCampaign}
+        />
+      )}
 
       {/* Campaign Details Modal */}
       {showDetailsModal && selectedCampaign && (
@@ -384,25 +391,29 @@ const CampaignsTab: React.FC = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 relative">
+              {isDetailsLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-b-lg">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loading campaign details...</p>
+                  </div>
+                </div>
+              )}
               {/* Campaign Stats */}
               {selectedCampaign.status !== 'draft' && (
-                <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Recipients</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total Audience</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaignStats?.total || (selectedCampaign as any).recipients?.length || 0}</p>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                    <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Sent</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Successfully Sent</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaignStats?.sent || 0}</p>
                   </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">Opened</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
-                  </div>
-                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">Clicked</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Delivery Failed</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{campaignStats?.failed || 0}</p>
                   </div>
                 </div>
               )}
@@ -455,10 +466,50 @@ const CampaignsTab: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Content</label>
-                <div className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto font-mono">
                   {selectedCampaign.content}
                 </div>
               </div>
+
+              {/* Recipient Activity Table */}
+              {(selectedCampaign as any).recipients && (selectedCampaign as any).recipients.length > 0 && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">Recipient Activity</label>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 uppercase font-semibold">
+                        <tr>
+                          <th className="px-4 py-2">Contact</th>
+                          <th className="px-4 py-2">Status</th>
+                          <th className="px-4 py-2">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                        {(selectedCampaign as any).recipients.map((r: any) => (
+                          <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-900 dark:text-white">{r.contact?.full_name || 'Unknown Contact'}</div>
+                              <div className="text-[10px] text-gray-500">{r.contact?.email || r.contact?.phone}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${
+                                r.status === 'sent' ? 'bg-green-100 text-green-700' :
+                                r.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500">
+                              {r.sent_at ? new Date(r.sent_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

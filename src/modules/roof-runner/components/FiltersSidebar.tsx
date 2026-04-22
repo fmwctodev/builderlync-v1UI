@@ -7,6 +7,7 @@ interface FiltersSidebarProps {
   onClose: () => void;
   onFiltersChange: (filters: AdvancedFilters) => void;
   currentFilters: AdvancedFilters;
+  pipelineStages?: any[];
 }
 
 export interface AdvancedFilters {
@@ -22,10 +23,14 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   isOpen, 
   onClose, 
   onFiltersChange, 
-  currentFilters 
+  currentFilters,
+  pipelineStages = []
 }) => {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [localFilters, setLocalFilters] = useState<AdvancedFilters>(currentFilters);
+  
+  const stages = pipelineStages.map(s => s.name);
+
   useEffect(() => {
     if (isOpen) {
       fetchStaff();
@@ -71,22 +76,6 @@ const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     updateFilters(key, [value]);
   };
 
-  const stages = [
-    'Inspection/Estimate Booked',
-    'Inspection/Estimate Complete',
-    'Proposal Drafted',
-    'Proposal Sent',
-    'Proposal Accepted',
-    'Job Won',
-    'Job Lost',
-    'Under Contract',
-    'Invoice Sent',
-    'Invoice Paid',
-    'Job Scheduled',
-    'Materials Ordered',
-    'Job Started',
-    'Job Complete'
-  ];
 
   const sortOptions = [
     'Last updated (newest)', 'Last updated (oldest)', 'Created date (newest)',

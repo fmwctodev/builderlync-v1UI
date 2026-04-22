@@ -185,6 +185,7 @@ class JobsApiService {
     closeDate?: string[];
     createdDate?: string[];
     leadSources?: string[];
+    pipelineId?: string;
   }): Promise<JobsResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -226,6 +227,9 @@ class JobsApiService {
     }
     if (filters?.leadSources && filters.leadSources.length > 0) {
       params.append('leadSources', filters.leadSources.join(','));
+    }
+    if (filters?.pipelineId) {
+      params.append('pipelineId', filters.pipelineId);
     }
 
     return this.makeRequest(`/jobs?${params}`);
@@ -272,8 +276,22 @@ class JobsApiService {
     });
   }
 
-  async getJobCounts() {
-    return this.makeRequest('/jobs/counts');
+  async getJobCounts(filters: any = {}) {
+    const params = new URLSearchParams();
+    
+    // Add all filter keys to query params
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null) {
+        if (Array.isArray(filters[key])) {
+          filters[key].forEach((val: any) => params.append(`${key}[]`, val));
+        } else {
+          params.append(key, filters[key]);
+        }
+      }
+    });
+
+    const queryString = params.toString();
+    return this.makeRequest(`/jobs/counts${queryString ? `?${queryString}` : ''}`);
   }
 }
 

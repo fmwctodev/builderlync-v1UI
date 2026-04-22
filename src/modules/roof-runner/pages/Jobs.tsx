@@ -31,6 +31,7 @@ const Jobs: React.FC = () => {
   const [jobAddress, setJobAddress] = useState('');
   const [jobCoordinates, setJobCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('all');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedJobType, setSelectedJobType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +49,11 @@ const Jobs: React.FC = () => {
   const PAGE_SIZE = 50;
   
   const { data: pipelines } = useGetPipelinesQuery();
-  const defaultPipeline = pipelines?.find(p => p.is_default);
+  const currentPipeline = selectedPipelineId === 'all' 
+    ? pipelines?.find(p => p.is_default) 
+    : pipelines?.find(p => p.id === parseInt(selectedPipelineId));
+  
+  const pipelineStages = currentPipeline?.stages || [];
 
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
     sortBy: 'Last updated (newest)',
@@ -127,25 +132,9 @@ const Jobs: React.FC = () => {
     if (filter === 'active') return undefined; // handled by status param
     if (filter === 'completed') return 'Job Complete';
     if (filter === 'lost') return 'Job Lost';
-    // Stage-based values are slugified stage names — reverse them
-    // e.g. 'job-scheduled' -> find matching stage
-    const stageMap: Record<string, string> = {
-      'inspection-estimate-booked': 'Inspection/Estimate Booked',
-      'inspection-estimate-complete': 'Inspection/Estimate Complete',
-      'proposal-drafted': 'Proposal Drafted',
-      'proposal-sent': 'Proposal Sent',
-      'proposal-accepted': 'Proposal Accepted',
-      'job-lost': 'Job Lost',
-      'job-won': 'Job Won',
-      'under-contract': 'Under Contract',
-      'invoice-sent': 'Invoice Sent',
-      'invoice-paid': 'Invoice Paid',
-      'job-scheduled': 'Job Scheduled',
-      'materials-ordered': 'Materials Ordered',
-      'job-started': 'Job Started',
-      'job-complete': 'Job Complete',
-    };
-    return stageMap[filter];
+    
+    // For dynamic stages, the filter value is already the stage name
+    return filter;
   };
 
   const fetchJobs = async (page: number = 1) => {
@@ -165,6 +154,7 @@ const Jobs: React.FC = () => {
         stages: advancedFilters.stages.length > 0 ? advancedFilters.stages : undefined,
         workflowStage: advancedFilters.stages.length === 0 ? workflowStage : undefined,
         status: isActiveFilter ? 'active' : undefined,
+        pipelineId: selectedPipelineId !== 'all' ? selectedPipelineId : undefined,
         updatedDate: advancedFilters.updatedDate.length > 0 ? advancedFilters.updatedDate : undefined,
         closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined,
         createdDate: advancedFilters.createdDate.length > 0 ? advancedFilters.createdDate : undefined,
@@ -188,7 +178,18 @@ const Jobs: React.FC = () => {
 
   const fetchCounts = async () => {
     try {
-      const response = await getJobCounts();
+      const filters = {
+        jobType: (selectedJobType !== 'all' && selectedJobType !== 'instant-estimator') ? selectedJobType : undefined,
+        source: selectedJobType === 'instant-estimator' ? 'Instant Estimator' : undefined,
+        search: searchQuery || undefined,
+        assignees: advancedFilters.assignees.length > 0 ? advancedFilters.assignees : undefined,
+        pipelineId: selectedPipelineId !== 'all' ? selectedPipelineId : undefined,
+        updatedDate: advancedFilters.updatedDate.length > 0 ? advancedFilters.updatedDate : undefined,
+        closeDate: advancedFilters.closeDate.length > 0 ? advancedFilters.closeDate : undefined,
+        createdDate: advancedFilters.createdDate.length > 0 ? advancedFilters.createdDate : undefined,
+      };
+
+      const response = await getJobCounts(filters);
       setJobCounts(response.data);
     } catch (error) {
       console.error('Error fetching job counts:', error);
@@ -486,12 +487,11 @@ const Jobs: React.FC = () => {
     }
   }, [showJobDetails]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
     fetchJobs(1);
     fetchCounts();
-  }, [selectedJobType, selectedFilter, searchQuery, advancedFilters]);
+  }, [selectedJobType, selectedFilter, searchQuery, advancedFilters, selectedPipelineId]);
 
   useEffect(() => {
     if (toast) {
@@ -534,6 +534,10 @@ const Jobs: React.FC = () => {
         onNewCustomer={handleNewCustomer}
         totalJobs={totalJobs}
         jobCounts={jobCounts}
+        pipelineStages={pipelineStages}
+        pipelines={pipelines}
+        selectedPipelineId={selectedPipelineId}
+        setSelectedPipelineId={setSelectedPipelineId}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -593,6 +597,7 @@ const Jobs: React.FC = () => {
           onClose={() => setShowFilters(false)}
           onFiltersChange={setAdvancedFilters}
           currentFilters={advancedFilters}
+          pipelineStages={pipelineStages}
         />
       </div>
 
