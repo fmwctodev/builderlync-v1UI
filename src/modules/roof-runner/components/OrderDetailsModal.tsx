@@ -96,8 +96,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
 
     // Calculate totals if not provided
     const subtotal = orderItems.reduce((acc: number, item: any) => acc + item.total, 0);
-    const tax = subtotal * 0.0825; // Estimated tax if not provided
-    const total = subtotal + tax;
+    // For SRS, we do not show estimated tax per supplier instructions
+    const tax = supplier === 'SRS' ? 0 : (orderDetails.taxAmount || subtotal * 0.0825);
+    const total = supplier === 'SRS' ? subtotal : (orderDetails.totalAmount || subtotal + tax);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 print:bg-white print:p-0 print:absolute print:inset-0">
@@ -216,10 +217,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order: initialOrd
                                             <td colSpan={4} className="px-4 py-2 text-right text-gray-500">Subtotal</td>
                                             <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-mono">${subtotal.toFixed(2)}</td>
                                         </tr>
-                                        <tr>
-                                            <td colSpan={4} className="px-4 py-2 text-right text-gray-500">Tax (Est.)</td>
-                                            <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-mono">${tax.toFixed(2)}</td>
-                                        </tr>
+                                        {supplier !== 'SRS' && (
+                                            <tr>
+                                                <td colSpan={4} className="px-4 py-2 text-right text-gray-500">Tax (Est.)</td>
+                                                <td className="px-4 py-2 text-right text-gray-900 dark:text-white font-mono">${tax.toFixed(2)}</td>
+                                            </tr>
+                                        )}
                                         <tr>
                                             <td colSpan={4} className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white text-lg">Total</td>
                                             <td className="px-4 py-3 text-right font-bold text-[#D71920] text-lg font-mono">${total.toFixed(2)}</td>

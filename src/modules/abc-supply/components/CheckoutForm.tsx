@@ -41,7 +41,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
   const [jobs, setJobs] = useState<any[]>([]);
   const [formData, setFormData] = useState<CheckoutFormData>({
     jobId: null,
-    deliveryService: supplier === 'QXO' ? 'O' : 'OTG', // Default to Delivery for QXO
+    deliveryService: supplier === 'SRS' ? 'Ground Drop' : (supplier === 'QXO' ? 'O' : 'OTG'), // Default to Ground Drop for SRS
     contact: {
       name: initialData?.contact?.name || '',
       email: initialData?.contact?.email || '',
@@ -368,6 +368,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
                 </>
               ) : (
                 <>
+                  <option value="Ground Drop">Ground Drop</option>
                   <option value="OTG">Our Truck Ground (OTG)</option>
                   <option value="COM">Common Carrier (COM)</option>
                   <option value="CPU">Customer Pickup (CPU)</option>
@@ -591,9 +592,9 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ isOpen, onClose, onSubmit, 
           </div>
 
           {supplier === 'SRS' && (
-            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-lg p-3">
-              <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed italic">
-                <strong>Tax & Delivery Disclaimer:</strong> Tax and delivery fees are estimated in this interface. Final calculation is performed by SRS Distribution upon order submission.
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-lg p-3">
+              <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed italic">
+                <strong>Tax & Delivery Disclaimer:</strong> SRS Distribution does not provide tax or delivery fee calculations prior to order placement. Final taxes and delivery charges will be calculated and applied by SRS only after the order has been submitted.
               </p>
             </div>
           )}

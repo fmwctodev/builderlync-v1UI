@@ -245,12 +245,23 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, supplier = 'ABC Sup
                          (order as any).lines ? ` - ${(order as any).lines.length} items` : ''}
                       </p>
 
-                      <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Order Type:</span> {order.orderType || (order as any).order_type || (order as any).orderType || 'Standard'}
+                          <span className="font-medium">Date:</span> {
+                            (order.invoiceDate || (order as any).created_at || (order as any).transactionDate) 
+                              ? new Date(order.invoiceDate || (order as any).created_at || (order as any).transactionDate).toLocaleDateString()
+                              : '---'
+                          }
                         </div>
+                        {supplier !== 'SRS' && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Order Type:</span> {order.orderType || (order as any).order_type || (order as any).orderType || 'Standard'}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">Total:</span> ${((order as any).total_amount || (order as any).total_price || (order as any).totalAmount || 0).toFixed(2)}
+                          <span className="font-medium">Total:</span> ${
+                            (order.totalAmount || (order as any).total_amount || (order as any).total_price || (order as any).totalAmount || (order as any).subtotal || 0).toFixed(2)
+                          }
                         </div>
                       </div>
 
