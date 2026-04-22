@@ -542,9 +542,12 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             reference: "Builderlync Order",
             jobNumber: "",
             orderDate: new Date().toISOString().split("T")[0],
-            expectedDeliveryDate:
-              checkoutData.deliveryDate ||
-              new Date().toISOString().split("T")[0],
+            expectedDeliveryDate: (() => {
+              if (checkoutData.deliveryDate) return checkoutData.deliveryDate;
+              const nextWeek = new Date();
+              nextWeek.setDate(nextWeek.getDate() + 7);
+              return nextWeek.toISOString().split("T")[0];
+            })(),
             expectedDeliveryTime: "Anytime",
             orderType:
               checkoutData.deliveryService === "pickup" ? "PICKUP" : "WHSE",
@@ -786,7 +789,7 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
     return sum + price * item.quantity;
   }, 0);
   console.log("[CART DEBUG] Calculated Subtotal:", subtotal);
-  const tax = subtotal * 0.08;
+  const tax = supplier === "SRS" ? 0 : subtotal * 0.08;
   const total = subtotal + tax;
 
   if (!isOpen) return null;
@@ -1213,19 +1216,22 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
                     ${subtotal.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Tax (8%):
-                  </span>
-                  <span className="text-gray-900 dark:text-white">
-                    ${tax.toFixed(2)}
-                  </span>
-                </div>
+                {supplier !== "SRS" && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Tax (8%):
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      ${tax.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {supplier === "SRS" && (
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight italic">
-                    * Tax and delivery fees are estimated. Final calculation is
-                    performed by SRS upon order submission.
-                  </p>
+                  <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-lg p-3 mt-2">
+                    <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-relaxed italic">
+                      <strong>Tax & Delivery Notice:</strong> SRS Distribution does not provide tax or delivery fee calculations prior to order placement. The subtotal shown here reflects product costs only. Final taxes and delivery charges will be calculated and applied by SRS exclusively upon order submission.
+                    </p>
+                  </div>
                 )}
                 <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-bold text-gray-900 dark:text-white">
                   <span>Total</span>
@@ -1331,7 +1337,11 @@ const ShoppingCartComponent: React.FC<ShoppingCartProps> = ({
             email: "",
             phone: "",
           },
-          deliveryDate: "",
+          deliveryDate: (() => {
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            return nextWeek.toISOString().split("T")[0];
+          })(),
           instructions: "",
           jobNumber:
             qxoProfile?.accountId || qxoProfile?.accountLegacyId || "678204",
