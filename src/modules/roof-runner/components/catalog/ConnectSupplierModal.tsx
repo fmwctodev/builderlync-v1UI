@@ -13,8 +13,8 @@ const ConnectSupplierModal: React.FC<ConnectSupplierModalProps> = ({ supplier, o
   if (!supplier) return null;
 
   const handleAbcConnect = () => {
-    const token = localStorage.getItem('token');
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api';
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
     // Redirect to ABC Supply OAuth flow
     window.location.href = `${baseUrl}/abc-supply/connect?token=${token}`;
   };

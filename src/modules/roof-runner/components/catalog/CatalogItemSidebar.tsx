@@ -5,6 +5,7 @@ import { CatalogItem } from '../../../../shared/store/services/catalogApi';
 import { abcSupplyApi } from '../../../abc-supply/services/api';
 import { Product } from '../../../abc-supply/types';
 import { srsService } from '../../services/srsService';
+import { qxoApi } from '../../services/qxoApi';
 
 interface CatalogItemSidebarProps {
   isOpen: boolean;
@@ -39,9 +40,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   const [abcSearchResults, setAbcSearchResults] = useState<Product[]>([]);
   const [abcSearchLoading, setAbcSearchLoading] = useState(false);
   const [srsSearchResults, setSrsSearchResults] = useState<any[]>([]);
+  const [srsAllProducts, setSrsAllProducts] = useState<any[]>([]);
   const [srsSearchLoading, setSrsSearchLoading] = useState(false);
   const [qxoSearchResults, setQxoSearchResults] = useState<any[]>([]);
   const [qxoSearchLoading, setQxoSearchLoading] = useState(false);
+  const [srsBranchCode, setSrsBranchCode] = useState<string | null>(null);
   const searchDebounceRef = useRef<number | null>(null);
   
   const supplierIntegrations = {
@@ -122,6 +125,44 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       setAbcSelectionMissing(true);
     }
   }, [isOpen, abcSupplyConnected]);
+
+  useEffect(() => {
+    if (isOpen && srsConnected && !srsBranchCode) {
+      const fetchSRSContext = async () => {
+        try {
+          // 1. Check LocalStorage for branch
+          const cachedBranchRaw = localStorage.getItem('srs_selected_branch');
+          let branchCode = null;
+
+          if (cachedBranchRaw) {
+            const cachedBranch = JSON.parse(cachedBranchRaw);
+            branchCode = cachedBranch.id || cachedBranch.branchCode;
+          }
+
+          // 2. Fallback to profile
+          if (!branchCode) {
+            const result = await srsService.getCustomerProfile();
+            if (result.success && result.data?.profile?.customer_details?.homeBranch) {
+              branchCode = String(result.data.profile.customer_details.homeBranch);
+            }
+          }
+
+          if (branchCode) {
+            setSrsBranchCode(branchCode);
+            // 3. Pre-fetch all products for local filtering
+            setSrsSearchLoading(true);
+            const catalog = await srsService.searchProducts('', 1, 2000, branchCode);
+            setSrsAllProducts(catalog.data || []);
+            setSrsSearchLoading(false);
+          }
+        } catch (error) {
+          console.error('Failed to fetch SRS context:', error);
+          setSrsSearchLoading(false);
+        }
+      };
+      fetchSRSContext();
+    }
+  }, [isOpen, srsConnected, srsBranchCode]);
 
   useEffect(() => {
     return () => {
@@ -265,17 +306,29 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     if (newSuppliers[index]?.name === 'SRS') {
       if (!srsConnected) return;
 
-      searchDebounceRef.current = window.setTimeout(async () => {
-        try {
-          setSrsSearchLoading(true);
-          const result = await srsService.searchProducts(query, 1, 50);
-          setSrsSearchResults(result?.data || []);
-        } catch {
-          setSrsSearchResults([]);
-        } finally {
-          setSrsSearchLoading(false);
-        }
-      }, 300);
+      if (srsAllProducts.length > 0) {
+        // Optimize: Use local filtering for instant results
+        const q = query.toLowerCase();
+        const filtered = srsAllProducts.filter((p: any) => 
+          (p.productName || p.itemDescription || '').toLowerCase().includes(q) || 
+          (String(p.productId || p.itemNumber || '')).toLowerCase().includes(q) ||
+          (p.productCategory || p.familyName || '').toLowerCase().includes(q)
+        );
+        setSrsSearchResults(filtered.slice(0, 100)); // Show top 100
+      } else {
+        // Fallback: search via API if not pre-loaded
+        searchDebounceRef.current = window.setTimeout(async () => {
+          try {
+            setSrsSearchLoading(true);
+            const result = await srsService.searchProducts(query, 1, 50, srsBranchCode || undefined);
+            setSrsSearchResults(result?.data || []);
+          } catch {
+            setSrsSearchResults([]);
+          } finally {
+            setSrsSearchLoading(false);
+          }
+        }, 300);
+      }
     }
 
     if (newSuppliers[index]?.name === 'QXO') {
@@ -284,7 +337,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       searchDebounceRef.current = window.setTimeout(async () => {
         try {
           setQxoSearchLoading(true);
-          const result = await qxoApi.searchProducts(query);
+          const result = await qxoApi.searchProducts({ keyword: query });
           setQxoSearchResults(result?.data || []);
         } catch {
           setQxoSearchResults([]);
@@ -352,6 +405,11 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
       supplierType: hasValidSelection ? 'qxo' : null,
       productId: hasValidSelection ? String(product.itemNumber || '') : '',
       productData: hasValidSelection ? product : null,
+      // Map detailed fields
+      name: product.productName || product.itemDescription || product.internalProductName || formData.name,
+      preTaxCost: product.unitPrice || product.currentSKU?.unitPrice || formData.preTaxCost,
+      unit: product.uom || product.currentSKU?.currentUOM || formData.unit,
+      description: product.brand || product.shortDesc || formData.description,
     });
   };
 
@@ -757,11 +815,23 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                           <div className="mt-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-3">
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected product</p>
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {selectedQxoProductData?.itemDescription || selectedQxoProductData?.brand || formData.name || 'Product'}
+                              {selectedQxoProductData?.productName || selectedQxoProductData?.itemDescription || formData.name || 'Product'}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              #{formData.productId || selectedQxoProductData?.itemNumber || 'N/A'}
+                            <div className="flex items-center gap-2 mt-1">
+                              {selectedQxoProductData?.brand && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                                  {selectedQxoProductData.brand}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                #{formData.productId || selectedQxoProductData?.itemNumber || 'N/A'}
+                              </span>
                             </div>
+                            {(selectedQxoProductData?.unitPrice > 0 || formData.preTaxCost > 0) && (
+                              <div className="mt-2 text-sm font-semibold text-primary-600 dark:text-primary-400">
+                                ${selectedQxoProductData?.unitPrice || formData.preTaxCost} / {selectedQxoProductData?.uom || formData.unit}
+                              </div>
+                            )}
                             <div className="mt-3 flex gap-2">
                               <button
                                 onClick={() => clearQxoProductSelection(index)}
@@ -848,8 +918,38 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                                         onClick={() => selectQxoProduct(index, product)}
                                         className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                                       >
-                                        <div className="font-medium text-gray-900 dark:text-white">{product.itemDescription || product.brand || 'Product'}</div>
-                                        <div className="text-gray-500 dark:text-gray-400">#{product.itemNumber}</div>
+                                        <div className="flex items-start gap-3">
+                                          {product.productImage && (
+                                            <div className="w-10 h-10 flex-shrink-0 rounded border border-gray-100 overflow-hidden bg-white">
+                                              <img 
+                                                src={`https://www.beaconproplus.com${product.productImage}`} 
+                                                alt="" 
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).src = 'https://www.beaconproplus.com/images/default_not_found.jpg';
+                                                }}
+                                              />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-gray-900 dark:text-white truncate">
+                                              {product.productName || product.itemDescription || 'Product'}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                              {product.brand && (
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                                                  {product.brand}
+                                                </span>
+                                              )}
+                                              <span className="text-gray-500 dark:text-gray-400">#{product.itemNumber}</span>
+                                            </div>
+                                            {(product.unitPrice > 0) && (
+                                              <div className="mt-1 text-primary-600 dark:text-primary-400 font-semibold">
+                                                ${product.unitPrice} / {product.uom}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
                                       </button>
                                     ))}
                                   </div>

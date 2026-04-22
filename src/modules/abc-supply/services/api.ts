@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Product, Branch, Order, ShipTo, OrderHistoryResponse } from '../types';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5176/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,7 +10,7 @@ const api = axios.create({
 
 // Add request interceptor to include dynamic auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
