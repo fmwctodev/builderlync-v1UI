@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, MessageSquare, Calendar, Users, Save, Send, Eye } from 'lucide-react';
 import { CampaignType, CampaignFormData, CAMPAIGN_TEMPLATES, Campaign } from '../types/campaigns';
 import { campaignsApi } from '../../../shared/services/campaignsApi';
+import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
 
 interface CampaignModalProps {
   show: boolean;
@@ -13,14 +14,13 @@ interface CampaignModalProps {
 
 const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, initialData, editingCampaign }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const isSubmitting = useRef(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [campaignType, setCampaignType] = useState<CampaignType>('email');
 
-  const [sendImmediately, setSendImmediately] = useState(true);
   const [recipientData, setRecipientData] = useState<{ count: number; recipients: Array<{ name: string; email?: string; phone?: string }> }>({ count: 0, recipients: [] });
   const [showRecipients, setShowRecipients] = useState(false);
 
-  const [formData, setFormData] = useState<CampaignFormData>({
+  const [formData, setFormData] = useState<CampaignFormData & { sendImmediately: boolean }>({
     name: '',
     type: 'email',
     subject: '',
@@ -32,7 +32,37 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
       estimated_count: 0,
     },
     tags: [],
+    sendImmediately: true
   });
+
+  const { data: pipelines, isLoading: isLoadingPipelines } = useGetPipelinesQuery();
+  const selectedPipeline = pipelines?.find(p => p.id === formData.target_audience.pipeline_id) || pipelines?.find(p => p.is_default) || pipelines?.[0];
+  
+  // Use pipeline stages, or fallback if none available
+  const dynamicStages = selectedPipeline?.stages?.map(s => ({ 
+    value: formData.target_audience.filter_type === 'status' ? s.name : s.id, 
+    label: s.name 
+  })) || [];
+
+  const fallbackStages = [
+    { value: 'Inspection/Estimate Booked', label: 'Inspection/Estimate Booked' },
+    { value: 'Inspection/Estimate Complete', label: 'Inspection/Estimate Complete' },
+    { value: 'Proposal Drafted', label: 'Proposal Drafted' },
+    { value: 'Proposal Sent', label: 'Proposal Sent' },
+    { value: 'Proposal Accepted', label: 'Proposal Accepted' },
+    { value: 'Job Lost', label: 'Job Lost' },
+    { value: 'Job Won', label: 'Job Won' },
+    { value: 'Under Contract', label: 'Under Contract' },
+    { value: 'Invoice Sent', label: 'Invoice Sent' },
+    { value: 'Invoice Paid', label: 'Invoice Paid' },
+    { value: 'Job Scheduled', label: 'Job Scheduled' },
+    { value: 'Materials Ordered', label: 'Materials Ordered' },
+    { value: 'Job Started', label: 'Job Started' },
+    { value: 'Job Complete', label: 'Job Complete' }
+  ];
+
+  const currentWorkflowStages = dynamicStages.length > 0 ? dynamicStages : 
+    (formData.target_audience.filter_type === 'status' ? fallbackStages : []);
 
   useEffect(() => {
     const fetchInitialEstimate = async (audience: any) => {
@@ -41,6 +71,9 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           filter_type: audience.filter_type,
           job_statuses: audience.filter_type === 'status' ? audience.job_statuses : undefined,
           opportunity_stages: audience.filter_type === 'opportunities' ? audience.opportunity_stages : undefined,
+          pipeline_id: audience.pipeline_id,
+          job_type: audience.job_type,
+          search: audience.search,
           tags: audience.tags,
         });
         setRecipientData(estimate);
@@ -50,6 +83,12 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
     };
 
     if (show) {
+      // Reset UI states immediately on show
+      setIsLoading(false);
+      isSubmitting.current = false;
+      setCurrentStep(1);
+      setShowRecipients(false);
+
       if (editingCampaign) {
         // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
         let formattedDate = '';
@@ -58,6 +97,27 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           formattedDate = date.toISOString().slice(0, 16);
         }
 
+        // Handle stringified JSON from database
+        let targetAudience = editingCampaign.target_audience;
+        if (typeof targetAudience === 'string') {
+          try {
+            targetAudience = JSON.parse(targetAudience);
+          } catch (e) {
+            targetAudience = { filter_type: 'all', estimated_count: 0 };
+          }
+        }
+
+        let tags = editingCampaign.tags;
+        if (typeof tags === 'string') {
+          try {
+            tags = JSON.parse(tags);
+          } catch (e) {
+            tags = [];
+          }
+        }
+
+        const isScheduled = !!editingCampaign.scheduled_date;
+
         setFormData({
           name: editingCampaign.name,
           type: editingCampaign.type,
@@ -65,20 +125,24 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           from_name: editingCampaign.from_name || '',
           from_email: editingCampaign.from_email || '',
           content: editingCampaign.content,
-          target_audience: editingCampaign.target_audience || {
+          target_audience: targetAudience || {
             filter_type: 'all',
             estimated_count: 0,
           },
-          tags: editingCampaign.tags || [],
+          tags: Array.isArray(tags) ? tags : [],
           scheduled_date: formattedDate,
+          sendImmediately: !isScheduled
         });
-        setCampaignType(editingCampaign.type);
-        setSendImmediately(!editingCampaign.scheduled_date);
         
-        if (editingCampaign.target_audience) {
-          fetchInitialEstimate(editingCampaign.target_audience);
+        // Use existing estimated_count if available to avoid redundant calls
+        if (targetAudience && typeof targetAudience === 'object' && 'estimated_count' in targetAudience) {
+          setRecipientData({ 
+            count: (targetAudience as any).estimated_count || 0, 
+            recipients: [] 
+          });
         }
       } else {
+        // Reset to initial state for new campaign
         setFormData({
           name: '',
           type: 'email',
@@ -86,36 +150,24 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           from_name: '',
           from_email: '',
           content: '',
-          target_audience: {
+          target_audience: (initialData?.target_audience as any) || {
             filter_type: 'all',
             estimated_count: 0,
           },
-          tags: [],
+          tags: initialData?.tags || [],
+          scheduled_date: initialData?.scheduled_date || '',
+          sendImmediately: true,
+          ...initialData
         });
-        setCampaignType('email');
-        setSendImmediately(true);
         setRecipientData({ count: 0, recipients: [] });
       }
     }
-  }, [show, editingCampaign]);
-
-  useEffect(() => {
-    if (initialData) {
-      setFormData({ ...formData, ...initialData });
-      if (initialData.type) {
-        setCampaignType(initialData.type);
-      }
-    }
-  }, [initialData]);
-
-  useEffect(() => {
-    setFormData({ ...formData, type: campaignType });
-  }, [campaignType]);
+  }, [show, editingCampaign, initialData]);
 
   if (!show) return null;
 
   const handleTypeChange = (type: CampaignType) => {
-    setCampaignType(type);
+    setFormData(prev => ({ ...prev, type }));
   };
 
   const handleTemplateSelect = (templateKey: keyof typeof CAMPAIGN_TEMPLATES) => {
@@ -130,14 +182,12 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
       case 'database_reactivation':
         targetAudience = {
           filter_type: 'opportunities',
-          opportunity_stages: ['lost'],
           estimated_count: 0
         };
         break;
       case 'follow_up':
         targetAudience = {
           filter_type: 'opportunities', 
-          opportunity_stages: ['open'],
           estimated_count: 0
         };
         break;
@@ -155,13 +205,13 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
         };
     }
     
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       name: campaignName,
-      subject: campaignType === 'email' ? template.email_subject : '',
-      content: campaignType === 'email' ? template.email_content : template.sms_content,
+      subject: prev.type === 'email' ? template.email_subject : '',
+      content: prev.type === 'email' ? template.email_content : template.sms_content,
       target_audience: targetAudience
-    });
+    }));
   };
 
   const handleAudienceChange = async (key: string, value: any) => {
@@ -175,22 +225,31 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
       newAudience = {
         filter_type: value,
         estimated_count: 0,
-        // Clear all filter arrays
         job_statuses: undefined,
         opportunity_stages: undefined,
+        pipeline_id: undefined,
+        job_type: undefined,
+        search: undefined,
         tags: undefined
       };
     }
+
+    // Reset stages when pipeline changes
+    if (key === 'pipeline_id') {
+      newAudience.job_statuses = [];
+      newAudience.opportunity_stages = [];
+    }
     
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       target_audience: newAudience,
-    });
+    }));
     
     // Fetch recipient estimate
     try {
       const estimate = await campaignsApi.getRecipientEstimate({
         filter_type: newAudience.filter_type,
+        pipeline_id: newAudience.pipeline_id,
         job_statuses: newAudience.filter_type === 'status' ? newAudience.job_statuses : undefined,
         opportunity_stages: newAudience.filter_type === 'opportunities' ? newAudience.opportunity_stages : undefined,
         tags: newAudience.tags,
@@ -205,7 +264,6 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
       }));
     } catch (error) {
       console.error('Error fetching recipient estimate:', error);
-      // Set default values on error
       setRecipientData({ count: 0, recipients: [] });
       setFormData(prev => ({
         ...prev,
@@ -225,26 +283,44 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
   };
 
   const handleSubmit = async (isDraft: boolean) => {
+    if (isSubmitting.current) return;
+    
+    isSubmitting.current = true;
     setIsLoading(true);
     try {
       // Determine if we should send now based on the switch and draft status
-      const shouldSendNow = !isDraft && sendImmediately;
-      await onSave(formData, shouldSendNow);
+      const shouldSendNow = !isDraft && formData.sendImmediately;
+      
+      // Clean target audience data - ensure it's a plain object
+      const payload = {
+        ...formData,
+        target_audience: { ...formData.target_audience }
+      };
+      // Remove local UI state before sending to API
+      delete (payload as any).sendImmediately;
+
+      await onSave(payload as any, shouldSendNow);
       onClose();
     } catch (error) {
       console.error('Error saving campaign:', error);
-    } finally {
+      isSubmitting.current = false;
       setIsLoading(false);
+    } finally {
+      // Small delay just to prevent flicker, though unmounting handles it
+      setTimeout(() => {
+        isSubmitting.current = false;
+        setIsLoading(false);
+      }, 100);
     }
   };
 
   const isFormValid = () => {
     if (!formData.name || !formData.content) return false;
-    if (campaignType === 'email' && !formData.subject) return false;
+    if (formData.type === 'email' && !formData.subject) return false;
     return true;
   };
 
-  const smsSegments = campaignType === 'sms' ? calculateSMSSegments(formData.content) : 0;
+  const smsSegments = formData.type === 'sms' ? calculateSMSSegments(formData.content) : 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -273,14 +349,14 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 onClick={() => !editingCampaign && handleTypeChange('email')}
                 disabled={!!editingCampaign}
                 className={`flex-1 p-4 border-2 rounded-lg transition-all ${
-                  campaignType === 'email'
+                  formData.type === 'email'
                     ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
                 } ${editingCampaign ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex flex-col items-center gap-2">
-                  <Mail className={`h-8 w-8 ${campaignType === 'email' ? 'text-red-600' : 'text-gray-400'}`} />
-                  <span className={`font-medium ${campaignType === 'email' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <Mail className={`h-8 w-8 ${formData.type === 'email' ? 'text-red-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium ${formData.type === 'email' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
                     Email Campaign
                   </span>
                 </div>
@@ -291,14 +367,14 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 disabled={!!editingCampaign}
                 data-type="sms"
                 className={`flex-1 p-4 border-2 rounded-lg transition-all ${
-                  campaignType === 'sms'
+                  formData.type === 'sms'
                     ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
                 } ${editingCampaign ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex flex-col items-center gap-2">
-                  <MessageSquare className={`h-8 w-8 ${campaignType === 'sms' ? 'text-red-600' : 'text-gray-400'}`} />
-                  <span className={`font-medium ${campaignType === 'sms' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <MessageSquare className={`h-8 w-8 ${formData.type === 'sms' ? 'text-red-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium ${formData.type === 'sms' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
                     SMS Campaign
                   </span>
                 </div>
@@ -344,7 +420,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             </div>
 
             {/* Email-specific fields */}
-            {campaignType === 'email' && (
+            {formData.type === 'email' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -393,9 +469,9 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {campaignType === 'email' ? 'Email Content' : 'SMS Message'}
+                {formData.type === 'email' ? 'Email Content' : 'SMS Message'}
               </h3>
-              {campaignType === 'sms' && (
+              {formData.type === 'sms' && (
                 <span className={`text-sm font-medium ${formData.content.length > 160 ? 'text-orange-600' : 'text-gray-600 dark:text-gray-400'}`}>
                   {formData.content.length} characters • {smsSegments} segment{smsSegments !== 1 ? 's' : ''}
                 </span>
@@ -405,14 +481,27 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             <div>
               <textarea
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={campaignType === 'email' ? 12 : 6}
+                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                rows={formData.type === 'email' ? 12 : 6}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
-                placeholder={campaignType === 'email' ? 'Enter your email content...' : 'Enter your SMS message...'}
+                placeholder={formData.type === 'email' ? 'Enter your email content...' : 'Enter your SMS message...'}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Use merge fields: {'{'}{'{'} first_name {'}'}{'}'}, {'{'}{'{'} last_name {'}'}{'}'}, {'{'}{'{'} company_name {'}'}{'}'} 
-              </p>
+              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Available Merge Fields</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'first_name', 'full_name', 'email', 'phone', 
+                    'property_address', 'job_type', 
+                    'inspection_score', 'inspection_grade',
+                    'rep_name', 'rep_phone', 'rep_email',
+                    'company_name'
+                  ].map(field => (
+                    <span key={field} className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-500 rounded text-[10px] font-mono text-gray-600 dark:text-gray-300 shadow-sm whitespace-nowrap">
+                      {"{{"}{field}{"}}"}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -438,29 +527,33 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </select>
             </div>
 
+            {/* Pipeline Selection */}
+            {(formData.target_audience.filter_type === 'status' || formData.target_audience.filter_type === 'opportunities') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Workflow / Pipeline
+                </label>
+                <select
+                  value={formData.target_audience.pipeline_id || ''}
+                  onChange={(e) => handleAudienceChange('pipeline_id', e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">{formData.target_audience.filter_type === 'status' ? 'Default Pipeline' : 'Select Pipeline'}</option>
+                  {pipelines?.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {formData.target_audience.filter_type === 'status' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Job Status
+                  Job Status {isLoadingPipelines && <span className="text-xs text-gray-400 animate-pulse">(Loading stages...)</span>}
                 </label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'Inspection/Estimate Booked', label: 'Inspection/Estimate Booked' },
-                    { value: 'Inspection/Estimate Complete', label: 'Inspection/Estimate Complete' },
-                    { value: 'Proposal Drafted', label: 'Proposal Drafted' },
-                    { value: 'Proposal Sent', label: 'Proposal Sent' },
-                    { value: 'Proposal Accepted', label: 'Proposal Accepted' },
-                    { value: 'Job Lost', label: 'Job Lost' },
-                    { value: 'Job Won', label: 'Job Won' },
-                    { value: 'Under Contract', label: 'Under Contract' },
-                    { value: 'Invoice Sent', label: 'Invoice Sent' },
-                    { value: 'Invoice Paid', label: 'Invoice Paid' },
-                    { value: 'Job Scheduled', label: 'Job Scheduled' },
-                    { value: 'Materials Ordered', label: 'Materials Ordered' },
-                    { value: 'Job Started', label: 'Job Started' },
-                    { value: 'Job Complete', label: 'Job Complete' }
-                  ].map((status) => (
-                    <label key={status.value} className="flex items-center">
+                <div className="space-y-2 grid grid-cols-2 gap-x-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {currentWorkflowStages.map((status) => (
+                    <label key={status.value} className="flex items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
                       <input
                         type="checkbox"
                         value={status.value}
@@ -484,16 +577,11 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
             {formData.target_audience.filter_type === 'opportunities' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Opportunities Status
+                  Opportunity Stages {isLoadingPipelines && <span className="text-xs text-gray-400 animate-pulse">(Loading stages...)</span>}
                 </label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'open', label: 'Open' },
-                    { value: 'won', label: 'Won' },
-                    { value: 'lost', label: 'Lost' },
-                    { value: 'abandoned', label: 'Abandoned' }
-                  ].map((stage) => (
-                    <label key={stage.value} className="flex items-center">
+                <div className="space-y-2 grid grid-cols-2 gap-x-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {currentWorkflowStages.map((stage) => (
+                    <label key={stage.value} className="flex items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
                       <input
                         type="checkbox"
                         value={stage.value}
@@ -566,12 +654,14 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={sendImmediately}
+                  checked={formData.sendImmediately}
                   onChange={(e) => {
-                    setSendImmediately(e.target.checked);
-                    if (e.target.checked) {
-                      setFormData({ ...formData, scheduled_date: undefined });
-                    }
+                    const checked = e.target.checked;
+                    setFormData(prev => ({
+                      ...prev,
+                      sendImmediately: checked,
+                      scheduled_date: checked ? undefined : prev.scheduled_date
+                    }));
                   }}
                   className="sr-only peer"
                 />
@@ -579,7 +669,7 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
               </label>
             </div>
 
-            {!sendImmediately && (
+            {!formData.sendImmediately && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Schedule Date & Time <span className="text-red-500">*</span>
@@ -587,9 +677,9 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
                 <input
                   type="datetime-local"
                   value={formData.scheduled_date || ''}
-                  onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                  required={!sendImmediately}
+                  required={!formData.sendImmediately}
                 />
               </div>
             )}
@@ -618,11 +708,11 @@ const CampaignModal: React.FC<CampaignModalProps> = ({ show, onClose, onSave, in
 
             <button
               onClick={() => handleSubmit(false)}
-              disabled={!isFormValid() || isLoading || (!sendImmediately && !formData.scheduled_date)}
+              disabled={!isFormValid() || isLoading || (!formData.sendImmediately && !formData.scheduled_date)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="h-4 w-4" />
-              <span>{isLoading ? (sendImmediately ? 'Sending...' : 'Scheduling...') : (sendImmediately ? 'Send Now' : 'Schedule')}</span>
+              <span>{isLoading ? (formData.sendImmediately ? 'Sending...' : 'Scheduling...') : (formData.sendImmediately ? 'Send Now' : 'Schedule')}</span>
             </button>
           </div>
         </div>

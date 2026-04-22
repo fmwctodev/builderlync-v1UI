@@ -21,26 +21,22 @@ interface JobsHeaderProps {
   totalJobs?: number;
   /** Cumulative counts per stage from the backend */
   jobCounts?: any;
+  /** Dynamic stages from the default pipeline */
+  pipelineStages?: any[];
+  /** List of available pipelines */
+  pipelines?: any[];
+  /** Currently selected pipeline ID */
+  selectedPipelineId?: string;
+  /** Handler to change the pipeline */
+  setSelectedPipelineId?: (id: string) => void;
 }
 
-const STAGE_FILTERS = [
+// Basic global filters that aren't specific to a pipeline stage
+const BASE_FILTERS = [
   { value: 'all', label: 'All Jobs' },
   { value: 'active', label: 'Active Jobs' },
   { value: 'completed', label: 'Completed' },
   { value: 'lost', label: 'Lost Jobs' },
-  { value: 'inspection-estimate-booked', label: 'Inspection/Estimate Booked' },
-  { value: 'inspection-estimate-complete', label: 'Inspection/Estimate Complete' },
-  { value: 'proposal-drafted', label: 'Proposal Drafted' },
-  { value: 'proposal-sent', label: 'Proposal Sent' },
-  { value: 'proposal-accepted', label: 'Proposal Accepted' },
-  { value: 'job-won', label: 'Job Won' },
-  { value: 'under-contract', label: 'Under Contract' },
-  { value: 'invoice-sent', label: 'Invoice Sent' },
-  { value: 'invoice-paid', label: 'Invoice Paid' },
-  { value: 'job-scheduled', label: 'Job Scheduled' },
-  { value: 'materials-ordered', label: 'Materials Ordered' },
-  { value: 'job-started', label: 'Job Started' },
-  { value: 'job-complete', label: 'Job Complete' },
 ];
 
 const JobsHeader: React.FC<JobsHeaderProps> = ({
@@ -59,6 +55,10 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
   onNewCustomer,
   totalJobs,
   jobCounts,
+  pipelineStages = [],
+  pipelines = [],
+  selectedPipelineId = 'all',
+  setSelectedPipelineId
 }) => {
   const getCountForFilter = (value: string) => {
     if (!jobCounts) return null;
@@ -67,27 +67,38 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
     if (value === 'completed') return jobCounts.completed;
     if (value === 'lost') return jobCounts.lost;
 
-    // Map slugified values back to canonical stage names
-    const stageMap: Record<string, string> = {
-      'inspection-estimate-booked': 'Inspection/Estimate Booked',
-      'inspection-estimate-complete': 'Inspection/Estimate Complete',
-      'proposal-drafted': 'Proposal Drafted',
-      'proposal-sent': 'Proposal Sent',
-      'proposal-accepted': 'Proposal Accepted',
-      'job-lost': 'Job Lost',
-      'job-won': 'Job Won',
-      'under-contract': 'Under Contract',
-      'invoice-sent': 'Invoice Sent',
-      'invoice-paid': 'Invoice Paid',
-      'job-scheduled': 'Job Scheduled',
-      'materials-ordered': 'Materials Ordered',
-      'job-started': 'Job Started',
-      'job-complete': 'Job Complete',
-    };
-
-    const stageName = stageMap[value];
-    return stageName ? (jobCounts[stageName] || 0) : null;
+    // Use the raw value (stage name) for dynamic filters
+    return jobCounts[value] !== undefined ? jobCounts[value] : null;
   };
+
+  // 1. Start with the standard base filters (All, Active, Completed, Lost)
+  const allFiltersList = [...BASE_FILTERS];
+
+  // 2. Add stages from the current (or default) pipeline
+  pipelineStages.forEach(s => {
+    allFiltersList.push({ value: s.name, label: s.name });
+  });
+
+  // 3. In "All Workflows" view, also add any extra stages found in jobCounts
+  if (selectedPipelineId === 'all' && jobCounts) {
+    const excludedKeys = ['all', 'active', 'completed', 'lost'];
+    Object.keys(jobCounts).forEach(key => {
+      if (!excludedKeys.includes(key) && jobCounts[key] > 0) {
+        allFiltersList.push({ value: key, label: key });
+      }
+    });
+  }
+
+  // 4. Strict De-duplication: Ensure each stage name appears only ONCE
+  // This prevents duplicates if multiple pipelines use the same stage names.
+  const uniqueFiltersMap = new Map();
+  allFiltersList.forEach(f => {
+    if (!uniqueFiltersMap.has(f.value)) {
+      uniqueFiltersMap.set(f.value, f);
+    }
+  });
+
+  const dynamicFilters = Array.from(uniqueFiltersMap.values());
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
@@ -120,9 +131,23 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
             <option value="commercial">Commercial</option>
             <option value="multifamily">Multifamily</option>
             <option value="insurance">Insurance</option>
-            <option value="instant-estimator">Instant Estimates</option>
           </select>
           <Building2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+
+        {/* Pipeline Selector */}
+        <div className="relative">
+          <select
+            value={selectedPipelineId}
+            onChange={(e) => setSelectedPipelineId?.(e.target.value)}
+            className="input min-w-[180px] pr-8 appearance-none cursor-pointer"
+          >
+            <option value="all">All Workflows</option>
+            {pipelines.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <Settings className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
 
         <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
@@ -180,7 +205,7 @@ const JobsHeader: React.FC<JobsHeaderProps> = ({
           onChange={(e) => setSelectedFilter(e.target.value)}
           className="input min-w-[200px]"
         >
-          {STAGE_FILTERS.map(f => {
+          {dynamicFilters.map(f => {
             const count = getCountForFilter(f.value);
             return (
               <option key={f.value} value={f.value}>

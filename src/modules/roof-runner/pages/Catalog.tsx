@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination';
 import { srsService } from '../services/srsService';
 import { proposalsApi, Proposal } from '../services/proposalsApi';
 import { qxoApi } from '../services/qxoApi';
+import ConnectSupplierModal from '../components/catalog/ConnectSupplierModal';
 
 interface ColumnVisibility {
   itemType: boolean;
@@ -55,6 +56,7 @@ export default function Catalog() {
   const [abcSupplyIntegrated, setAbcSupplyIntegrated] = useState<boolean | null>(null);
   const [srsIntegrated, setSrsIntegrated] = useState<boolean | null>(null);
   const [qxoIntegrated, setQxoIntegrated] = useState<boolean | null>(null);
+  const [supplierToConnect, setSupplierToConnect] = useState<'abc' | 'srs' | 'qxo' | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<'items' | 'settings'>('items');
@@ -152,7 +154,7 @@ export default function Catalog() {
 
   const fetchABCSupplyStatus = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/abc-supply/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3100/api'}/abc-supply/status`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -186,6 +188,14 @@ export default function Catalog() {
       console.error('Error fetching QXO status:', error);
       setQxoIntegrated(false);
     }
+  };
+
+  const handleConnectionSuccess = (supplier: string) => {
+    setToast({ message: `${supplier.toUpperCase()} connected successfully!`, type: 'success' });
+    setSupplierToConnect(null);
+    if (supplier === 'abc') fetchABCSupplyStatus();
+    if (supplier === 'srs') checkSrsIntegration();
+    if (supplier === 'qxo') fetchQxoStatus();
   };
 
   const loadItems = async () => {
@@ -480,7 +490,7 @@ export default function Catalog() {
 
     return [proposal.title, customerName, address]
       .filter(Boolean)
-      .some((value) => value.toLowerCase().includes(query));
+      .some((value) => (value || '').toLowerCase().includes(query));
   });
 
   const handleDragStart = (index: number) => {
@@ -654,47 +664,47 @@ export default function Catalog() {
           {/* Connect Section */}
           <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex flex-wrap gap-2">
-              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm">
                 <Link size={16} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-gray-900 dark:text-white">ABC Supply</span>
+                <span className="text-gray-900 dark:text-white font-medium">ABC Supply</span>
                 {abcSupplyIntegrated !== null && (
-                  <span className={`px-2 py-1 text-xs rounded-full ${
+                  <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
                     abcSupplyIntegrated 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
                   }`}>
                     {abcSupplyIntegrated ? 'Connected' : 'Not Connected'}
                   </span>
                 )}
-              </button>
+              </div>
               
-              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm">
                 <Link size={16} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-gray-900 dark:text-white">QXO</span>
+                <span className="text-gray-900 dark:text-white font-medium">QXO</span>
                 {qxoIntegrated !== null && (
-                  <span className={`px-2 py-1 text-xs rounded-full ${
+                  <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
                     qxoIntegrated 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
                   }`}>
                     {qxoIntegrated ? 'Connected' : 'Not Connected'}
                   </span>
                 )}
-              </button>
+              </div>
 
-              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm">
                 <Link size={16} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-gray-900 dark:text-white">SRS</span>
+                <span className="text-gray-900 dark:text-white font-medium">SRS</span>
                 {srsIntegrated !== null && (
-                  <span className={`px-2 py-1 text-xs rounded-full ${
+                  <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
                     srsIntegrated 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400' 
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
                   }`}>
                     {srsIntegrated ? 'Connected' : 'Not Connected'}
                   </span>
                 )}
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1343,6 +1353,13 @@ export default function Catalog() {
           </div>
         </div>
       )}
+      {supplierToConnect && (
+        <ConnectSupplierModal
+          supplier={supplierToConnect}
+          onClose={() => setSupplierToConnect(null)}
+          onSuccess={handleConnectionSuccess}
+        />
+      )}
 
       <CatalogItemSidebar
         isOpen={sidebarOpen}
@@ -1357,6 +1374,7 @@ export default function Catalog() {
         abcSupplyConnected={Boolean(abcSupplyIntegrated)}
         srsConnected={Boolean(srsIntegrated)}
         qxoConnected={Boolean(qxoIntegrated)}
+        onConnectClick={(s) => setSupplierToConnect(s)}
       />
 
       {toast && (

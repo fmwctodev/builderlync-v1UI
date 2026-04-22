@@ -15,6 +15,7 @@ interface CatalogItemSidebarProps {
   abcSupplyConnected?: boolean;
   srsConnected?: boolean;
   qxoConnected?: boolean;
+  onConnectClick?: (supplier: 'abc' | 'srs' | 'qxo') => void;
 }
 
 const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
@@ -26,6 +27,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   abcSupplyConnected = false,
   srsConnected = false,
   qxoConnected = false,
+  onConnectClick,
 }) => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -156,29 +158,21 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   };
 
   const addSupplier = (supplierName: string) => {
-    if (supplierName === 'ABC Supply') {
-      if (!abcSupplyConnected) {
-        setShowAddSupplier(false);
-        navigate(`${orgPrefix}/settings/integrations`);
-        return;
-      }
-
-      if (abcSelectionMissing) {
-        setShowAddSupplier(false);
-        navigate(orgPrefix ? `${orgPrefix}/material-orders` : '/material-orders');
-        return;
-      }
+    if (supplierName === 'ABC Supply' && !abcSupplyConnected) {
+      setShowAddSupplier(false);
+      onConnectClick?.('abc');
+      return;
     }
 
     if (supplierName === 'SRS' && !srsConnected) {
       setShowAddSupplier(false);
-      navigate(`${orgPrefix}/settings/integrations`);
+      onConnectClick?.('srs');
       return;
     }
 
     if (supplierName === 'QXO' && !qxoConnected) {
       setShowAddSupplier(false);
-      navigate(`${orgPrefix}/settings/integrations`);
+      onConnectClick?.('qxo');
       return;
     }
 
@@ -682,7 +676,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
                               </span>
                               {!isIntegrated && !supplierIntegrations[supplier.name as keyof typeof supplierIntegrations] && (
                                 <button
-                                  onClick={() => navigate(`${orgPrefix}/settings/integrations`)}
+                                  onClick={() => onConnectClick?.(supplier.name.toLowerCase() as any)}
                                   className="text-primary-600 dark:text-primary-400 hover:underline"
                                 >
                                   Connect
