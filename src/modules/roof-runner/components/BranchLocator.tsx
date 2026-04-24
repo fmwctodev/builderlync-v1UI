@@ -4,7 +4,7 @@ import { srsApi } from '../services/srsApi';
 import { Search, MapPin, Phone, Check, Building, X, Navigation } from 'lucide-react';
 import { ShipTo } from '../../abc-supply/types';
 import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
-
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
 
 interface BranchLocatorProps {
   onBack: () => void;
@@ -12,6 +12,7 @@ interface BranchLocatorProps {
 }
 
 const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC Supply' }) => {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   const [loading, setLoading] = useState(true);
   const [shipTos, setShipTos] = useState<ShipTo[]>([]);
   const [availableBranches, setAvailableBranches] = useState<any[]>([]); // ShipToBranch[]
@@ -63,6 +64,11 @@ const BranchLocator: React.FC<BranchLocatorProps> = ({ onBack, supplier = 'ABC S
             HandleShipToSelect(accounts[0]);
           }
         } else if (supplier === 'SRS') {
+          if (!isSrsEnabled) {
+            setAvailableBranches([]);
+            setLoading(false);
+            return;
+          }
           // SRS Branch Logic - Only fetch if we have coordinates
           const lat = shippingLocation?.lat;
           const lng = shippingLocation?.lng;

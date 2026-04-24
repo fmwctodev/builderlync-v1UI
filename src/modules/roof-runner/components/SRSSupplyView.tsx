@@ -7,6 +7,7 @@ import OrderHistory from './OrderHistory';
 import SRSOrderTemplates from './SRSOrderTemplates';
 import { srsApi } from '../services/srsApi';
 import { srsService } from '../services/srsService';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
 
 interface Product {
   productImageUrl: any;
@@ -28,6 +29,7 @@ interface Branch {
 }
 
 const SRSSupplyView: React.FC = () => {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -405,6 +407,8 @@ const SRSSupplyView: React.FC = () => {
       </div>
     );
   };
+
+  if (!isSrsEnabled) return null;
 
   if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} supplier="SRS" />;
   if (currentView === 'products') return (isConnected && selectedBranch) ? <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="SRS" branchId={selectedBranch?.id} /> : renderDashboard();

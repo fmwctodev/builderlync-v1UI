@@ -2,6 +2,7 @@ import React from 'react';
 import { X, ExternalLink, ShieldCheck, Info } from 'lucide-react';
 import SRSConnection from './SRSConnection';
 import QxoConnection from './QxoConnection';
+import { useFeatureFlag } from '../../../../shared/hooks/useFeatureFlag';
 
 interface ConnectSupplierModalProps {
   supplier: 'abc' | 'srs' | 'qxo' | null;
@@ -10,7 +11,9 @@ interface ConnectSupplierModalProps {
 }
 
 const ConnectSupplierModal: React.FC<ConnectSupplierModalProps> = ({ supplier, onClose, onSuccess }) => {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   if (!supplier) return null;
+  if (supplier === 'srs' && !isSrsEnabled) return null;
 
   const handleAbcConnect = () => {
     const token = localStorage.getItem('token') || localStorage.getItem('adminToken');

@@ -8,6 +8,7 @@ import { srsService } from '../services/srsService';
 import { proposalsApi, Proposal } from '../services/proposalsApi';
 import { qxoApi } from '../services/qxoApi';
 import ConnectSupplierModal from '../components/catalog/ConnectSupplierModal';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
 
 interface ColumnVisibility {
   itemType: boolean;
@@ -33,6 +34,7 @@ const getProposalStatusLabel = (status: Proposal['status']) => {
 };
 
 export default function Catalog() {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,10 +107,12 @@ export default function Catalog() {
 
   useEffect(() => {
     fetchABCSupplyStatus();
-    checkSrsIntegration();
+    if (isSrsEnabled) {
+      checkSrsIntegration();
+    }
     fetchQxoStatus();
     loadSettings();
-  }, [])
+  }, [isSrsEnabled])
 
   const loadSettings = async () => {
     try {
@@ -692,19 +696,21 @@ export default function Catalog() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm">
-                <Link size={16} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-gray-900 dark:text-white font-medium">SRS</span>
-                {srsIntegrated !== null && (
-                  <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
-                    srsIntegrated 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
-                  }`}>
-                    {srsIntegrated ? 'Connected' : 'Not Connected'}
-                  </span>
-                )}
-              </div>
+              {isSrsEnabled && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm">
+                  <Link size={16} className="text-gray-500 dark:text-gray-400" />
+                  <span className="text-gray-900 dark:text-white font-medium">SRS</span>
+                  {srsIntegrated !== null && (
+                    <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
+                      srsIntegrated 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400' 
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
+                    }`}>
+                      {srsIntegrated ? 'Connected' : 'Not Connected'}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { abcSupplyApi } from '../../../abc-supply/services/api';
 import { Product } from '../../../abc-supply/types';
 import { srsService } from '../../services/srsService';
 import { qxoApi } from '../../services/qxoApi';
+import { useFeatureFlag } from '../../../../shared/hooks/useFeatureFlag';
 
 interface CatalogItemSidebarProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
   qxoConnected = false,
   onConnectClick,
 }) => {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
@@ -53,7 +55,7 @@ const CatalogItemSidebar: React.FC<CatalogItemSidebarProps> = ({
     'QXO': qxoConnected,
   };
   
-  const supplierOptions = ['ABC Supply', 'SRS', 'QXO'];
+  const supplierOptions = ['ABC Supply', 'SRS', 'QXO'].filter(s => s !== 'SRS' || isSrsEnabled);
   
   const renderSupplierName = (name: string) => {
     if (name === 'ABC Supply') {
