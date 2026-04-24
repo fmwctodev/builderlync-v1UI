@@ -13,6 +13,7 @@ import { qxoService } from '../../services/qxoService';
 import QxoDetailsModal from './QxoDetailsModal';
 import { cloudDriveApi } from '../../../../shared/services/cloudDriveApi';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useFeatureFlag } from '../../../../shared/hooks/useFeatureFlag';
 
 
 interface Integration {
@@ -30,6 +31,7 @@ interface Integration {
 }
 
 const Integrations: React.FC = () => {
+  const isSrsEnabled = useFeatureFlag('srs-distribution');
   const { orgSlug } = useParams();
   const navigate = useNavigate();
   const [quickbooksStatus, setQuickbooksStatus] = React.useState<{ connected: boolean; companyInfo: { Name?: string } | null }>({ connected: false, companyInfo: null });
@@ -615,7 +617,7 @@ const Integrations: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {integrations.map((integration) => (
+        {integrations.filter(i => i.id !== 'srs-distribution' || isSrsEnabled).map((integration) => (
           <div
             key={integration.id}
             className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
