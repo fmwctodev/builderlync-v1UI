@@ -8,6 +8,7 @@ import { watchAuthSagas } from '../../../shared/store/sagas/authSaga';
 import { default as contactsSaga } from '../../../shared/store/sagas/contactsSaga';
 import { dashboardApi } from '../../../shared/store/services/dashboardApi';
 import { pipelinesApi } from '../../../shared/store/services/pipelinesApi';
+import { jobPipelinesApi } from '../../../shared/store/services/jobPipelinesApi';
 
 const sagaMiddleware = createSagaMiddleware();
 
@@ -25,6 +26,7 @@ export const store = configureStore({
     contacts: contactsReducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [pipelinesApi.reducerPath]: pipelinesApi.reducer,
+    [jobPipelinesApi.reducerPath]: jobPipelinesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -32,7 +34,7 @@ export const store = configureStore({
         ignoredActions: ['persist/PERSIST'],
       },
     })
-    .concat(dashboardApi.middleware, pipelinesApi.middleware, sagaMiddleware),
+    .concat(dashboardApi.middleware, pipelinesApi.middleware, jobPipelinesApi.middleware, sagaMiddleware),
 });
 
 sagaMiddleware.run(rootSaga);

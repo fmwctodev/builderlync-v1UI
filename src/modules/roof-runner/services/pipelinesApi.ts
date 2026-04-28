@@ -42,7 +42,11 @@ class PipelinesApi {
         throw new Error(result.error || 'Failed to fetch pipelines');
       }
 
-      return result.data || [];
+      const allData = result.data || [];
+      // Filter out Job Workflows from the Opportunities module
+      const filteredData = allData.filter((p: any) => !p.is_job_workflow);
+
+      return filteredData;
     } catch (error) {
       console.error('Error fetching pipelines:', error);
       throw error;

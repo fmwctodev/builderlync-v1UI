@@ -1,16 +1,17 @@
 import { Plus, X, MoreHorizontal, Edit2, Star, Trash2, Home, Hammer, Shield, Lock } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGetPipelinesQuery, useUpdatePipelineMutation, useCreatePipelineMutation, Pipeline } from '../../../shared/store/services/pipelinesApi';
+import { useGetJobPipelinesQuery, useUpdateJobPipelineMutation, useCreateJobPipelineMutation } from '../../../shared/store/services/jobPipelinesApi';
+import { Pipeline } from '../../../shared/store/services/pipelinesApi';
 import { hasPermission } from '../../../shared/utils/permissions';
 
 const JobsSettings: React.FC = () => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   
-  const { data: pipelines, isLoading } = useGetPipelinesQuery();
-  const [updatePipeline] = useUpdatePipelineMutation();
-  const [createPipeline] = useCreatePipelineMutation();
+  const { data: pipelines, isLoading } = useGetJobPipelinesQuery();
+  const [updatePipeline] = useUpdateJobPipelineMutation();
+  const [createPipeline] = useCreateJobPipelineMutation();
 
   const [isCreating, setIsCreating] = useState(false);
   const [newWorkflowName, setNewWorkflowName] = useState('');
