@@ -105,9 +105,10 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
             const images = editorRef.current.getElementsByTagName('img');
             for (let i = 0; i < images.length; i++) {
               if (images[i].src === imageUrl) {
-                images[i].style.maxWidth = '200px';
+                images[i].style.maxWidth = '100%';
                 images[i].style.height = 'auto';
                 images[i].style.display = 'inline-block';
+                images[i].style.cursor = 'pointer';
               }
             }
           }
@@ -121,6 +122,26 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
       }
     }
   };
+
+  useEffect(() => {
+    const handleEditorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'IMG') {
+        const currentWidth = target.style.width || target.getAttribute('width') || '100%';
+        const newWidth = window.prompt('Enter image width (e.g., 200px, 50%, or 100%):', currentWidth);
+        if (newWidth !== null) {
+          (target as HTMLImageElement).style.width = newWidth;
+          (target as HTMLImageElement).style.maxWidth = '100%'; // Ensure it doesn't overflow
+        }
+      }
+    };
+
+    const editor = editorRef.current;
+    if (editor) {
+      editor.addEventListener('click', handleEditorClick);
+      return () => editor.removeEventListener('click', handleEditorClick);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
