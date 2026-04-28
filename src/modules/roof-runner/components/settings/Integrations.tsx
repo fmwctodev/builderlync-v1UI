@@ -54,6 +54,9 @@ const Integrations: React.FC = () => {
   const [showEagleViewModal, setShowEagleViewModal] = React.useState(false);
   const [showMcpModal, setShowMcpModal] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [mcpToken, setMcpToken] = React.useState<string | null>(null);
+  const [mcpTokenExpiry, setMcpTokenExpiry] = React.useState<string | null>(null);
+  const [mcpError, setMcpError] = React.useState<string | null>(null);
 
 
   React.useEffect(() => {
@@ -305,6 +308,66 @@ const Integrations: React.FC = () => {
     setTwilioStatus(status);
   };
 
+  const buildMcpConfigJson = (token: string) => {
+    const mcpUrl = import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp.builderlync.com/api/v1/mcp';
+    return JSON.stringify({
+      mcpServers: {
+        builderlync: {
+          command: 'npx',
+          args: ['mcp-remote', mcpUrl, '--transport', 'http', '--header', `Authorization:Bearer ${token}`]
+        }
+      },
+      preferences: {
+        coworkScheduledTasksEnabled: false,
+        ccdScheduledTasksEnabled: false,
+        coworkWebSearchEnabled: true,
+        sidebarMode: 'chat'
+      }
+    }, null, 2);
+  };
+
+  const fetchMcpToken = async () => {
+    try {
+      setLoading('mcp');
+      setCopied(false);
+      setMcpError(null);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3200/api'}/auth/mcp-token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success || !data.data?.token) {
+        throw new Error(data.message || 'Failed to generate MCP token');
+      }
+
+      setMcpToken(data.data.token);
+      setMcpTokenExpiry(data.data.expiresAt || null);
+    } catch (error: any) {
+      setMcpToken(null);
+      setMcpTokenExpiry(null);
+      setMcpError(error?.message || 'Failed to generate MCP token');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleMcpConnect = async () => {
+    setShowMcpModal(true);
+    await fetchMcpToken();
+  };
+
+  const handleCopyMcpConfig = async () => {
+    if (!mcpToken) return;
+
+    await navigator.clipboard.writeText(buildMcpConfigJson(mcpToken));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleConnect = async (integrationId: string) => {
     if (integrationId === 'quickbooks') {
       handleQuickBooksConnect();
@@ -349,7 +412,7 @@ const Integrations: React.FC = () => {
         if (data.data?.authUrl) window.location.href = data.data.authUrl;
       } catch (err) { console.error(err); } finally { setLoading(null); }
     } else if (integrationId === 'mcp') {
-      setShowMcpModal(true);
+      handleMcpConnect();
     } else {
       console.log(`Connecting to ${integrationId}...`);
     }
@@ -928,56 +991,59 @@ const Integrations: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Configuration JSON</h3>
-                  <button
-                    onClick={() => {
-                      const mcpUrl = import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp.builderlync.com/api/v1/mcp';
-                      const token = localStorage.getItem('token') || 'YOUR_AUTH_TOKEN';
-                      const json = JSON.stringify({
-                        "mcpServers": {
-                          "builderlync": {
-                            "command": "npx",
-                            "args": ["mcp-remote", mcpUrl, "--transport", "http", "--header", `Authorization:Bearer ${token}`]
-                          }
-                        },
-                        "preferences": {
-                          "coworkScheduledTasksEnabled": false,
-                          "ccdScheduledTasksEnabled": false,
-                          "coworkWebSearchEnabled": true,
-                          "sidebarMode": "chat"
-                        }
-                      }, null, 2);
-                      navigator.clipboard.writeText(json);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={fetchMcpToken}
+                      disabled={loading === 'mcp'}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loading === 'mcp' ? 'animate-spin' : ''}`} />
+                      {loading === 'mcp' ? 'Generating...' : 'Regenerate'}
+                    </button>
+                    <button
+                    onClick={handleCopyMcpConfig}
+                    disabled={!mcpToken || loading === 'mcp'}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${copied
                       ? 'bg-green-100 text-green-700'
                       : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-                      }`}
+                      } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copied ? 'Copied!' : 'Copy JSON'}
-                  </button>
+                    </button>
+                  </div>
                 </div>
+                {mcpTokenExpiry && !mcpError && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    This MCP token expires on {new Date(mcpTokenExpiry).toLocaleString()}.
+                  </p>
+                )}
+                {mcpError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                    {mcpError}
+                  </div>
+                )}
                 <div className="relative group">
                   <pre className="bg-gray-900 text-gray-300 p-4 rounded-xl text-[10px] font-mono border border-gray-800 shadow-inner max-h-[160px] overflow-auto">
-                    {`{
+                    {loading === 'mcp' ? `Generating MCP token...` : mcpToken ? `{
   "mcpServers": {
     "builderlync": {
       "command": "npx",
       "args": [
         "mcp-remote", 
-        "${(import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp...').substring(0, 30)}...",
+        "${import.meta.env.VITE_MCP_SERVER_URL || 'https://mcp.builderlync.com/api/v1/mcp'}",
         "--transport", "http",
-        "--header", "Authorization:Bearer ${localStorage.getItem('token')?.substring(0, 15)}..."
+        "--header", "Authorization:Bearer ${mcpToken}"
       ]
     }
   },
   "preferences": {
+    "coworkScheduledTasksEnabled": false,
+    "ccdScheduledTasksEnabled": false,
     "coworkWebSearchEnabled": true,
-    ...
+    "sidebarMode": "chat"
   }
-}`}
+}` : `Click "Regenerate" to generate a dedicated 180-day MCP token.`}
                   </pre>
                 </div>
               </div>
