@@ -120,7 +120,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               placeholder="Enter task title"
             />
           </div>
@@ -131,7 +131,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
               required
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value ? parseInt(e.target.value) : '' })}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select assignee</option>
               {staff.map(member => (
@@ -149,7 +149,7 @@ export function TaskModal({ isOpen, onClose, onSuccess, contactId, editingTask }
               required
               value={formData.dueDate}
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             />
           </div>
 

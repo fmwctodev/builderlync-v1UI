@@ -71,6 +71,7 @@ export interface Opportunity {
   property_latitude?: number;
   property_longitude?: number;
   job_id?: number | null;
+  contact_name?: string;
   created_at: string;
   updated_at: string;
 }

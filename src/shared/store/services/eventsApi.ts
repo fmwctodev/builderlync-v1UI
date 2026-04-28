@@ -12,6 +12,7 @@ export interface EventContact {
 }
 
 export interface Event {
+  googleEventId: any;
   id?: number;
   type: string;
   title: string;
@@ -51,8 +52,8 @@ export interface CreateEventRequest {
   location: string;
   invitees: string[];
   description: string;
-  createdBy: number;
-  createdByName: string;
+  createdBy?: number;
+  createdByName?: string;
   assignedTo?: number;
   jobId?: number;
   timeZone?: string;
@@ -79,11 +80,15 @@ export const getJobEvents = async (jobId: number, page: number = 1, limit: numbe
   return response.data;
 };
 
-export const createJobEvent = async (jobId: number, eventData: CreateEventRequest): Promise<{ success: boolean; message: string }> => {
+export const createJobEvent = async (jobId: number | undefined, eventData: CreateEventRequest): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
 
+  const url = jobId
+    ? `${API_BASE_URL}/jobs/${jobId}/events`
+    : `${API_BASE_URL}/events`;
+
   const response = await axios.post(
-    `${API_BASE_URL}/jobs/${jobId}/events`,
+    url,
     eventData,
     {
       headers: {
@@ -97,13 +102,17 @@ export const createJobEvent = async (jobId: number, eventData: CreateEventReques
   return response.data;
 };
 
-export const updateJobEvent = async (jobId: number, eventId: number, eventData: any): Promise<{ success: boolean; message: string }> => {
+export const updateJobEvent = async (jobId: number | undefined, eventId: number, eventData: any): Promise<{ success: boolean; data?: Event; message?: string }> => {
   const token = localStorage.getItem('token');
   const refreshToken = localStorage.getItem('google_refresh_token');
   const googleEmail = localStorage.getItem('google_email');
 
+  const url = jobId
+    ? `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`
+    : `${API_BASE_URL}/events/${eventId}`;
+
   const response = await axios.put(
-    `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`,
+    url,
     {
       ...eventData,
       refreshToken,
@@ -121,12 +130,16 @@ export const updateJobEvent = async (jobId: number, eventId: number, eventData: 
   return response.data;
 };
 
-export const deleteJobEvent = async (jobId: number, eventId: number, googleEventId?: string): Promise<{ success: boolean; message: string }> => {
+export const deleteJobEvent = async (jobId: number | undefined, eventId: number, googleEventId?: string): Promise<{ success: boolean; message: string }> => {
   const token = localStorage.getItem('token');
   const refreshToken = localStorage.getItem('google_refresh_token');
 
+  const url = jobId
+    ? `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`
+    : `${API_BASE_URL}/events/${eventId}`;
+
   const response = await axios.delete(
-    `${API_BASE_URL}/jobs/${jobId}/events/${eventId}`,
+    url,
     {
       headers: {
         'accept': 'application/json',

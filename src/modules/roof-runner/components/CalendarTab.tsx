@@ -3,7 +3,7 @@ import { Plus, ExternalLink, Calendar as CalendarIcon, X, User } from 'lucide-re
 import { useNavigate, useParams } from 'react-router-dom';
 import { Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
-import { createJobEvent, getAllEvents, Event } from '../../../shared/store/services/eventsApi';
+import { createJobEvent, getAllEvents, getJobEvents, updateJobEvent, Event } from '../../../shared/store/services/eventsApi';
 
 interface CalendarTabProps {
   jobId?: number;
@@ -30,22 +30,19 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     location: '',
     teamMember: '',
     invitees: [] as string[],
-    description: ''
+    description: '',
+    syncToGoogle: false
   });
 
   const fetchEvents = async () => {
     try {
-      const response = await getAllEvents();
-      const allEvents = response.data || [];
-      console.log("allEvents", allEvents);
-      console.log("jobId", jobId);
+      let response;
       if (jobId) {
-        const jobEvents = allEvents.filter((event: any) => event.job_id === jobId);
-        console.log("jobEvents", jobEvents);
-        setEvents(jobEvents);
+        response = await getJobEvents(jobId);
       } else {
-        setEvents(allEvents);
+        response = await getAllEvents();
       }
+      setEvents(response.data || []);
     } catch (error: any) {
       console.error('Error fetching events:', error);
     }
@@ -118,7 +115,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
       location: jobData?.location || '',
       teamMember: defaultAssignee ? `${defaultAssignee.first_name} ${defaultAssignee.last_name}` : '',
       invitees: [],
-      description: jobData ? `Event for job: ${jobData.name}` : ''
+      description: jobData ? `Event for job: ${jobData.name}` : '',
+      syncToGoogle: false
     });
     setShowModal(true);
   };
@@ -147,6 +145,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
         location: formData.location,
         invitees: formData.invitees,
         description: formData.description,
+        syncToGoogle: formData.syncToGoogle,
+        refreshToken: localStorage.getItem('google_refresh_token'),
+        googleEmail: localStorage.getItem('google_email'),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         createdBy: 1,
         createdByName: 'Current User'
       };
@@ -393,15 +395,29 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.allDay}
-                      onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-                      className="mr-2 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">All Day Event</span>
+                <div className="flex items-center space-x-6">
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.allDay}
+                        onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 transition-all duration-200"
+                      />
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">All Day Event</span>
+                  </label>
+
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.syncToGoogle}
+                        onChange={(e) => setFormData({ ...formData, syncToGoogle: e.target.checked })}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 transition-all duration-200"
+                      />
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">Sync to Google</span>
                   </label>
                 </div>
 
