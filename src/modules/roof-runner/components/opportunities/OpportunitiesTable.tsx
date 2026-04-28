@@ -142,8 +142,8 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {opportunity.opportunity_name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {primaryContact?.contact_name || 'N/A'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    {primaryContact?.contact_name || (opportunity as any).contact_name || opportunity.business_name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

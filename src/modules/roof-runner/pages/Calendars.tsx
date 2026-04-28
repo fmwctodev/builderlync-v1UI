@@ -69,6 +69,7 @@ const Calendars: React.FC = () => {
     teamMember: "",
     invitees: [] as string[],
     description: "",
+    syncToGoogle: false,
   });
   const fetchStaff = async () => {
     try {
@@ -110,6 +111,16 @@ const Calendars: React.FC = () => {
       console.error("Error fetching events:", error);
     }
   };
+
+  useEffect(() => {
+    if (formData.startTime && !formData.endTime && !editingEvent) {
+      const [hours, minutes] = formData.startTime.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours + 1, minutes);
+      const newEndTime = date.toTimeString().slice(0, 5);
+      setFormData((prev) => ({ ...prev, endTime: newEndTime }));
+    }
+  }, [formData.startTime, editingEvent]);
 
   useEffect(() => {
     console.log("Latest push");
@@ -272,6 +283,7 @@ const Calendars: React.FC = () => {
       teamMember: "",
       invitees: [],
       description: "",
+      syncToGoogle: false,
     });
     setShowModal(true);
   };
@@ -313,6 +325,7 @@ const Calendars: React.FC = () => {
           : [event.invitees]
         : [],
       description: event.description || "",
+      syncToGoogle: !!event.googleEventId,
     };
     console.log("Form data being set:", formDataToSet);
     setFormData(formDataToSet);
@@ -358,18 +371,18 @@ const Calendars: React.FC = () => {
         location: formData.location,
         invitees: formData.invitees,
         description: formData.description,
-        createdBy: 1,
-        createdByName: "Current User",
+        syncToGoogle: formData.syncToGoogle,
         refreshToken,
-        googleEmail, timeZone
+        googleEmail,
+        timeZone
       };
 
       if (editingEvent) {
         const response = await updateJobEvent(jobId, editingEvent.id!, eventData);
         console.log('Update response:', response);
         // Update the event in state immediately
-        setEvents(prevEvents => 
-          prevEvents.map(evt => 
+        setEvents(prevEvents =>
+          prevEvents.map(evt =>
             evt.id === editingEvent.id ? { ...evt, ...response.data } : evt
           )
         );
@@ -383,12 +396,11 @@ const Calendars: React.FC = () => {
       setShowModal(false);
       resetForm();
       setEditingEvent(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Submit error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || (editingEvent ? "Failed to update event" : "Failed to create event");
       setToast({
-        message: editingEvent
-          ? "Failed to update event"
-          : "Failed to create event",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -433,6 +445,7 @@ const Calendars: React.FC = () => {
       teamMember: "",
       invitees: [],
       description: "",
+      syncToGoogle: false,
     });
     setEditingEvent(null);
   };
@@ -881,6 +894,7 @@ const Calendars: React.FC = () => {
                   teamMember: "",
                   invitees: [],
                   description: "",
+                  syncToGoogle: false,
                 });
                 setShowModal(true);
               }}
@@ -997,9 +1011,9 @@ const Calendars: React.FC = () => {
                     selectedContact={
                       formData.contactId
                         ? {
-                            id: String(formData.contactId),
-                            name: formData.contactName || `Contact #${formData.contactId}`,
-                          }
+                          id: String(formData.contactId),
+                          name: formData.contactName || `Contact #${formData.contactId}`,
+                        }
                         : null
                     }
                     onSelectContact={(contact) => {
@@ -1099,18 +1113,31 @@ const Calendars: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4 mb-4">
-                  <label className="flex items-center">
+                <div className="flex items-center space-x-6 mb-4">
+                  <label className="flex items-center cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={formData.allDay}
                       onChange={(e) =>
                         setFormData({ ...formData, allDay: e.target.checked })
                       }
-                      className="mr-2"
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                       All Day Event
+                    </span>
+                  </label>
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={formData.syncToGoogle}
+                      onChange={(e) =>
+                        setFormData({ ...formData, syncToGoogle: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                      Sync to Google Calendar
                     </span>
                   </label>
                 </div>
