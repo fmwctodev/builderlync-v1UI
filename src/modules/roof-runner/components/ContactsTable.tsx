@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake } from 'lucide-react';
+import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake, Plus } from 'lucide-react';
 import { hasPermission } from '../../../shared/utils/permissions';
 
 interface Contact {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import OpportunitiesHeader from '../components/opportunities/OpportunitiesHeader';
-import FiltersAndSort from '../components/opportunities/FiltersAndSort';
+import FiltersAndSort, { OpportunityFilters } from '../components/opportunities/FiltersAndSort';
 import KanbanBoard from '../components/opportunities/KanbanBoard';
 import OpportunitiesTable from '../components/opportunities/OpportunitiesTable';
 import AddOpportunityModal from '../components/opportunities/AddOpportunityModal';
@@ -26,6 +26,10 @@ export default function Opportunities() {
   const [showEditPipelineModal, setShowEditPipelineModal] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Filter and search state
+  const [filters, setFilters] = useState<OpportunityFilters>({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     // Removed embedded pipelines service call
@@ -93,6 +97,14 @@ export default function Opportunities() {
     setShowViewEditModal(false);
   };
 
+  const handleFiltersChange = (newFilters: OpportunityFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleSearchChange = (search: string) => {
+    setSearchTerm(search);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <OpportunitiesHeader
@@ -115,11 +127,17 @@ export default function Opportunities() {
             )}
             {internalView === 'list' && (
               <>
-                <FiltersAndSort />
+                <FiltersAndSort 
+                  onFiltersChange={handleFiltersChange}
+                  onSearchChange={handleSearchChange}
+                  selectedPipelineId={selectedPipelineId}
+                />
                 <OpportunitiesTable
                   key={refreshKey}
                   onRowClick={handleRowClick}
                   selectedPipelineId={selectedPipelineId}
+                  filters={filters}
+                  searchTerm={searchTerm}
                 />
               </>
             )}

@@ -15,6 +15,7 @@ interface OpportunityFilters {
   status?: OpportunityStatus;
   owner_id?: string;
   job_type?: JobType;
+  search?: string;
 }
 
 class OpportunitiesApiService {
@@ -53,88 +54,16 @@ class OpportunitiesApiService {
       if (filters?.status) params.append('status', filters.status);
       if (filters?.owner_id) params.append('owner_id', filters.owner_id);
       if (filters?.job_type) params.append('job_type', filters.job_type);
+      if (filters?.search) params.append('search', filters.search);
 
-      console.log('API: Attempting to fetch opportunities from backend...');
+      console.log('API: Fetching opportunities with params:', params.toString());
       const result = await this.makeRequest(`/opportunities?${params}`);
       console.log('API: Backend response:', result);
       return result.data || [];
     } catch (error) {
-      console.error('API: Failed to fetch opportunities, using mock data:', error);
-      // Return mock data for development
-      const mockData = this.getMockOpportunities();
-      console.log('API: Returning mock data:', mockData);
-      return mockData;
+      console.error('API: Failed to fetch opportunities:', error);
+      throw error;
     }
-  }
-
-  private getMockOpportunities(): OpportunityWithDetails[] {
-    return [
-      {
-        id: '1',
-        opportunity_name: 'Residential Roof Repair - Smith House',
-        business_name: 'Smith Family',
-        value: 15000,
-        stage_id: 'new-lead',
-        pipeline_id: '1',
-        source: 'Website',
-        status: 'open',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: ""
-      },
-      {
-        id: '2',
-        opportunity_name: 'Commercial Building Roof Replacement',
-        business_name: 'ABC Corp',
-        value: 85000,
-        stage_id: 'contacted',
-        pipeline_id: '1',
-        source: 'Referral',
-        status: 'open',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: ""
-      },
-      {
-        id: '3',
-        opportunity_name: 'Insurance Claim - Storm Damage',
-        business_name: 'Johnson Residence',
-        value: 25000,
-        stage_id: 'qualified',
-        pipeline_id: '1',
-        source: 'Insurance',
-        status: 'open',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: ""
-      },
-      {
-        id: '4',
-        opportunity_name: 'New Construction - Office Complex',
-        business_name: 'XYZ Development',
-        value: 150000,
-        stage_id: 'proposal-sent',
-        pipeline_id: '1',
-        source: 'Cold Call',
-        status: 'open',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: ""
-      },
-      {
-        id: '5',
-        opportunity_name: 'Residential Re-roofing Project',
-        business_name: 'Williams Family',
-        value: 18000,
-        stage_id: 'won',
-        pipeline_id: '1',
-        source: 'Google Ads',
-        status: 'won',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: ""
-      },
-    ];
   }
 
   async getOpportunityById(id: string): Promise<OpportunityWithDetails | null> {
