@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { User, Camera, ChevronDown, Edit } from 'lucide-react';
+import { User, Camera, ChevronDown, Edit, Briefcase, Target, MapPin, DollarSign, Calendar } from 'lucide-react';
 import { getCompanies, Company } from '../../../../shared/store/services/companiesApi';
+import { getJobs } from '../../../../shared/store/services/jobsApi';
+import { opportunitiesBackendApi } from '../../../../shared/store/services/opportunitiesApi';
 
 interface ContactDetailsPanelProps {
   contact: any;
-  activeTab: 'contact' | 'company';
+  activeTab: 'contact' | 'company' | 'jobs' | 'opportunities';
   companySearch: string;
-  onTabChange: (tab: 'contact' | 'company') => void;
+  onTabChange: (tab: 'contact' | 'company' | 'jobs' | 'opportunities') => void;
   onCompanySearchChange: (value: string) => void;
   onAddCompany: () => void;
 }
@@ -22,6 +24,10 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
 
   const fetchCompanies = async () => {
     console.log('Fetching companies...');
@@ -38,10 +44,48 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
     }
   };
 
+  const fetchJobs = async () => {
+    setJobsLoading(true);
+    try {
+      const response = await getJobs(1, 100, { contactId: contact?.id });
+      console.log('Jobs API response:', response);
+      setJobs(response.data?.data || []);
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+      setJobs([]);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+  const fetchOpportunities = async () => {
+    setOpportunitiesLoading(true);
+    try {
+      const response = await opportunitiesBackendApi.getOpportunities();
+      // Filter opportunities by contact
+      const contactOpportunities = (response || []).filter((opp: any) => {
+        const primaryContact = opp.contacts?.find((c: any) => c.is_primary);
+        return primaryContact?.contact_email === contact?.email || 
+               primaryContact?.contact_phone === contact?.phone ||
+               primaryContact?.contact_name === contact?.fullName;
+      });
+      setOpportunities(contactOpportunities);
+    } catch (error) {
+      console.error('Failed to fetch opportunities:', error);
+      setOpportunities([]);
+    } finally {
+      setOpportunitiesLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log('Company tab useEffect triggered, activeTab:', activeTab);
+    console.log('Tab useEffect triggered, activeTab:', activeTab);
     if (activeTab === 'company') {
       fetchCompanies();
+    } else if (activeTab === 'jobs') {
+      fetchJobs();
+    } else if (activeTab === 'opportunities') {
+      fetchOpportunities();
     }
   }, [activeTab]);
 
@@ -59,7 +103,7 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
   return (
     <div className="w-1/2 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
       <div className="p-6">
-        {/* Contact/Company Tabs */}
+        {/* Contact/Company/Jobs/Opportunities Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
           <button
             onClick={() => onTabChange('contact')}
@@ -80,6 +124,26 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
             }`}
           >
             Company
+          </button>
+          <button
+            onClick={() => onTabChange('jobs')}
+            className={`px-4 py-2 font-medium ${
+              activeTab === 'jobs'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Jobs
+          </button>
+          <button
+            onClick={() => onTabChange('opportunities')}
+            className={`px-4 py-2 font-medium ${
+              activeTab === 'opportunities'
+                ? 'text-red-600 border-b-2 border-red-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Opportunities
           </button>
         </div>
 
@@ -218,7 +282,7 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'company' ? (
           <>
             {/* Company Tab Content */}
             <div className="mb-6">
@@ -285,7 +349,120 @@ const ContactDetailsPanel: React.FC<ContactDetailsPanelProps> = ({
               </div>
             </div>
           </>
-        )}
+        ) : activeTab === 'jobs' ? (
+          <>
+            {/* Jobs Tab Content */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Briefcase className="w-5 h-5 text-red-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Jobs</h3>
+              </div>
+              {jobsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                </div>
+              ) : jobs.length > 0 ? (
+                <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
+                  {jobs.map((job: any) => (
+                    <div key={job.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{job.name}</h4>
+                        <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                          {job.workflowStages || 'New'}
+                        </span>
+                      </div>
+                      {job.location && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{job.location}</span>
+                        </div>
+                      )}
+                      {job.jobValue && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                          <DollarSign className="w-3 h-3" />
+                          <span>${parseFloat(job.jobValue).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {job.createdAt && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500 mt-2">
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No jobs found for this contact</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Jobs linked to this contact will appear here</p>
+                </div>
+              )}
+            </div>
+          </>
+        ) : activeTab === 'opportunities' ? (
+          <>
+            {/* Opportunities Tab Content */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-5 h-5 text-red-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Opportunities</h3>
+              </div>
+              {opportunitiesLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                </div>
+              ) : opportunities.length > 0 ? (
+                <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
+                  {opportunities.map((opp: any) => (
+                    <div key={opp.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{opp.opportunity_name}</h4>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          opp.status === 'won' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                          opp.status === 'lost' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                          'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                        }`}>
+                          {opp.status || 'Open'}
+                        </span>
+                      </div>
+                      {opp.stage?.name && (
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Stage: {opp.stage.name}
+                        </div>
+                      )}
+                      {opp.property_address && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{opp.property_address}</span>
+                        </div>
+                      )}
+                      {opp.value && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                          <DollarSign className="w-3 h-3" />
+                          <span>${parseFloat(opp.value).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {opp.created_at && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500 mt-2">
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(opp.created_at).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No opportunities found for this contact</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Opportunities linked to this contact will appear here</p>
+                </div>
+              )}
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

@@ -678,16 +678,18 @@ export default function ViewEditOpportunityModal({
                     Create Job
                   </button>
                 )}
-                {!opportunity?.job_id && (
-                  <button
-                    onClick={handleConvertToJob}
-                    disabled={saving}
-                    className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors shadow-sm"
-                    title="Convert to Job"
-                  >
-                    Convert to Job
-                  </button>
-                )}
+                <button
+                  onClick={handleConvertToJob}
+                  disabled={saving || !!opportunity?.job_id}
+                  className={`px-6 py-2 text-sm font-medium rounded-md transition-colors shadow-sm ${
+                    opportunity?.job_id
+                      ? 'bg-gray-400 dark:bg-gray-600 text-gray-200 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                  title={opportunity?.job_id ? 'Job already created' : 'Convert to Job'}
+                >
+                  {opportunity?.job_id ? 'Job Already Created' : 'Convert to Job'}
+                </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"

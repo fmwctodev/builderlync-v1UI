@@ -1,72 +1,71 @@
-import { useState, useEffect } from 'react';
-import { opportunitiesApi } from '../../services/opportunitiesApi';
-import type { OpportunityWithDetails } from '../../types/opportunities';
+import { useState, useEffect } from "react";
+import { opportunitiesApi } from "../../services/opportunitiesApi";
+import type { OpportunityWithDetails } from "../../types/opportunities";
 
 interface OpportunitiesTableProps {
   onRowClick?: (opportunityId: string) => void;
   selectedPipelineId?: string | null;
+  filters?: {
+    status?: "open" | "won" | "lost";
+    owner_id?: string;
+    stage_id?: string;
+  };
+  searchTerm?: string;
 }
 
-const DUMMY_TABLE_OPPORTUNITIES = [
-  {
-    id: '1',
-    name: 'Commercial Roofing Project',
-    contact: 'Youssef Fadil',
-    stage: 'New Lead',
-    value: 25000,
-    status: 'Active',
-    owner: 'John Smith',
-    tags: ['Commercial', 'Roofing'],
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-20'
-  },
-  {
-    id: '2',
-    name: 'Holiday Inn Renovation',
-    contact: 'Mohammad Choudhry',
-    stage: 'New Lead',
-    value: 45000,
-    status: 'Active',
-    owner: 'Sarah Johnson',
-    tags: ['Hotel', 'Renovation'],
-    createdAt: '2024-01-10',
-    updatedAt: '2024-01-18'
-  },
-  {
-    id: '3',
-    name: 'Residential Repair',
-    contact: 'Jose Jordan',
-    stage: 'New Lead',
-    value: 8500,
-    status: 'Pending',
-    owner: 'Mike Davis',
-    tags: ['Residential', 'Repair'],
-    createdAt: '2024-01-12',
-    updatedAt: '2024-01-19'
-  }
-];
-
-export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: OpportunitiesTableProps) {
-  const [opportunities, setOpportunities] = useState<OpportunityWithDetails[]>([]);
+export default function OpportunitiesTable({
+  onRowClick,
+  selectedPipelineId,
+  filters = {},
+  searchTerm = "",
+}: OpportunitiesTableProps) {
+  const [opportunities, setOpportunities] = useState<OpportunityWithDetails[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOpportunities();
-  }, [selectedPipelineId]);
+  }, [selectedPipelineId, filters, searchTerm]);
 
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
-      if (selectedPipelineId && selectedPipelineId !== 'default') {
-        filters.pipeline_id = selectedPipelineId;
-        const data = await opportunitiesApi.getOpportunities(filters);
-        setOpportunities(data);
-      } else {
-        setOpportunities([]);
+
+      // Build filters object
+      const apiFilters: any = {};
+
+      // Only add pipeline filter if a specific pipeline is selected (not 'default')
+      if (selectedPipelineId && selectedPipelineId !== "default") {
+        apiFilters.pipeline_id = selectedPipelineId;
       }
+
+      if (filters.status) {
+        apiFilters.status = filters.status;
+      }
+
+      if (filters.owner_id) {
+        apiFilters.owner_id = filters.owner_id;
+      }
+
+      if (filters.stage_id) {
+        apiFilters.stage_id = filters.stage_id;
+      }
+
+      // Send search to backend instead of client-side filtering
+      if (searchTerm && searchTerm.trim()) {
+        apiFilters.search = searchTerm.trim();
+      }
+
+      console.log("Loading opportunities with filters:", apiFilters);
+
+      // Always fetch opportunities (even if no pipeline selected)
+      const data = await opportunitiesApi.getOpportunities(apiFilters);
+
+      setOpportunities(data);
     } catch (error) {
-      console.error('Error loading opportunities:', error);
+      console.error("Error loading opportunities:", error);
+      setOpportunities([]);
     } finally {
       setLoading(false);
     }
@@ -76,7 +75,9 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
         <div className="flex items-center justify-center h-32">
-          <div className="text-gray-600 dark:text-gray-400">Loading opportunities...</div>
+          <div className="text-gray-600 dark:text-gray-400">
+            Loading opportunities...
+          </div>
         </div>
       </div>
     );
@@ -86,12 +87,21 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
         <div className="flex flex-col items-center justify-center h-32">
-          <div className="text-gray-600 dark:text-gray-400 mb-2">No opportunities yet</div>
-          <div className="text-sm text-gray-500 dark:text-gray-500">Click "Add Opportunity" to create your first opportunity</div>
+          <div className="text-gray-600 dark:text-gray-400 mb-2">
+            {searchTerm || Object.keys(filters).length > 0
+              ? "No opportunities match your filters"
+              : "No opportunities yet"}
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-500">
+            {searchTerm || Object.keys(filters).length > 0
+              ? "Try adjusting your filters or search term"
+              : 'Click "Add Opportunity" to create your first opportunity'}
+          </div>
         </div>
       </div>
     );
   }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="overflow-x-auto">
@@ -130,8 +140,8 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {opportunities.map((opportunity) => {
               const primaryContact = opportunity.contacts?.[0];
-              const stageName = opportunity.stage?.name || 'Unknown';
-              const stageColor = opportunity.stage?.color || '#dc2626';
+              const stageName = opportunity.stage?.name || "No Stage";
+              const stageColor = opportunity.stage?.color || "#6b7280"; // Gray color for no stage
 
               return (
                 <tr
@@ -143,7 +153,10 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
                     {opportunity.opportunity_name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-medium">
-                    {primaryContact?.contact_name || (opportunity as any).contact_name || opportunity.business_name || 'N/A'}
+                    {primaryContact?.contact_name ||
+                      (opportunity as any).contact_name ||
+                      opportunity.business_name ||
+                      "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -157,25 +170,31 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
                     ${(opportunity.value || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${opportunity.status === 'open'
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                      : opportunity.status === 'won'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : opportunity.status === 'lost'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                      }`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        opportunity.status === "open"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                          : opportunity.status === "won"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : opportunity.status === "lost"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                      }`}
+                    >
                       {opportunity.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {opportunity.owner_id || 'Unassigned'}
+                    {opportunity.owner_id || "Unassigned"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-wrap gap-1">
                       {opportunity.tags && opportunity.tags.length > 0 ? (
                         opportunity.tags.map((tag, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                          >
                             {tag}
                           </span>
                         ))
@@ -195,6 +214,14 @@ export default function OpportunitiesTable({ onRowClick, selectedPipelineId }: O
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Results count */}
+      <div className="px-6 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Showing <span className="font-medium">{opportunities.length}</span>{" "}
+          opportunities
+        </p>
       </div>
     </div>
   );

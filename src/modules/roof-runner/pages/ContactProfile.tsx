@@ -32,6 +32,8 @@ type RightPanelView =
   | "payments"
   | "related";
 
+type LeftPanelTab = "contact" | "company" | "jobs" | "opportunities";
+
 const ContactProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -42,7 +44,7 @@ const ContactProfile: React.FC = () => {
   );
 
   // State management
-  const [activeTab, setActiveTab] = useState<"contact" | "company">("contact");
+  const [activeTab, setActiveTab] = useState<LeftPanelTab>("contact");
   const [rightPanelView, setRightPanelView] =
     useState<RightPanelView>("activity");
   const [showPaymentActions, setShowPaymentActions] = useState(false);

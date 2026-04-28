@@ -186,6 +186,7 @@ class JobsApiService {
     createdDate?: string[];
     leadSources?: string[];
     pipelineId?: string;
+    contactId?: number;
   }): Promise<JobsResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -230,6 +231,9 @@ class JobsApiService {
     }
     if (filters?.pipelineId) {
       params.append('pipelineId', filters.pipelineId);
+    }
+    if (filters?.contactId) {
+      params.append('contactId', filters.contactId.toString());
     }
 
     return this.makeRequest(`/jobs?${params}`);
