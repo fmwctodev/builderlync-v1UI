@@ -48,9 +48,11 @@ const Jobs: React.FC = () => {
   const [jobCounts, setJobCounts] = useState<any>(null);
   const PAGE_SIZE = 50;
   
-  const { data: pipelines } = useGetPipelinesQuery();
+  const { data: allPipelines } = useGetPipelinesQuery();
+  const pipelines = (allPipelines || []).filter(p => p.is_job_workflow);
+
   const currentPipeline = selectedPipelineId === 'all' 
-    ? pipelines?.find(p => p.is_default) 
+    ? pipelines?.find(p => p.is_default) || pipelines?.[0]
     : pipelines?.find(p => p.id === parseInt(selectedPipelineId));
   
   const pipelineStages = currentPipeline?.stages || [];

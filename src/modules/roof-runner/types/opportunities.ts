@@ -14,6 +14,7 @@ export interface Pipeline {
   pipeline_type: PipelineType;
   created_at: string;
   updated_at: string;
+  is_job_workflow?: boolean;
 }
 
 export interface PipelineStage {

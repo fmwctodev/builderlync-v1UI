@@ -12,7 +12,8 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { useGetPipelinesQuery, useUpdatePipelineMutation, Pipeline, PipelineStage } from '../../../shared/store/services/pipelinesApi';
+import { useGetJobPipelinesQuery, useUpdateJobPipelineMutation } from '../../../shared/store/services/jobPipelinesApi';
+import { Pipeline, PipelineStage } from '../../../shared/store/services/pipelinesApi';
 import { hasPermission } from '../../../shared/utils/permissions';
 import { Lock } from 'lucide-react';
 
@@ -20,8 +21,8 @@ const WorkflowStages: React.FC = () => {
   const navigate = useNavigate();
   const { orgSlug } = useParams<{ orgSlug: string }>();
   
-  const { data: allPipelines, isLoading } = useGetPipelinesQuery();
-  const [updatePipeline] = useUpdatePipelineMutation();
+  const { data: allPipelines, isLoading } = useGetJobPipelinesQuery();
+  const [updatePipeline] = useUpdateJobPipelineMutation();
 
   const getWorkflowIcon = (jobType: string) => {
     switch (jobType) {

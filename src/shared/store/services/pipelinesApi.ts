@@ -23,6 +23,7 @@ export interface Pipeline {
   job_type: 'Commercial' | 'Residential' | 'Insurance';
   stages: PipelineStage[];
   job_count?: number;
+  is_job_workflow?: boolean;
 }
 
 export interface UpdatePipelineRequest {
