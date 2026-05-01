@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation, useSearchParams } from 'react-rout
 import { getJobs, createJob, updateJob, deleteJob, getJobCounts, getJobById, Job, CreateJobRequest } from '../../../shared/store/services/jobsApi';
 import { getStaff, StaffMember } from '../../../shared/store/services/staffApi';
 import { autoCreateTasksForStage } from '../../../shared/store/services/jobTasksApi';
-import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
+import { useGetJobPipelinesQuery } from '../../../shared/store/services/jobPipelinesApi';
 import JobsHeader from '../components/JobsHeader';
 import JobsTable from '../components/JobsTable';
 import JobsBoardView from '../components/JobsBoardView';
@@ -48,12 +48,12 @@ const Jobs: React.FC = () => {
   const [jobCounts, setJobCounts] = useState<any>(null);
   const PAGE_SIZE = 50;
   
-  const { data: allPipelines } = useGetPipelinesQuery();
-  const pipelines = (allPipelines || []).filter(p => p.is_job_workflow);
+  const { data: pipelines } = useGetJobPipelinesQuery();
+
 
   const currentPipeline = selectedPipelineId === 'all' 
     ? pipelines?.find(p => p.is_default) || pipelines?.[0]
-    : pipelines?.find(p => p.id === parseInt(selectedPipelineId));
+    : pipelines?.find(p => p.id === selectedPipelineId);
   
   const pipelineStages = currentPipeline?.stages || [];
 
@@ -209,8 +209,12 @@ const Jobs: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, sanitizedData?: any) => {
     e.preventDefault();
+    
+    // Use sanitizedData if provided by the modal, otherwise fallback to current formData
+    const submissionData = sanitizedData || formData;
+
 
     if (!formData.contactId) {
       setToast({ message: 'Please select a customer or lead before saving', type: 'error' });
@@ -224,15 +228,16 @@ const Jobs: React.FC = () => {
 
       // Set customerId from contactId
       const jobData: CreateJobRequest = {
-        ...formData,
-        customerId: formData.contactId || null,
+        ...submissionData,
+        customerId: submissionData.contactId || null,
         // Ensure numeric fields are properly handled
-        jobValue: String(formData.jobValue || '0'),
-        claimAmount: Number(formData.claimAmount) || 0,
-        deductible: Number(formData.deductible) || 0,
+        jobValue: String(submissionData.jobValue || '0'),
+        claimAmount: Number(submissionData.claimAmount) || 0,
+        deductible: Number(submissionData.deductible) || 0,
         // Ensure assignees is an array of numbers
-        assignees: formData.assignees.filter(id => id && !isNaN(Number(id))).map(id => Number(id)),
+        assignees: (submissionData.assignees || []).filter((id: any) => id && !isNaN(Number(id))).map((id: any) => Number(id)),
       };
+
 
       if (viewingJob) {
         await updateJob(viewingJob.id!, jobData);
@@ -350,8 +355,13 @@ const Jobs: React.FC = () => {
       contactId,
       contactName,
       tags: job.tags || [],
-      pipelineId: job.pipelineId || job.pipeline_id || null,
-      stageId: job.stageId || job.stage_id || null,
+      // Strictly only use Job Workflow IDs. Legacy CRM IDs (pipelineId) are ignored here
+      // so that the JobDetailsModal can auto-resolve them to the correct new workflow.
+      pipelineId: job.jobPipelineId || job.job_pipeline_id || null,
+      stageId: job.jobStageId || job.job_stage_id || null,
+
+
+
     });
     setShowJobDetails(true);
   };
@@ -385,8 +395,12 @@ const Jobs: React.FC = () => {
       jobType: job.jobType || 'residential',
       contactId,
       contactName,
-      tags: job.tags || []
+      tags: job.tags || [],
+      pipelineId: job.jobPipelineId || job.job_pipeline_id || null,
+      stageId: job.jobStageId || job.job_stage_id || null,
+
     });
+
     setShowJobDetails(true);
   };
 
@@ -553,10 +567,17 @@ const Jobs: React.FC = () => {
                 try {
                   const job = jobs.find(j => j.id === jobId);
                   if (job) {
+                    const targetPipeline = pipelines?.find(p => p.stages.some(s => s.name === newStage));
+                    const targetStage = targetPipeline?.stages.find(s => s.name === newStage);
+
                     const { id, ...jobUpdateData } = job;
                     await updateJob(jobId, {
                       ...jobUpdateData,
                       workflowStages: newStage,
+                      jobPipelineId: targetPipeline?.id || job.jobPipelineId || job.job_pipeline_id || null,
+                      jobStageId: targetStage?.id || job.jobStageId || job.job_stage_id || null,
+                      pipelineId: null, // Explicitly nullify legacy IDs
+                      stageId: null,
                       editedBy: 1,
                       // Ensure jobValue is a valid numeric string, default to '0'
                       jobValue: String(job.jobValue || job.job_value || '0'),
@@ -565,13 +586,15 @@ const Jobs: React.FC = () => {
                       deductible: Number(job.deductible || 0),
                       latitude: job.latitude ? Number(job.latitude) : undefined,
                       longitude: job.longitude ? Number(job.longitude) : undefined
-                    } as CreateJobRequest);
+                    } as any);
+
                     fetchJobs(currentPage);
                   }
                 } catch (error) {
                   console.error('Error updating job stage:', error);
                 }
               }}
+
               onCardClick={handleView}
             />
           )}
