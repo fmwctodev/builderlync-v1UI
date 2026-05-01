@@ -19,6 +19,8 @@ import JobCostingTab from './JobCostingTab';
 import AttachmentsTab from './AttachmentsTab';
 import InstantEstimateTab from './InstantEstimateTab';
 import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
+import { useGetJobPipelinesQuery } from '../../../shared/store/services/jobPipelinesApi';
+
 import Toast from './Toast';
 
 interface JobDetailsModalProps {
@@ -52,7 +54,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   setModalMessage,
   onCreateOpportunity
 }) => {
-  const { data: pipelines } = useGetPipelinesQuery();
+  const { data: pipelines } = useGetJobPipelinesQuery();
   const { orgSlug } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Job details');
@@ -138,14 +140,62 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(e);
+      // Ensure we only send the NEW job workflow IDs to the backend
+      const finalData = { ...formData };
+      (finalData as any).jobPipelineId = formData.pipelineId;
+      (finalData as any).jobStageId = formData.stageId;
+      
+      // Explicitly delete the legacy keys so the backend doesn't get confused
+      delete (finalData as any).pipelineId;
+      delete (finalData as any).stageId;
+      
+      onSubmit(e, finalData);
     }
+
   };
+
+  // Automatically resolve pipeline and stage if they're missing or carry legacy CRM IDs
+  React.useEffect(() => {
+    if (isOpen && pipelines && pipelines.length > 0 && formData.workflowStages) {
+      // Check if the current pipelineId is missing.
+      // We previously checked for 'isLegacy' (ID not in current pipelines list), but that was too aggressive
+      // and would overwrite valid IDs that were not yet loaded or belonged to a different organization context.
+      const isMissing = !formData.pipelineId;
+
+      if (isMissing) {
+        console.log(`Attempting to resolve workflow for stage "${formData.workflowStages}". Pipeline ID is missing.`);
+        
+        for (const pipeline of pipelines) {
+          const stage = pipeline.stages.find(s => 
+            s.name.trim().toLowerCase() === formData.workflowStages.trim().toLowerCase()
+          );
+          
+          if (stage) {
+            console.log(`Matched stage "${formData.workflowStages}" to pipeline "${pipeline.name}" (${pipeline.id})`);
+            setFormData({
+              ...formData,
+              pipelineId: pipeline.id,
+              stageId: stage.id,
+              workflowStages: stage.name 
+            });
+            return;
+          }
+        }
+        console.log('No matching Job Workflow found for stage:', formData.workflowStages);
+      }
+    }
+  }, [isOpen, pipelines, formData.workflowStages, formData.pipelineId]);
+
+
 
   if (!isOpen) return null;
 
   console.log('Staff data in modal:', staff);
-  const activePipeline = pipelines?.find(p => p.id === formData.pipelineId) || pipelines?.find(p => p.is_default);
+
+  const activePipeline = pipelines?.find(p => String(p.id) === String(formData.pipelineId)) || pipelines?.find(p => p.is_default);
+
+
+
   const activeStages = activePipeline?.stages || [];
 
   const stages = [
@@ -170,6 +220,19 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     ? activeStages.map(s => ({ id: s.id, name: s.name }))
     : stages.map(s => ({ id: '', name: s }));
 
+  const handlePipelineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const pipelineId = e.target.value;
+    const selectedPipeline = pipelines?.find(p => String(p.id) === String(pipelineId));
+    
+    setFormData({
+      ...formData,
+      pipelineId: pipelineId || null,
+      stageId: selectedPipeline?.stages?.[0]?.id || null,
+      workflowStages: selectedPipeline?.stages?.[0]?.name || ''
+    });
+  };
+
+
   const handleStageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = e.target.value;
     
@@ -185,6 +248,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
       setFormData({ ...formData, workflowStages: selectedValue });
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -445,6 +509,22 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Workflow <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.pipelineId || ''}
+                          onChange={handlePipelineChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value="">Select Workflow</option>
+                          {pipelines?.map(pipeline => (
+                            <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Job Stage <span className="text-red-500">*</span>
                         </label>
                         <div className="space-y-2">
@@ -452,7 +532,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                             value={formData.workflowStages}
                             onChange={handleStageChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            disabled={!formData.pipelineId}
                           >
+                            {!formData.pipelineId && <option value="">Select Workflow first</option>}
                             {displayStages.map(stage => (
                               <option key={stage.id || stage.name} value={stage.name}>{stage.name}</option>
                             ))}
@@ -462,7 +544,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                           )}
                         </div>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Date <span className="text-red-500">*</span>
@@ -479,6 +563,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         )}
                       </div>
                     </div>
+
 
                     <div className="grid grid-cols-2 gap-6">
                       <div>
