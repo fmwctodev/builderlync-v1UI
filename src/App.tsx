@@ -29,6 +29,7 @@ import PaymentSuccess from './modules/roof-runner/pages/PaymentSuccess';
 import PaymentCancel from './modules/roof-runner/pages/PaymentCancel';
 
 import { analytics } from './shared/utils/analytics';
+import { captureRefFromUrl } from './shared/utils/affiliateTracking';
 
 function AppContent() {
   const { user, token } = useAppSelector((state) => state.auth);
@@ -49,6 +50,10 @@ function AppContent() {
     oneSignalService.clearAuthenticatedUser();
     analytics.reset();
   }, [user, token]);
+
+  useEffect(() => {
+    captureRefFromUrl();
+  }, [location.pathname, location.search]);
 
   return (
     <ThemeProvider forcedTheme={forceLightTheme ? 'light' : undefined}>

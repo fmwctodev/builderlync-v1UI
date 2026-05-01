@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   Ticket,
+  Handshake,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Support & Feedback', to: '/super-admin/support', icon: MessageSquare },
   { name: 'Templates', to: '/super-admin/templates', icon: LayoutTemplate },
   { name: 'Beta Codes', to: '/super-admin/beta-codes', icon: Ticket },
+  { name: 'Affiliates', to: '/super-admin/affiliates', icon: Handshake },
   { name: 'System Health', to: '/super-admin/system', icon: Server },
   { name: 'Maintenance', to: '/super-admin/maintenance', icon: Wrench },
 ];

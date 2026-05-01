@@ -6,6 +6,7 @@ import { registerRequest, clearError, clearRegistrationEmail } from '../../../..
 import Toast from '../../../../shared/components/Toast';
 import ContentModal from '../../../../shared/components/ContentModal';
 import { PRIVACY_POLICY_CONTENT, TERMS_OF_SERVICE_CONTENT } from '../../../../shared/constants/contentData';
+import { captureRefFromUrl, getRefCode, recordAffiliateSignup } from '../../../../shared/utils/affiliateTracking';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -27,6 +28,7 @@ const Signup: React.FC = () => {
   const { loading, error, user, registrationEmail } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const fromVerifyOtp = location.state?.fromVerifyOtp;
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -43,10 +45,22 @@ const Signup: React.FC = () => {
     if (location.state?.fromVerifyOtp) {
       navigate(location.pathname, { replace: true, state: {} });
     }
+    // Capture ?ref= if it's only on the signup page (App.tsx also runs this).
+    captureRefFromUrl();
+    setReferralCode(getRefCode());
   }, [dispatch]);
 
   useEffect(() => {
     if (user) {
+      // Best-effort: link this signup to the cookied affiliate referral.
+      const u: any = user;
+      void recordAffiliateSignup({
+        userId: u.id,
+        accountId: u.organizationId || u.organization_id,
+        accountName: u.companyName || u.company_name || formData.companyName,
+        email: u.email || formData.email,
+      });
+
       const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
       if (orgSlug) {
         localStorage.setItem('currentOrganizationSlug', orgSlug);
@@ -56,6 +70,15 @@ const Signup: React.FC = () => {
       }
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    // After the registration email has been issued (pre-OTP), record the
+    // referral with at least the email so it shows up immediately in the
+    // affiliates dashboard. We'll re-record with userId/accountId after OTP.
+    if (registrationEmail && !user) {
+      void recordAffiliateSignup({ email: registrationEmail });
+    }
+  }, [registrationEmail, user]);
 
   useEffect(() => {
     console.log('Registration email changed:', registrationEmail);
@@ -99,6 +122,11 @@ const Signup: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
           <p className="text-gray-600 mt-2">Join BuilderLync today</p>
+          {referralCode && (
+            <p className="mt-3 inline-block px-3 py-1 text-xs bg-red-50 text-red-700 rounded-full">
+              Referred by <span className="font-mono font-medium">{referralCode}</span>
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
