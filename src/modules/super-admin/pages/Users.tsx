@@ -12,8 +12,9 @@ import {
   RefreshCw,
   Edit2,
   X,
-  Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2,
+  Upload
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -67,7 +68,7 @@ export const Users: React.FC = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [search, setSearch] = useState('');
-  const [userTypeFilter, setUserTypeFilter] = useState<'user' | 'staff' | 'admin'>('user');
+  const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'user' | 'staff' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'invited' | 'disabled'>('all');
   const [accountFilter, setAccountFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -313,6 +314,39 @@ export const Users: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (user: User) => {
+    if (!window.confirm(`Are you sure you want to delete user ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setActionUserId(user.id);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/admin/users/${user.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        setError(result.message || 'Failed to delete user');
+        return;
+      }
+
+      setUsers(users.filter(u => u.id !== user.id));
+      showToast('User deleted successfully');
+    } catch (err: any) {
+      setError('Failed to delete user');
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     let filtered = users;
     if (roleFilter) {
@@ -329,7 +363,8 @@ export const Users: React.FC = () => {
     return filtered;
   }, [users, roleFilter, accountFilter]);
 
-  const userTypeTabs: Array<{ value: 'user' | 'staff' | 'admin'; label: string }> = [
+  const userTypeTabs: Array<{ value: 'all' | 'user' | 'staff' | 'admin'; label: string }> = [
+    { value: 'all', label: 'All' },
     { value: 'user', label: 'Users' },
     { value: 'staff', label: 'Staff' },
     { value: 'admin', label: 'Admins' },
@@ -366,11 +401,10 @@ export const Users: React.FC = () => {
           <button
             key={tab.value}
             onClick={() => setUserTypeFilter(tab.value)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              userTypeFilter === tab.value
-                ? 'bg-red-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${userTypeFilter === tab.value
+              ? 'bg-red-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
           >
             {tab.label}
           </button>
@@ -591,11 +625,10 @@ export const Users: React.FC = () => {
                             <button
                               onClick={() => handleStatusChange(user, status === 'disabled' ? 'active' : 'disabled')}
                               disabled={actionUserId === user.id}
-                              className={`flex items-center gap-1 ${
-                                status === 'disabled'
-                                  ? 'text-green-600 hover:text-green-800'
-                                  : 'text-red-600 hover:text-red-800'
-                              } disabled:opacity-50`}
+                              className={`flex items-center gap-1 ${status === 'disabled'
+                                ? 'text-green-600 hover:text-green-800'
+                                : 'text-red-600 hover:text-red-800'
+                                } disabled:opacity-50`}
                               title={status === 'disabled' ? 'Activate User' : 'Disable User'}
                             >
                               {actionUserId === user.id ? (
@@ -616,6 +649,14 @@ export const Users: React.FC = () => {
                                 <Mail className="w-4 h-4" />
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={actionUserId === user.id}
+                              className="text-red-600 hover:text-red-800 flex items-center gap-1 disabled:opacity-50"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, Calendar, Building2, User as UserIcon, Shield, Ban, CheckCircle, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Building2, User as UserIcon, Shield, Ban, CheckCircle, Send, Trash2 } from 'lucide-react';
 
 interface User {
   id: number;
@@ -112,6 +112,37 @@ export const UserDetail: React.FC = () => {
       }
     } catch (err) {
       setError('Failed to resend invite');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user) return;
+    if (!window.confirm(`Are you sure you want to delete user ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/admin/users/${userId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }
+      );
+
+      const result = await response.json();
+      if (result.success) {
+        alert('User deleted successfully');
+        navigate('/super-admin/users');
+      } else {
+        setError(result.message || 'Failed to delete user');
+      }
+    } catch (err) {
+      setError('Failed to delete user');
     } finally {
       setActionLoading(false);
     }
@@ -328,6 +359,17 @@ export const UserDetail: React.FC = () => {
                 </>
               )}
             </button>
+
+            <div className="pt-4 mt-4 border-t border-gray-100">
+              <button
+                onClick={handleDeleteUser}
+                disabled={actionLoading}
+                className="w-full px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 flex items-center justify-center gap-2 font-medium transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete User
+              </button>
+            </div>
           </div>
         </div>
       </div>
