@@ -115,7 +115,7 @@ const EmailSyncSection: React.FC = () => {
             type="text"
             value={bccEmail}
             readOnly
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 dark:bg-gray-900 dark:border-gray-600 dark:text-white text-sm"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-paper dark:bg-canvas dark:border-gray-600 dark:text-white text-sm"
           />
           <button
             onClick={handleCopyBccEmail}

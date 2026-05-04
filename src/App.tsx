@@ -59,7 +59,7 @@ function RootRedirect() {
 function App() {
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+      <div className="min-h-screen bg-paper dark:bg-canvas text-ink-1 dark:text-ink-d-1 transition-colors duration-200">
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <IncomingCallNotification />
           <Routes>

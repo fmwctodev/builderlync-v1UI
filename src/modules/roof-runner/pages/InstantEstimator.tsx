@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Settings, CreditCard as Edit, Copy, Trash2, ChevronLeft, ChevronRight, Star, Info, ExternalLink, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button, Tabs } from '../../../shared/components/ui';
 import { instantEstimatorsApi, type InstantEstimator } from '../services/instantEstimatorsApi';
 import Toast from '../../../shared/components/Toast';
 import { StagingBanner } from '../components/common';
@@ -229,44 +230,27 @@ const InstantEstimatorPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col">
       <StagingBanner variant="estimator" />
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 flex-shrink-0">
-        <div className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instant Estimator</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center space-x-2 bg-[#dc2626] hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Instant Estimator</span>
-          </button>
+      <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page flex-shrink-0">
+        <div className="flex items-end justify-between py-5">
+          <div>
+            <div className="studio-text-label mb-1">Tools</div>
+            <h1 className="studio-text-title-1">Instant Estimator</h1>
+          </div>
+          <Button variant="primary" leadingIcon={<Plus />} onClick={() => setShowModal(true)}>
+            Add Instant Estimator
+          </Button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'all'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-            }`}
-          >
-            All Instant Estimators
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'settings'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-            }`}
-          >
-            Settings
-          </button>
-        </div>
+        <Tabs<string>
+          value={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { id: 'all',      label: 'All Instant Estimators' },
+            { id: 'settings', label: 'Settings' },
+          ]}
+        />
       </div>
 
       {/* Content */}

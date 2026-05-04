@@ -4,6 +4,7 @@ import { FileText, Zap, Sparkles } from 'lucide-react';
 import { FormsAndFunnels } from '../../marketing/pages/FormsAndFunnels';
 import SierraMarketingDashboard from '../../marketing/pages/SierraMarketingDashboard';
 import SierraSocialAIModule from '../../marketing/social/SierraSocialAIModule';
+import { PageHeader, Tabs, Section } from '../../../shared/components/ui';
 
 const Marketing: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,52 +18,33 @@ const Marketing: React.FC = () => {
     }
   }, [searchParams]);
 
-  const tabs = [
-    { id: 'sierra', label: 'Sierra Marketing AI', icon: Zap },
-    { id: 'sierra-social', label: 'Sierra Social AI', icon: Sparkles },
-    { id: 'forms-funnels', label: 'Forms & Funnels', icon: FileText },
-  ];
-
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId });
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
-        <div className="py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Marketing</h1>
-        </div>
-
-        {/* Sub Navigation */}
-        <div className="flex items-center gap-4">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-primary-600 text-white rounded-t-lg'
-                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="px-studio-page pt-8">
+        <PageHeader eyebrow="Growth" title="Marketing" />
+      </div>
+      <div className="px-studio-page mt-4">
+        <Tabs<string>
+          value={activeTab}
+          onChange={handleTabChange}
+          items={[
+            { id: 'sierra',        label: 'Sierra Marketing AI', icon: <Zap /> },
+            { id: 'sierra-social', label: 'Sierra Social AI',     icon: <Sparkles /> },
+            { id: 'forms-funnels', label: 'Forms & Funnels',      icon: <FileText /> },
+          ]}
+        />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <Section className="flex-1 overflow-auto px-studio-page">
         {activeTab === 'sierra' && <SierraMarketingDashboard />}
         {activeTab === 'sierra-social' && <SierraSocialAIModule />}
         {activeTab === 'forms-funnels' && <FormsAndFunnels />}
-      </div>
+      </Section>
     </div>
   );
 };

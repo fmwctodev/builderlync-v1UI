@@ -220,7 +220,7 @@ export function OrganizationSelector() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading your organizations...</p>
@@ -232,7 +232,7 @@ export function OrganizationSelector() {
   if (error) {
     return (
       <>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Error</h2>
             <p className="text-gray-700 dark:text-gray-300 mb-6">{error}</p>
@@ -270,7 +270,7 @@ export function OrganizationSelector() {
   if (organizations.length === 0) {
     return (
       <>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,7 +316,7 @@ export function OrganizationSelector() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+      <div className="min-h-screen bg-paper dark:bg-canvas py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">

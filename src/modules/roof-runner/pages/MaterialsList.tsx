@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { apiService } from '../store/services/api';
 import Toast from '../../../shared/components/Toast';
 import { StagingBanner } from '../components/common';
+import {
+  PageContainer, PageHeader, Section, Button, Card, EmptyState, Modal,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell, IconButton,
+} from '../../../shared/components/ui';
 
 interface Material {
   id: string;
@@ -70,265 +74,215 @@ const MaterialsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <>
         <StagingBanner />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Loading materials...</p>
+        <PageContainer>
+          <div className="flex items-center justify-center py-24">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-signal-500 mx-auto mb-4" />
+              <p className="studio-text-muted">Loading materials…</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </PageContainer>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <>
         <StagingBanner />
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
-          <button
-            onClick={() => navigate(`/instant-estimator/${id}/manage`)}
-            className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to manage
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Materials</h1>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center max-w-md">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Unable to Load Materials</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-            <button
-              onClick={fetchMaterials}
-              className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
+        <PageContainer>
+          <PageHeader
+            eyebrow={
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage`)}
+                className="inline-flex items-center gap-1.5 studio-text-label text-signal-500 hover:underline"
+              >
+                <ArrowLeft className="w-3 h-3" /> Back to manage
+              </button>
+            }
+            title="Materials"
+          />
+          <Section>
+            <Card>
+              <div className="text-center py-10">
+                <AlertCircle className="w-10 h-10 text-signal-500 mx-auto mb-3" />
+                <div className="studio-text-title-2 mb-1">Unable to load materials</div>
+                <p className="studio-text-muted mb-5">{error}</p>
+                <Button variant="primary" leadingIcon={<RefreshCw />} onClick={fetchMaterials}>
+                  Try again
+                </Button>
+              </div>
+            </Card>
+          </Section>
+        </PageContainer>
+      </>
     );
   }
 
+  const materialToDelete = getMaterialToDelete();
+
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <>
       <StagingBanner />
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
-        <button
-          onClick={() => navigate(`/instant-estimator/${id}/manage`)}
-          className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to manage
-        </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Materials</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Manage materials for your instant estimator
-            </p>
-          </div>
-          <button
-            onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-          >
-            <Plus className="w-4 h-4" />
-            Add Material
-          </button>
-        </div>
-      </div>
+      <PageContainer>
+        <PageHeader
+          eyebrow={
+            <button
+              onClick={() => navigate(`/instant-estimator/${id}/manage`)}
+              className="inline-flex items-center gap-1.5 studio-text-label text-signal-500 hover:underline"
+            >
+              <ArrowLeft className="w-3 h-3" /> Back to manage
+            </button>
+          }
+          title="Materials"
+          subtitle="Manage materials for your instant estimator."
+          actions={
+            <Button
+              variant="primary"
+              leadingIcon={<Plus />}
+              onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
+            >
+              Add material
+            </Button>
+          }
+        />
 
-      {/* Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
-          {materials.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No materials added yet</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Add materials you offer along with their pricing. Customers will see these options when getting estimates.
-              </p>
-              <button
-                onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                Add Your First Material
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              {/* Header */}
-              <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Material options ({materials.length})
-                  </h2>
-                  <button
+        <Section>
+          <div className="max-w-6xl mx-auto">
+            {materials.length === 0 ? (
+              <Card>
+                <EmptyState
+                  icon={<Plus />}
+                  title="No materials added yet"
+                  description="Add materials you offer along with their pricing. Customers will see these options when getting estimates."
+                  primaryAction={
+                    <Button
+                      variant="primary"
+                      leadingIcon={<Plus />}
+                      onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
+                    >
+                      Add your first material
+                    </Button>
+                  }
+                />
+              </Card>
+            ) : (
+              <Card flush>
+                <div className="px-5 py-4 border-b border-edge-soft dark:border-edge-d-soft flex items-center justify-between">
+                  <div>
+                    <div className="studio-text-title-2">Material options ({materials.length})</div>
+                    <p className="studio-text-muted mt-0.5">
+                      Add the materials you offer along with their approximate prices, including tear-off, waste, and markup.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leadingIcon={<Plus />}
                     onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-                    className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium"
                   >
-                    <Plus className="w-4 h-4" />
                     Add
-                  </button>
+                  </Button>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Add the materials you offer along with their approximate prices, which should include tear-off, waste, and markup costs.
-                </p>
-              </div>
 
-              {/* Materials Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Low
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Moderate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Steep
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Flat
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Multi-story surcharge
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead numeric>Low</TableHead>
+                      <TableHead numeric>Moderate</TableHead>
+                      <TableHead numeric>Steep</TableHead>
+                      <TableHead numeric>Flat</TableHead>
+                      <TableHead numeric>Multi-story surcharge</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {materials.map((material) => (
-                      <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-red-600 rounded-sm mr-3 flex items-center justify-center">
-                              <span className="text-white text-xs font-medium">
+                      <TableRow key={material.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-signal-500 rounded-studio-1 flex items-center justify-center">
+                              <span className="text-white text-caption font-medium">
                                 {material.materialType?.charAt(0) || 'M'}
                               </span>
                             </div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {material.name}
-                              </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="studio-text-body-strong">{material.name}</div>
+                              <div className="studio-text-caption text-ink-3 dark:text-ink-d-3">
                                 {material.materialType || 'Material'}
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          ${material.price.toFixed(2)}/sqft
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          ${(material.price * 1.1).toFixed(2)}/sqft
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          ${(material.price * 1.3).toFixed(2)}/sqft
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          ${(material.price * 1.1).toFixed(2)}/sqft
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          ${(material.multiStoryPrice || 0).toFixed(2)}/sqft
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
+                        </TableCell>
+                        <TableCell numeric>${material.price.toFixed(2)}/sqft</TableCell>
+                        <TableCell numeric>${(material.price * 1.1).toFixed(2)}/sqft</TableCell>
+                        <TableCell numeric>${(material.price * 1.3).toFixed(2)}/sqft</TableCell>
+                        <TableCell numeric>${(material.price * 1.1).toFixed(2)}/sqft</TableCell>
+                        <TableCell numeric>${(material.multiStoryPrice || 0).toFixed(2)}/sqft</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <IconButton
+                              label="Edit material"
+                              variant="ghost"
+                              size="sm"
                               onClick={() => navigate(`/instant-estimator/${id}/manage/materials/${material.id}/edit`)}
-                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-                              title="Edit material"
                             >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
+                              <Edit />
+                            </IconButton>
+                            <IconButton
+                              label="Delete material"
+                              variant="ghost"
+                              size="sm"
                               onClick={() => setShowDeleteConfirm(material.id)}
-                              className="text-gray-400 hover:text-red-600 p-1"
-                              title="Delete material"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                              <Trash2 />
+                            </IconButton>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </div>
+        </Section>
+      </PageContainer>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Delete Material</h3>
-                <button
-                  onClick={() => setShowDeleteConfirm(null)}
-                  disabled={deleting}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <p className="text-gray-600 dark:text-gray-400 mb-2">
-                Are you sure you want to delete this material?
-              </p>
-              {getMaterialToDelete() && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {getMaterialToDelete()?.name}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {getMaterialToDelete()?.materialType} - ${getMaterialToDelete()?.price.toFixed(2)}/sqft
-                  </p>
-                </div>
-              )}
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                This action cannot be undone.
-              </p>
-
-              <div className="flex items-center justify-end gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(null)}
-                  disabled={deleting}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteMaterial}
-                  disabled={deleting}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
+      <Modal
+        open={Boolean(showDeleteConfirm)}
+        onClose={() => !deleting && setShowDeleteConfirm(null)}
+        title="Delete material"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowDeleteConfirm(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleDeleteMaterial} loading={deleting}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </>
+        }
+      >
+        <p className="studio-text-body text-ink-2 dark:text-ink-d-2 mb-3">
+          Are you sure you want to delete this material?
+        </p>
+        {materialToDelete && (
+          <div className="rounded-studio-2 bg-surface-2 dark:bg-surface-d-2 p-3">
+            <div className="studio-text-body-strong">{materialToDelete.name}</div>
+            <div className="studio-text-caption text-ink-3 dark:text-ink-d-3">
+              {materialToDelete.materialType} — ${materialToDelete.price.toFixed(2)}/sqft
             </div>
           </div>
-        </div>
-      )}
+        )}
+        <p className="studio-text-caption text-ink-3 dark:text-ink-d-3 mt-3">
+          This action cannot be undone.
+        </p>
+      </Modal>
 
       {toast && (
         <Toast
@@ -337,7 +291,7 @@ const MaterialsList: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+    </>
   );
 };
 

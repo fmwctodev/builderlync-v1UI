@@ -36,7 +36,7 @@ export function CreditBreakdownTable({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-4 py-3 bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white">
           Order Summary
         </h3>
@@ -83,7 +83,7 @@ export function CreditBreakdownTable({
           </div>
         ))}
       </div>
-      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-2">
+      <div className="px-4 py-3 bg-paper dark:bg-canvas border-t border-gray-200 dark:border-gray-700 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Subtotal

@@ -10,6 +10,7 @@ import CreatePipelineModal from '../components/opportunities/CreatePipelineModal
 import EditPipelineModal from '../components/opportunities/EditPipelineModal';
 import { embeddedPipelinesService } from '../services/embeddedPipelinesService';
 import type { JobType } from '../types/opportunities';
+import { Card, CardHeader, CardBody } from '../../../shared/components/ui';
 
 export default function Opportunities() {
   const [activeTab, setActiveTab] = useState('all');
@@ -73,7 +74,7 @@ export default function Opportunities() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-full flex flex-col">
       <OpportunitiesHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -86,7 +87,7 @@ export default function Opportunities() {
         internalView={internalView}
         onInternalViewChange={setInternalView}
       />
-      <main className="flex-grow p-4">
+      <main className="flex-grow p-studio-page">
         {activeView === 'opportunities' ? (
           <>
             {internalView === 'board' && (
@@ -99,10 +100,12 @@ export default function Opportunities() {
               </>
             )}
             {internalView === 'settings' && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Opportunities Settings</h2>
-                <p className="text-gray-600 dark:text-gray-400">Settings panel coming soon...</p>
-              </div>
+              <Card>
+                <CardHeader title="Opportunities Settings" />
+                <CardBody>
+                  <p className="studio-text-muted">Settings panel coming soon…</p>
+                </CardBody>
+              </Card>
             )}
           </>
         ) : (

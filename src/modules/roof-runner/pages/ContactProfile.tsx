@@ -352,7 +352,7 @@ const ContactProfile: React.FC = () => {
           onAddCompany={() => setShowAddCompanyModal(true)}
         />
 
-        <div className="w-1/2 bg-gray-50 dark:bg-gray-900">
+        <div className="w-1/2 bg-paper dark:bg-canvas">
           <div className="p-6">
             <RightPanelTabs
               activeTab={rightPanelView}

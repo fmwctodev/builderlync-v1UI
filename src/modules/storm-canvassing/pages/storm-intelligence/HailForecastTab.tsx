@@ -164,7 +164,7 @@ function GridpointHailTimeline({ points }: { points: HailForecastPoint[] }) {
             className={`flex items-center gap-3 p-3 rounded-lg border ${
               hasHighRisk
                 ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800'
-                : 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
+                : 'bg-paper dark:bg-canvas/30 border-gray-200 dark:border-gray-700'
             }`}
           >
             <Clock className={`w-4 h-4 shrink-0 ${hasHighRisk ? 'text-orange-500' : 'text-gray-400'}`} />

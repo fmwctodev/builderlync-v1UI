@@ -36,7 +36,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
   const baseSettingsPath = `/org/${orgSlug}/settings`;
 
   return (
-    <div className="h-full flex bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex bg-paper dark:bg-canvas">
       <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">

@@ -196,7 +196,7 @@ const JobCamTimeline: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-paper dark:bg-canvas">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center gap-3 mb-3">
           <button
@@ -392,7 +392,7 @@ const JobCamTimeline: React.FC = () => {
           <div className="space-y-8">
             {Object.entries(groupedByDate).map(([date, datePhotos]) => (
               <div key={date}>
-                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 sticky top-0 bg-gray-50 dark:bg-gray-900 py-1">
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 sticky top-0 bg-paper dark:bg-canvas py-1">
                   {date} &bull; {datePhotos.length} photo{datePhotos.length !== 1 ? 's' : ''}
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">

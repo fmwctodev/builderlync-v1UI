@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronDown, Home, Package, UserPlus } from 'lucide-react';
+import { Button } from '../../../shared/components/ui';
 
 interface MenuOption {
   id: string;
@@ -50,9 +51,9 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
   const menuOptions: MenuOption[] = [
     {
       id: 'job',
-      icon: <Home className="w-5 h-5 text-primary-600" />,
+      icon: <Home className="w-4 h-4" />,
       title: 'Job',
-      description: 'Create a New Job',
+      description: 'Create a new job',
       onClick: () => {
         onNewJob();
         setIsOpen(false);
@@ -60,9 +61,9 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
     },
     {
       id: 'report',
-      icon: <Package className="w-5 h-5 text-primary-600" />,
+      icon: <Package className="w-4 h-4" />,
       title: 'Report',
-      description: 'Create a Report',
+      description: 'Create a report',
       onClick: () => {
         onNewReport();
         setIsOpen(false);
@@ -70,9 +71,9 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
     },
     {
       id: 'customer',
-      icon: <UserPlus className="w-5 h-5 text-primary-600" />,
+      icon: <UserPlus className="w-4 h-4" />,
       title: 'Customer',
-      description: 'Add New Contact',
+      description: 'Add a new contact',
       onClick: () => {
         onNewCustomer();
         setIsOpen(false);
@@ -82,41 +83,37 @@ const NewButtonDropdown: React.FC<NewButtonDropdownProps> = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
+      <Button
+        variant="primary"
+        leadingIcon={<Plus />}
+        trailingIcon={<ChevronDown className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <div className="flex items-center justify-center w-5 h-5 bg-white/20 rounded-full">
-          <Plus className="w-3.5 h-3.5" />
-        </div>
-        <span className="font-medium">New</span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
+        New
+      </Button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="py-2">
-            {menuOptions.map((option, index) => (
+        <div className="absolute top-full right-0 mt-2 w-72 z-50 rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s2 overflow-hidden">
+          <div className="py-1">
+            {menuOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={option.onClick}
-                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 text-left"
+                className="w-full px-3 py-2.5 hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast text-left"
               >
-                <div className="flex items-start space-x-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex-shrink-0">
+                <div className="flex items-start gap-3">
+                  <span className="flex items-center justify-center w-9 h-9 rounded-studio-1 bg-signal-100 text-signal-ink dark:bg-signal-500/15 dark:text-signal-100 flex-shrink-0">
                     {option.icon}
-                  </div>
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">
+                    <div className="studio-text-body-strong">
                       {option.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    </div>
+                    <div className="studio-text-caption text-ink-3 dark:text-ink-d-3">
                       {option.description}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </button>

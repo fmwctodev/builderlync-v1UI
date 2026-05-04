@@ -75,7 +75,7 @@ export const Review: React.FC = () => {
 
   if (showMigrationForm) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="min-h-screen bg-paper dark:bg-canvas py-8">
         <div className="max-w-4xl mx-auto px-4">
           <MigrationRequestForm
             organizationId={currentOrganization?.id || ''}

@@ -72,7 +72,7 @@ export function LanguageSection({ languages, onChange }: LanguageSectionProps) {
         {languages.map((language) => (
           <div
             key={language.code}
-            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600 group"
+            className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600 group"
           >
             <div className="flex items-center gap-3">
               <div className="text-2xl">{getLanguageFlag(language.code)}</div>
@@ -145,7 +145,7 @@ export function LanguageSection({ languages, onChange }: LanguageSectionProps) {
                   <button
                     key={lang.code}
                     onClick={() => handleAddLanguage(lang)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
+                    className="w-full flex items-center justify-between p-4 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">{lang.flag}</div>

@@ -191,7 +191,7 @@ export const ReviewsInboxPage: React.FC<Props> = ({ orgId, userId, permissions }
           />
         </div>
 
-        <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="flex-1 bg-paper dark:bg-canvas overflow-hidden">
           {selectedReview ? (
             <ReviewDetailPanel
               key={selectedReview.id}

@@ -7,7 +7,7 @@ const IntegrationsTab: React.FC = () => {
     { name: 'Angies List', icon: 'AL', color: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' },
     { name: 'Angi', icon: 'A', color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' },
     { name: 'Better Business Bureau', icon: 'BBB', color: 'bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400' },
-    { name: 'Citysearch', icon: '🔍', color: 'bg-gray-50 dark:bg-gray-900/20' },
+    { name: 'Citysearch', icon: '🔍', color: 'bg-paper dark:bg-canvas/20' },
     { name: 'Facebook', icon: 'f', color: 'bg-primary-600 text-white' },
     { name: 'Glassdoor', icon: 'G', color: 'bg-green-600 text-white' },
     { name: 'Google Business Profile', icon: 'G', color: 'bg-red-600 text-white' },

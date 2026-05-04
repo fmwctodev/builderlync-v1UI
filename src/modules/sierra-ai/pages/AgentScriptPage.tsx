@@ -108,7 +108,7 @@ export function AgentScriptPage() {
             </select>
           </div>
 
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900 min-h-[400px]">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-paper dark:bg-canvas min-h-[400px]">
             <div className="space-y-4">
               <div className="flex gap-3">
                 <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">

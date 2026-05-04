@@ -107,7 +107,7 @@ const FileAttachmentSection: React.FC<FileAttachmentSectionProps> = ({
             {files.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                   {getFileIcon(file)}

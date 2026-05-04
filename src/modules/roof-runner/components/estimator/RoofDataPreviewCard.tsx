@@ -431,7 +431,7 @@ export function RoofDataPreviewCard({
       </div>
 
       {showDetails && canShowRawData && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas/50 p-4">
           <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
             Raw API Response
           </h4>

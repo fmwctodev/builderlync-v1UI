@@ -284,7 +284,7 @@ const ManageEstimatorModal: React.FC<ManageEstimatorModalProps> = ({
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
+        <div className="flex-1 overflow-y-auto p-6 bg-paper dark:bg-canvas">
           {loading ? (
             <div className="flex items-center justify-center h-48">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#dc2626]"></div>

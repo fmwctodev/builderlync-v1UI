@@ -198,8 +198,8 @@ export const FormBuilderEnhanced: React.FC = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="h-screen flex flex-col bg-paper dark:bg-canvas">
+        <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button

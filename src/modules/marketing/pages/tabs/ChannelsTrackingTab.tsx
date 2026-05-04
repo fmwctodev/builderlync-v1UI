@@ -56,13 +56,13 @@ const ChannelCard: React.FC<{
 
       {account.status !== 'disconnected' && (
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 text-center">
+          <div className="bg-paper dark:bg-canvas rounded-lg p-2 text-center">
             <p className="text-xs text-gray-500">Spend MTD</p>
             <p className="text-sm font-bold text-gray-900 dark:text-white">
               {account.spend_mtd > 0 ? `$${account.spend_mtd.toLocaleString()}` : '—'}
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 text-center">
+          <div className="bg-paper dark:bg-canvas rounded-lg p-2 text-center">
             <p className="text-xs text-gray-500">Leads MTD</p>
             <p className="text-sm font-bold text-gray-900 dark:text-white">{account.leads_mtd}</p>
           </div>

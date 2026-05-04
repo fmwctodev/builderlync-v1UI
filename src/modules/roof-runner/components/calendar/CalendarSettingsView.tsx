@@ -58,7 +58,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
   const ungroupedCalendars = calendars.filter(cal => !cal.group_id);
 
   return (
-    <div className="flex h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-full bg-paper dark:bg-canvas">
       {/* Left Sidebar - Groups */}
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
         <div className="p-4">

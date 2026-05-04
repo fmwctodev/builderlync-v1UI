@@ -31,7 +31,7 @@ export function SelectionSummaryBar({
 
   if (totalItems === 0) {
     return (
-      <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Select at least one product to continue

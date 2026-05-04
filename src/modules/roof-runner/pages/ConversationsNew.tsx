@@ -331,7 +331,7 @@ const ConversationsNew: React.FC = () => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <div className="flex-1 flex bg-paper dark:bg-canvas overflow-hidden">
         {/* Customer Conversations Tab */}
         {activeTab === 'conversations' && (
           <div className="flex-1 flex">

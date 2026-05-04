@@ -2,6 +2,11 @@ import { Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import Layout from './components/Layout/Layout';
+import { AppShell } from '../../shared/components/studio/AppShell';
+import { isNewShellEnabled } from '../../shared/tokens';
+import UiKit from '../../internal/UiKit';
+import Pipeline from '../projects/pages/Pipeline';
+import ProjectFullPage from '../projects/pages/ProjectFullPage';
 import Dashboard from './pages/Dashboard';
 import BlankPage from './pages/BlankPage';
 import JobCamHome from './pages/job-cam/JobCamHome';
@@ -46,12 +51,20 @@ import { ReportingModule } from '../reporting/ReportingModule';
 import { StormCanvassingModule } from '../storm-canvassing';
 
 export function RoofRunnerModule() {
+  // Studio shell is opt-in via VITE_NEW_SHELL=1. When off, the legacy Layout
+  // renders unchanged so existing pages and integrations behave identically.
+  const Shell = isNewShellEnabled() ? AppShell : Layout;
+
   return (
     <Provider store={store}>
       <Routes>
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+      <Route path="/" element={<ProtectedRoute><Shell /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
+
+        {/* Studio Pipeline — additive, never the default route */}
+        <Route path="pipeline" element={<Pipeline />} />
+        <Route path="projects/:cardKey" element={<ProjectFullPage />} />
 
         <Route path="conversations" element={<ConversationsNew />} />
         <Route path="calendars" element={<Calendars />} />
@@ -93,6 +106,8 @@ export function RoofRunnerModule() {
         <Route path="support" element={<Support />} />
         <Route path="settings/*" element={<Settings />} />
         <Route path="quickbooks/callback" element={<QuickBooksCallback />} />
+        {/* Internal — Studio design system reference. Safe in prod (no data writes). */}
+        <Route path="internal/uikit" element={<UiKit />} />
       </Route>
       </Routes>
     </Provider>

@@ -151,7 +151,7 @@ const ViewContactModal: React.FC<ViewContactModalProps> = ({
           ) : null}
         </div>
 
-        <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+        <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas/50">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"

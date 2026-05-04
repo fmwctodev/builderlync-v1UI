@@ -150,7 +150,7 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
         </div>
 
         {/* Template Preview */}
-        <div className="flex-1 p-6 bg-gray-50 dark:bg-gray-900">
+        <div className="flex-1 p-6 bg-paper dark:bg-canvas">
           <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="p-8">
               <div className="mb-6">

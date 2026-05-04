@@ -123,7 +123,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ onUpdate }) => {
         </div>
 
         <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-2">
+          <div className="bg-paper dark:bg-canvas border-b border-gray-300 dark:border-gray-600 p-2">
             <div className="flex flex-wrap gap-2">
               <select className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 dark:bg-gray-800 dark:text-white">
                 <option>Inter</option>

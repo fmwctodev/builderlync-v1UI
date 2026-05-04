@@ -139,7 +139,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
 
   if (!conversationId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-paper dark:bg-canvas">
         <div className="text-center">
           <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Phone className="w-8 h-8 text-gray-400" />
@@ -191,7 +191,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="flex-1 overflow-y-auto bg-paper dark:bg-canvas p-6">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-gray-500 dark:text-gray-400">Loading messages...</div>

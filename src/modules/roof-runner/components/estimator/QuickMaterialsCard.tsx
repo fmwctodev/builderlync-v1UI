@@ -347,7 +347,7 @@ export function QuickMaterialsCard({
               </div>
 
               {materialsSummary ? (
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="mt-4 p-4 bg-paper dark:bg-canvas/50 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                     Materials Summary
                   </h4>

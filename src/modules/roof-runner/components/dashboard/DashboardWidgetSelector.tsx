@@ -209,7 +209,7 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
 
                   {/* Expanded Widgets */}
                   {isExpanded && (
-                    <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                    <div className="bg-paper dark:bg-canvas border-t border-gray-200 dark:border-gray-700">
                       {category.widgets.map((widget, widgetIndex) => (
                         <div
                           key={widget.id}
@@ -287,7 +287,7 @@ const DashboardWidgetSelector: React.FC<DashboardWidgetSelectorProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

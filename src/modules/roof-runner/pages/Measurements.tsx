@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, History, Settings } from 'lucide-react';
+import { Tabs } from '../../../shared/components/ui';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
 import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
@@ -242,43 +243,21 @@ function Measurements() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 shadow border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={() => setActiveTab('Dashboard')}
-                className={`text-sm font-medium transition-colors ${
-                  activeTab === 'Dashboard'
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab('Order History')}
-                className={`flex items-center text-sm font-medium transition-colors ${
-                  activeTab === 'Order History'
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                <History className="inline-block mr-1" size={16} />
-                Order History
-              </button>
-              <button
-                onClick={() => setActiveTab('account-selection')}
-                className={`px-4 py-2 text-sm font-medium border rounded-md transition-colors ${
-                  activeTab === 'Order' || activeTab === 'account-selection'
-                    ? 'border-primary-600 text-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
-                }`}
-              >
-                Order
-              </button>
-            </div>
-          </div>
+      <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft">
+        <div className="px-studio-page py-3 flex items-center justify-end">
+          <Tabs<'Dashboard' | 'Order History' | 'account-selection'>
+            value={
+              activeTab === 'Dashboard' || activeTab === 'Order History' || activeTab === 'account-selection'
+                ? activeTab
+                : 'account-selection'
+            }
+            onChange={(v) => setActiveTab(v)}
+            items={[
+              { id: 'Dashboard',          label: 'Dashboard' },
+              { id: 'Order History',      label: 'Order History', icon: <History /> },
+              { id: 'account-selection',  label: 'Order' },
+            ]}
+          />
         </div>
       </div>
 

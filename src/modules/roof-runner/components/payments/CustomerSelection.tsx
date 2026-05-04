@@ -148,7 +148,7 @@ const CustomerSelection: React.FC<CustomerSelectionProps> = ({
       </div>
 
       {selectedCustomer && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-4 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Selected Customer</h4>
           <div className="space-y-1 text-sm">
             <p className="text-gray-900 dark:text-white font-medium">{selectedCustomer.full_name}</p>

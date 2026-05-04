@@ -326,7 +326,7 @@ const DatabaseMigrations: React.FC = () => {
                   </button>
 
                   {isExpanded && (
-                    <div className="bg-gray-50 dark:bg-gray-900/50">
+                    <div className="bg-paper dark:bg-canvas/50">
                       <table className="w-full">
                         <thead className="bg-gray-100 dark:bg-gray-800">
                           <tr>

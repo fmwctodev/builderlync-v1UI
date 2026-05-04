@@ -52,7 +52,7 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
@@ -69,7 +69,7 @@ class ErrorBoundary extends Component<Props, State> {
             </p>
 
             {this.state.error && (
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
+              <div className="bg-paper dark:bg-canvas rounded-lg p-4 mb-6">
                 <p className="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">
                   {this.state.error.toString()}
                 </p>
@@ -97,7 +97,7 @@ class ErrorBoundary extends Component<Props, State> {
                 <summary className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-white">
                   View Error Details
                 </summary>
-                <pre className="mt-2 text-xs bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto max-h-64 text-gray-700 dark:text-gray-300">
+                <pre className="mt-2 text-xs bg-paper dark:bg-canvas p-3 rounded overflow-auto max-h-64 text-gray-700 dark:text-gray-300">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>

@@ -280,7 +280,7 @@ const ManageQuestions: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="h-full flex flex-col bg-paper dark:bg-canvas">
         <StagingBanner />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -293,7 +293,7 @@ const ManageQuestions: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
       <StagingBanner />
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">

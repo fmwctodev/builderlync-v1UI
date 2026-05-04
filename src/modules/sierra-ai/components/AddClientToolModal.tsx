@@ -166,7 +166,7 @@ export function AddClientToolModal({
                 />
               </div>
 
-              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-paper dark:bg-canvas/50 rounded-lg">
                 <input
                   type="checkbox"
                   id="waitForResponse"
@@ -188,7 +188,7 @@ export function AddClientToolModal({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-paper dark:bg-canvas/50 rounded-lg">
                 <input
                   type="checkbox"
                   id="disableInterruptions"
@@ -342,7 +342,7 @@ export function AddClientToolModal({
               Variables in tool parameters will be replaced with actual values when the webhook is
               called.
             </p>
-            <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+            <div className="p-3 bg-paper dark:bg-canvas/50 rounded-lg">
               <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
                 Available: {'{'}
                 {'{'}contact.name{'}}'}
@@ -379,7 +379,7 @@ export function AddClientToolModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+        <div className="flex items-center justify-between gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas/50">
           <button
             onClick={() => {
               const json = getJsonRepresentation();

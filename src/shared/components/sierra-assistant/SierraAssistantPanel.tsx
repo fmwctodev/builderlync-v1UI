@@ -87,7 +87,7 @@ export function SierraAssistantPanel() {
         </div>
 
         {/* Tab navigation */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-paper dark:bg-canvas">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -117,7 +117,7 @@ export function SierraAssistantPanel() {
         </div>
 
         {/* Keyboard hint */}
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-800 bg-paper dark:bg-canvas/50">
           <p className="text-xs text-gray-400 dark:text-gray-600 text-center">
             Press <kbd className="px-1 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">⌘⇧K</kbd> to toggle
           </p>

@@ -186,25 +186,25 @@ export const Maintenance: React.FC = () => {
 
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">Auth Users</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {cleanupResult.summary.orphanedAuthUsers}
               </p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">Platform Users</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {cleanupResult.summary.orphanedPlatformUsers}
               </p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">Failed Accounts</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {cleanupResult.summary.failedAccounts}
               </p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">Incomplete Orgs</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {cleanupResult.summary.incompleteOrganizations}
@@ -222,7 +222,7 @@ export const Maintenance: React.FC = () => {
           {cleanupResult.details.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Details</h3>
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+              <div className="bg-paper dark:bg-canvas rounded-lg p-4 max-h-96 overflow-y-auto">
                 <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
                   {cleanupResult.details.join('\n')}
                 </pre>

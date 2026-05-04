@@ -101,7 +101,7 @@ const FunnelCard: React.FC<FunnelCardProps> = ({ funnel }) => {
         <button className="text-gray-400 hover:text-gray-600"><ExternalLink size={14} /></button>
       </div>
 
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
+      <div className="bg-paper dark:bg-canvas rounded-lg p-3 mb-3">
         <p className="text-xs text-gray-500 mb-1.5 font-medium">Mini Funnel</p>
         <div className="flex items-center gap-1 text-xs">
           <div className="flex-1 text-center">

@@ -232,7 +232,7 @@ export function ImportPhoneNumbersModal({
                     key={number.sid}
                     className={`flex items-center gap-4 p-4 border rounded-lg ${
                       isExisting
-                        ? 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-60'
+                        ? 'bg-paper dark:bg-canvas/50 border-gray-200 dark:border-gray-700 opacity-60'
                         : isSelected
                         ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'

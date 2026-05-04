@@ -373,7 +373,7 @@ export const ContentSocialTab: React.FC = () => {
                 return new Date(p.scheduled_at).getDate() === dayNum;
               });
               return (
-                <div key={i} className={`min-h-[80px] p-2 border-r border-b border-gray-100 dark:border-gray-700 last:border-r-0 ${dayNum < 1 || dayNum > 30 ? 'bg-gray-50 dark:bg-gray-900' : ''}`}>
+                <div key={i} className={`min-h-[80px] p-2 border-r border-b border-gray-100 dark:border-gray-700 last:border-r-0 ${dayNum < 1 || dayNum > 30 ? 'bg-paper dark:bg-canvas' : ''}`}>
                   {dayNum >= 1 && dayNum <= 30 && (
                     <>
                       <p className="text-xs text-gray-500 mb-1">{dayNum}</p>

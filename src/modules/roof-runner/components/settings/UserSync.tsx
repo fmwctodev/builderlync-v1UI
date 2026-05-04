@@ -200,7 +200,7 @@ const UserSync: React.FC = () => {
           </h3>
 
           {currentUser && (
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4 mb-4">
               <div className="flex items-center">
                 <User className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-2" />
                 <div>

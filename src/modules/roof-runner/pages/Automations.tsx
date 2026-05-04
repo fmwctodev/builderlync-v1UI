@@ -541,7 +541,7 @@ export default function Automations() {
                   type="text"
                   value={folderName}
                   onChange={(e) => setFolderName(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner"
+                  className="w-full px-4 py-3 bg-paper dark:bg-canvas border-none rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner"
                   placeholder="e.g. Lead Nurturing"
                   autoFocus
                 />

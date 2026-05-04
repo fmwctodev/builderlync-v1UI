@@ -25,7 +25,7 @@ export const LeadsList: React.FC<LeadsListProps> = ({ leads }) => {
       <div className="p-6">
         <div className="space-y-4">
           {leads.map((lead) => (
-            <div key={lead.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div key={lead.id} className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{lead.name}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{lead.company}</p>

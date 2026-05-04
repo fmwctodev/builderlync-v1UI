@@ -76,7 +76,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-6xl mx-4 h-[95vh] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col">
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="w-80 bg-paper dark:bg-canvas border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
                 <div>

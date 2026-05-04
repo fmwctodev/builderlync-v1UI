@@ -123,7 +123,7 @@ export const EmbedCodeModal: React.FC<EmbedCodeModalProps> = ({ form, onClose })
             </div>
 
             <div className="relative">
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <pre className="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap break-words font-mono">
                   {embedOptions[activeTab].code}
                 </pre>
@@ -187,7 +187,7 @@ export const EmbedCodeModal: React.FC<EmbedCodeModalProps> = ({ form, onClose })
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-6 flex justify-end">
+        <div className="sticky bottom-0 bg-paper dark:bg-canvas border-t border-gray-200 dark:border-gray-700 p-6 flex justify-end">
           <button
             onClick={onClose}
             className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"

@@ -49,7 +49,7 @@ export function SierraModuleLayout({ children }: SierraModuleLayoutProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
       {/* Navigation */}
       <SierraNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 

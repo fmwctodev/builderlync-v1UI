@@ -7,6 +7,7 @@ import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
 import Pagination from "../components/Pagination";
 import CsvUploadModal from "../components/CsvUploadModal";
+import { Button, Input, Modal } from "../../../shared/components/ui";
 
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
@@ -419,139 +420,73 @@ const Contacts: React.FC = () => {
     }
   };
 
+  const TYPE_OPTIONS = [
+    { value: '',                label: 'All types' },
+    { value: 'lead',            label: 'Lead' },
+    { value: 'customer',        label: 'Customer' },
+    { value: 'partner',         label: 'Partner' },
+    { value: 'vendor',          label: 'Vendor' },
+    { value: 'sub-contractor',  label: 'Sub-Contractor' },
+    { value: 'adjuster',        label: 'Adjuster' },
+    { value: 'staff',           label: 'Staff' },
+  ];
+
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Contacts</h1>
-          <div className="flex gap-3">
-            <button
-              // onClick={() => setShowCsvModal(true)}
-              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Download className="w-4 h-4" />
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+      <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page py-5">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <div className="studio-text-label mb-1">Workspace</div>
+            <h1 className="studio-text-title-1">Contacts</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" leadingIcon={<Download />}>
               Export CSV
-            </button>
-            <button
-              onClick={() => setShowCsvModal(true)}
-              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Upload className="w-4 h-4" />
+            </Button>
+            <Button variant="secondary" leadingIcon={<Upload />} onClick={() => setShowCsvModal(true)}>
               Import CSV
-            </button>
-            <button
-              onClick={() => setShowContactModal(true)}
-              className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors hover:opacity-90"
-              style={{backgroundColor: '#dc2626'}}
-            >
-              <Plus className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" leadingIcon={<Plus />} onClick={() => setShowContactModal(true)}>
               New contact
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
+        <div className="flex items-center gap-3">
+          <div className="flex-1 max-w-md">
+            <Input
+              leadingIcon={<Search />}
               placeholder="Search by name, email, phone"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white"
-              style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
-              onFocus={(e) => e.target.style.borderColor = '#dc2626'}
-              onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
             />
           </div>
           <div className="relative type-filter-container">
-            <button
+            <Button
+              variant="secondary"
+              leadingIcon={<Filter />}
               onClick={() => setShowTypeFilter(!showTypeFilter)}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${
-                typeFilter ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
-              }`}
+              className={typeFilter ? 'border-signal-500 bg-signal-50 dark:bg-signal-500/10' : ''}
             >
-              <Filter className="w-4 h-4" />
               {typeFilter ? typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1) : 'Type'}
-            </button>
+            </Button>
 
             {showTypeFilter && (
-              <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+              <div className="absolute right-0 mt-1 w-48 z-10 rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s2 overflow-hidden">
                 <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setTypeFilter('');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    All Types
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('lead');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Lead
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('customer');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Customer
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('partner');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Partner
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('vendor');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Vendor
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('sub-contractor');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Sub-Contractor
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('adjuster');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Adjuster
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTypeFilter('staff');
-                      setShowTypeFilter(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    Staff
-                  </button>
+                  {TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value || 'all'}
+                      type="button"
+                      onClick={() => {
+                        setTypeFilter(opt.value);
+                        setShowTypeFilter(false);
+                      }}
+                      className="flex items-center w-full px-3 h-9 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -560,25 +495,27 @@ const Contacts: React.FC = () => {
       </div>
 
       {selectedContacts.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-between">
-          <span className="text-sm font-medium text-red-800 dark:text-red-300">
+        <div className="bg-signal-50 dark:bg-signal-500/10 border-b border-signal-100 dark:border-signal-500/20 px-studio-page py-3 flex items-center justify-between">
+          <span className="studio-text-body-strong text-signal-ink dark:text-signal-100">
             {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
           </span>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              leadingIcon={<X />}
               onClick={() => setSelectedContacts([])}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-1.5 transition-colors"
             >
-              <X className="w-3.5 h-3.5" />
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              leadingIcon={<Trash2 />}
               onClick={() => setShowBulkDeleteConfirm(true)}
-              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-1.5 transition-colors"
             >
-              <Trash2 className="w-3.5 h-3.5" />
               Delete selected
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -646,66 +583,58 @@ const Contacts: React.FC = () => {
         onUpload={handleCsvUpload}
       />
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contact</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete "{contactToDelete?.fullName}"? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setContactToDelete(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setContactToDelete(null);
+        }}
+        title="Delete contact"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setContactToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={confirmDelete} loading={isLoading}>
+              {isLoading ? 'Deleting…' : 'Delete'}
+            </Button>
+          </>
+        }
+      >
+        <p className="studio-text-body text-ink-2 dark:text-ink-d-2">
+          Are you sure you want to delete &ldquo;{contactToDelete?.fullName}&rdquo;? This action cannot be undone.
+        </p>
+      </Modal>
 
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contacts</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Are you sure you want to delete {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowBulkDeleteConfirm(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmBulkDelete}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Deleting...' : `Delete ${selectedContacts.length} contact${selectedContacts.length !== 1 ? 's' : ''}`}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        title="Delete contacts"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowBulkDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={confirmBulkDelete} loading={isLoading}>
+              {isLoading
+                ? 'Deleting…'
+                : `Delete ${selectedContacts.length} contact${selectedContacts.length !== 1 ? 's' : ''}`}
+            </Button>
+          </>
+        }
+      >
+        <p className="studio-text-body text-ink-2 dark:text-ink-d-2">
+          Are you sure you want to delete {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}? This action cannot be undone.
+        </p>
+      </Modal>
 
       {/* Toast Notification */}
       {toast && (

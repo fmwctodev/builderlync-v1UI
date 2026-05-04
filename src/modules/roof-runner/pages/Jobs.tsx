@@ -306,7 +306,7 @@ const Jobs: React.FC = () => {
 
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
       <JobsHeader
         activeView={activeView}
         setActiveView={setActiveView}

@@ -91,7 +91,7 @@ function AlertCard({ alert }: { alert: ParsedHailAlert }) {
       </div>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700 mt-0 bg-gray-50 dark:bg-gray-900/30">
+        <div className="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-700 mt-0 bg-paper dark:bg-canvas/30">
           {alert.description && (
             <div className="mt-3">
               <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide">Description</p>

@@ -1,82 +1,28 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, MoreVertical, X, MapPin, Phone, Mail } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ABCSupplyView from '../components/ABCSupplyView';
+import { PageContainer, PageHeader, Section, Card, Button } from '../../../shared/components/ui';
 
 export default function MaterialOrders() {
-  const [activeTab, setActiveTab] = useState('ABC Supply');
-  const [statusFilter, setStatusFilter] = useState('All Status');
-  const [supplierFilter, setSupplierFilter] = useState('All Suppliers');
-  const [showStatusFilter, setShowStatusFilter] = useState(false);
-  const [showSupplierFilter, setShowSupplierFilter] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
-
-  const orders = [
-    {
-      id: '001',
-      status: 'Sent',
-      poNumber: 'PO-2024-001',
-      jobAddress: '123 Main St, Austin, TX',
-      supplier: 'ABC Supply',
-      totalAmount: '$2,450.00',
-      orderNumber: 'ORD-001'
-    },
-    {
-      id: '002',
-      status: 'Confirmed',
-      poNumber: 'PO-2024-002',
-      jobAddress: '456 Oak Ave, Austin, TX',
-      supplier: 'Home Depot',
-      totalAmount: '$1,875.50',
-      orderNumber: 'ORD-002'
-    },
-    {
-      id: '003',
-      status: 'Draft',
-      poNumber: 'PO-2024-003',
-      jobAddress: '789 Pine St, Austin, TX',
-      supplier: 'SRS',
-      totalAmount: '$3,200.75',
-      orderNumber: 'ORD-003'
-    }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Draft': return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
-      case 'Ready to send': return 'bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-300';
-      case 'Sent': return 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300';
-      case 'Confirmed': return 'bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-300';
-      case 'Rejected': return 'bg-error-50 text-error-700 dark:bg-error-900/20 dark:text-error-300';
-      case 'Delivered': return 'bg-secondary-50 text-secondary-700 dark:bg-secondary-900/20 dark:text-secondary-300';
-      default: return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <nav className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <span>Home</span> / <span className="text-gray-900 dark:text-white">Material Orders</span>
-          </nav>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Material Orders</h1>
-        </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Tools"
+        title="Material orders"
+        actions={
+          <Button variant="primary" leadingIcon={<Plus />}>
+            Create material order
+          </Button>
+        }
+      />
 
-        <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-          <Plus size={16} />
-          <span>Create Material Order</span>
-        </button>
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-
-
-        <div className="p-6">
+      <Section>
+        <Card>
           <ABCSupplyView />
-        </div>
-          {/* <>
+        </Card>
+      </Section>
+
+      {/* Legacy table view kept here for reference; restore by re-enabling the block below.
+          <>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="relative">
@@ -211,11 +157,8 @@ export default function MaterialOrders() {
                 </tbody>
               </table>
             </div>
-          </> */}
-
-      </div>
-
-
-    </div>
+          </>
+      */}
+    </PageContainer>
   );
 }

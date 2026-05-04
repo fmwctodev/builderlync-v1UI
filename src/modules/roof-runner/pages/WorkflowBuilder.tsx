@@ -170,7 +170,7 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
   const actions = steps.filter((s: any) => s.type === 'action');
 
   return (
-    <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 overflow-hidden flex flex-col z-[50]">
+    <div className="fixed inset-0 bg-paper dark:bg-canvas overflow-hidden flex flex-col z-[50]">
       {/* Header */}
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 px-8 pt-4 z-20 shadow-sm relative">
         <div className="flex items-center justify-between">
@@ -594,7 +594,7 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                         </div>
                         <button
                           onClick={handleCloseSidebar}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors bg-paper dark:bg-canvas border border-gray-200 dark:border-gray-700"
                         >
                           <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                         </button>
@@ -614,7 +614,7 @@ export default function WorkflowBuilder({ onBack, initialTemplate }: WorkflowBui
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder={sidebarType === 'trigger' ? 'Search triggers...' : 'Search actions...'}
-                          className="w-full pl-12 pr-4 py-3.5 border-none rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner font-medium"
+                          className="w-full pl-12 pr-4 py-3.5 border-none rounded-xl bg-paper dark:bg-canvas text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner font-medium"
                         />
                       </div>
 

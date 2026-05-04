@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, X, ChevronDown, Sparkles } from 'lucide-react';
+import { Plus, Search, ChevronDown, Sparkles, Download } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
 import ProposalEditor from '../components/ProposalEditor';
+import {
+  PageContainer, PageHeader, Section, Button, Modal, Input, Field,
+} from '../../../shared/components/ui';
 
 export default function Proposals() {
   const navigate = useNavigate();
@@ -82,73 +85,70 @@ export default function Proposals() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <nav className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals</span>
-          </nav>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals</h1>
-        </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Workspace"
+        title="Proposals"
+        actions={
+          <div className="relative" ref={dropdownRef}>
+            <Button
+              variant="primary"
+              leadingIcon={<Plus />}
+              trailingIcon={<ChevronDown />}
+              onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            >
+              New Proposal
+            </Button>
 
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-          >
-            <Plus size={16} />
-            <span>New Proposal</span>
-            <ChevronDown size={16} />
-          </button>
-
-          {showNewProposalDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-              <div className="py-1">
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowNewProposalModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Scratch
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowMeasurementsModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Report
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    setShowTemplateModal(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Create From Template
-                </button>
-                <div className="border-t border-gray-100 dark:border-gray-600 my-1" />
-                <button
-                  onClick={() => {
-                    setShowNewProposalDropdown(false);
-                    navigate('ai-generate');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors flex items-center gap-2"
-                >
-                  <Sparkles size={14} />
-                  Generate with AI
-                </button>
+            {showNewProposalDropdown && (
+              <div className="absolute right-0 mt-2 w-60 z-30 rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s2 overflow-hidden">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setShowNewProposalDropdown(false);
+                      setShowNewProposalModal(true);
+                    }}
+                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
+                  >
+                    Create from scratch
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNewProposalDropdown(false);
+                      setShowMeasurementsModal(true);
+                    }}
+                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
+                  >
+                    Create from report
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNewProposalDropdown(false);
+                      setShowTemplateModal(true);
+                    }}
+                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
+                  >
+                    Create from template
+                  </button>
+                  <div className="border-t border-edge-soft dark:border-edge-d-soft my-1" />
+                  <button
+                    onClick={() => {
+                      setShowNewProposalDropdown(false);
+                      navigate('ai-generate');
+                    }}
+                    className="w-full text-left px-3 h-10 studio-text-body text-signal-500 hover:bg-signal-50 dark:hover:bg-signal-500/10 transition-colors duration-fast flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Generate with AI
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        }
+      />
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+      <Section className="rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s1">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {activeTab === 'Proposals' && (
@@ -175,193 +175,145 @@ export default function Proposals() {
         )}
 
         {activeTab === 'Settings' && <SettingsPanel />}
-      </div>
+      </Section>
 
-      {showMeasurementsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Measurements</h3>
-              <button onClick={() => setShowMeasurementsModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X size={20} />
-              </button>
-            </div>
+      <Modal
+        open={showMeasurementsModal}
+        onClose={() => setShowMeasurementsModal(false)}
+        title="Measurements"
+        description="Select the measurement you would like to use for this proposal"
+        size="lg"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
+            >
+              Create without measurement
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => { setShowMeasurementsModal(false); setShowTemplateModal(true); }}
+            >
+              Use this measurement
+            </Button>
+          </>
+        }
+      >
+        <div className="flex-1 flex flex-col gap-4 max-h-[60vh]">
+          <Input leadingIcon={<Search />} placeholder="Search all measurement reports" />
 
-            <div className="flex-1 overflow-hidden flex flex-col p-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Select the measurement you would like to use for this proposal
-              </p>
-
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search all measurement reports"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  { address: '1907 Morrow Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 08, 2025' },
-                  { address: '7925 Tusman Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 07, 2025' },
-                  { address: '3339 Hancock Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 06, 2025' },
-                  { address: '7807 Lonesome Dove Cove, Austin, Texas, United States', version: '1/1', date: 'Oct. 04, 2025' },
-                  { address: '11315 Drumellan Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-                  { address: '7901 Havenwood Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-                  { address: '4701 Camacho Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 02, 2025' },
-                  { address: '2125 Independence Drive, Austin, Texas, United States', version: '1/1', date: 'Sept. 29, 2025' },
-                  { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '8/8', date: 'Sept. 29, 2025', latest: true },
-                  { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '7/8', date: 'Sept. 29, 2025' },
-                ].map((measurement, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {measurement.version} BuilderLync Report{measurement.latest ? ' - Latest' : ''}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Completed {measurement.date}</div>
-                    </div>
-                    <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">Download</button>
+          <div className="flex-1 overflow-y-auto scrollbar-studio space-y-2 min-h-0 -mx-1 px-1">
+            {[
+              { address: '1907 Morrow Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 08, 2025' },
+              { address: '7925 Tusman Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 07, 2025' },
+              { address: '3339 Hancock Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 06, 2025' },
+              { address: '7807 Lonesome Dove Cove, Austin, Texas, United States', version: '1/1', date: 'Oct. 04, 2025' },
+              { address: '11315 Drumellan Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
+              { address: '7901 Havenwood Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
+              { address: '4701 Camacho Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 02, 2025' },
+              { address: '2125 Independence Drive, Austin, Texas, United States', version: '1/1', date: 'Sept. 29, 2025' },
+              { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '8/8', date: 'Sept. 29, 2025', latest: true },
+              { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '7/8', date: 'Sept. 29, 2025' },
+            ].map((measurement, index) => (
+              <div key={index} className="flex items-center justify-between gap-3 p-3 rounded-studio-2 border border-edge-soft dark:border-edge-d-soft hover:bg-surface-2 dark:hover:bg-surface-d-2 cursor-pointer">
+                <div className="flex-1 min-w-0">
+                  <div className="studio-text-body-strong truncate">{measurement.address}</div>
+                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3 mt-0.5">
+                    {measurement.version} BuilderLync Report{measurement.latest ? ' · Latest' : ''}
                   </div>
-                ))}
+                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3">Completed {measurement.date}</div>
+                </div>
+                <Button variant="quiet" size="sm" leadingIcon={<Download />}>Download</Button>
               </div>
-
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Create without measurement
-              </button>
-              <button
-                onClick={() => { setShowMeasurementsModal(false); setShowTemplateModal(true); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-              >
-                Use this measurement
-              </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
+      </Modal>
 
-      {showNewProposalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">New proposal</h3>
-              <button onClick={() => setShowNewProposalModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X size={20} />
-              </button>
-            </div>
+      <Modal
+        open={showNewProposalModal}
+        onClose={() => setShowNewProposalModal(false)}
+        title="New proposal"
+        size="md"
+        footer={
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={() => { setShowNewProposalModal(false); setShowTemplateModal(true); }}
+          >
+            Continue
+          </Button>
+        }
+      >
+        <Field label="Job address">
+          {(props) => (
+            <Input
+              {...props}
+              value={proposalAddress}
+              onChange={(e) => setProposalAddress(e.target.value)}
+              placeholder="Enter address and select"
+            />
+          )}
+        </Field>
+      </Modal>
 
-            <div className="p-6">
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Job address
-                </label>
-                <input
-                  type="text"
-                  value={proposalAddress}
-                  onChange={(e) => setProposalAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter address and select"
-                />
-              </div>
-            </div>
+      <Modal
+        open={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        title="Choose a template"
+        description="Pick from one of your existing proposal templates to get started"
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary">Create without template</Button>
+            <Button
+              variant="primary"
+              onClick={() => { setShowTemplateModal(false); setShowProposalEditor(true); }}
+            >
+              Use this template
+            </Button>
+          </>
+        }
+      >
+        <div className="flex-1 flex flex-col gap-4 max-h-[60vh]">
+          <Input leadingIcon={<Search />} placeholder="Search templates" />
 
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex-1 overflow-y-auto scrollbar-studio space-y-2 min-h-0 -mx-1 px-1">
+            {[
+              'New template',
+              'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
+              'Commercial Roof Repair Template',
+              'Commercial - TPO/PVC',
+              'NEW COMMERCIAL',
+              'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
+              'Retail - Multifamily IKO/Dynasty',
+              'Multi Family - Retail (Shingle)',
+              'Insurance Scope Template (IKO Dynasty & Nordic)',
+              'Roofing Labor',
+              'Insurance Restoration Work Authorization',
+              'Service Agreement',
+              'Shingle Coatings'
+            ].map((template, index) => (
               <button
-                onClick={() => { setShowNewProposalModal(false); setShowTemplateModal(true); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showTemplateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Choose a template</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick from one of your existing proposal templates to get started</p>
-              </div>
-              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden flex flex-col p-6">
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search templates"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-                {[
-                  'New template',
-                  'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
-                  'Commercial Roof Repair Template',
-                  'Commercial - TPO/PVC',
-                  'NEW COMMERCIAL',
-                  'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
-                  'Retail - Multifamily IKO/Dynasty',
-                  'Multi Family - Retail (Shingle)',
-                  'Insurance Scope Template (IKO Dynasty & Nordic)',
-                  'Roofing Labor',
-                  'Insurance Restoration Work Authorization',
-                  'Service Agreement',
-                  'Shingle Coatings'
-                ].map((template, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                    onClick={() => {
-                      setSelectedTemplateId(template);
-                      setShowTemplateModal(false);
-                      setShowProposalEditor(true);
-                    }}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white text-sm">{template}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Template cover image</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
-                Create without template
-              </button>
-              <button 
+                key={index}
+                type="button"
+                className="w-full flex items-center justify-between gap-3 p-3 rounded-studio-2 border border-edge-soft dark:border-edge-d-soft hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast text-left"
                 onClick={() => {
+                  setSelectedTemplateId(template);
                   setShowTemplateModal(false);
                   setShowProposalEditor(true);
                 }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
               >
-                Use this template
+                <div className="flex-1 min-w-0">
+                  <div className="studio-text-body-strong truncate">{template}</div>
+                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3 mt-0.5">Template cover image</div>
+                </div>
               </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
+      </Modal>
 
       {showTemplateBuilder && (
         <TemplateBuilder onClose={() => setShowTemplateBuilder(false)} />
@@ -375,6 +327,6 @@ export default function Proposals() {
         }}
         templateId={selectedTemplateId}
       />
-    </div>
+    </PageContainer>
   );
 }

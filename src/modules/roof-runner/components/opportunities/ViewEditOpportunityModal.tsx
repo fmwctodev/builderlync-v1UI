@@ -258,7 +258,7 @@ export default function ViewEditOpportunityModal({
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+            <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-paper dark:bg-canvas">
               <nav className="p-4 space-y-1">
                 <button
                   onClick={() => setActiveSection('opportunity-details')}

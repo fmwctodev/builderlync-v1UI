@@ -320,7 +320,7 @@ const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex justify-end items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
           <button
             onClick={handleClose}
             className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"

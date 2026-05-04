@@ -97,7 +97,7 @@ function ObservationCard({ obs }: { obs: StationHailObservation }) {
         {obs.hailDescription && (
           <div className="col-span-2 md:col-span-1">
             <div className="text-xs text-gray-400 mb-0.5">Weather Code</div>
-            <div className="text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded">
+            <div className="text-xs font-mono text-gray-600 dark:text-gray-400 bg-paper dark:bg-canvas px-2 py-1 rounded">
               {obs.hailDescription}
             </div>
           </div>
@@ -137,7 +137,7 @@ function StationObservationsPanel({ stationId, stationName }: { stationId: strin
   );
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-paper dark:bg-canvas/30 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="font-medium text-sm text-gray-900 dark:text-white">{stationName}</p>

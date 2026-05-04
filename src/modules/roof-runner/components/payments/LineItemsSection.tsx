@@ -47,7 +47,7 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
       </div>
 
       {showTemplates && (
-        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="bg-paper dark:bg-canvas p-4 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="mb-3 flex space-x-2">
             <input
               type="text"
@@ -91,7 +91,7 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-900">
+          <thead className="bg-paper dark:bg-canvas">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">#</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Description</th>

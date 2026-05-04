@@ -608,7 +608,7 @@ const CreateEstimateModal: React.FC<CreateEstimateModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-3 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <div className="space-y-3 bg-paper dark:bg-canvas p-4 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
                 <span className="font-medium text-gray-900 dark:text-white">
@@ -672,7 +672,7 @@ const CreateEstimateModal: React.FC<CreateEstimateModalProps> = ({
           />
         </div>
 
-        <div className="flex justify-between items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex justify-between items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
           <button
             onClick={() => setFormData({ ...formData, status: 'draft' })}
             className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"

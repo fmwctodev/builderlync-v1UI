@@ -91,7 +91,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
               <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -121,7 +121,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {order.status !== 'cancelled' && (
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Order Progress</h3>
               <div className="flex items-center justify-between">
                 {statusSteps.map((step, index) => {
@@ -195,7 +195,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Order Items</h3>
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-900">
+                <thead className="bg-paper dark:bg-canvas">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qty</th>
@@ -226,7 +226,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-50 dark:bg-gray-900">
+                <tfoot className="bg-paper dark:bg-canvas">
                   <tr>
                     <td colSpan={3} className="px-4 py-2 text-right text-sm text-gray-600 dark:text-gray-400">Subtotal</td>
                     <td className="px-4 py-2 text-right text-sm text-gray-900 dark:text-white">{formatCurrency(order.subtotal)}</td>
@@ -245,7 +245,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -274,7 +274,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Building2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Branch Information</h3>
@@ -296,11 +296,11 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Order Date</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDate(order.createdAt)}</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <div className="bg-paper dark:bg-canvas rounded-lg p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                 {order.status === 'delivered' ? 'Delivered On' : 'Est. Delivery'}
               </p>
@@ -309,7 +309,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
               </p>
             </div>
             {order.poNumber && (
-              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+              <div className="bg-paper dark:bg-canvas rounded-lg p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">PO Number</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{order.poNumber}</p>
               </div>
@@ -324,7 +324,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
           )}
         </div>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
           <div className="text-sm text-gray-500 dark:text-gray-400">
             Account: {order.accountName || order.accountNumber}
           </div>

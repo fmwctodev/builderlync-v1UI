@@ -144,14 +144,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {proposals.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <FileText className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No proposals linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
@@ -224,14 +224,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {invoices.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <DollarSign className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No invoices linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Invoice #</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
@@ -308,14 +308,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {reports.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <ClipboardList className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No reports linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Report Name</th>

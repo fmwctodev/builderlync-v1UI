@@ -71,7 +71,7 @@ export function EditPhoneNumberModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Phone Number
             </label>
-            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400">
+            <div className="px-3 py-2 bg-paper dark:bg-canvas border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400">
               {phoneNumber.phone_number}
             </div>
           </div>

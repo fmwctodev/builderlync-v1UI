@@ -12,12 +12,12 @@ export function AIAgentsLayout() {
       setSidebarCollapsed(!sidebarCollapsed);
     };
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen w-full overflow-hidden bg-paper dark:bg-canvas">
       <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar toggleSidebar={toggleSidebar} />
         <AITopBar/>
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
+        <main className="flex-1 overflow-y-auto bg-paper dark:bg-canvas p-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
           <Outlet />
         </main>
       </div>

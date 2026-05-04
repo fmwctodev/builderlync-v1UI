@@ -84,7 +84,7 @@ const ContactProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="h-full flex items-center justify-center bg-paper dark:bg-canvas">
         <div className="text-gray-500 dark:text-gray-400">Loading contact...</div>
       </div>
     );
@@ -92,14 +92,14 @@ const ContactProfile: React.FC = () => {
 
   if (!contact) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="h-full flex items-center justify-center bg-paper dark:bg-canvas">
         <div className="text-gray-500 dark:text-gray-400">Contact not found</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-50 dark:bg-gray-900">
+    <div className="h-full bg-paper dark:bg-canvas">
       <ContactHeader 
         contactName={contact.fullName} 
         onBack={() => navigate('/contacts')} 
@@ -115,7 +115,7 @@ const ContactProfile: React.FC = () => {
           onAddCompany={() => setShowAddCompanyModal(true)}
         />
 
-        <div className="w-1/2 bg-gray-50 dark:bg-gray-900">
+        <div className="w-1/2 bg-paper dark:bg-canvas">
           <div className="p-6">
             <RightPanelTabs 
               activeTab={rightPanelView} 

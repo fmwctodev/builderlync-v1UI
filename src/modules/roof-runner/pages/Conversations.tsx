@@ -434,7 +434,7 @@ const Conversations: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
       {/* Top Navigation Tabs */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="py-4">
@@ -475,7 +475,7 @@ const Conversations: React.FC = () => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex bg-paper dark:bg-canvas">
         {activeTab === 'conversations' && (
           <>
             {/* Left Sidebar - Contact List */}

@@ -156,7 +156,7 @@ export function CreditCostBreakdownStep({ onBack, onContinue }: CreditCostBreakd
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
             onClick={onBack}

@@ -122,7 +122,7 @@ export function AgentBuilder() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center">
         <div className="text-gray-600 dark:text-gray-400">Loading agent...</div>
       </div>
     );
@@ -130,7 +130,7 @@ export function AgentBuilder() {
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center">
         <div className="max-w-md mx-auto px-4 text-center">
           <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
             <Bot className="w-10 h-10 text-gray-400" />
@@ -176,7 +176,7 @@ export function AgentBuilder() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-paper dark:bg-canvas">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

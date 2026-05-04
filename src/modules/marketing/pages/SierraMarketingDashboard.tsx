@@ -31,16 +31,16 @@ const SierraMarketingDashboard: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 shrink-0">
+    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+      <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page shrink-0">
         <div className="py-5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-signal-500 rounded-studio-2 flex items-center justify-center">
               <Zap size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Sierra Marketing AI</h1>
-              <p className="text-xs text-gray-500">AI-guided marketing command center for contractors</p>
+              <h1 className="studio-text-title-2">Sierra Marketing AI</h1>
+              <p className="studio-text-caption text-ink-3 dark:text-ink-d-3">AI-guided marketing command center for contractors</p>
             </div>
           </div>
         </div>

@@ -78,7 +78,7 @@ export function ExecutionPlanCard({ executionRequestId, responseToUser, actions,
               className={`rounded-lg border transition-colors ${
                 isChecked
                   ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                  : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-60'
+                  : 'border-gray-100 dark:border-gray-800 bg-paper dark:bg-canvas opacity-60'
               }`}
             >
               <div className="flex items-start gap-2 px-3 py-2">
