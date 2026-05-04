@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { LifeBuoy, RefreshCw, Plus, Download, Smile, Meh, Frown, TrendingUp, Activity, MessageSquare, Lightbulb, Bug, Heart, HelpCircle, AlertTriangle, CheckCircle, Lock, User, ExternalLink, Link as LinkIcon } from 'lucide-react';
-import { supabase } from '../services/supabase-client';
 import { isJiraConfigured } from '../services/jira/jira-client';
 import { syncAllJiraData, pushTicketToJira, updateJiraFromTicket } from '../services/jira/jira-sync-service';
 import {
@@ -31,8 +30,11 @@ import {
 import { clsx } from 'clsx';
 
 type Tab = 'tickets' | 'nps' | 'health';
+type TicketSource = 'database' | 'jira';
 
 export const Support: React.FC = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
   const [activeTab, setActiveTab] = useState<Tab>('tickets');
   const [loading, setLoading] = useState(true);
 
@@ -51,62 +53,171 @@ export const Support: React.FC = () => {
 
   const [ticketDetailOpen, setTicketDetailOpen] = useState(false);
   const [healthDetailOpen, setHealthDetailOpen] = useState(false);
+  const [refreshingTicket, setRefreshingTicket] = useState(false);
+  const [checkingJiraStatus, setCheckingJiraStatus] = useState(false);
+  const [jiraStatusInfo, setJiraStatusInfo] = useState<{
+    issueId?: string | null;
+    issueKey?: string | null;
+    status?: string | null;
+    updatedAt?: string | null;
+    summary?: string | null;
+  } | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [npsFilter, setNpsFilter] = useState<string>('all');
+  const [ticketSource, setTicketSource] = useState<TicketSource>('jira');
+  const [ticketPage, setTicketPage] = useState(1);
+  const ticketPageSize = 10;
+  const [ticketPagination, setTicketPagination] = useState({ page: 1, limit: ticketPageSize, total: 0, totalPages: 1 });
+  const [ticketSummary, setTicketSummary] = useState({ total: 0, open: 0, inProgress: 0, resolved: 0 });
 
   useEffect(() => {
     loadData();
     setJiraConfigured(isJiraConfigured());
-  }, [activeTab]);
+  }, [activeTab, ticketPage, statusFilter, priorityFilter, searchTerm, ticketSource]);
+
+  const getAuthHeaders = () => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      throw new Error('Admin token missing. Please login again.');
+    }
+    return {
+      Authorization: `Bearer ${adminToken}`,
+      'Content-Type': 'application/json',
+    };
+  };
+
+  const normalizeTicket = (ticket: any): SupportTicket => ({
+    ...ticket,
+    description: ticket?.description || ticket?.message || '',
+    contact_email: ticket?.contact_email || ticket?.users?.email || 'N/A',
+    contact_name: ticket?.contact_name || null,
+  });
+
+  const mapJiraStatusToLocal = (statusName: string): SupportTicket['status'] => {
+    const s = String(statusName || '').toLowerCase();
+    if (s.includes('done') || s.includes('resolve') || s.includes('close')) return 'resolved';
+    if (s.includes('progress') || s.includes('doing')) return 'in_progress';
+    if (s.includes('wait') || s.includes('review') || s.includes('hold')) return 'waiting';
+    return 'open';
+  };
+
+  const mapJiraPriorityToLocal = (priorityName: string): SupportTicket['priority'] => {
+    const p = String(priorityName || '').toLowerCase();
+    if (p.includes('highest') || p.includes('urgent')) return 'urgent';
+    if (p.includes('high')) return 'high';
+    if (p.includes('low') || p.includes('lowest')) return 'low';
+    return 'medium';
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
       if (activeTab === 'tickets') {
-        const { data, error } = await supabase
-          .from('support_tickets')
-          .select(`
-            *,
-            enterprise_accounts:account_id (id, name, status, plan)
-          `)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setTickets(data || []);
+        const params = new URLSearchParams();
+        params.set('page', String(ticketPage));
+        params.set('limit', String(ticketPageSize));
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (priorityFilter !== 'all') params.set('priority', priorityFilter);
+        if (searchTerm.trim()) params.set('search', searchTerm.trim());
+
+        const endpoint =
+          ticketSource === 'jira'
+            ? `${apiBaseUrl}/support/admin/jira/tickets?${params.toString()}`
+            : `${apiBaseUrl}/support/admin/tickets?${params.toString()}`;
+
+        const response = await fetch(endpoint, {
+          headers: getAuthHeaders(),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Failed to load tickets');
+        }
+
+        if (ticketSource === 'jira') {
+          const jiraTickets = (result.data || []).map((issue: any) => {
+            const status = mapJiraStatusToLocal(issue?.fields?.status?.name);
+            const priority = mapJiraPriorityToLocal(issue?.fields?.priority?.name);
+            const createdAt = issue?.fields?.created || new Date().toISOString();
+            const updatedAt = issue?.fields?.updated || createdAt;
+            return normalizeTicket({
+              id: `jira-${issue.id}`,
+              ticket_number: issue.key,
+              subject: issue?.fields?.summary || '(No summary)',
+              message: issue?.fields?.summary || '',
+              description: issue?.fields?.summary || '',
+              status,
+              priority,
+              created_at: createdAt,
+              updated_at: updatedAt,
+              contact_name: issue?.fields?.assignee?.displayName || 'Jira',
+              contact_email: issue?.fields?.assignee?.emailAddress || 'jira@system.local',
+              tags: issue?.fields?.labels || [],
+              jira_issue_key: issue.key,
+              jira_issue_id: issue.id,
+            });
+          });
+          setTickets(jiraTickets);
+          const apiPagination = result?.pagination || {};
+          const effectiveTotal =
+            Number(apiPagination?.total || 0) > 0
+              ? Number(apiPagination.total)
+              : (Number(result?.total || 0) > 0 ? Number(result.total) : jiraTickets.length);
+          const effectiveTotalPages =
+            Number(apiPagination?.totalPages || 0) > 0
+              ? Number(apiPagination.totalPages)
+              : Math.max(1, Math.ceil(effectiveTotal / ticketPageSize));
+          setTicketPagination({
+            page: Number(apiPagination?.page || ticketPage),
+            limit: Number(apiPagination?.limit || ticketPageSize),
+            total: effectiveTotal,
+            totalPages: effectiveTotalPages,
+          });
+          const apiStats = result?.stats;
+          const hasValidStats = apiStats && (
+            (Number(apiStats.total) > 0) ||
+            (Number(apiStats.open) > 0) ||
+            (Number(apiStats.inProgress) > 0) ||
+            (Number(apiStats.resolved) > 0)
+          );
+          setTicketSummary({
+            total: hasValidStats ? Number(apiStats.total || 0) : effectiveTotal,
+            open: hasValidStats ? Number(apiStats.open || 0) : jiraTickets.filter((t: SupportTicket) => t.status === 'open').length,
+            inProgress: hasValidStats ? Number(apiStats.inProgress || 0) : jiraTickets.filter((t: SupportTicket) => t.status === 'in_progress').length,
+            resolved: hasValidStats ? Number(apiStats.resolved || 0) : jiraTickets.filter((t: SupportTicket) => t.status === 'resolved' || t.status === 'closed').length,
+          });
+        } else {
+          setTickets((result.data || []).map((ticket: any) => normalizeTicket(ticket)));
+          setTicketPagination(result?.pagination || { page: ticketPage, limit: ticketPageSize, total: (result.data || []).length, totalPages: 1 });
+          setTicketSummary({
+            total: (result.data || []).length,
+            open: (result.data || []).filter((t: any) => t.status === 'open').length,
+            inProgress: (result.data || []).filter((t: any) => t.status === 'in_progress').length,
+            resolved: (result.data || []).filter((t: any) => t.status === 'resolved' || t.status === 'closed').length,
+          });
+        }
       } else if (activeTab === 'nps') {
-        const [npsRes, feedbackRes] = await Promise.all([
-          supabase
-            .from('nps_feedback')
-            .select(`
-              *,
-              enterprise_accounts:account_id (id, name, status, plan)
-            `)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('product_feedback')
-            .select(`
-              *,
-              enterprise_accounts:account_id (id, name, status, plan)
-            `)
-            .order('created_at', { ascending: false })
-        ]);
-        if (npsRes.error) throw npsRes.error;
-        if (feedbackRes.error) throw feedbackRes.error;
-        setNpsResponses(npsRes.data || []);
-        setProductFeedback(feedbackRes.data || []);
+        const response = await fetch(`${apiBaseUrl}/support/admin/nps`, {
+          headers: getAuthHeaders(),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Failed to load NPS/feedback');
+        }
+        setNpsResponses(result?.data?.npsResponses || []);
+        setProductFeedback(result?.data?.productFeedback || []);
       } else if (activeTab === 'health') {
-        const { data, error } = await supabase
-          .from('account_health')
-          .select(`
-            *,
-            enterprise_accounts:account_id (id, name, status, plan)
-          `)
-          .order('health_score', { ascending: true });
-        if (error) throw error;
-        setAccountHealth(data || []);
+        const response = await fetch(`${apiBaseUrl}/support/admin/health`, {
+          headers: getAuthHeaders(),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Failed to load account health');
+        }
+        setAccountHealth(result.data || []);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -116,19 +227,116 @@ export const Support: React.FC = () => {
   };
 
   const loadTicketComments = async (ticketId: string) => {
-    const { data, error } = await supabase
-      .from('support_ticket_comments')
-      .select('*')
-      .eq('ticket_id', ticketId)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    setTicketComments(data || []);
+    const response = await fetch(`${apiBaseUrl}/support/admin/tickets/${ticketId}/comments`, {
+      headers: getAuthHeaders(),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to load ticket comments');
+    }
+    setTicketComments(result.data || []);
   };
 
   const handleViewTicket = async (ticket: SupportTicket) => {
-    setSelectedTicket(ticket);
-    await loadTicketComments(ticket.id);
-    setTicketDetailOpen(true);
+    try {
+      setTicketDetailOpen(true);
+      setSelectedTicket(ticket);
+      setJiraStatusInfo(null);
+      if (String(ticket.id).startsWith('jira-')) {
+        setTicketComments([]);
+        return;
+      }
+
+      const [ticketResponse, commentsResponse] = await Promise.all([
+        fetch(`${apiBaseUrl}/support/admin/tickets/${ticket.id}`, {
+          headers: getAuthHeaders(),
+        }),
+        fetch(`${apiBaseUrl}/support/admin/tickets/${ticket.id}/comments`, {
+          headers: getAuthHeaders(),
+        }),
+      ]);
+
+      const [ticketResult, commentsResult] = await Promise.all([
+        ticketResponse.json(),
+        commentsResponse.json(),
+      ]);
+
+      if (ticketResponse.ok && ticketResult.success) {
+        setSelectedTicket(normalizeTicket(ticketResult.data));
+      }
+      if (commentsResponse.ok && commentsResult.success) {
+        setTicketComments(commentsResult.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to open ticket details:', error);
+    }
+  };
+
+  const handleRefreshTicketStatus = async () => {
+    if (!selectedTicket?.id) return;
+    if (String(selectedTicket.id).startsWith('jira-')) {
+      await loadData();
+      return;
+    }
+    try {
+      setRefreshingTicket(true);
+
+      const [ticketResponse, commentsResponse] = await Promise.all([
+        fetch(`${apiBaseUrl}/support/admin/tickets/${selectedTicket.id}`, {
+          headers: getAuthHeaders(),
+        }),
+        fetch(`${apiBaseUrl}/support/admin/tickets/${selectedTicket.id}/comments`, {
+          headers: getAuthHeaders(),
+        }),
+      ]);
+
+      const [ticketResult, commentsResult] = await Promise.all([
+        ticketResponse.json(),
+        commentsResponse.json(),
+      ]);
+
+      if (ticketResponse.ok && ticketResult.success) {
+        setSelectedTicket(normalizeTicket(ticketResult.data));
+      }
+      if (commentsResponse.ok && commentsResult.success) {
+        setTicketComments(commentsResult.data || []);
+      }
+
+      await loadData();
+    } catch (error) {
+      console.error('Failed to refresh ticket status:', error);
+    } finally {
+      setRefreshingTicket(false);
+    }
+  };
+
+  const handleCheckJiraStatus = async () => {
+    if (!selectedTicket?.id) return;
+    if (String(selectedTicket.id).startsWith('jira-')) {
+      setJiraStatusInfo({
+        issueId: (selectedTicket as any).jira_issue_id || null,
+        issueKey: (selectedTicket as any).jira_issue_key || selectedTicket.ticket_number,
+        status: selectedTicket.status,
+        updatedAt: selectedTicket.updated_at,
+        summary: selectedTicket.subject,
+      });
+      return;
+    }
+    try {
+      setCheckingJiraStatus(true);
+      const response = await fetch(`${apiBaseUrl}/support/admin/tickets/${selectedTicket.id}/jira-status`, {
+        headers: getAuthHeaders(),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to fetch Jira status');
+      }
+      setJiraStatusInfo(result.data || null);
+    } catch (error: any) {
+      setJiraStatusInfo({ status: error?.message || 'Failed to fetch Jira status' });
+    } finally {
+      setCheckingJiraStatus(false);
+    }
   };
 
   const handleUpdateTicketStatus = async (ticketId: string, status: string) => {
@@ -138,11 +346,16 @@ export const Support: React.FC = () => {
         updates.resolved_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
-        .from('support_tickets')
-        .update(updates)
-        .eq('id', ticketId);
-      if (error) throw error;
+      const response = await fetch(`${apiBaseUrl}/support/admin/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ status }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update ticket');
+      }
+
       loadData();
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket({ ...selectedTicket, status: status as any, ...updates });
@@ -154,27 +367,24 @@ export const Support: React.FC = () => {
 
   const handleAddComment = async (ticketId: string, body: string, isInternal: boolean) => {
     try {
-      const { error } = await supabase
-        .from('support_ticket_comments')
-        .insert({
-          ticket_id: ticketId,
+      const response = await fetch(`${apiBaseUrl}/support/admin/tickets/${ticketId}/comments`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
           author_type: 'internal',
           author_name: 'Support Team',
           author_email: 'support@builderlync.com',
           body,
           is_internal_note: isInternal,
-        });
-      if (error) throw error;
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to add comment');
+      }
 
       await loadTicketComments(ticketId);
-
-      const ticket = tickets.find(t => t.id === ticketId);
-      if (ticket && !ticket.first_response_at && !isInternal) {
-        await supabase
-          .from('support_tickets')
-          .update({ first_response_at: new Date().toISOString() })
-          .eq('id', ticketId);
-      }
+      await loadData();
     } catch (error) {
       console.error('Failed to add comment:', error);
     }
@@ -230,11 +440,15 @@ export const Support: React.FC = () => {
 
   const handleUpdateHealthNotes = async (healthId: string, notes: string) => {
     try {
-      const { error } = await supabase
-        .from('account_health')
-        .update({ notes })
-        .eq('id', healthId);
-      if (error) throw error;
+      const response = await fetch(`${apiBaseUrl}/support/admin/health/${healthId}/notes`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ notes }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to update notes');
+      }
       loadData();
       if (selectedHealth?.id === healthId) {
         setSelectedHealth({ ...selectedHealth, notes });
@@ -244,12 +458,12 @@ export const Support: React.FC = () => {
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
+  const filteredTickets = (ticketSource === 'jira' ? tickets : tickets.filter(ticket => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       if (
         !ticket.subject.toLowerCase().includes(search) &&
-        !ticket.contact_email.toLowerCase().includes(search) &&
+        !(ticket.contact_email || '').toLowerCase().includes(search) &&
         !(ticket.enterprise_accounts as any)?.name?.toLowerCase().includes(search)
       ) {
         return false;
@@ -258,7 +472,20 @@ export const Support: React.FC = () => {
     if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
     if (priorityFilter !== 'all' && ticket.priority !== priorityFilter) return false;
     return true;
-  });
+  }));
+  const totalTicketPages = ticketSource === 'jira'
+    ? Math.max(1, ticketPagination.totalPages || 1)
+    : Math.max(1, Math.ceil(filteredTickets.length / ticketPageSize));
+  const pagedTickets = ticketSource === 'jira'
+    ? filteredTickets
+    : filteredTickets.slice((ticketPage - 1) * ticketPageSize, ticketPage * ticketPageSize);
+  const totalTicketItems = ticketSource === 'jira'
+    ? (ticketPagination.total > 0 ? ticketPagination.total : filteredTickets.length)
+    : filteredTickets.length;
+
+  useEffect(() => {
+    setTicketPage(1);
+  }, [statusFilter, priorityFilter, activeTab, ticketSource]);
 
   const filteredNps = npsResponses.filter(nps => {
     if (npsFilter === 'promoters' && nps.score < 9) return false;
@@ -277,12 +504,19 @@ export const Support: React.FC = () => {
   const passives = npsResponses.filter(r => r.score >= 7 && r.score <= 8).length;
   const detractors = npsResponses.filter(r => r.score <= 6).length;
 
-  const ticketStats = {
-    total: tickets.length,
-    open: tickets.filter(t => t.status === 'open').length,
-    inProgress: tickets.filter(t => t.status === 'in_progress').length,
-    resolved: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
-  };
+  const ticketStats = ticketSource === 'jira'
+    ? {
+        total: ticketSummary.total > 0 ? ticketSummary.total : filteredTickets.length,
+        open: ticketSummary.total > 0 ? ticketSummary.open : filteredTickets.filter(t => t.status === 'open').length,
+        inProgress: ticketSummary.total > 0 ? ticketSummary.inProgress : filteredTickets.filter(t => t.status === 'in_progress').length,
+        resolved: ticketSummary.total > 0 ? ticketSummary.resolved : filteredTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
+      }
+    : {
+        total: tickets.length,
+        open: tickets.filter(t => t.status === 'open').length,
+        inProgress: tickets.filter(t => t.status === 'in_progress').length,
+        resolved: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
+      };
 
   const healthStats = {
     highRisk: accountHealth.filter(h => h.risk_level === 'high').length,
@@ -305,7 +539,7 @@ export const Support: React.FC = () => {
             <button
               onClick={handleSyncJiraData}
               disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? 'Syncing...' : 'Sync Jira'}
@@ -369,7 +603,7 @@ export const Support: React.FC = () => {
         <div className="p-6">
           {activeTab === 'tickets' && (
             <TicketsTab
-              tickets={filteredTickets}
+              tickets={pagedTickets}
               loading={loading}
               searchTerm={searchTerm}
               statusFilter={statusFilter}
@@ -377,12 +611,19 @@ export const Support: React.FC = () => {
               onSearchChange={setSearchTerm}
               onStatusChange={setStatusFilter}
               onPriorityChange={setPriorityFilter}
+              ticketSource={ticketSource}
+              onTicketSourceChange={setTicketSource}
               onViewTicket={handleViewTicket}
               onUpdateStatus={handleUpdateTicketStatus}
               onPushToJira={handlePushToJira}
               onUpdateJira={handleUpdateJira}
               jiraConfigured={jiraConfigured}
               stats={ticketStats}
+              page={ticketPage}
+              totalPages={totalTicketPages}
+              totalItems={totalTicketItems}
+              pageSize={ticketPageSize}
+              onPageChange={setTicketPage}
             />
           )}
 
@@ -420,9 +661,15 @@ export const Support: React.FC = () => {
         <TicketDetailDrawer
           ticket={selectedTicket}
           comments={ticketComments}
+          refreshingStatus={refreshingTicket}
+          onRefreshStatus={handleRefreshTicketStatus}
+          checkingJiraStatus={checkingJiraStatus}
+          jiraStatusInfo={jiraStatusInfo}
+          onCheckJiraStatus={handleCheckJiraStatus}
           onClose={() => {
             setTicketDetailOpen(false);
             setSelectedTicket(null);
+            setJiraStatusInfo(null);
           }}
           onUpdateStatus={handleUpdateTicketStatus}
           onAddComment={handleAddComment}
@@ -478,12 +725,19 @@ interface TicketsTabProps {
   onSearchChange: (term: string) => void;
   onStatusChange: (status: string) => void;
   onPriorityChange: (priority: string) => void;
+  ticketSource: TicketSource;
+  onTicketSourceChange: (source: TicketSource) => void;
   onViewTicket: (ticket: SupportTicket) => void;
   onUpdateStatus: (ticketId: string, status: string) => void;
   onPushToJira?: (ticketId: string) => void;
   onUpdateJira?: (ticketId: string) => void;
   jiraConfigured?: boolean;
   stats: { total: number; open: number; inProgress: number; resolved: number };
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
 }
 
 const TicketsTab: React.FC<TicketsTabProps> = ({
@@ -495,12 +749,19 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
   onSearchChange,
   onStatusChange,
   onPriorityChange,
+  ticketSource,
+  onTicketSourceChange,
   onViewTicket,
   onUpdateStatus,
   onPushToJira,
   onUpdateJira,
   jiraConfigured,
   stats,
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
 }) => {
   if (loading) {
     return (
@@ -564,6 +825,13 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </select>
+        <select
+          value={ticketSource}
+          onChange={(e) => onTicketSourceChange(e.target.value as TicketSource)}
+          className="px-4 py-2 border border-gray-300 rounded-lg"
+        >
+          <option value="jira">Jira Live</option>
+        </select>
       </div>
 
       <div className="overflow-x-auto">
@@ -572,7 +840,6 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
               {jiraConfigured && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jira</th>}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
@@ -588,10 +855,9 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
                 <tr
                   key={ticket.id}
                   className={clsx(
-                    'hover:bg-gray-50 cursor-pointer',
+                    'hover:bg-gray-50',
                     ticket.priority === 'urgent' && 'border-l-4 border-red-500'
                   )}
-                  onClick={() => onViewTicket(ticket)}
                 >
                   <td className="px-6 py-4">
                     <div className="text-sm font-mono text-gray-900">{ticket.ticket_number}</div>
@@ -600,9 +866,6 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
                     <div className="text-xs text-gray-500">{ticket.contact_name || ticket.contact_email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {(ticket.enterprise_accounts as any)?.name || 'N/A'}
                   </td>
                   {jiraConfigured && (
                     <td className="px-6 py-4">
@@ -675,6 +938,38 @@ const TicketsTab: React.FC<TicketsTabProps> = ({
           </tbody>
         </table>
       </div>
+
+      {ticketSource === 'jira' ? (
+        <div className="text-sm text-gray-600 border border-gray-200 rounded-lg px-4 py-3">
+          Showing all {totalItems} Jira tickets
+        </div>
+      ) : (
+        <div className="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3">
+          <div className="text-sm text-gray-600">
+            Showing {totalItems === 0 ? 0 : (page - 1) * pageSize + 1}-
+            {Math.min(page * pageSize, totalItems)} of {totalItems}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <span className="text-sm text-gray-700">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1024,6 +1319,17 @@ const HealthTab: React.FC<HealthTabProps> = ({
 interface TicketDetailDrawerProps {
   ticket: SupportTicket;
   comments: TicketComment[];
+  refreshingStatus: boolean;
+  onRefreshStatus: () => void;
+  checkingJiraStatus: boolean;
+  jiraStatusInfo: {
+    issueId?: string | null;
+    issueKey?: string | null;
+    status?: string | null;
+    updatedAt?: string | null;
+    summary?: string | null;
+  } | null;
+  onCheckJiraStatus: () => void;
   onClose: () => void;
   onUpdateStatus: (ticketId: string, status: string) => void;
   onAddComment: (ticketId: string, body: string, isInternal: boolean) => void;
@@ -1032,14 +1338,21 @@ interface TicketDetailDrawerProps {
 const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
   ticket,
   comments,
+  refreshingStatus,
+  onRefreshStatus,
+  checkingJiraStatus,
+  jiraStatusInfo,
+  onCheckJiraStatus,
   onClose,
   onUpdateStatus,
   onAddComment,
 }) => {
   const [commentBody, setCommentBody] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const isJiraOnly = String(ticket.id).startsWith('jira-');
 
   const handleSubmitComment = () => {
+    if (isJiraOnly) return;
     if (!commentBody.trim()) return;
     onAddComment(ticket.id, commentBody, isInternal);
     setCommentBody('');
@@ -1062,7 +1375,23 @@ const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
             </div>
             <div className="text-gray-600 mt-1">{ticket.subject}</div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onRefreshStatus}
+              disabled={refreshingStatus}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              {refreshingStatus ? 'Refreshing...' : 'Refresh Status'}
+            </button>
+            <button
+              onClick={onCheckJiraStatus}
+              disabled={checkingJiraStatus}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              {checkingJiraStatus ? 'Checking Jira...' : 'Check Jira Status'}
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -1074,10 +1403,22 @@ const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
               <div>Created: {formatTimestamp(ticket.created_at)}</div>
               {ticket.resolved_at && <div>Resolution: {formatResolutionTime(ticket.created_at, ticket.resolved_at)}</div>}
             </div>
+            {jiraStatusInfo && (
+              <div className="mt-4 border border-gray-200 rounded-lg p-3 bg-white text-sm text-gray-700">
+                <div className="font-medium text-gray-900 mb-1">Jira Verification</div>
+                <div>Status: {jiraStatusInfo.status || 'N/A'}</div>
+                {jiraStatusInfo.issueKey && <div>Issue Key: {jiraStatusInfo.issueKey}</div>}
+                {jiraStatusInfo.issueId && <div>Issue ID: {jiraStatusInfo.issueId}</div>}
+                {jiraStatusInfo.updatedAt && <div>Updated: {formatTimestamp(jiraStatusInfo.updatedAt)}</div>}
+              </div>
+            )}
           </div>
 
           <div>
             <div className="text-sm font-medium text-gray-700 mb-3">Conversation ({comments.length})</div>
+            {isJiraOnly && (
+              <div className="text-xs text-gray-500 mb-2">Live Jira issue: comments are managed in Jira.</div>
+            )}
             <div className="space-y-3">
               {comments.map((comment) => (
                 <div
@@ -1136,7 +1477,7 @@ const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
               </label>
               <button
                 onClick={handleSubmitComment}
-                disabled={!commentBody.trim()}
+                disabled={!commentBody.trim() || isJiraOnly}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Comment
@@ -1149,24 +1490,28 @@ const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
             <div className="flex gap-2">
               <button
                 onClick={() => onUpdateStatus(ticket.id, 'in_progress')}
+                disabled={isJiraOnly}
                 className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 text-sm"
               >
                 Mark In Progress
               </button>
               <button
                 onClick={() => onUpdateStatus(ticket.id, 'waiting')}
+                disabled={isJiraOnly}
                 className="px-3 py-1.5 bg-red-100 text-red-800 rounded hover:bg-red-200 text-sm"
               >
                 Mark Waiting
               </button>
               <button
                 onClick={() => onUpdateStatus(ticket.id, 'resolved')}
+                disabled={isJiraOnly}
                 className="px-3 py-1.5 bg-green-100 text-green-800 rounded hover:bg-green-200 text-sm"
               >
                 Mark Resolved
               </button>
               <button
                 onClick={() => onUpdateStatus(ticket.id, 'closed')}
+                disabled={isJiraOnly}
                 className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 text-sm"
               >
                 Close Ticket

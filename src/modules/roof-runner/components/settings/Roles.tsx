@@ -16,6 +16,7 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -47,7 +48,13 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
   const handleCreateRole = () => {
     fetchRoles();
     setShowCreateModal(false);
+    setSelectedTemplateId('');
     setToast({ message: 'Role created successfully!', type: 'success' });
+  };
+
+  const handleUseTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setShowCreateModal(true);
   };
 
   const handleEditRole = (role: Role) => {
@@ -97,19 +104,19 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
       case 'admin':
         return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
       case 'manager':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
       case 'sales':
         return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
       case 'project manager':
         return 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400';
       case 'finance':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+        return 'bg-teal-100 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400';
       case 'office/dispatcher':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+        return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400';
       case 'field tech':
         return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
       default:
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
     }
   };
 
@@ -165,7 +172,7 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
               {ROLE_TEMPLATES.map((template) => (
                 <div
                   key={template.id}
-                  className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-750 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+                  className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-750 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 transition-colors flex flex-col"
                 >
                   <div className="mb-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRoleBadgeColor(template.name)}`}>
@@ -183,8 +190,8 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
                   </div>
                   {canManageRoles && (
                     <button
-                      onClick={() => setShowCreateModal(true)}
-                      className="w-full px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+                      onClick={() => handleUseTemplate(template.id)}
+                      className="w-full px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors mt-auto"
                     >
                       Use Template
                     </button>
@@ -203,23 +210,23 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
           {roles.map((role) => (
             <div
               key={role.id}
-              className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+              className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors flex flex-col"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{role.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate" title={role.name}>{role.name}</h3>
                     {role.is_default && (
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRoleBadgeColor(role.name)}`}>
                         Default
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{role.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2" title={role.description}>{role.description}</p>
                 </div>
               </div>
 
-              <div className="space-y-3 mb-4">
+              <div className="space-y-3 mb-4 flex-grow">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Permissions:</span>
                   <span className="font-medium text-gray-900 dark:text-white">
@@ -236,23 +243,14 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
               </div>
 
               {canManageRoles && (
-                <div className="flex items-center space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
                   <button
                     onClick={() => handleEditRole(role)}
-                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="w-full flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     <Edit2 size={14} />
                     <span>Edit</span>
                   </button>
-                  {role.is_deletable && (
-                    <button
-                      onClick={() => handleDeleteClick(role)}
-                      className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      <span>Delete</span>
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -265,8 +263,12 @@ const Roles: React.FC<RolesProps> = ({ userRole = 'Owner' }) => {
       {showCreateModal && (
         <CreateRoleModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            setShowCreateModal(false);
+            setSelectedTemplateId('');
+          }}
           onSuccess={handleCreateRole}
+          selectedTemplateId={selectedTemplateId}
         />
       )}
 

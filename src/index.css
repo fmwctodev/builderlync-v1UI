@@ -2,27 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =========================================================================
-   STUDIO BASE LAYER
-   ========================================================================= */
 @layer base {
   html {
     @apply antialiased;
-    font-feature-settings: 'cv11' 1, 'ss01' 1, 'ss03' 1;
   }
 
   body {
     @apply text-gray-900 bg-gray-50 dark:text-gray-100 dark:bg-gray-900 transition-colors duration-200;
   }
 
-  /* Studio body overrides — applied only when the new shell wraps the app
-     so legacy pages keep their existing typography until reskinned. */
-  body[data-studio="on"] {
-    @apply bg-paper text-ink-1 dark:bg-canvas dark:text-ink-d-1;
-    font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
-  }
-
-  /* Legacy heading styles preserved */
   h1 {
     @apply text-3xl font-bold leading-tight;
   }
@@ -40,9 +28,6 @@
   }
 }
 
-/* =========================================================================
-   LEGACY COMPONENT LAYER (DO NOT REMOVE — unmigrated pages depend on these)
-   ========================================================================= */
 @layer components {
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200;
@@ -101,237 +86,34 @@
   }
 }
 
-/* =========================================================================
-   STUDIO COMPONENT LAYER (additive — new primitives consume these)
-   ========================================================================= */
-@layer components {
-  /* ----- Surfaces ----- */
-  .studio-surface-1 {
-    @apply bg-surface-1 dark:bg-surface-d-1;
-  }
-  .studio-surface-2 {
-    @apply bg-surface-2 dark:bg-surface-d-2;
-  }
-  .studio-surface-3 {
-    @apply bg-surface-3 dark:bg-surface-d-3;
-  }
-
-  /* Glass — used on rail, command palette, drawer scrim */
-  .studio-glass {
-    background-color: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-  }
-  .dark .studio-glass {
-    background-color: rgba(11, 11, 15, 0.62);
-  }
-
-  /* ----- Hairlines ----- */
-  .studio-hairline {
-    @apply border border-edge-soft dark:border-edge-d-soft;
-  }
-  .studio-hairline-strong {
-    @apply border border-edge-base dark:border-edge-d-base;
-  }
-  .studio-divider {
-    @apply h-px w-full bg-edge-soft dark:bg-edge-d-soft;
-  }
-
-  /* ----- Text helpers ----- */
-  .studio-text-display    { @apply font-display text-display    text-ink-1 dark:text-ink-d-1; }
-  .studio-text-title-1    { @apply font-display text-title-1    text-ink-1 dark:text-ink-d-1; }
-  .studio-text-title-2    { @apply font-display text-title-2    text-ink-1 dark:text-ink-d-1; }
-  .studio-text-title-3    { @apply text-title-3                 text-ink-1 dark:text-ink-d-1; }
-  .studio-text-body       { @apply text-body                    text-ink-1 dark:text-ink-d-1; }
-  .studio-text-body-strong{ @apply text-body-strong             text-ink-1 dark:text-ink-d-1; }
-  .studio-text-muted      { @apply text-body                    text-ink-3 dark:text-ink-d-3; }
-  .studio-text-label      { @apply text-label uppercase         text-ink-3 dark:text-ink-d-3; }
-  .studio-text-caption    { @apply text-caption                 text-ink-3 dark:text-ink-d-3; }
-  .studio-num             { @apply font-mono text-num           text-ink-1 dark:text-ink-d-1; font-variant-numeric: tabular-nums; }
-  .studio-num-display     { @apply font-mono text-num-display   text-ink-1 dark:text-ink-d-1; font-variant-numeric: tabular-nums; }
-
-  /* ----- Card ----- */
-  .studio-card {
-    @apply bg-surface-1 dark:bg-surface-d-1 rounded-studio-3 border border-edge-soft dark:border-edge-d-soft shadow-s1
-           transition-all duration-base ease-studio-out;
-  }
-  .studio-card-hover {
-    @apply hover:shadow-s2 hover:-translate-y-px;
-  }
-
-  /* ----- Button ----- */
-  .studio-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-studio-2 font-medium
-           transition-all duration-fast ease-studio-out
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-           focus-visible:ring-signal-500 focus-visible:ring-offset-paper
-           dark:focus-visible:ring-offset-canvas
-           disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  .studio-btn-sm { @apply h-8 px-3 text-body; }
-  .studio-btn-md { @apply h-9 px-3.5 text-body; }
-  .studio-btn-lg { @apply h-10 px-4 text-body-strong; }
-
-  .studio-btn-primary {
-    @apply bg-signal-500 text-white shadow-s1
-           hover:bg-signal-600 active:bg-signal-700;
-  }
-  .studio-btn-secondary {
-    @apply bg-surface-1 dark:bg-surface-d-1
-           text-ink-1 dark:text-ink-d-1
-           border border-edge-base dark:border-edge-d-base
-           shadow-s1
-           hover:bg-surface-2 dark:hover:bg-surface-d-2;
-  }
-  .studio-btn-ghost {
-    @apply text-ink-2 dark:text-ink-d-2
-           hover:bg-surface-2 dark:hover:bg-surface-d-2
-           hover:text-ink-1 dark:hover:text-ink-d-1;
-  }
-  .studio-btn-quiet {
-    @apply text-ink-3 dark:text-ink-d-3
-           hover:text-ink-1 dark:hover:text-ink-d-1;
-  }
-
-  /* ----- Input ----- */
-  .studio-input {
-    @apply block w-full h-9 px-3 rounded-studio-2
-           bg-surface-1 dark:bg-surface-d-1
-           text-ink-1 dark:text-ink-d-1
-           placeholder:text-ink-4 dark:placeholder:text-ink-d-4
-           border border-edge-base dark:border-edge-d-base
-           shadow-s1
-           transition-all duration-fast ease-studio-out
-           focus:outline-none focus:border-signal-500
-           focus:shadow-signal-ring
-           disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  .studio-textarea {
-    @apply studio-input min-h-[80px] py-2 leading-snug;
-  }
-
-  /* ----- Chip ----- */
-  .studio-chip {
-    @apply inline-flex items-center gap-1.5 px-2 h-6 rounded-studio-1
-           text-caption font-medium
-           bg-surface-2 dark:bg-surface-d-2
-           text-ink-2 dark:text-ink-d-2
-           border border-edge-soft dark:border-edge-d-soft;
-  }
-  .studio-chip-signal {
-    @apply bg-signal-100 text-signal-ink border-signal-100;
-  }
-  .dark .studio-chip-signal {
-    @apply bg-signal-500/15 text-signal-100 border-signal-500/30;
-  }
-
-  /* ----- Stage chips ----- */
-  .studio-stage-lead        { @apply bg-stage-lead/10        text-stage-lead        border-stage-lead/20; }
-  .studio-stage-booked      { @apply bg-stage-booked/10      text-stage-booked      border-stage-booked/20; }
-  .studio-stage-measurement { @apply bg-stage-measurement/10 text-stage-measurement border-stage-measurement/20; }
-  .studio-stage-proposal    { @apply bg-stage-proposal/10    text-stage-proposal    border-stage-proposal/20; }
-  .studio-stage-job         { @apply bg-stage-job/10         text-stage-job         border-stage-job/20; }
-  .studio-stage-invoice     { @apply bg-stage-invoice/10     text-stage-invoice     border-stage-invoice/20; }
-  .studio-stage-production  { @apply bg-stage-production/10  text-stage-production  border-stage-production/20; }
-  .studio-stage-closed      { @apply bg-stage-closed/10      text-stage-closed      border-stage-closed/20; }
-
-  /* ----- KBD ----- */
-  .studio-kbd {
-    @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1
-           rounded-[5px] text-caption font-medium
-           bg-surface-2 dark:bg-surface-d-2
-           text-ink-3 dark:text-ink-d-3
-           border border-edge-soft dark:border-edge-d-soft
-           shadow-[inset_0_-1px_0_rgba(15,15,18,0.06)];
-  }
-
-  /* ----- Rail (icon nav) ----- */
-  .studio-rail-link {
-    @apply relative flex items-center justify-center w-10 h-10 rounded-studio-2
-           text-ink-3 dark:text-ink-d-3
-           transition-colors duration-fast ease-studio-out
-           hover:bg-surface-2 dark:hover:bg-surface-d-2
-           hover:text-ink-1 dark:hover:text-ink-d-1;
-  }
-  .studio-rail-link.active {
-    @apply bg-surface-2 dark:bg-surface-d-2
-           text-ink-1 dark:text-ink-d-1;
-  }
-  .studio-rail-link.active::before {
-    content: '';
-    @apply absolute left-0 top-2 bottom-2 w-0.5 bg-signal-500 rounded-r-full;
-  }
-
-  /* ----- Drawer ----- */
-  .studio-drawer-scrim {
-    @apply fixed inset-0 bg-canvas/40 backdrop-blur-sm
-           transition-opacity duration-base ease-studio-out;
-  }
-  .studio-drawer-panel {
-    @apply fixed inset-y-0 right-0 w-full md:w-1/2 max-w-[840px]
-           bg-surface-1 dark:bg-surface-d-1
-           border-l border-edge-soft dark:border-edge-d-soft
-           shadow-s3 rounded-l-studio-4 overflow-hidden;
-  }
-
-  /* ----- Tabs ----- */
-  .studio-tabs {
-    @apply flex items-center gap-1 border-b border-edge-soft dark:border-edge-d-soft;
-  }
-  .studio-tab {
-    @apply relative inline-flex items-center gap-2 h-10 px-3 -mb-px
-           text-body text-ink-3 dark:text-ink-d-3
-           border-b-2 border-transparent
-           transition-colors duration-fast ease-studio-out
-           hover:text-ink-1 dark:hover:text-ink-d-1
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-signal-500 rounded-t-studio-1;
-  }
-  .studio-tab[data-active="true"] {
-    @apply text-ink-1 dark:text-ink-d-1 border-signal-500;
-  }
-  .studio-tab[data-disabled="true"] {
-    @apply opacity-40 pointer-events-none;
-  }
-}
-
-/* =========================================================================
-   ANIMATIONS / UTILITIES (legacy + Studio)
-   ========================================================================= */
 @layer utilities {
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-in-out;
   }
-
-  @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(100%); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  .animate-slide-in-right {
-    animation: slideInRight 0.3s ease-out;
-  }
-
-  /* Studio: drawer enter from right with spring-like settle */
-  @keyframes studioDrawerIn {
-    from { opacity: 0; transform: translateX(8%); }
-    60%  { opacity: 1; transform: translateX(-1.5%); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  .animate-studio-drawer-in {
-    animation: studioDrawerIn 320ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* Studio: subtle fade-up for cards on stage change */
-  @keyframes studioFadeUp {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .animate-studio-fade-up {
-    animation: studioFadeUp 200ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
 }
+
+.pdf-page {
+  width: 8.5in !important;
+  height: 11in !important;
+  display: block !important;
+  overflow: hidden !important;
+  position: relative !important;
+  page-break-inside: avoid !important;
+  page-break-after: always !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-page:last-child {
+  page-break-after: avoid !important;
+}
+
+

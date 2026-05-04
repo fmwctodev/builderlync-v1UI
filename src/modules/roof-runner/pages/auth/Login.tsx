@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { loginRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import { loginRequest, clearError, reset2FAState } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
 import { useAutoLogout } from '../../../../shared/utils/autoLogout';
-import { supabase } from '../../../../shared/lib/supabase';
+import Verify2FAModal from '../../components/Verify2FAModal';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,93 +14,47 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const { loading, error, user, requires2FA } = useAppSelector((state) => state.auth);
+  const hasBillingAccess = !!(
+    user?.is_beta_user ||
+    user?.has_active_subscription ||
+    user?.subscription_status === 'active' ||
+    user?.subscription_status === 'trialing' ||
+    user?.user_type === 'staff'
+  );
   const successMessage = location.state?.message;
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [show2FAModal, setShow2FAModal] = useState(false);
   
+  useAutoLogout();
+
   useEffect(() => {
-    const handlePostLoginRedirect = async () => {
-      console.log('🔍 Login useEffect - user state:', user);
-      if (!user) {
-        console.log('⏳ No user in state yet');
+    // Check if logged in as admin
+    const adminToken = localStorage.getItem('adminToken');
+    const adminSession = localStorage.getItem('super_admin_session');
+    if (adminToken || adminSession) {
+      setToast({message: 'Please logout from admin session first', type: 'error'});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (requires2FA) {
+      setShow2FAModal(true);
+    } else if (user) {
+      if (!hasBillingAccess) {
+        navigate(`/billing?email=${encodeURIComponent(user.email || email)}`, { replace: true });
         return;
       }
 
-      try {
-        console.log('✅ User detected, fetching organizations...');
-
-        // Get the actual Supabase user with UUID
-        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-        if (!supabaseUser) {
-          console.error('No Supabase user found');
-          return;
-        }
-
-        // Fetch user's organizations using Supabase UUID
-        const { data: memberships, error: membershipsError } = await supabase
-          .from('organization_members')
-          .select('organization_id,role')
-          .eq('user_id', supabaseUser.id)
-          .eq('is_active', true);
-
-        if (membershipsError) {
-          console.error('Error fetching memberships:', membershipsError);
-          // Fall back to organization selector on error
-          navigate('/organizations');
-          return;
-        }
-
-        if (!memberships || memberships.length === 0) {
-          console.log('No organizations found, redirecting to selector');
-          navigate('/organizations');
-          return;
-        }
-
-        // Fetch organization details
-        const orgIds = memberships.map(m => m.organization_id);
-        const { data: organizations, error: orgsError } = await supabase
-          .from('organizations')
-          .select('id, name, slug')
-          .in('id', orgIds);
-
-        if (orgsError) {
-          console.error('Error fetching organizations:', orgsError);
-          navigate('/organizations');
-          return;
-        }
-
-        // Check for previously accessed organization
-        const storedOrgSlug = localStorage.getItem('currentOrganizationSlug');
-        const storedOrg = organizations?.find(org => org.slug === storedOrgSlug);
-
-        if (storedOrg) {
-          console.log('✅ Redirecting to stored organization:', storedOrg.slug);
-          localStorage.setItem('currentOrganizationId', storedOrg.id);
-          navigate(`/org/${storedOrg.slug}/dashboard`, { replace: true });
-          return;
-        }
-
-        // If user has exactly one organization, redirect directly
-        if (organizations.length === 1) {
-          const org = organizations[0];
-          console.log('✅ Single organization found, redirecting to dashboard:', org.slug);
-          localStorage.setItem('currentOrganizationId', org.id);
-          localStorage.setItem('currentOrganizationSlug', org.slug);
-          navigate(`/org/${org.slug}/dashboard`, { replace: true });
-          return;
-        }
-
-        // Multiple organizations - show selector
-        console.log(`Multiple organizations found (${organizations.length}), showing selector`);
-        navigate('/organizations');
-      } catch (error) {
-        console.error('Error in post-login redirect:', error);
-        navigate('/organizations');
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        localStorage.setItem('currentOrganizationSlug', orgSlug);
+        navigate(`/org/${orgSlug}`, { replace: true });
+      } else {
+        navigate('/auth/login', { replace: true });
       }
-    };
-
-    handlePostLoginRedirect();
-  }, [user, navigate]);
+    }
+  }, [user, requires2FA, navigate, email, hasBillingAccess]);
 
   useEffect(() => {
     if (successMessage) {
@@ -110,9 +64,13 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      setToast({message: error, type: 'error'});
+      if (error === 'Please verify your email first') {
+        navigate('/auth/verify-otp', { state: { email, from: 'login' } });
+      } else {
+        setToast({message: error, type: 'error'});
+      }
     }
-  }, [error]);
+  }, [error, email, navigate]);
 
   useEffect(() => {
     return () => {
@@ -122,6 +80,16 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if logged in as admin
+    const adminToken = localStorage.getItem('adminToken');
+    const adminSession = localStorage.getItem('super_admin_session');
+    if (adminToken || adminSession) {
+      setToast({message: 'Please logout from admin session first', type: 'error'});
+      return;
+    }
+
+    dispatch(reset2FAState()); // Clear any previous 2FA state
     dispatch(loginRequest({ email, password }));
   };
 
@@ -208,6 +176,43 @@ const Login: React.FC = () => {
           </button>
         </form>
 
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                const redirectUri = import.meta.env.VITE_GOOGLE_AUTH_REDIRECT_URI;
+                const scope = encodeURIComponent('openid email profile');
+                const responseType = 'code';
+                const accessType = 'offline';
+                const prompt = 'select_account';
+
+                const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&access_type=${accessType}&prompt=${prompt}&state=${JSON.stringify({ type: 'login', timestamp: Date.now() })}`;
+
+                window.location.href = authUrl;
+              }}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="#EA4335"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+          </div>
+        </div>
+
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             Don't have an account?{' '}
@@ -226,6 +231,15 @@ const Login: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* 2FA Modal */}
+      <Verify2FAModal 
+        isOpen={show2FAModal} 
+        onClose={() => {
+          setShow2FAModal(false);
+          dispatch(reset2FAState());
+        }} 
+      />
     </div>
   );
 };

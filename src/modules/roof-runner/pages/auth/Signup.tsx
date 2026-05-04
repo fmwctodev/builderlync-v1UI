@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate , useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { registerRequest, clearError } from '../../../../shared/store/slices/authSlice';
+import { registerRequest, clearError, clearRegistrationEmail } from '../../../../shared/store/slices/authSlice';
 import Toast from '../../../../shared/components/Toast';
-import { hasValidSession } from '../../../../shared/lib/supabase';
+import ContentModal from '../../../../shared/components/ContentModal';
+import { PRIVACY_POLICY_CONTENT, TERMS_OF_SERVICE_CONTENT } from '../../../../shared/constants/contentData';
+import { captureRefFromUrl, getRefCode, recordAffiliateSignup } from '../../../../shared/utils/affiliateTracking';
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,14 +15,20 @@ const Signup: React.FC = () => {
     email: '',
     companyName: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    betaCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
-  const { loading, error, user } = useAppSelector((state) => state.auth);
+  const { loading, error, user, registrationEmail } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const fromVerifyOtp = location.state?.fromVerifyOtp;
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -30,21 +38,57 @@ const Signup: React.FC = () => {
   };
 
   useEffect(() => {
-    const checkAndRedirect = async () => {
-      if (user) {
-        // Verify Supabase session is established before redirecting
-        const hasSession = await hasValidSession();
-        if (hasSession) {
-          // Redirect to onboarding (plan selection temporarily disabled during development)
-          navigate('/onboarding/welcome');
-        } else {
-          console.warn('⚠️ Redux user exists but Supabase session not established yet, waiting...');
-          // Session will be established by saga, will redirect on next check
-        }
+    // Clear registration email state and location state when mounting signup
+    dispatch(clearError());
+    dispatch(clearRegistrationEmail());
+    // Clear location state
+    if (location.state?.fromVerifyOtp) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // Capture ?ref= if it's only on the signup page (App.tsx also runs this).
+    captureRefFromUrl();
+    setReferralCode(getRefCode());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (user) {
+      // Best-effort: link this signup to the cookied affiliate referral.
+      const u: any = user;
+      void recordAffiliateSignup({
+        userId: u.id,
+        accountId: u.organizationId || u.organization_id,
+        accountName: u.companyName || u.company_name || formData.companyName,
+        email: u.email || formData.email,
+      });
+
+      const orgSlug = user.companySlug || localStorage.getItem('currentOrganizationSlug');
+      if (orgSlug) {
+        localStorage.setItem('currentOrganizationSlug', orgSlug);
+        navigate(`/org/${orgSlug}`);
+      } else {
+        navigate('/auth/login');
       }
-    };
-    checkAndRedirect();
+    }
   }, [user, navigate]);
+
+  useEffect(() => {
+    // After the registration email has been issued (pre-OTP), record the
+    // referral with at least the email so it shows up immediately in the
+    // affiliates dashboard. We'll re-record with userId/accountId after OTP.
+    if (registrationEmail && !user) {
+      void recordAffiliateSignup({ email: registrationEmail });
+    }
+  }, [registrationEmail, user]);
+
+  useEffect(() => {
+    console.log('Registration email changed:', registrationEmail);
+    console.log('User:', user);
+    console.log('Error:', error);
+    if (registrationEmail && !user && !error) {
+      console.log('Navigating to verify-otp with email:', registrationEmail);
+      navigate('/auth/verify-otp', { state: { email: registrationEmail }, replace: true });
+    }
+  }, [registrationEmail, user, navigate, error]);
 
   useEffect(() => {
     if (error) {
@@ -78,6 +122,11 @@ const Signup: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
           <p className="text-gray-600 mt-2">Join BuilderLync today</p>
+          {referralCode && (
+            <p className="mt-3 inline-block px-3 py-1 text-xs bg-red-50 text-red-700 rounded-full">
+              Referred by <span className="font-mono font-medium">{referralCode}</span>
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -150,7 +199,7 @@ const Signup: React.FC = () => {
 
           <div>
             <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
+              Organization Name
             </label>
             <div className="relative">
               <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -160,11 +209,11 @@ const Signup: React.FC = () => {
                 type="text"
                 value={formData.companyName}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
                 style={{'--tw-ring-color': '#dc2626'} as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = '#dc2626'}
                 onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
-                placeholder="Your company name"
+                placeholder="Your organization name"
                 required
               />
             </div>
@@ -228,10 +277,48 @@ const Signup: React.FC = () => {
             </div>
           </div>
 
+          <div>
+            <label htmlFor="betaCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Beta Code
+            </label>
+            <div className="relative">
+              <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                id="betaCode"
+                name="betaCode"
+                type="text"
+                value={formData.betaCode}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 outline-none transition-colors"
+                style={{ '--tw-ring-color': '#dc2626' } as React.CSSProperties}
+                onFocus={(e) => e.target.style.borderColor = '#dc2626'}
+                onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
+                placeholder="Enter your beta code (Optional)"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center">
             <input type="checkbox" className="rounded border-gray-300 focus:ring-2" style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties} required />
             <span className="ml-2 text-sm text-gray-600">
-              I agree to the <Link to="#" style={{color: '#dc2626'} as React.CSSProperties} className="hover:opacity-80">Terms of Service</Link> and <Link to="#" style={{color: '#dc2626'} as React.CSSProperties} className="hover:opacity-80">Privacy Policy</Link>
+              I agree to the{' '}
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                style={{color: '#dc2626'} as React.CSSProperties}
+                className="hover:opacity-80 underline"
+              >
+                Terms of Service
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                style={{color: '#dc2626'} as React.CSSProperties}
+                className="hover:opacity-80 underline"
+              >
+                Privacy Policy
+              </button>
             </span>
           </div>
 
@@ -265,6 +352,22 @@ const Signup: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+      
+      {/* Privacy Policy Modal */}
+      <ContentModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        title="Privacy Policy"
+        content={PRIVACY_POLICY_CONTENT}
+      />
+      
+      {/* Terms of Service Modal */}
+      <ContentModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title="Terms of Service"
+        content={TERMS_OF_SERVICE_CONTENT}
+      />
     </div>
   );
 };

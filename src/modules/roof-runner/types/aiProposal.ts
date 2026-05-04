@@ -30,6 +30,10 @@ export interface GenerateAiProposalResponse {
   sections_generated: number;
   sections: AiGeneratedSection[];
   error?: { message: string };
+  catalog_suggestions?: any[];
+  explanation?: string;
+  sections_refined?: number;
+  commands_executed?: number;
 }
 
 export interface AiProposalTemplate {

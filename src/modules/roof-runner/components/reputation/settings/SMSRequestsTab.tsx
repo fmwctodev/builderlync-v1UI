@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, CreditCard as Edit } from 'lucide-react';
+import { Copy, Edit } from 'lucide-react';
 
 const SMSRequestsTab: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -20,7 +20,7 @@ const SMSRequestsTab: React.FC = () => {
             onChange={(e) => setIsEnabled(e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
         </label>
       </div>
 
@@ -66,7 +66,7 @@ const SMSRequestsTab: React.FC = () => {
               <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors">
                 Set SMS Templates
               </button>
-              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
                 Create New
               </button>
             </div>

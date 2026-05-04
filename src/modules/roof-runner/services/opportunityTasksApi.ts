@@ -1,15 +1,15 @@
-import { supabase } from '../../../shared/lib/supabase';
+import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityTask {
   id: string;
-  opportunity_id: string;
-  user_id: string;
+  opportunity_id: number;
+  user_id: number;
   organization_id?: string;
   title: string;
   description?: string;
   status: 'todo' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
   completed_at?: string;
   created_at: string;
@@ -17,12 +17,12 @@ export interface OpportunityTask {
 }
 
 export interface CreateOpportunityTaskRequest {
-  opportunity_id: string;
+  opportunity_id: number;
   title: string;
   description?: string;
   status?: 'todo' | 'in_progress' | 'completed';
   priority?: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
 }
 
@@ -31,88 +31,26 @@ export interface UpdateOpportunityTaskRequest {
   description?: string;
   status?: 'todo' | 'in_progress' | 'completed';
   priority?: 'low' | 'medium' | 'high';
-  assigned_to?: string;
+  assigned_to?: number | null;
   due_date?: string;
   completed_at?: string;
 }
 
 export const opportunityTasksApi = {
   async getTasks(opportunityId: string): Promise<OpportunityTask[]> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_tasks')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching opportunity tasks:', error);
-      throw error;
-    }
+    return apiClient.get(`/opportunities/${opportunityId}/tasks`);
   },
 
   async createTask(taskData: CreateOpportunityTaskRequest): Promise<OpportunityTask> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('opportunity_tasks')
-        .insert({
-          ...taskData,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating opportunity task:', error);
-      throw error;
-    }
+    return apiClient.post('/opportunities/tasks', taskData);
   },
 
   async updateTask(taskId: string, updates: UpdateOpportunityTaskRequest): Promise<OpportunityTask> {
-    try {
-      const updateData: any = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (updates.status === 'completed' && !updates.completed_at) {
-        updateData.completed_at = new Date().toISOString();
-      }
-
-      const { data, error } = await supabase
-        .from('opportunity_tasks')
-        .update(updateData)
-        .eq('id', taskId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating opportunity task:', error);
-      throw error;
-    }
+    return apiClient.put(`/opportunities/tasks/${taskId}`, updates);
   },
 
   async deleteTask(taskId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('opportunity_tasks')
-        .delete()
-        .eq('id', taskId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting opportunity task:', error);
-      throw error;
-    }
+    return apiClient.delete(`/opportunities/tasks/${taskId}`);
   },
 
   async toggleTaskStatus(taskId: string, currentStatus: string): Promise<OpportunityTask> {

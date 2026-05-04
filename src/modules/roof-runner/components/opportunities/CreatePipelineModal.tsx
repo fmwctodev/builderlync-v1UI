@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, GripVertical } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
-import { JOB_TYPES, JOB_TYPE_COLORS, type JobType } from '../../types/opportunities';
 
 interface CreatePipelineModalProps {
   isOpen: boolean;
@@ -12,25 +11,24 @@ interface CreatePipelineModalProps {
 interface Stage {
   id: string;
   name: string;
-  include_in_funnel: boolean;
-  include_in_distribution: boolean;
 }
 
 const DEFAULT_OPPORTUNITY_STAGES: Stage[] = [
-  { id: '1', name: 'New Lead', include_in_funnel: true, include_in_distribution: true },
-  { id: '2', name: 'Follow-Up 1', include_in_funnel: true, include_in_distribution: true },
-  { id: '3', name: 'Follow-Up 2', include_in_funnel: true, include_in_distribution: true },
-  { id: '4', name: 'Follow-Up 3', include_in_funnel: true, include_in_distribution: true },
-  { id: '5', name: 'Long Term Follow Up', include_in_funnel: true, include_in_distribution: true },
-  { id: '6', name: 'In Convo', include_in_funnel: true, include_in_distribution: true },
-  { id: '7', name: 'Inspection/Estimate Booked (Creates Job)', include_in_funnel: true, include_in_distribution: true },
-  { id: '8', name: 'Job Qualified', include_in_funnel: true, include_in_distribution: true },
-  { id: '9', name: 'Job Unqualified', include_in_funnel: true, include_in_distribution: true },
+  { id: '1', name: 'New Lead' },
+  { id: '2', name: 'Follow-Up 1' },
+  { id: '3', name: 'Follow-Up 2' },
+  { id: '4', name: 'Follow-Up 3' },
+  { id: '5', name: 'Long Term Follow Up' },
+  { id: '6', name: 'In Convo' },
+  { id: '7', name: 'Inspection/Estimate Booked (Creates Job)' },
+  { id: '8', name: 'Job Qualified' },
+  { id: '9', name: 'Job Unqualified' },
+  { id: '10', name: 'Job Won' },
+  { id: '11', name: 'Job Lost' },
 ];
 
 export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: CreatePipelineModalProps) {
   const [pipelineName, setPipelineName] = useState('');
-  const [jobType, setJobType] = useState<JobType>('Commercial');
   const [stages, setStages] = useState<Stage[]>([...DEFAULT_OPPORTUNITY_STAGES]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -39,8 +37,6 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
     const newStage: Stage = {
       id: Date.now().toString(),
       name: '',
-      include_in_funnel: true,
-      include_in_distribution: true,
     };
     setStages([...stages, newStage]);
   };
@@ -64,10 +60,6 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
       newErrors.pipelineName = 'Pipeline name is required';
     }
 
-    if (!jobType) {
-      newErrors.jobType = 'Job type is required';
-    }
-
     const emptyStages = stages.filter(stage => !stage.name.trim());
     if (emptyStages.length > 0) {
       newErrors.stages = 'All stages must have a name';
@@ -86,13 +78,13 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
         name: pipelineName,
         description: '',
         is_default: false,
-        job_type: jobType,
+        job_type: 'Commercial',
         stages: stages.map((stage, index) => ({
           name: stage.name,
           order_position: index,
           color: '#dc2626',
-          include_in_funnel: stage.include_in_funnel,
-          include_in_distribution: stage.include_in_distribution,
+          include_in_funnel: true,
+          include_in_distribution: true,
         })),
       });
 
@@ -122,7 +114,6 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
 
   const handleClose = () => {
     setPipelineName('');
-    setJobType('Commercial');
     setStages([...DEFAULT_OPPORTUNITY_STAGES]);
     setErrors({});
     onClose();
@@ -167,43 +158,6 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Job Type <span className="text-red-600">*</span>
-              </label>
-              <div className="flex gap-4">
-                {JOB_TYPES.map((type) => (
-                  <label
-                    key={type}
-                    className={`flex items-center space-x-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                      jobType === type
-                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="jobType"
-                      value={type}
-                      checked={jobType === type}
-                      onChange={(e) => setJobType(e.target.value as JobType)}
-                      className="text-primary-600 focus:ring-primary-500"
-                    />
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: JOB_TYPE_COLORS[type] }}
-                    />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {type}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {errors.jobType && (
-                <p className="mt-1 text-sm text-red-600">{errors.jobType}</p>
-              )}
-            </div>
-
-            <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                   Pipeline Stages ({stages.length})
@@ -223,8 +177,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
 
               <div className="space-y-3">
                 <div className="grid grid-cols-12 gap-3 text-xs font-medium text-gray-500 dark:text-gray-400 px-2">
-                  <div className="col-span-6">Stage Name</div>
-                  <div className="col-span-5 text-center">Include In Reports</div>
+                  <div className="col-span-11">Stage Name</div>
                   <div className="col-span-1"></div>
                 </div>
 
@@ -237,7 +190,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
                       <GripVertical className="h-4 w-4 text-gray-400" />
                     </div>
 
-                    <div className="col-span-5">
+                    <div className="col-span-10">
                       <input
                         type="text"
                         value={stage.name}
@@ -245,27 +198,6 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
                         placeholder="Stage name"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
-                    </div>
-
-                    <div className="col-span-5 flex items-center justify-center space-x-6">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={stage.include_in_funnel}
-                          onChange={(e) => updateStage(stage.id, 'include_in_funnel', e.target.checked)}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Funnel Chart</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={stage.include_in_distribution}
-                          onChange={(e) => updateStage(stage.id, 'include_in_distribution', e.target.checked)}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Stage Distribution</span>
-                      </label>
                     </div>
 
                     <div className="col-span-1 flex items-center justify-center">
@@ -295,7 +227,7 @@ export default function CreatePipelineModal({ isOpen, onClose, onSuccess }: Crea
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Creating...' : 'Create'}
             </button>

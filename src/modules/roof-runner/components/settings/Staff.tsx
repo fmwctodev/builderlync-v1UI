@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Plus, AlertTriangle, Search, Edit2, Trash2, Eye, Copy, Check } from 'lucide-react';
 import { AddEditStaffModal, DeleteConfirmModal } from '../StaffModals';
-import { supabase } from '../../../../shared/lib/supabase';
+import { usePermissions } from '../../../../shared/utils/usePermissions';
 
 interface StaffProps {
   userRole?: string;
 }
 
 const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
-  const canManageStaff = userRole === 'Owner' || userRole === 'Admin';
+  const { can } = usePermissions();
+  const canViewStaff = can('staff', 'view');
+  const canAddStaff = can('staff', 'add');
+  const canEditStaff = can('staff', 'edit');
+  const canDeleteStaff = can('staff', 'delete');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -21,265 +25,80 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const checkAuthentication = async (): Promise<boolean> => {
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !userData?.user) {
-        console.warn('User not authenticated, attempting to refresh session...');
-
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (refreshError || !refreshData?.session?.user) {
-          setToast({
-            message: 'Session expired. Please refresh the page and try again.',
-            type: 'error'
-          });
-          return false;
-        }
-
-        return true;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Authentication check failed:', error);
-      return false;
-    }
-  };
+  const [userRoles, setUserRoles] = useState<any[]>([]);
 
   const fetchStaff = async (page: number = 1) => {
     try {
       setLoading(true);
-      const { waitForAuth, hasValidSession } = await import('../../../../shared/lib/supabase');
-      await waitForAuth();
-
-      const hasSession = await hasValidSession();
-      if (!hasSession) {
-        console.error('❌ No valid session found when loading staff page');
-        setToast({
-          message: 'Session expired. Please refresh the page and log in again.',
-          type: 'error'
-        });
-        setStaff([]);
-        setCurrentPage(1);
-        setTotalPages(1);
-        return;
-      }
-
       const { getStaff } = await import('../../../../shared/store/services/staffApi');
       const response = await getStaff(page, 10);
+      console.log('Fetch Staff Response:', response);
 
-      if (!response.success) {
-        throw new Error('Failed to fetch staff members');
+      if (response.success) {
+        setStaff(response.data || []);
+        setCurrentPage(response.pagination?.page || page);
+        setTotalPages(response.pagination?.totalPages || Math.ceil(response.total / 10) || 1);
+      } else {
+        setToast({ message: 'Failed to load staff members', type: 'error' });
       }
-
-      setStaff(response.data.data || []);
-      setCurrentPage(response.data.pagination.page);
-      setTotalPages(response.data.pagination.totalPages);
-      console.log('✅ Staff data loaded successfully');
     } catch (error: any) {
-      console.error('❌ Error fetching staff:', error);
-      setToast({ message: error.message || 'Failed to load staff members', type: 'error' });
+      console.error('Error fetching staff:', error);
+      setToast({ message: 'Failed to load staff members', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddMember = async (member: any) => {
-    if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
     try {
-      const isAuthenticated = await checkAuthentication();
-
-      if (!isAuthenticated) {
-        setIsSubmitting(false);
-        return;
-      }
+      const countryCode = member.countryCode || '+1';
+      const phone = (member.phone || '').replace(/\D/g, '');
 
       const { createStaff } = await import('../../../../shared/store/services/staffApi');
-      const staffResponse = await createStaff({
+      await createStaff({
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
-        phone: member.phone,
-        extension: member.extension,
-        password: member.password || 'defaultPassword123',
-        image: member.image
+        phone: phone,
+        countryCode: countryCode,
+        password: member.password,
+        role_id: member.roleId || undefined
       });
 
-      if (!staffResponse.success) {
-        throw new Error(staffResponse.message || 'Failed to create staff member');
-      }
-
-      const staffId = staffResponse?.data?.id;
-      let roleAssigned = false;
-
-      if (member.roleId && staffId) {
-        try {
-          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-
-          let organizationRoleId: string;
-
-          if (member.roleId.startsWith('role:')) {
-            organizationRoleId = member.roleId.replace('role:', '');
-          } else if (member.roleId.startsWith('template:')) {
-            const templateId = member.roleId.replace('template:', '');
-            const rolesResponse = await getRoles();
-            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
-
-            if (existingRole) {
-              organizationRoleId = existingRole.id;
-            } else {
-              const roleResponse = await createRoleFromTemplate(templateId);
-              if (roleResponse.success && roleResponse.data) {
-                organizationRoleId = roleResponse.data.id;
-              } else {
-                console.warn('Could not create role from template, staff member created without role');
-                organizationRoleId = '';
-              }
-            }
-          } else {
-            organizationRoleId = member.roleId;
-          }
-
-          if (organizationRoleId) {
-            await assignRoleToStaffMember(staffId, organizationRoleId);
-            roleAssigned = true;
-          }
-        } catch (roleError: any) {
-          console.error('Error assigning role to staff member:', roleError);
-        }
-      }
-
-      let contactCreated = false;
-      try {
-        const { createContact } = await import('../../../../shared/store/services/contactsApi');
-        await createContact({
-          fullName: `${member.firstName} ${member.lastName}`,
-          type: 'staff',
-          labelOrRole: 'Staff Member',
-          email: member.email,
-          phone: member.phone || '',
-          company: '',
-          address: '',
-          latitude: 0,
-          longitude: 0
-        });
-        contactCreated = true;
-      } catch (contactError: any) {
-        console.error('Error creating contact for staff member:', contactError);
-      }
-
-      let successMessage = 'Staff member added successfully';
-      if (roleAssigned && contactCreated) {
-        successMessage = 'Staff member added with role and contact created!';
-      } else if (roleAssigned) {
-        successMessage = 'Staff member added with role (contact creation failed)';
-      } else if (contactCreated) {
-        successMessage = 'Staff member and contact created (role assignment failed)';
-      }
-
-      setToast({ message: successMessage, type: 'success' });
+      setToast({ message: 'Staff member added successfully!', type: 'success' });
       setShowAddModal(false);
       fetchStaff(currentPage);
     } catch (error: any) {
-      console.error('Error adding staff member:', error);
-      const errorMessage = error.message || error.response?.data?.message || 'Failed to add staff member';
+      const errorMessage = error.message || 'Failed to add staff member';
       setToast({ message: errorMessage, type: 'error' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleEditMember = async (member: any) => {
     try {
+      // Parse phone number to extract country code
+      const phoneStr = member.phone || '';
+      const countryCodeMatch = phoneStr.match(/^(\+\d{1,4})/);
+      const countryCode = countryCodeMatch ? countryCodeMatch[1] : '+1';
+      const phone = phoneStr.replace(countryCode, '');
+
       const { updateStaff } = await import('../../../../shared/store/services/staffApi');
-      await updateStaff(selectedMember.id, {
+      const updateResponse = await updateStaff(selectedMember.id, {
         firstName: member.firstName,
         lastName: member.lastName,
         email: member.email,
-        phone: member.phone,
+        phone: (member.phone || '').replace(/\D/g, ''),
+        countryCode: member.countryCode || '+1',
         extension: member.extension,
-        password: member.password,
+        role_id: member.roleId || undefined,
         image: member.image
       });
 
-      if (member.roleId) {
-        try {
-          const { getRoles, createRoleFromTemplate, assignRoleToStaffMember } = await import('../../../../shared/store/services/rolesApi');
-
-          let organizationRoleId: string;
-
-          if (member.roleId.startsWith('role:')) {
-            organizationRoleId = member.roleId.replace('role:', '');
-          } else if (member.roleId.startsWith('template:')) {
-            const templateId = member.roleId.replace('template:', '');
-            const rolesResponse = await getRoles();
-            const existingRole = rolesResponse.data?.find((r: any) => r.template_id === templateId);
-
-            if (existingRole) {
-              organizationRoleId = existingRole.id;
-            } else {
-              const roleResponse = await createRoleFromTemplate(templateId);
-              if (roleResponse.success && roleResponse.data) {
-                organizationRoleId = roleResponse.data.id;
-              } else {
-                throw new Error('Failed to create role from template');
-              }
-            }
-          } else {
-            organizationRoleId = member.roleId;
-          }
-
-          await assignRoleToStaffMember(selectedMember.id, organizationRoleId);
-        } catch (roleError: any) {
-          console.error('Error assigning role to staff member:', roleError);
-        }
+      if (!updateResponse.success) {
+        throw new Error(updateResponse.message || 'Failed to update staff member');
       }
 
-      try {
-        const { getContacts, updateContact, createContact } = await import('../../../../shared/store/services/contactsApi');
-        const contactsResponse = await getContacts(selectedMember.email, 'staff', 1, 10);
-
-        if (contactsResponse.data?.data && contactsResponse.data.data.length > 0) {
-          const existingContact = contactsResponse.data.data[0];
-          await updateContact(existingContact.id, {
-            fullName: `${member.firstName} ${member.lastName}`,
-            type: 'staff',
-            labelOrRole: 'Staff Member',
-            email: member.email,
-            phone: member.phone || '',
-            company: existingContact.company || '',
-            address: existingContact.address || '',
-            latitude: existingContact.latitude || 0,
-            longitude: existingContact.longitude || 0
-          });
-          setToast({ message: 'Staff member and contact updated successfully!', type: 'success' });
-        } else {
-          await createContact({
-            fullName: `${member.firstName} ${member.lastName}`,
-            type: 'staff',
-            labelOrRole: 'Staff Member',
-            email: member.email,
-            phone: member.phone || '',
-            company: '',
-            address: '',
-            latitude: 0,
-            longitude: 0
-          });
-          setToast({ message: 'Staff member updated and contact created successfully!', type: 'success' });
-        }
-      } catch (contactError: any) {
-        console.error('Error updating contact for staff member:', contactError);
-        setToast({ message: 'Staff member updated but contact sync failed', type: 'success' });
-      }
+      setToast({ message: 'Staff member updated successfully!', type: 'success' });
 
       setShowEditModal(false);
       setSelectedMember(null);
@@ -320,18 +139,20 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (firstName: string | null, lastName: string | null) => {
+    const first = firstName?.charAt(0) ?? '';
+    const last = lastName?.charAt(0) ?? '';
+    return `${first}${last}`.toUpperCase() || '?';
   };
 
   const getAvatarColor = (index: number) => {
     const colors = [
-      'bg-red-500',
+      'bg-teal-500',
       'bg-red-600',
       'bg-primary-500',
       'bg-red-500',
       'bg-primary-500',
-      'bg-red-600',
+      'bg-indigo-500',
       'bg-pink-500',
       'bg-orange-500'
     ];
@@ -350,14 +171,27 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
       (member.phone && member.phone.includes(searchQuery)) ||
       generateUserId(member.id, member.email).toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole = roleFilter === '' || true;
+    const matchesRole = roleFilter === '' || member.role_id === roleFilter;
 
     return matchesSearch && matchesRole;
   });
 
   React.useEffect(() => {
     fetchStaff(1);
+    fetchUserRoles();
   }, []);
+
+  const fetchUserRoles = async () => {
+    try {
+      const { getRoles } = await import('../../../../shared/store/services/rolesApi');
+      const response = await getRoles();
+      if (response.success) {
+        setUserRoles(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+    }
+  };
 
   React.useEffect(() => {
     if (toast) {
@@ -365,6 +199,10 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  if (!canViewStaff) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -379,15 +217,6 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         <p className="text-gray-600 dark:text-gray-400">Manage team members and their roles</p>
       </div>
 
-      {!canManageStaff && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
-            <p className="text-yellow-800 dark:text-yellow-200">Only owners and admins can manage staff.</p>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between gap-4">
@@ -398,10 +227,12 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
                 >
-                  <option value="">User Role</option>
-                  <option value="admin">Admin</option>
-                  <option value="owner">Owner</option>
-                  <option value="member">Member</option>
+                  <option value="">All Roles</option>
+                  {userRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -417,7 +248,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
               </div>
             </div>
 
-            {canManageStaff && (
+            {canAddStaff && (
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -443,7 +274,7 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                   Phone
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  User Type
+                  Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Action
@@ -504,32 +335,35 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
                         {member.phone || '-'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 uppercase">
-                          ACCOUNT-ADMIN
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {member.role?.name || 'No Role'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
-                          <button
-                            onClick={() => openEditModal(member)}
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(member)}
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                          <button
-                            disabled={!canManageStaff}
-                            className={`text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ${!canManageStaff ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Eye size={16} />
-                          </button>
+                          {canEditStaff && (
+                            <button
+                              onClick={() => openEditModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {canDeleteStaff && (
+                            <button
+                              onClick={() => openDeleteModal(member)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                          {/* {canViewStaff && (
+                            <button
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )} */}
                         </div>
                       </td>
                     </tr>
@@ -574,7 +408,6 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddMember}
-        isSubmitting={isSubmitting}
       />
 
       <AddEditStaffModal
@@ -589,8 +422,10 @@ const Staff: React.FC<StaffProps> = ({ userRole = 'Owner' }) => {
           lastName: selectedMember.last_name,
           email: selectedMember.email,
           phone: selectedMember.phone,
+          countryCode: selectedMember.country_code || '+1',
           extension: selectedMember.extension,
-          profileImage: selectedMember.image
+          profileImage: selectedMember.image,
+          roleId: selectedMember.role_id || selectedMember.role?.id || '',
         } : undefined}
         isEdit={true}
       />

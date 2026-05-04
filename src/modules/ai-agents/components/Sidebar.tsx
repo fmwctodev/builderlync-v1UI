@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               to={item.href}
               className={`flex items-center px-3 py-1.5 rounded-md group transition-colors text-sm ${
                 isActive 
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400' 
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               to={item.href}
               className={`flex items-center px-3 py-1.5 rounded-md group transition-colors text-sm ${
                 isActive 
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400' 
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               to={item.href}
               className={`flex items-center px-3 py-1.5 rounded-md group transition-colors text-sm ${
                 isActive 
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400' 
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -186,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
               to={item.href}
               className={`flex items-center px-3 py-1.5 rounded-md group transition-colors text-sm ${
                 isActive 
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400' 
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400' 
                   : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >

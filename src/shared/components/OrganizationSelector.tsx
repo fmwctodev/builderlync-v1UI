@@ -12,8 +12,6 @@ interface Organization {
   slug: string;
   logo_url?: string;
   subscription_status?: string;
-  subscription_tier?: string;
-  selected_plan?: string;
 }
 
 interface OrganizationMembership {
@@ -47,6 +45,14 @@ export function OrganizationSelector() {
       }
 
       try {
+        // Check if supabase is initialized
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          setError('Database connection not available. Please check configuration.');
+          setIsLoading(false);
+          return;
+        }
+
         // Check both Supabase session AND Redux auth state
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -67,111 +73,47 @@ export function OrganizationSelector() {
         }
 
         // Fetch all organizations user is a member of
-        // Step 1: Get membership records (no join to avoid recursion)
         const { data: memberships, error: membershipsError } = await supabase
-          .from('user_organizations')
-          .select('organization_id,role,created_at')
+          .from('organization_members')
+          .select(`
+            role,
+            organization:organizations (
+              id,
+              name,
+              slug,
+              logo_url,
+              subscription_status
+            )
+          `)
           .eq('user_id', user.id)
+          .eq('is_active', true)
           .order('created_at', { ascending: false });
 
         if (membershipsError) throw membershipsError;
 
-        if (!memberships || memberships.length === 0) {
-          setOrganizations([]);
-          setIsLoading(false);
-          return;
-        }
+        const orgs = (memberships || [])
+          .filter(m => m.organization)
+          .map(m => ({
+            organization: m.organization as Organization,
+            role: m.role
+          }));
 
-        // Step 2: Fetch organization details separately
-        const orgIds = memberships.map(m => m.organization_id);
-        const { data: organizations, error: orgsError } = await supabase
-          .from('organizations')
-          .select('id, name, slug, logo_url, subscription_status')
-          .in('id', orgIds);
-
-        if (orgsError) throw orgsError;
-
-        // Step 3: Combine memberships with organization data
-        const orgs = memberships
-          .map(m => {
-            const org = organizations?.find(o => o.id === m.organization_id);
-            if (!org) {
-              console.warn(`⚠️ Organization ${m.organization_id} found in memberships but not in organizations table`);
-              return null;
-            }
-            return {
-              organization: org as Organization,
-              role: m.role
-            };
-          })
-          .filter(o => o !== null) as OrganizationMembership[];
-
-        console.log(`✅ Found ${orgs.length} accessible organizations for user`);
         setOrganizations(orgs);
 
-        // If no valid organizations found (memberships exist but orgs don't), create a default one
-        if (orgs.length === 0 && memberships.length > 0) {
-          console.log('⚠️ User has memberships but no accessible organizations - creating default organization');
-
-          const { data: { user: currentUser } } = await supabase.auth.getUser();
-          if (currentUser) {
-            const defaultOrgName = currentUser.user_metadata?.company_name ||
-                                   currentUser.user_metadata?.full_name ||
-                                   currentUser.email?.split('@')[0] ||
-                                   'My Organization';
-
-            const defaultSlug = defaultOrgName
-              .toLowerCase()
-              .replace(/[^a-z0-9\s-]/g, '')
-              .replace(/\s+/g, '-')
-              .replace(/-+/g, '-')
-              .trim()
-              .substring(0, 50);
-
-            try {
-              const { data: newOrgId, error: createError } = await supabase.rpc(
-                'setup_new_organization',
-                {
-                  p_user_id: currentUser.id,
-                  p_org_name: defaultOrgName,
-                  p_org_slug: defaultSlug,
-                }
-              );
-
-              if (createError) {
-                console.error('❌ Failed to create default organization:', createError);
-                throw createError;
-              }
-
-              console.log('✅ Default organization created, reloading...');
-              window.location.reload();
-              return;
-            } catch (createErr) {
-              console.error('❌ Error creating default organization:', createErr);
-              setError('Failed to set up your account. Please try logging out and back in, or contact support.');
-              setIsLoading(false);
-              return;
-            }
-          }
-        }
-
         // If user has exactly one organization, redirect directly
+        // But check if logout is still in progress (race condition check)
         if (orgs.length === 1 && !hasLogoutFlag()) {
           const org = orgs[0].organization;
-          console.log('✅ Single organization found, redirecting immediately to:', org.slug);
-          localStorage.setItem('currentOrganizationId', org.id);
-          localStorage.setItem('currentOrganizationSlug', org.slug);
-          navigate(`/org/${org.slug}/dashboard`, { replace: true });
+          // Add small delay to ensure session is still valid
+          setTimeout(() => {
+            if (!hasLogoutFlag()) {
+              navigate(`/org/${org.slug}/dashboard`, { replace: true });
+            }
+          }, 100);
         }
       } catch (err) {
         console.error('Error loading organizations:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load organizations';
-
-        if (errorMessage.includes('infinite recursion') || errorMessage.includes('42P17')) {
-          setError('Database configuration error. Please refresh the page or contact support.');
-        } else {
-          setError(errorMessage);
-        }
+        setError(err instanceof Error ? err.message : 'Failed to load organizations');
       } finally {
         setIsLoading(false);
       }
@@ -181,8 +123,6 @@ export function OrganizationSelector() {
   }, [navigate, reduxUser]);
 
   const handleSelectOrganization = (org: Organization) => {
-    localStorage.setItem('currentOrganizationId', org.id);
-    localStorage.setItem('currentOrganizationSlug', org.slug);
     navigate(`/org/${org.slug}/dashboard`);
   };
 
@@ -192,7 +132,9 @@ export function OrganizationSelector() {
 
       // Use force logout utility that handles timeout and failures
       await forceLogout(async () => {
-        await supabase.auth.signOut();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
       });
 
       // Clear Redux state (always execute)
@@ -220,9 +162,9 @@ export function OrganizationSelector() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading your organizations...</p>
         </div>
       </div>
@@ -231,46 +173,25 @@ export function OrganizationSelector() {
 
   if (error) {
     return (
-      <>
-        <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
-          <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Error</h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">{error}</p>
-            <div className="space-y-3">
-              <button
-                onClick={() => window.location.reload()}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-              >
-                Retry
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-              >
-                Create New Organization
-              </button>
-              <button
-                onClick={handleDirectLogout}
-                disabled={isLoggingOut}
-                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Error</h2>
+          <p className="text-gray-700 dark:text-gray-300">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
-        <CreateOrganizationModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-        />
-      </>
+      </div>
     );
   }
 
   if (organizations.length === 0) {
     return (
       <>
-        <div className="min-h-screen flex items-center justify-center bg-paper dark:bg-canvas">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
           <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 text-center">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +207,7 @@ export function OrganizationSelector() {
             <div className="space-y-3">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
                 Create Organization
               </button>
@@ -316,7 +237,7 @@ export function OrganizationSelector() {
 
   return (
     <>
-      <div className="min-h-screen bg-paper dark:bg-canvas py-12 px-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -332,7 +253,7 @@ export function OrganizationSelector() {
             <button
               key={organization.id}
               onClick={() => handleSelectOrganization(organization)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 text-left border-2 border-transparent hover:border-red-500"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 text-left border-2 border-transparent hover:border-blue-500"
             >
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
@@ -343,8 +264,8 @@ export function OrganizationSelector() {
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                      <span className="text-red-600 dark:text-red-300 font-semibold text-xl">
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                      <span className="text-blue-600 dark:text-blue-300 font-semibold text-xl">
                         {organization.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -368,7 +289,7 @@ export function OrganizationSelector() {
                   )}
                 </div>
               </div>
-              <div className="mt-4 flex items-center text-red-600 dark:text-red-400">
+              <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400">
                 <span className="text-sm font-medium">Access Dashboard</span>
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -381,7 +302,7 @@ export function OrganizationSelector() {
         <div className="mt-8 flex justify-center gap-4">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
             Create New Organization
           </button>

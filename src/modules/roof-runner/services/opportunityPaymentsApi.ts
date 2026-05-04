@@ -1,4 +1,4 @@
-import { supabase } from '../../../shared/lib/supabase';
+import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityPayment {
   id: string;
@@ -36,91 +36,23 @@ export interface UpdateOpportunityPaymentRequest {
 
 export const opportunityPaymentsApi = {
   async getPayments(opportunityId: string): Promise<OpportunityPayment[]> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_payments')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching opportunity payments:', error);
-      throw error;
-    }
+    return apiClient.get(`/opportunities/${opportunityId}/payments`);
   },
 
   async createPayment(paymentData: CreateOpportunityPaymentRequest): Promise<OpportunityPayment> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('opportunity_payments')
-        .insert({
-          ...paymentData,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating opportunity payment:', error);
-      throw error;
-    }
+    return apiClient.post('/opportunities/payments', paymentData);
   },
 
   async updatePayment(paymentId: string, updates: UpdateOpportunityPaymentRequest): Promise<OpportunityPayment> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_payments')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', paymentId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating opportunity payment:', error);
-      throw error;
-    }
+    return apiClient.put(`/opportunities/payments/${paymentId}`, updates);
   },
 
   async deletePayment(paymentId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('opportunity_payments')
-        .delete()
-        .eq('id', paymentId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting opportunity payment:', error);
-      throw error;
-    }
+    return apiClient.delete(`/opportunities/payments/${paymentId}`);
   },
 
   async getTotalPaid(opportunityId: string): Promise<number> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_payments')
-        .select('amount')
-        .eq('opportunity_id', opportunityId)
-        .eq('status', 'completed');
-
-      if (error) throw error;
-
-      return (data || []).reduce((sum, payment) => sum + payment.amount, 0);
-    } catch (error) {
-      console.error('Error calculating total paid:', error);
-      return 0;
-    }
+    const payments = await this.getPayments(opportunityId);
+    return payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
   },
 };

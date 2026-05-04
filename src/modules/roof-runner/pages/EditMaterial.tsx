@@ -106,19 +106,19 @@ const EditMaterial: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-paper dark:bg-canvas">
+      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-gray-500 dark:text-gray-400">Loading material...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <button
           onClick={() => navigate(`/instant-estimator/${id}/manage/materials`)}
-          className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm mb-4"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to materials
@@ -229,7 +229,7 @@ const EditMaterial: React.FC = () => {
                     ))}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-20 h-20 border-2 border-dashed border-red-300 rounded-lg flex items-center justify-center text-red-600 hover:border-red-400"
+                      className="w-20 h-20 border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center text-blue-600 hover:border-blue-400"
                     >
                       <Upload className="w-6 h-6" />
                     </button>
@@ -327,7 +327,7 @@ const EditMaterial: React.FC = () => {
         <button
           onClick={handleSave}
           disabled={loading || !formData.name.trim()}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : 'Save Changes'}
         </button>

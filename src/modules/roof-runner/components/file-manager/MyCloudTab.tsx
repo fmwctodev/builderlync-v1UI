@@ -136,8 +136,8 @@ export default function MyCloudTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mr-4">
-              <Cloud className="h-6 w-6 text-red-600 dark:text-red-400" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-4">
+              <Cloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Google Drive</h3>
@@ -165,7 +165,7 @@ export default function MyCloudTab() {
           ) : (
             <button
               onClick={() => handleConnect('google_drive')}
-              className="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+              className="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               Connect Google Drive
             </button>
@@ -174,8 +174,8 @@ export default function MyCloudTab() {
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mr-4">
-              <Cloud className="h-6 w-6 text-red-600 dark:text-red-400" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-4">
+              <Cloud className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">OneDrive</h3>
@@ -203,7 +203,7 @@ export default function MyCloudTab() {
           ) : (
             <button
               onClick={() => handleConnect('onedrive')}
-              className="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+              className="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               Connect OneDrive
             </button>
@@ -224,13 +224,13 @@ export default function MyCloudTab() {
                   >
                     <div className="flex items-start justify-between mb-2">
                       {file.isFolder ? (
-                        <FolderIcon className="h-8 w-8 text-red-600" />
+                        <FolderIcon className="h-8 w-8 text-blue-500" />
                       ) : (
                         <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
                           <Cloud className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </div>
                       )}
-                      <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
                         GDrive
                       </span>
                     </div>
@@ -257,13 +257,13 @@ export default function MyCloudTab() {
                   >
                     <div className="flex items-start justify-between mb-2">
                       {file.isFolder ? (
-                        <FolderIcon className="h-8 w-8 text-red-600" />
+                        <FolderIcon className="h-8 w-8 text-blue-500" />
                       ) : (
                         <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
                           <Cloud className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </div>
                       )}
-                      <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                      <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded">
                         OneDrive
                       </span>
                     </div>

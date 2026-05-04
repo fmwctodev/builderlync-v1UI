@@ -89,7 +89,7 @@ export function SecuritySection({
             </p>
             <button className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               <Shield className="w-4 h-4" />
-              Learn how to secure your ElevenLabs Agent
+              Learn how to secure your Vapi Agent
             </button>
           </div>
           <button
@@ -124,7 +124,7 @@ export function SecuritySection({
                 onChange={(e) => setNewHost(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddHost()}
                 placeholder="example.com"
-                className="px-3 py-1.5 text-sm bg-paper dark:bg-canvas border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
+                className="px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
               />
               <button
                 onClick={handleAddHost}
@@ -153,7 +153,7 @@ export function SecuritySection({
               {allowlist.map((host) => (
                 <div
                   key={host}
-                  className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600"
                 >
                   <span className="text-sm text-gray-900 dark:text-white">{host}</span>
                   <button
@@ -254,7 +254,7 @@ export function SecuritySection({
                 })
               }
               placeholder="https://example.com/webhook"
-              className="w-full px-4 py-2 bg-paper dark:bg-canvas border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
             />
           )}
         </div>
@@ -272,7 +272,7 @@ export function SecuritySection({
           </p>
           <button className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-6">
             <LinkIcon className="w-4 h-4" />
-            Learn how to automate post-call workflows with ElevenLabs & n8n
+            Learn how to automate post-call workflows with Vapi & n8n
           </button>
 
           <div className="flex items-center justify-between mb-4">
@@ -285,7 +285,7 @@ export function SecuritySection({
           </div>
 
           {postCallWebhook.url ? (
-            <div className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600">
               <span className="text-sm text-gray-900 dark:text-white">{postCallWebhook.url}</span>
               <button
                 onClick={() =>
@@ -326,7 +326,7 @@ export function SecuritySection({
                   type="number"
                   value={dailyCallLimit}
                   onChange={(e) => onDailyCallLimitChange(parseInt(e.target.value) || 0)}
-                  className="w-32 px-4 py-2 bg-paper dark:bg-canvas border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
+                  className="w-32 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">Calls per day</span>
               </div>
@@ -345,7 +345,7 @@ export function SecuritySection({
                   type="number"
                   value={concurrentCallLimit}
                   onChange={(e) => onConcurrentCallLimitChange(parseInt(e.target.value) || -1)}
-                  className="w-32 px-4 py-2 bg-paper dark:bg-canvas border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
+                  className="w-32 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {concurrentCallLimit === -1 ? 'Using subscription limit' : 'Concurrent calls'}

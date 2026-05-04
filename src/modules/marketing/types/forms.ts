@@ -123,20 +123,22 @@ export interface FormSettings {
 
 export interface MarketingForm {
   id: string;
-  organization_id: string;
+  organization_id?: string;
+  user_id?: number;
   name: string;
   description?: string;
   status: FormStatus;
-  fields: FormField[];
-  settings: FormSettings;
+  fields?: FormField[];
+  settings?: FormSettings;
   pipeline_id?: string;
   stage_id?: string;
-  public_id: string;
+  publicId?: string;
   embed_code?: string;
-  submission_count: number;
-  conversion_count: number;
+  submission_count?: number;
+  conversion_count?: number;
   folder_id?: string;
   created_by?: string;
+  user_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -155,27 +157,32 @@ export interface FormSubmissionMetadata {
 }
 
 export interface FormSubmission {
-  id: string;
-  organization_id: string;
-  form_id: string;
-  submission_data: Record<string, any>;
-  metadata: FormSubmissionMetadata;
-  status: SubmissionStatus;
+  id: string | number;
+  organization_id?: string;
+  form_id?: string;
+  formId?: string;
+  formName?: string;
+  submission_data?: Record<string, any>;
+  submissionData?: Record<string, any>;
+  metadata?: FormSubmissionMetadata;
+  status?: SubmissionStatus;
   contact_id?: string;
   opportunity_id?: string;
   error_message?: string;
   processed_at?: string;
-  created_at: string;
+  created_at?: string;
+  submittedAt?: string;
+  ipAddress?: string;
 }
 
 export interface FormSubmissionWithDetails extends FormSubmission {
-  form?: MarketingForm;
+  form?: MarketingForm | { name: string };
   contact?: {
     id: string;
     first_name: string;
     last_name: string;
     email: string;
-  };
+  } | null;
   opportunity?: {
     id: string;
     name: string;
@@ -198,7 +205,7 @@ export interface UpdateFormRequest extends Partial<CreateFormRequest> {
 
 export interface SubmitFormRequest {
   form_id: string;
-  public_id: string;
+  publicId: string;
   submission_data: Record<string, any>;
   metadata?: FormSubmissionMetadata;
 }
@@ -232,11 +239,13 @@ export interface FormAnalytics {
 
 export interface FormFolder {
   id: string;
-  organization_id: string;
+  organization_id?: string;
+  user_id?: number;
   name: string;
   parent_folder_id?: string;
   color?: string;
   form_count?: number;
+  user_name?: string;
   created_at: string;
   updated_at: string;
 }

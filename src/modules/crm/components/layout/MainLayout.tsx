@@ -15,6 +15,7 @@ export function MainLayout() {
     if (path.includes('/calendar')) return 'Calendar';
     if (path.includes('/conversations')) return 'Conversations';
     if (path.includes('/jobs')) return 'Jobs';
+    if (path.includes('/snippets')) return 'Snippets';
     if (path.includes('/settings')) return 'Settings';
     return 'Dashboard';
   };
@@ -24,7 +25,7 @@ export function MainLayout() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-paper dark:bg-canvas">
+    <div className="h-screen flex overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Mobile menu backdrop */}
       {mobileMenuOpen && (
         <div 
@@ -56,7 +57,7 @@ export function MainLayout() {
           currentModule={getCurrentModule()}
         />
         
-        <main className="flex-1 overflow-y-auto bg-paper dark:bg-canvas p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

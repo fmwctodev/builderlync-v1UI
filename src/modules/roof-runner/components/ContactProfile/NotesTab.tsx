@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { getNotes, deleteNote, updateNote, replyToNote } from '../../../../shared/store/services/contactsApi';
-import { Trash2, Edit2, MessageCircle, Send } from 'lucide-react';
+import { getNotes, deleteNote, updateNote, replyToNote, createNote } from '../../../../shared/store/services/contactsApi';
+import { Trash2, Edit2, MessageCircle, Send, X } from 'lucide-react';
+import Toast from "../../../../shared/components/Toast";
+import { getErrorMessage } from "../../../../shared/utils/errorHandler";
 
 interface NotesTabProps {
   contactId: number;
-  onAddNote: () => void;
 }
 
-const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
-  const [notes, setNotes] = useState<any[]>([]);
+interface Note {
+  id: number;
+  data: string;
+  contactId: number;
+  replyToNoteId?: number | null;
+  isDeleted?: boolean;
+  editedBy?: number;
+  editedByName?: string;
+  updatedAt: string;
+  createdAt: string;
+  createdByName: string;
+  replies?: Note[];
+}
+
+const NotesTab: React.FC<NotesTabProps> = ({ contactId }) => {
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingNote, setEditingNote] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
@@ -16,23 +31,27 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
   const [replyText, setReplyText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; noteId: number | null }>({ show: false, noteId: null });
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchNotes = async () => {
     setIsLoading(true);
     try {
       const response = await getNotes(contactId);
-      const allNotes = response.data || [];
-      
+      const allNotes: Note[] = response.data || [];
+
       // Organize notes with replies
-      const mainNotes = allNotes.filter(note => !note.replyToNoteId);
-      const organizedNotes = mainNotes.map(mainNote => ({
+      const mainNotes = allNotes.filter((note) => !note.replyToNoteId);
+      const organizedNotes = mainNotes.map((mainNote) => ({
         ...mainNote,
-        replies: allNotes.filter(note => note.replyToNoteId === mainNote.id)
+        replies: allNotes.filter((note) => note.replyToNoteId === mainNote.id)
       }));
-      
+
       setNotes(organizedNotes);
     } catch (error) {
-      console.error('Failed to fetch notes:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to fetch notes');
+      setToast({ message: errorMessage, type: 'error' });
       setNotes([]);
     } finally {
       setIsLoading(false);
@@ -43,13 +62,29 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
     fetchNotes();
   }, [contactId]);
 
+  const handleAddNote = async () => {
+    if (!newNoteText.trim()) return;
+    try {
+      await createNote({ data: newNoteText, contactId });
+      setNewNoteText('');
+      setIsAddingNote(false);
+      setToast({ message: 'Note added successfully', type: 'success' });
+      fetchNotes();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Failed to create note');
+      setToast({ message: errorMessage, type: 'error' });
+    }
+  };
+
   const handleDelete = async (noteId: number) => {
     try {
       await deleteNote(noteId);
       setDeleteConfirm({ show: false, noteId: null });
+      setToast({ message: 'Note deleted successfully', type: 'success' });
       fetchNotes();
     } catch (error) {
-      console.error('Failed to delete note:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to delete note');
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -63,9 +98,11 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
       await updateNote(noteId, editText);
       setEditingNote(null);
       setEditText('');
+      setToast({ message: 'Note updated successfully', type: 'success' });
       fetchNotes();
     } catch (error) {
-      console.error('Failed to update note:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to update note');
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -75,16 +112,19 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
         await replyToNote(noteId, replyText, contactId);
         setReplyingTo(null);
         setReplyText('');
+        setToast({ message: 'Reply sent successfully', type: 'success' });
         fetchNotes();
       } catch (error) {
-        console.error('Failed to reply to note:', error);
+        const errorMessage = getErrorMessage(error, 'Failed to reply to note');
+        setToast({ message: errorMessage, type: 'error' });
       }
     }
   };
 
-  const filteredNotes = notes.filter(note => 
+  const filteredNotes = notes.filter(note =>
     note.data?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   return (
     <>
       <div className="mb-6">
@@ -106,12 +146,49 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
           </div>
         </div>
 
-        <button
-          onClick={onAddNote}
-          className="w-full mb-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-red-600 hover:text-red-700 hover:border-red-300 dark:hover:border-red-500 transition-colors"
-        >
-          + Add Note
-        </button>
+        {isAddingNote ? (
+          <div className="mb-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">New Note</span>
+              <button
+                onClick={() => setIsAddingNote(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <textarea
+              autoFocus
+              value={newNoteText}
+              onChange={(e) => setNewNoteText(e.target.value)}
+              placeholder="Type your note here..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md resize-none mb-3 focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              rows={4}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsAddingNote(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddNote}
+                disabled={!newNoteText.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Note
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAddingNote(true)}
+            className="w-full mb-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-red-600 hover:text-red-700 hover:border-red-300 dark:hover:border-red-500 transition-colors"
+          >
+            + Add Note
+          </button>
+        )}
 
         <div className="relative mb-6">
           <input
@@ -140,7 +217,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
             <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No notes found</h4>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Your filters does not match any notes. Please try again.</p>
             <button
-              onClick={onAddNote}
+              onClick={() => setIsAddingNote(true)}
               className="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-red-600 hover:text-red-700 hover:border-red-300 dark:hover:border-red-500 transition-colors"
             >
               + Add Note
@@ -192,7 +269,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
                       </div>
                     )}
                   </div>
-                  
+
                   {editingNote !== note.id && !note.isDeleted && (
                     <div className="flex items-center gap-1 ml-2">
                       <button
@@ -219,7 +296,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                   <span>{new Date(note.createdAt).toLocaleDateString()} at {new Date(note.createdAt).toLocaleTimeString()}</span>
                   <span>by {note.createdByName}</span>
@@ -228,7 +305,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
                 {/* Replies */}
                 {note.replies && note.replies.length > 0 && (
                   <div className="ml-4 mt-3 space-y-2 border-l-2 border-red-200 pl-3">
-                    {note.replies.map((reply) => (
+                    {note.replies.map((reply: Note) => (
                       <div key={reply.id} className="p-3 bg-red-50 dark:bg-gray-600 rounded-lg">
                         <div className="flex items-start justify-between mb-1">
                           <div className="flex-1">
@@ -353,6 +430,13 @@ const NotesTab: React.FC<NotesTabProps> = ({ contactId, onAddNote }) => {
           </div>
         )}
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 };

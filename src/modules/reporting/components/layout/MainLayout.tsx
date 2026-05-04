@@ -6,7 +6,7 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-paper dark:bg-canvas">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {children}
     </div>
   );

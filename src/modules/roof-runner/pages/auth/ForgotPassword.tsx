@@ -17,10 +17,16 @@ const ForgotPassword: React.FC = () => {
   const { loading, error, email: storedEmail, resetToken } = useAppSelector((state) => state.auth);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
+  const handleChangeEmail = () => {
+    setStep('email');
+    setEmail('');
+    setOtp('');
+    dispatch(clearError());
+  };
+
   useEffect(() => {
-    if (storedEmail && step === 'email') {
+    if (storedEmail && step === 'email' && email === storedEmail) {
       setStep('otp');
-      setEmail(storedEmail);
     }
     if (resetToken && step === 'otp') {
       setStep('reset');
@@ -28,7 +34,7 @@ const ForgotPassword: React.FC = () => {
     if (!loading && !error && !resetToken && step === 'reset' && newPassword) {
       navigate('/auth/login', { state: { message: 'Password reset successfully' } });
     }
-  }, [storedEmail, resetToken, step, loading, error, newPassword, navigate]);
+  }, [storedEmail, resetToken, step, loading, error, newPassword, navigate, email]);
 
   useEffect(() => {
     if (error) {
@@ -111,7 +117,7 @@ const ForgotPassword: React.FC = () => {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setStep('email')}
+              onClick={handleChangeEmail}
               className="text-gray-600 hover:text-gray-800 transition-colors text-sm"
             >
               Change Email

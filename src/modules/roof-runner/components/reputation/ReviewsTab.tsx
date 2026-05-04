@@ -122,19 +122,19 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ onOpenModal }) => {
               </p>
               
               <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center gap-1 bg-primary-100 text-red-700 px-2 py-1 rounded-full text-xs">
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                   <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   video content
                 </div>
-                <div className="flex items-center gap-1 bg-primary-100 text-red-700 px-2 py-1 rounded-full text-xs">
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                   <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   high quality
                 </div>
-                <div className="flex items-center gap-1 bg-primary-100 text-red-700 px-2 py-1 rounded-full text-xs">
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                   <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   easy to use
                 </div>
-                <div className="flex items-center gap-1 bg-primary-100 text-red-700 px-2 py-1 rounded-full text-xs">
+                <div className="flex items-center gap-1 bg-primary-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                   <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                   diverse content
                 </div>

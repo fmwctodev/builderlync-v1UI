@@ -7,20 +7,20 @@ export function Integrations() {
     { name: 'Microsoft Teams', logo: '👥', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Facebook & Instagram', logo: '📱', color: 'bg-primary-600', status: 'Connect' },
     { name: 'QuickBooks', logo: 'qb', color: 'bg-green-500', status: 'Connect' },
-    { name: 'Xero', logo: 'xero', color: 'bg-red-400', status: 'Connect' },
+    { name: 'Xero', logo: 'xero', color: 'bg-blue-400', status: 'Connect' },
     { name: 'Wave', logo: 'wave', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Veem', logo: '✓', color: 'bg-primary-500', status: 'Connect' },
     { name: 'Stripe', logo: 'stripe', color: 'bg-primary-600', status: 'Connect' },
     { name: 'Shopify', logo: '🛍️', color: 'bg-green-600', status: 'Connect' },
     { name: 'TikTok', logo: '🎵', color: 'bg-black', status: 'Connect' },
-    { name: 'LinkedIn', logo: 'in', color: 'bg-red-700', status: 'Connect' },
+    { name: 'LinkedIn', logo: 'in', color: 'bg-blue-700', status: 'Connect' },
     { name: 'Slack', logo: 'slack', color: 'bg-primary-500', status: 'Connect' },
     { name: 'WooCommerce', logo: 'woo', color: 'bg-primary-600', status: 'Connect' },
     { name: 'ClickUp', logo: 'clickup', color: 'bg-pink-500', status: 'Connect' }
   ];
 
   return (
-    <div className="min-h-screen bg-paper dark:bg-canvas p-studio-page">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Integrations</h1>
         

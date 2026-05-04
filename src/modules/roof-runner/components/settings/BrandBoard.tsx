@@ -1,126 +1,188 @@
-import React, { useState, useEffect } from 'react';
-import { useCurrentOrganization } from '../../../../shared/context/OrgContext';
-import { supabase } from '../../../../shared/lib/supabase';
-
-interface BrandBoardData {
-  website?: string;
-  description?: string;
-  brand_voice?: string;
-  target_audience?: string;
-  logo_url?: string;
-  facebook_url?: string;
-  instagram_url?: string;
-  youtube_url?: string;
-  tiktok_url?: string;
-  twitter_url?: string;
-  google_business_url?: string;
-  pinterest_url?: string;
-}
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, X, Plus, Save, Loader2 } from 'lucide-react';
+import { brandBoardService, BrandColor, type BrandBoard } from '../../../../shared/services/brandBoardService';
 
 const BrandBoard: React.FC = () => {
-  const { currentOrganizationId } = useCurrentOrganization();
-  const [brandData, setBrandData] = useState<BrandBoardData>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [website, setWebsite] = useState('');
+  const [description, setDescription] = useState('');
+  const [brandVoice, setBrandVoice] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [twitterUrl, setTwitterUrl] = useState('');
+  const [googleBusinessUrl, setGoogleBusinessUrl] = useState('');
+  const [pinterestUrl, setPinterestUrl] = useState('');
+  const [logo, setLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [colors, setColors] = useState<BrandColor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (currentOrganizationId) {
-      loadBrandData();
-    }
-  }, [currentOrganizationId]);
+    loadBrandBoard();
+  }, []);
 
-  const loadBrandData = async () => {
+  const loadBrandBoard = async () => {
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('brand_boards')
-        .select('*')
-        .eq('organization_id', currentOrganizationId)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
-
-      if (data) {
-        setBrandData(data);
+      setLoading(true);
+      const response = await brandBoardService.getBrandBoard();
+      if (response.success && response.data) {
+        const data = response.data;
+        setWebsite(data.website || '');
+        setDescription(data.description || '');
+        setBrandVoice(data.brand_voice || '');
+        setTargetAudience(data.target_audience || '');
+        setFacebookUrl(data.facebook_url || '');
+        setInstagramUrl(data.instagram_url || '');
+        setYoutubeUrl(data.youtube_url || '');
+        setTiktokUrl(data.tiktok_url || '');
+        setTwitterUrl(data.twitter_url || '');
+        setGoogleBusinessUrl(data.google_business_url || '');
+        setPinterestUrl(data.pinterest_url || '');
+        setLogoPreview(data.logo_url || null);
+        setColors(data.brand_colors || []);
       }
-    } catch (error) {
-      console.error('Error loading brand data:', error);
+    } catch (err) {
+      console.error('Error loading brand board:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Logo file size must be less than 5MB');
+        return;
+      }
+      setLogo(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogo(null);
+    setLogoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const addColor = () => {
+    const newColor: BrandColor = {
+      id: Date.now().toString(),
+      color: '#000000',
+      name: `Color ${colors.length + 1}`
+    };
+    setColors([...colors, newColor]);
+  };
+
+  const updateColor = (id: string, field: 'color' | 'name', value: string) => {
+    setColors(colors.map(color => 
+      color.id === id ? { ...color, [field]: value } : color
+    ));
+  };
+
+  const removeColor = (id: string) => {
+    if (colors.length > 1) {
+      setColors(colors.filter(color => color.id !== id));
     }
   };
 
   const handleSave = async () => {
-    if (!currentOrganizationId) return;
-
     try {
-      setIsSaving(true);
-      setMessage(null);
-
-      const { data: existing } = await supabase
-        .from('brand_boards')
-        .select('id')
-        .eq('organization_id', currentOrganizationId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('brand_boards')
-          .update({
-            ...brandData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('brand_boards')
-          .insert({
-            organization_id: currentOrganizationId,
-            ...brandData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
+      setSaving(true);
+      setError(null);
+      
+      // Validate URLs
+      const urlPattern = /^https?:\/\/.+/;
+      const urlFields = [
+        { value: facebookUrl, name: 'Facebook URL' },
+        { value: instagramUrl, name: 'Instagram URL' },
+        { value: youtubeUrl, name: 'YouTube URL' },
+        { value: tiktokUrl, name: 'TikTok URL' },
+        { value: twitterUrl, name: 'X (Twitter) URL' },
+        { value: googleBusinessUrl, name: 'Google Business URL' },
+        { value: pinterestUrl, name: 'Pinterest URL' }
+      ];
+      
+      for (const field of urlFields) {
+        if (field.value && !urlPattern.test(field.value)) {
+          setError(`${field.name} must be a valid URL starting with http:// or https://`);
+          setSaving(false);
+          return;
+        }
       }
-
-      setMessage({ type: 'success', text: 'Brand board saved successfully!' });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      console.error('Error saving brand data:', error);
-      setMessage({ type: 'error', text: 'Failed to save brand board. Please try again.' });
+      
+      const brandBoardData: Partial<BrandBoard> = {
+        website,
+        description,
+        brand_voice: brandVoice,
+        target_audience: targetAudience,
+        facebook_url: facebookUrl,
+        instagram_url: instagramUrl,
+        youtube_url: youtubeUrl,
+        tiktok_url: tiktokUrl,
+        twitter_url: twitterUrl,
+        google_business_url: googleBusinessUrl,
+        pinterest_url: pinterestUrl,
+        brand_colors: colors
+      };
+      
+      const response = await brandBoardService.saveBrandBoard(brandBoardData, logo || undefined);
+      
+      if (response.success) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+        // Reload to get updated data including new logo URL
+        await loadBrandBoard();
+      } else {
+        setError(response.message || 'Failed to save brand board');
+      }
+    } catch (err) {
+      setError('Failed to save brand board');
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
-  const handleInputChange = (field: keyof BrandBoardData, value: string) => {
-    setBrandData(prev => ({ ...prev, [field]: value }));
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        <Loader2 className="w-6 h-6 animate-spin text-red-600" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <p className="text-sm text-green-600 dark:text-green-400">Brand board saved successfully!</p>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Brand Board</h2>
         <p className="text-gray-600 dark:text-gray-400">Define your brand identity for AI and creative assets</p>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
-          {message.text}
-        </div>
-      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Brand Information</h3>
@@ -129,20 +191,23 @@ const BrandBoard: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Website</label>
             <input
               type="url"
-              value={brandData.website || ''}
-              onChange={(e) => handleInputChange('website', e.target.value)}
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://example.com"
+              pattern="https?://.*"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
+            {website && !website.match(/^https?:\/\/.+/) && (
+              <p className="text-xs text-red-500 mt-1">Please enter a valid URL starting with http:// or https://</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Business Description</label>
             <textarea
               rows={4}
-              value={brandData.description || ''}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Professional roofing and construction services specializing in residential and commercial projects..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
@@ -151,8 +216,8 @@ const BrandBoard: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Brand Voice & Tone</label>
             <textarea
               rows={3}
-              value={brandData.brand_voice || ''}
-              onChange={(e) => handleInputChange('brand_voice', e.target.value)}
+              value={brandVoice}
+              onChange={(e) => setBrandVoice(e.target.value)}
               placeholder="Describe your brand's personality, tone of voice, and communication style..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -162,8 +227,8 @@ const BrandBoard: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Audience</label>
             <textarea
               rows={3}
-              value={brandData.target_audience || ''}
-              onChange={(e) => handleInputChange('target_audience', e.target.value)}
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
               placeholder="Describe your ideal customers and target market..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -184,8 +249,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.facebook_url || ''}
-              onChange={(e) => handleInputChange('facebook_url', e.target.value)}
+              value={facebookUrl}
+              onChange={(e) => setFacebookUrl(e.target.value)}
               placeholder="https://facebook.com/yourpage"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -200,8 +265,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.instagram_url || ''}
-              onChange={(e) => handleInputChange('instagram_url', e.target.value)}
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
               placeholder="https://instagram.com/yourprofile"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -216,8 +281,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.youtube_url || ''}
-              onChange={(e) => handleInputChange('youtube_url', e.target.value)}
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
               placeholder="https://youtube.com/@yourchannel"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -232,8 +297,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.tiktok_url || ''}
-              onChange={(e) => handleInputChange('tiktok_url', e.target.value)}
+              value={tiktokUrl}
+              onChange={(e) => setTiktokUrl(e.target.value)}
               placeholder="https://tiktok.com/@yourprofile"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -248,8 +313,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.twitter_url || ''}
-              onChange={(e) => handleInputChange('twitter_url', e.target.value)}
+              value={twitterUrl}
+              onChange={(e) => setTwitterUrl(e.target.value)}
               placeholder="https://x.com/yourprofile"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -264,8 +329,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.google_business_url || ''}
-              onChange={(e) => handleInputChange('google_business_url', e.target.value)}
+              value={googleBusinessUrl}
+              onChange={(e) => setGoogleBusinessUrl(e.target.value)}
               placeholder="https://g.page/yourbusiness"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -280,8 +345,8 @@ const BrandBoard: React.FC = () => {
             </label>
             <input
               type="url"
-              value={brandData.pinterest_url || ''}
-              onChange={(e) => handleInputChange('pinterest_url', e.target.value)}
+              value={pinterestUrl}
+              onChange={(e) => setPinterestUrl(e.target.value)}
               placeholder="https://pinterest.com/yourprofile"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
@@ -294,44 +359,107 @@ const BrandBoard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Logo Upload</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center dark:border-gray-600">
-              <div className="w-12 h-12 mx-auto mb-4 bg-gray-200 rounded dark:bg-gray-700"></div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload your logo</p>
-              <button className="text-red-600 hover:underline dark:text-red-400">Choose File</button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center dark:border-gray-600 relative">
+              {logoPreview ? (
+                <div className="relative">
+                  <img src={logoPreview} alt="Logo preview" className="max-w-full max-h-32 mx-auto" />
+                  <button
+                    onClick={removeLogo}
+                    className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload your logo</p>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-primary-600 hover:underline dark:text-primary-400"
+                  >
+                    Choose File
+                  </button>
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
             </div>
+            <p className="text-xs text-gray-500 mt-2">Max file size: 5MB. Supported formats: JPG, PNG, SVG</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Brand Colors</label>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-red-600 rounded"></div>
-                <input
-                  type="text"
-                  defaultValue="#dc2626"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gray-800 rounded"></div>
-                <input
-                  type="text"
-                  defaultValue="#1f2937"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Brand Colors</label>
+              <button
+                onClick={addColor}
+                className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Color</span>
+              </button>
+            </div>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {colors.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No colors added yet. Click "Add Color" to get started.</p>
+              ) : (
+                colors.map((color) => (
+                  <div key={color.id} className="flex items-center space-x-3">
+                    <div 
+                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                      style={{ backgroundColor: color.color }}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'color';
+                        input.value = color.color;
+                        input.onchange = (e) => updateColor(color.id!, 'color', (e.target as HTMLInputElement).value);
+                        input.click();
+                      }}
+                    ></div>
+                    <input
+                      type="text"
+                      value={color.color}
+                      onChange={(e) => updateColor(color.id!, 'color', e.target.value)}
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    <input
+                      type="text"
+                      value={color.name}
+                      onChange={(e) => updateColor(color.id!, 'name', e.target.value)}
+                      placeholder="Color name"
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    <button
+                      onClick={() => removeColor(color.id!)}
+                      className="p-1 text-red-600 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="flex justify-end">
-        <button
+        <button 
           onClick={handleSave}
-          disabled={isSaving}
-          className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={saving}
+          className="flex items-center space-x-2 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSaving ? 'Saving...' : 'Save Brand Board'}
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          <span>{saving ? 'Saving...' : 'Save Brand Board'}</span>
         </button>
       </div>
     </div>

@@ -91,7 +91,7 @@ const Header: React.FC = () => {
               to="/abc-supply/cart" 
               className="relative p-2 hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <ShoppingCart className="w-6 h-6 text-white hover:text-red-400 transition-colors" />
+              <ShoppingCart className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
               {items.length > 0 && (
                 <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-primary-500 text-white text-xs">
                   {items.length}
@@ -101,7 +101,7 @@ const Header: React.FC = () => {
 
             {/* Notifications */}
             <Link to="/abc-supply/notifications" className="relative p-2 hover:bg-gray-700 rounded-lg transition-colors">
-              <Bell className="w-6 h-6 text-white hover:text-red-400 transition-colors" />
+              <Bell className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 rounded-full bg-primary-500 text-white text-xs">
                   {unreadCount}
@@ -111,7 +111,7 @@ const Header: React.FC = () => {
 
             {/* Account Icon */}
             <Link to="/abc-supply/account" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
-              <User className="w-6 h-6 text-white hover:text-red-400 transition-colors" />
+              <User className="w-6 h-6 text-white hover:text-blue-400 transition-colors" />
             </Link>
 
             <ThemeToggle />

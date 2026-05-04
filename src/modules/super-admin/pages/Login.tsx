@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { validateSuperAdminLogin, saveSuperAdminSession, isSuperAdminAuthenticated } from '../utils/super-admin-auth';
+import { saveSuperAdminSession, isSuperAdminAuthenticated } from '../utils/super-admin-auth';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,30 +13,68 @@ export const Login: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Check if already logged in as admin
     if (isSuperAdminAuthenticated()) {
       const from = (location.state as any)?.from || '/super-admin';
       navigate(from, { replace: true });
+      return;
+    }
+
+    // Check if logged in as regular user or staff
+    const regularToken = localStorage.getItem('token');
+    if (regularToken) {
+      setError('Please logout from your current session first');
     }
   }, [navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Check if logged in as regular user or staff
+    const regularToken = localStorage.getItem('token');
+    if (regularToken) {
+      setError('Please logout from your current session first');
+      return;
+    }
+
     setIsLoading(true);
 
-    setTimeout(() => {
-      const user = validateSuperAdminLogin(email, password);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (!user) {
-        setError('Invalid email or password');
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(result.message || 'Invalid email or password');
         setIsLoading(false);
         return;
       }
 
-      saveSuperAdminSession(user);
+      // Save admin session
+      const adminUser = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        name: `${result.data.user.firstName} ${result.data.user.lastName}`,
+        role: 'owner',
+        status: 'active' as const,
+      };
+
+      saveSuperAdminSession(adminUser);
+      localStorage.setItem('adminToken', result.data.token);
+
       const from = (location.state as any)?.from || '/super-admin';
       navigate(from, { replace: true });
-    }, 500);
+    } catch (err: any) {
+      setError('Failed to connect to server. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = () => {
@@ -151,7 +189,7 @@ export const Login: React.FC = () => {
 
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            Demo credentials: owner@builderlync.io / password123
+            Admin login only. Regular users should use the main login page.
           </p>
         </div>
       </div>

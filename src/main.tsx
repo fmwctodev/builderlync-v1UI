@@ -4,8 +4,15 @@ import { Provider } from 'react-redux';
 import App from './App.tsx';
 import { store } from './shared/store';
 import ErrorBoundary from './shared/components/ErrorBoundary';
-import './shared/utils/authDiagnostics';
 import './index.css';
+import { setupGlobalInterceptors } from './shared/utils/setupGlobalInterceptors';
+import { analytics } from './shared/utils/analytics';
+
+// Initialize global 401 logout interceptors
+setupGlobalInterceptors();
+
+// Initialize Analytics
+analytics.init();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

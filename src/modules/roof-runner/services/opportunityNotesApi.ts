@@ -1,4 +1,4 @@
-import { supabase } from '../../../shared/lib/supabase';
+import { apiClient } from '../../../shared/utils/api';
 
 export interface OpportunityNote {
   id: string;
@@ -24,76 +24,19 @@ export interface UpdateOpportunityNoteRequest {
 
 export const opportunityNotesApi = {
   async getNotes(opportunityId: string): Promise<OpportunityNote[]> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_notes')
-        .select('*')
-        .eq('opportunity_id', opportunityId)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching opportunity notes:', error);
-      throw error;
-    }
+    return apiClient.get(`/opportunities/${opportunityId}/notes`);
   },
 
   async createNote(noteData: CreateOpportunityNoteRequest): Promise<OpportunityNote> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('opportunity_notes')
-        .insert({
-          ...noteData,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating opportunity note:', error);
-      throw error;
-    }
+    return apiClient.post('/opportunities/notes', noteData);
   },
 
   async updateNote(noteId: string, updates: UpdateOpportunityNoteRequest): Promise<OpportunityNote> {
-    try {
-      const { data, error } = await supabase
-        .from('opportunity_notes')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', noteId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating opportunity note:', error);
-      throw error;
-    }
+    return apiClient.put(`/opportunities/notes/${noteId}`, updates);
   },
 
   async deleteNote(noteId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('opportunity_notes')
-        .delete()
-        .eq('id', noteId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting opportunity note:', error);
-      throw error;
-    }
+    return apiClient.delete(`/opportunities/notes/${noteId}`);
   },
 
   async togglePin(noteId: string, currentPinStatus: boolean): Promise<OpportunityNote> {

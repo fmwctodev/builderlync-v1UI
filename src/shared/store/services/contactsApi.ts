@@ -1,5 +1,6 @@
-import { supabase } from '../../lib/supabase';
-import { requireOrganizationId, withOrgId } from '../../utils/organizationHelpers';
+import { getAuthToken } from '../../utils/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface CreateContactRequest {
   fullName: string;
@@ -9,24 +10,29 @@ export interface CreateContactRequest {
   phone: string;
   company: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
+  conatct_id?: number;
+  timezone?: string;
 }
 
 export interface Contact {
-  id: string;
   full_name: string;
+  id: string;
+  fullName: string;
   type: string;
-  label_or_role: string;
+  labelOrRole: string;
   email: string;
   phone: string;
   company: string;
   address: string;
   latitude: number;
   longitude: number;
-  created_at: string;
-  updated_at: string;
-  user_id: string | null;
+  timezone: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: number;
+  createdByName?: string;
 }
 
 export interface ContactResponse {
@@ -38,7 +44,7 @@ export interface ContactResponse {
 export interface ContactsListResponse {
   success: boolean;
   data: {
-    data: Contact[];
+    contacts: Contact[];
     pagination: {
       page: number;
       limit: number;
@@ -48,301 +54,177 @@ export interface ContactsListResponse {
   };
 }
 
-function camelToSnake(obj: any): any {
-  const snakeObj: any = {};
-  const keyMap: Record<string, string> = {
-    fullName: 'full_name',
-    labelOrRole: 'label_or_role',
-  };
+class ContactsApiService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
 
-  for (const key in obj) {
-    const snakeKey = keyMap[key] || key;
-    snakeObj[snakeKey] = obj[key];
-  }
-
-  return snakeObj;
-}
-
-export const createContact = async (
-  contactData: CreateContactRequest,
-  organizationId: string | null
-): Promise<ContactResponse> => {
-  requireOrganizationId(organizationId, 'createContact');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
-  }
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
-  const snakeData = camelToSnake(contactData);
-  snakeData.user_id = user.id;
-
-  const nameParts = contactData.fullName.trim().split(' ');
-  if (nameParts.length >= 2) {
-    snakeData.first_name = nameParts[0];
-    snakeData.last_name = nameParts.slice(1).join(' ');
-  } else {
-    snakeData.first_name = contactData.fullName;
-    snakeData.last_name = '';
-  }
-
-  const dataWithOrg = withOrgId(snakeData, organizationId);
-
-  const { data, error } = await supabase
-    .from('contacts')
-    .insert([dataWithOrg])
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    success: true,
-    message: 'Contact created successfully',
-    data
-  };
-};
-
-export const getContacts = async (
-  organizationId: string | null,
-  search?: string,
-  type?: string,
-  page: number = 1,
-  limit: number = 10
-): Promise<ContactsListResponse> => {
-  requireOrganizationId(organizationId, 'getContacts');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
-  }
-
-  const offset = (page - 1) * limit;
-
-  let query = supabase
-    .from('contacts')
-    .select('*', { count: 'exact' })
-    .eq('organization_id', organizationId);
-
-  if (search) {
-    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,company.ilike.%${search}%`);
-  }
-
-  if (type) {
-    query = query.eq('type', type);
-  }
-
-  query = query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const total = count || 0;
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    success: true,
-    data: {
-      data: data || [],
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    console.log("api response", response);
+    if (!response.ok) {
+      // Try to parse error details from JSON response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // Response wasn't JSON
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
+
+      // Throw an error that contains the API response data, so the caller can extract 'message' or 'error'
+      const error = new Error(errorData.message || errorData.error || `API Error: ${response.status}`);
+      (error as any).response = { data: errorData };
+      throw error;
     }
-  };
-};
 
-export const searchContactsByTypeAndName = async (
-  organizationId: string | null,
-  search: string,
-  types: string[]
-): Promise<Contact[]> => {
-  requireOrganizationId(organizationId, 'searchContactsByTypeAndName');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    return response.json();
   }
 
-  if (!search || search.length < 2) {
-    return [];
+  async createContact(contactData: CreateContactRequest): Promise<ContactResponse> {
+    return this.makeRequest('/contacts', {
+      method: 'POST',
+      body: JSON.stringify(contactData),
+    });
   }
 
-  let query = supabase
-    .from('contacts')
-    .select('*')
-    .eq('organization_id', organizationId);
+  async getContacts(search?: string, type?: string, page: number = 1, limit: number = 10): Promise<ContactsListResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(type && { type }),
+    });
 
-  if (types && types.length > 0) {
-    query = query.in('type', types);
+    return this.makeRequest(`/contacts?${params}`);
   }
 
-  query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`);
+  async searchContactsByTypeAndName(search: string, types: string[]): Promise<Contact[]> {
+    const params = new URLSearchParams({ search, page: '1', limit: '25' });
+    types.forEach(type => params.append('type', type));
 
-  query = query
-    .order('full_name', { ascending: true })
-    .limit(10);
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(error.message);
+    const result = await this.makeRequest(`/contacts?${params}`);
+    return result.success ? result.data.contacts : [];
   }
 
-  return data || [];
-};
-
-export const getContactById = async (
-  id: string,
-  organizationId: string | null
-): Promise<ContactResponse> => {
-  requireOrganizationId(organizationId, 'getContactById');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  async getContactById(id: string): Promise<ContactResponse> {
+    return this.makeRequest(`/contacts/${id}`);
   }
 
-  const { data, error } = await supabase
-    .from('contacts')
-    .select('*')
-    .eq('id', id)
-    .eq('organization_id', organizationId)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
+  async updateContact(id: string, contactData: CreateContactRequest): Promise<ContactResponse> {
+    return this.makeRequest(`/contacts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(contactData),
+    });
   }
 
-  return {
-    success: true,
-    data
-  };
-};
-
-export const updateContact = async (
-  id: string,
-  contactData: CreateContactRequest,
-  organizationId: string | null
-): Promise<ContactResponse> => {
-  requireOrganizationId(organizationId, 'updateContact');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  async deleteContact(id: string) {
+    return this.makeRequest(`/contacts/${id}`, {
+      method: 'DELETE',
+    });
   }
 
-  const snakeData = camelToSnake(contactData);
-
-  const nameParts = contactData.fullName.trim().split(' ');
-  if (nameParts.length >= 2) {
-    snakeData.first_name = nameParts[0];
-    snakeData.last_name = nameParts.slice(1).join(' ');
-  } else {
-    snakeData.first_name = contactData.fullName;
-    snakeData.last_name = '';
+  async deleteContacts(ids: string[]) {
+    return this.makeRequest('/contacts/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
   }
 
-  const { data, error } = await supabase
-    .from('contacts')
-    .update(snakeData)
-    .eq('id', id)
-    .eq('organization_id', organizationId)
-    .select()
-    .single();
+  async uploadContactsCsv(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
 
-  if (error) {
-    throw new Error(error.message);
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/contacts/upload-csv`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
   }
 
-  return {
-    success: true,
-    message: 'Contact updated successfully',
-    data
-  };
-};
+  async exportContactsCsv(search?: string, type?: string) {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (type) params.append('type', type);
 
-export const deleteContact = async (id: string, organizationId: string | null) => {
-  requireOrganizationId(organizationId, 'deleteContact');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    return this.makeRequest(`/contacts/export?${params}`, {
+      method: 'POST',
+    });
   }
 
-  const { error } = await supabase
-    .from('contacts')
-    .delete()
-    .eq('id', id)
-    .eq('organization_id', organizationId);
-
-  if (error) {
-    throw new Error(error.message);
+  async createNote(noteData: { data: string; contactId: number }) {
+    return this.makeRequest('/notes', {
+      method: 'POST',
+      body: JSON.stringify(noteData),
+    });
   }
 
-  return {
-    success: true,
-    message: 'Contact deleted successfully'
-  };
-};
+  async getNotes(contactId: number, page: number = 1, limit: number = 10) {
+    const params = new URLSearchParams({
+      contactId: contactId.toString(),
+      page: page.toString(),
+      limit: limit.toString(),
+    });
 
-export const deleteContacts = async (ids: string[], organizationId: string | null) => {
-  requireOrganizationId(organizationId, 'deleteContacts');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    return this.makeRequest(`/notes?${params}`);
   }
 
-  const { error } = await supabase
-    .from('contacts')
-    .delete()
-    .in('id', ids)
-    .eq('organization_id', organizationId);
-
-  if (error) {
-    throw new Error(error.message);
+  async deleteNote(noteId: number) {
+    return this.makeRequest(`/notes/${noteId}`, {
+      method: 'DELETE',
+    });
   }
 
-  return {
-    success: true,
-    message: `${ids.length} contact(s) deleted successfully`
-  };
-};
+  async updateNote(noteId: number, data: string) {
+    return this.makeRequest(`/notes/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data }),
+    });
+  }
 
-export const uploadContactsCsv = async (file: File) => {
-  throw new Error('CSV upload not yet implemented in Supabase version');
-};
+  async replyToNote(noteId: number, data: string, contactId: number) {
+    return this.makeRequest(`/notes/${noteId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ data, contactId }),
+    });
+  }
 
-export interface CreateNoteRequest {
-  data: string;
-  contactId: number;
+  async syncQuickBooksContacts(): Promise<{ synced: number; errors: string[] }> {
+    const response = await this.makeRequest('/quickbooks/sync-contacts', {
+      method: 'POST',
+    });
+    return response.data;
+  }
 }
 
-export const createNote = async (noteData: CreateNoteRequest) => {
-  throw new Error('Notes not yet migrated to Supabase');
-};
+const contactsApiService = new ContactsApiService();
 
-export const getNotes = async (contactId: number, page: number = 1, limit: number = 10) => {
-  throw new Error('Notes not yet migrated to Supabase');
-};
-
-export const deleteNote = async (noteId: number) => {
-  throw new Error('Notes not yet migrated to Supabase');
-};
-
-export const updateNote = async (noteId: number, data: string) => {
-  throw new Error('Notes not yet migrated to Supabase');
-};
-
-export const replyToNote = async (noteId: number, data: string, contactId: number) => {
-  throw new Error('Notes not yet migrated to Supabase');
-};
+export const createContact = contactsApiService.createContact.bind(contactsApiService);
+export const getContacts = contactsApiService.getContacts.bind(contactsApiService);
+export const searchContactsByTypeAndName = contactsApiService.searchContactsByTypeAndName.bind(contactsApiService);
+export const getContactById = contactsApiService.getContactById.bind(contactsApiService);
+export const updateContact = contactsApiService.updateContact.bind(contactsApiService);
+export const deleteContact = contactsApiService.deleteContact.bind(contactsApiService);
+export const deleteContacts = contactsApiService.deleteContacts.bind(contactsApiService);
+export const uploadContactsCsv = contactsApiService.uploadContactsCsv.bind(contactsApiService);
+export const exportContactsCsv = contactsApiService.exportContactsCsv.bind(contactsApiService);
+export const createNote = contactsApiService.createNote.bind(contactsApiService);
+export const getNotes = contactsApiService.getNotes.bind(contactsApiService);
+export const deleteNote = contactsApiService.deleteNote.bind(contactsApiService);
+export const updateNote = contactsApiService.updateNote.bind(contactsApiService);
+export const replyToNote = contactsApiService.replyToNote.bind(contactsApiService);
+export const syncQuickBooksContacts = contactsApiService.syncQuickBooksContacts.bind(contactsApiService);

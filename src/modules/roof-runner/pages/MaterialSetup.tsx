@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, X } from 'lucide-react';
 import { apiService } from '../store/services/api';
 import Toast from '../../../shared/components/Toast';
-import { StagingBanner } from '../components/common';
 
 const MaterialSetup: React.FC = () => {
   const navigate = useNavigate();
@@ -84,16 +83,15 @@ const MaterialSetup: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
-      <StagingBanner />
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <button
           onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
-          className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm mb-4"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to material selection
+          Back to test
         </button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">New material</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -204,7 +202,7 @@ const MaterialSetup: React.FC = () => {
                     ))}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-20 h-20 border-2 border-dashed border-red-300 rounded-lg flex items-center justify-center text-red-600 hover:border-red-400"
+                      className="w-20 h-20 border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center text-blue-600 hover:border-blue-400"
                     >
                       <Upload className="w-6 h-6" />
                     </button>
@@ -302,9 +300,8 @@ const MaterialSetup: React.FC = () => {
         <button
           onClick={handleSave}
           disabled={loading || !formData.name.trim()}
-          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? 'Saving...' : 'Save'}
         </button>
       </div>

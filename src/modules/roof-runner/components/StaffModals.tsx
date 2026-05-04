@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { getRoleTemplates, RoleTemplate, getRoles, Role } from '../../../shared/store/services/rolesApi';
+import { getRoles, Role } from '../../../shared/store/services/rolesApi';
 
 interface StaffMember {
   id?: number;
@@ -8,7 +8,8 @@ interface StaffMember {
   lastName: string;
   email: string;
   phone: string;
-  extension: string;
+  countryCode: string;
+  extension?: string;
   password?: string;
   profileImage?: string;
   image?: File;
@@ -44,12 +45,12 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
     lastName: '',
     email: '',
     phone: '',
-    extension: '',
+    countryCode: '+1',
     password: '',
     profileImage: '',
     roleId: ''
   });
-  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [organizationRoles, setOrganizationRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
@@ -62,28 +63,13 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   const fetchRoles = async () => {
     try {
       setLoadingRoles(true);
-      console.log('🔄 Fetching role templates and organization roles...');
-
-      const [templatesResponse, rolesResponse] = await Promise.all([
-        getRoleTemplates(),
-        getRoles()
-      ]);
-
-      if (templatesResponse.success && templatesResponse.data) {
-        setRoleTemplates(templatesResponse.data);
-        console.log('✅ Loaded', templatesResponse.data.length, 'role templates');
-      } else {
-        console.error('❌ Failed to load role templates:', templatesResponse.error);
-      }
+      const rolesResponse = await getRoles();
 
       if (rolesResponse.success && rolesResponse.data) {
         setOrganizationRoles(rolesResponse.data);
-        console.log('✅ Loaded', rolesResponse.data.length, 'organization roles');
-      } else {
-        console.error('❌ Failed to load organization roles:', rolesResponse.error);
       }
     } catch (error) {
-      console.error('❌ Exception while fetching roles:', error);
+      console.error('Error fetching roles:', error);
     } finally {
       setLoadingRoles(false);
     }
@@ -91,12 +77,21 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
 
   useEffect(() => {
     if (member && isEdit) {
+      const countryCode = member.countryCode || '+1';
+      const rawPhone = member.phone || '';
+      const normalizedPhone = rawPhone.startsWith(countryCode)
+        ? rawPhone.slice(countryCode.length)
+        : rawPhone.startsWith('+1')
+          ? rawPhone.slice(2)
+          : rawPhone;
+      const digitsOnlyPhone = normalizedPhone.replace(/\D/g, '');
+
       setFormData({
         firstName: member.firstName || '',
         lastName: member.lastName || '',
         email: member.email || '',
-        phone: member.phone || '',
-        extension: member.extension || '',
+        phone: digitsOnlyPhone,
+        countryCode,
         password: '',
         profileImage: member.profileImage || '',
         roleId: member.roleId || ''
@@ -107,7 +102,7 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         lastName: '',
         email: '',
         phone: '',
-        extension: '',
+        countryCode: '+1',
         password: '',
         profileImage: '',
         roleId: ''
@@ -116,42 +111,65 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
   }, [member, isEdit, isOpen]);
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2.5 * 1024 * 1024) {
-        alert('File size must be less than 2.5MB');
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData({ ...formData, profileImage: e.target?.result as string });
-      };
-      reader.readAsDataURL(file);
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      const cleaned = value.replace(/\D/g, '');
+      setFormData({ ...formData, [name]: cleaned });
+    } else if (name === 'firstName' || name === 'lastName') {
+      const cleaned = value.replace(/[^a-zA-Z\s]/g, '');
+      setFormData({ ...formData, [name]: cleaned });
+    } else if (name === 'email') {
+      setFormData({ ...formData, [name]: value.trim() });
+    } else {
+      setFormData({ ...formData, [name]: value });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isFormValid = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{6,15}$/;
+
+    return (
+      formData.firstName.trim() !== '' &&
+      formData.lastName.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      emailRegex.test(formData.email) &&
+      formData.phone.trim() !== '' &&
+      phoneRegex.test(formData.phone) &&
+      formData.roleId !== ''
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     const submitData = { ...formData };
     if (imageFile) {
       submitData.image = imageFile;
     }
-    onSave(submitData);
+    try {
+      await onSave(submitData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative">
+        {/* Loading Overlay */}
+        {(isSubmitting || isLoading) && (
+          <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-3"></div>
+              <p className="text-gray-700 dark:text-gray-300 font-medium">Adding staff member...</p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Edit Member' : 'Add Member'}
@@ -162,32 +180,13 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Profile Image */}
-          <div className="text-center">
-            <div className="w-24 h-24 mx-auto mb-2 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-              {formData.profileImage ? (
-                <img src={formData.profileImage} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <Upload size={24} className="text-gray-400" />
-              )}
-            </div>
-            <label className="cursor-pointer text-sm text-primary-600 hover:underline">
-              Upload Profile Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
-            <p className="text-xs text-gray-500 mt-1">512×512 px, max 2.5MB</p>
-          </div>
+
 
           {/* Form Fields */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                First Name
+                First Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -195,12 +194,16 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 value={formData.firstName}
                 onChange={handleInputChange}
                 required
+                pattern="[a-zA-Z\s]+"
+                maxLength={30}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="John"
+                title="Only letters and spaces allowed (max 30 characters)"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Last Name
+                Last Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -208,14 +211,18 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
                 value={formData.lastName}
                 onChange={handleInputChange}
                 required
+                pattern="[a-zA-Z\s]+"
+                maxLength={30}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Doe"
+                title="Only letters and spaces allowed (max 30 characters)"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -223,34 +230,31 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
               value={formData.email}
               onChange={handleInputChange}
               required
+              pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="example@email.com"
+              title="Please enter a valid email address"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Phone
-              </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Phone Number <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+                +1
+              </span>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Extension
-              </label>
-              <input
-                type="text"
-                name="extension"
-                value={formData.extension}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                pattern="^[0-9]{6,15}$"
+                className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="1234567890"
+                title="Phone number must be 6-15 digits"
               />
             </div>
           </div>
@@ -258,73 +262,26 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
           {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Role
+              Role <span className="text-red-500">*</span>
             </label>
             <select
               name="roleId"
               value={formData.roleId}
               onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="">Select a role (optional)</option>
+              <option value="">Select a role</option>
               {loadingRoles ? (
                 <option disabled>Loading roles...</option>
               ) : (
-                <>
-                  {organizationRoles.length > 0 && (
-                    <optgroup label="Active Roles">
-                      {organizationRoles.map((role) => (
-                        <option key={`role-${role.id}`} value={`role:${role.id}`}>
-                          {role.name} {role.staff_count ? `(${role.staff_count} staff)` : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {roleTemplates.length > 0 && (
-                    <optgroup label="Role Templates">
-                      {roleTemplates.map((template) => (
-                        <option key={`template-${template.id}`} value={`template:${template.id}`}>
-                          {template.name} Template
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {organizationRoles.length === 0 && roleTemplates.length === 0 && (
-                    <option disabled>No roles available</option>
-                  )}
-                </>
+                organizationRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))
               )}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {organizationRoles.length === 0 && roleTemplates.length > 0
-                ? 'Create active roles from templates in Roles & Permissions first, or select a template to create one automatically'
-                : 'Assign a role to control this staff member\'s permissions'}
-            </p>
-          </div>
-
-          {/* Advanced Settings */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-primary-600 hover:underline"
-            >
-              Advanced Settings
-            </button>
-            {showAdvanced && (
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
@@ -338,10 +295,10 @@ export const AddEditStaffModal: React.FC<AddEditStaffModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={!isFormValid() || isSubmitting || isLoading}
               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Processing...' : `${isEdit ? 'Update' : 'Add'} Member`}
+              {(isSubmitting || isLoading) ? 'Saving...' : isEdit ? 'Update Member' : 'Add Member'}
             </button>
           </div>
         </form>
@@ -366,11 +323,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             <Trash2 size={24} className="text-red-600 dark:text-red-400" />
           </div>
         </div>
-        
+
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
           Delete Member
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
           Are you sure you want to delete <strong>{memberName}</strong>? This action cannot be undone.
         </p>

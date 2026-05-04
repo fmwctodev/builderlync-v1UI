@@ -1,73 +1,62 @@
 import React from 'react';
-import { Menu, Home, History, ChevronDown, LogOut, Settings, CreditCard, User, HelpCircle } from 'lucide-react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ThemeToggle } from './ThemeToggle';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, Menu, Search, User } from 'lucide-react';
 
 const Header: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isOrderPage = location.pathname === '/edge-view';
+    const navigate = useNavigate();
 
-  return (
-    <header className="topbar shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Link to="/edge-view/dashboard" className="flex items-center">
-                <span className="text-2xl font-semibold text-primary-600">
-                  <Home className="inline-block mr-2" size={24} />
-                  eagleview<span className="text-gray-400">®</span>
-                </span>
-              </Link>
+    return (
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                    {/* Logo / Brand */}
+                    <div className="flex">
+                        <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => navigate('/edge-view')}>
+                            <span className="text-xl font-bold text-primary-600">Edge View</span>
+                        </div>
+
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:ml-6 md:flex md:space-x-8">
+                            <Link
+                                to="/edge-view"
+                                className="inline-flex items-center px-1 pt-1 border-b-2 border-primary-500 text-sm font-medium text-gray-900"
+                            >
+                                Dashboard
+                            </Link>
+                            <Link
+                                to="/edge-view/orders"
+                                className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            >
+                                Orders
+                            </Link>
+                            <Link
+                                to="/edge-view/reports"
+                                className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            >
+                                Reports
+                            </Link>
+                        </nav>
+                    </div>
+
+                    {/* Right side icons */}
+                    <div className="flex items-center space-x-4">
+                        <button className="p-2 text-gray-400 hover:text-gray-500">
+                            <Search className="h-6 w-6" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-500">
+                            <Bell className="h-6 w-6" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-500">
+                            <User className="h-6 w-6" />
+                        </button>
+                        <button className="md:hidden p-2 text-gray-400 hover:text-gray-500">
+                            <Menu className="h-6 w-6" />
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div className="hidden md:flex items-center space-x-6">
-            <div className="flex items-center space-x-6">
-              <Link 
-                to="/edge-view/dashboard" 
-                className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors duration-150"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/edge-view/order-history" 
-                className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors duration-150"
-              >
-                <History className="inline-block mr-1" size={16} />
-                Order History
-              </Link>
-              <button 
-                onClick={() => navigate(isOrderPage ? '/edge-view/order-history' : '/edge-view')}
-                className="text-primary-600 hover:text-primary-700 px-4 py-2 text-sm font-medium border border-primary-600 rounded-md transition-colors duration-150"
-              >
-                {isOrderPage ? 'Cancel Order' : 'Order'}
-              </button>
-
-              <ThemeToggle />
-
-              <div className="relative">
-                <button className="flex items-center">
-                  <span className="bg-primary-600 text-white rounded-full w-8 h-8 flex items-center justify-center">
-                    SR
-                  </span>
-                  <ChevronDown size={16} className="ml-1 text-gray-500" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button 
-            type="button" 
-            className="md:hidden bg-white p-2 rounded-md text-gray-400 hover:text-gray-500"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
-      </div>
-    </header>
-  );
+        </header>
+    );
 };
 
 export default Header;

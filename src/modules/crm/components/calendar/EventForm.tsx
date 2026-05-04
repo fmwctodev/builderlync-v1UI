@@ -29,35 +29,75 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
   });
   const [inviteeEmail, setInviteeEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [syncToGoogle, setSyncToGoogle] = useState(false);
   const [jobs, setJobs] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const response = await getJobs();
-        setJobs(response.data.data || []);
+        console.log('Full response:', response);
+        const jobsData = response?.data?.data || response?.data || [];
+        console.log('Extracted jobs:', jobsData);
+        console.log('Jobs count:', jobsData.length);
+        setJobs(Array.isArray(jobsData) ? jobsData : []);
       } catch (error) {
         console.error('Failed to fetch jobs:', error);
+        setJobs([]);
       }
     };
     fetchJobs();
   }, []);
 
+  // Default end time to 1 hour after start time
+  useEffect(() => {
+    if (formData.startDate && formData.startTime && !formData.endTime && !editEvent) {
+      const [hours, minutes] = formData.startTime.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours + 1);
+      date.setMinutes(minutes);
+      const newEndTime = date.toTimeString().slice(0, 5);
+      setFormData(prev => ({ 
+        ...prev, 
+        endTime: newEndTime,
+        endDate: prev.endDate || formData.startDate 
+      }));
+    }
+  }, [formData.startTime, formData.startDate, editEvent]);
+
+  const today = new Date().toISOString().split('T')[0];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate dates are not in the past
+    if (formData.startDate < today) {
+      alert('Cannot create an event in the past.');
+      return;
+    }
+
     setLoading(true);
-    
+    setError(null);
+
     try {
       const targetJobId = formData.jobId || jobId;
+      const eventData = {
+        ...formData,
+        syncToGoogle,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      };
+
       if (editEvent) {
-        await updateJobEvent(targetJobId, editEvent.id, formData);
+        await updateJobEvent(targetJobId, editEvent.id, eventData);
       } else {
-        await createJobEvent(targetJobId, formData);
+        await createJobEvent(targetJobId, eventData);
       }
       onSuccess();
       onClose();
-    } catch (error) {
-      console.error('Failed to save event:', error);
+    } catch (err: any) {
+      console.error('Failed to save event:', err);
+      setError(err.message || 'An error occurred while saving the event.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +108,13 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
       <Card className="w-full max-w-md mx-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-xl font-semibold">{editEvent ? 'Edit Event' : 'Create Event'}</h2>
-          
+
+          {error && (
+            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -100,6 +146,7 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
               <input
                 type="date"
                 required
+                min={today}
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
@@ -123,6 +170,7 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
               <input
                 type="date"
                 required
+                min={formData.startDate || today}
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
@@ -158,12 +206,13 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
                 const newJobId = e.target.value ? parseInt(e.target.value) : undefined;
                 setFormData({ ...formData, jobId: newJobId });
               }}
-              className="w-full px-3 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600"
             >
-              <option value="">Select Job</option>
+              <option value="">Select Job ({jobs.length} available)</option>
+              {jobs.length === 0 && <option disabled>No jobs found</option>}
               {jobs.map((job) => (
                 <option key={job.id} value={job.id}>
-                  {job.name} - {job.location}
+                  {job.name || job.location || `Job #${job.id}`}
                 </option>
               ))}
             </select>
@@ -242,7 +291,21 @@ export function EventForm({ jobId, onClose, onSuccess, editEvent }: EventFormPro
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
               rows={3}
+              placeholder="Homeowner info will be added automatically to Google Calendar if synced."
             />
+          </div>
+
+          <div className="flex items-center space-x-2 py-2">
+            <input
+              type="checkbox"
+              id="syncToGoogle"
+              checked={syncToGoogle}
+              onChange={(e) => setSyncToGoogle(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="syncToGoogle" className="text-sm font-medium text-gray-700">
+              Add to Google Calendar
+            </label>
           </div>
 
           <div className="flex justify-end space-x-2">

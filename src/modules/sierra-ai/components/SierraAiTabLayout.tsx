@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Bot, BookOpen, Mic, Layers } from 'lucide-react';
+import { Bot, Phone, Layers, LucideIcon } from 'lucide-react';
 
-type TabId = 'agents' | 'knowledge-base' | 'voices' | 'templates';
+type TabId = 'agents' | 'voice-and-sms' | 'templates';
 
 interface Tab {
   id: TabId;
   label: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
 }
 
 interface SierraAiTabLayoutProps {
@@ -18,31 +18,27 @@ export function SierraAiTabLayout({ children }: SierraAiTabLayoutProps) {
 
   const tabs: Tab[] = [
     { id: 'agents', label: 'AI Agents', icon: Bot },
-    { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
-    { id: 'voices', label: 'Voices', icon: Mic },
+    { id: 'voice-and-sms', label: 'Voice and SMS', icon: Phone },
     { id: 'templates', label: 'Agent Templates', icon: Layers },
   ];
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
-        <div className="py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">AI Agents</h1>
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">AI Agents</h1>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-6 py-3 font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-red-600 text-white rounded-t-lg'
-                    : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-                }`}
+                className={`flex items-center space-x-2 px-4 py-2 font-medium transition-all border-b-2 ${activeTab === tab.id
+                  ? 'border-red-600 text-red-600'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
               >
                 <Icon size={16} />
                 <span>{tab.label}</span>
@@ -53,7 +49,7 @@ export function SierraAiTabLayout({ children }: SierraAiTabLayoutProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div>
         {children(activeTab)}
       </div>
     </div>

@@ -40,7 +40,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
   );
 
   return (
-    <div className="flex flex-col h-full bg-paper dark:bg-canvas">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Appointments</h1>
@@ -64,7 +64,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
           >
             Upcoming
             {activeTab === 'upcoming' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
           <button
@@ -77,7 +77,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
           >
             Cancelled
             {activeTab === 'cancelled' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
           <button
@@ -90,7 +90,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
           >
             All
             {activeTab === 'all' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
             )}
           </button>
         </div>
@@ -204,7 +204,10 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {appointment.contacts
-                          ? `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim() || appointment.contacts.email || '-'
+                          ? appointment.contacts.full_name
+                            || `${appointment.contacts.first_name || ''} ${appointment.contacts.last_name || ''}`.trim()
+                            || appointment.contacts.email
+                            || '-'
                           : '-'
                         }
                       </td>

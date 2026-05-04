@@ -44,12 +44,12 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
       const response = await getContactById(contactId);
       const contact = response.data;
       setFormData({
-        fullName: contact.full_name || '',
+        fullName: contact.fullName || '',
         email: contact.email || '',
         phone: contact.phone || '',
         company: contact.company || '',
         type: contact.type as 'customer' | 'lead',
-        labelOrRole: contact.label_or_role || '',
+        labelOrRole: contact.labelOrRole || '',
         address: contact.address || '',
         latitude: Number(contact.latitude) || 0,
         longitude: Number(contact.longitude) || 0
@@ -92,8 +92,8 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
     try {
       const response = await updateContact(contactId, formData);
       onContactUpdated({
-        id: response.data.id,
-        name: response.data.full_name
+        id: response.data.id || contactId,
+        name: response.data.fullName || response.data.full_name || formData.fullName
       });
       setErrors({});
       onClose();
@@ -155,9 +155,8 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                    errors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="John Doe"
                 />
                 {errors.fullName && (
@@ -200,9 +199,8 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                    errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="john@example.com"
                 />
                 {errors.email && (
@@ -212,7 +210,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Phone
+                  Phone <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"

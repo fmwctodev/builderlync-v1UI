@@ -2,31 +2,42 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/logo/icon.jpeg" />
+    <link rel="icon" type="image/png" href="/logo/icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BuilderLync - Unified Platform</title>
+    <script
+      src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+      defer
+    ></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function (OneSignal) {
+        const allowedHosts = ["app.builderlync.com"];
+        if (!allowedHosts.includes(window.location.hostname)) {
+          console.info(
+            "[OneSignal] Skipping init on non-production host:",
+            window.location.hostname
+          );
+          return;
+        }
 
-    <!-- Studio fonts: Inter (UI) + Geist Mono (numerics) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <!--
-      Inter Variable: font-display: swap (UI legibility tolerates fallback briefly).
-      Geist Mono Variable: font-display: optional (numerals tolerate fallback well; no FOUT swap).
-      The &display= query controls the URL-served fallback strategy for Google Fonts.
-    -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@latest/index.min.css"
-    />
-
-    <title>BuilderLynk - Unified Platform</title>
+        await OneSignal.init({
+          appId: "beca86ea-f844-411c-b294-93f24fa8bec5",
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          serviceWorkerUpdaterPath: "/OneSignalSDK.sw.js",
+          serviceWorkerParam: { scope: "/" },
+          safari_web_id:
+            "web.onesignal.auto.1a1cd43f-104c-4ac2-b069-e07775f1eeb9",
+          notifyButton: {
+            enable: false,
+          },
+        });
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </body>
 </html>

@@ -293,8 +293,8 @@ const PersonalDataSection: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-600 focus:border-transparent"
               >
                 <option value="en-US">English (United States)</option>
-                <option value="es-ES">Spanish (Spain)</option>
-                <option value="fr-FR">French (France)</option>
+                {/* <option value="es-ES">Spanish (Spain)</option>
+                <option value="fr-FR">French (France)</option> */}
               </select>
             </div>
           </div>

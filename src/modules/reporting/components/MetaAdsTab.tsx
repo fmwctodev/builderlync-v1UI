@@ -1,14 +1,43 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, TrendingUp, MousePointerClick, Eye, DollarSign, BarChart3, Loader2, RefreshCw, Settings, Users } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
-import {
-  getFacebookAdsAccount,
-  getFacebookAdsKPIs,
-  getFacebookAdsCampaignSummaries,
-  getFacebookAdsDailySpend,
-} from '../../../services/facebookAds';
-import type { FacebookAdsKPIs, FacebookAdsCampaignSummary, FacebookAdsAccount } from '../../../services/facebookAds';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+// Mock types and services
+interface FacebookAdsAccount {
+  id: string;
+  account_id: string;
+  account_name: string | null;
+  last_sync_at: string | null;
+}
+
+interface FacebookAdsKPIs {
+  totalSpend: number;
+  totalImpressions: number;
+  totalReach: number;
+  totalClicks: number;
+  totalConversions: number;
+  avgCtr: number;
+  avgCpc: number;
+  avgCpm: number;
+  roas: number;
+  campaignCount: number;
+}
+
+interface FacebookAdsCampaignSummary {
+  campaignId: string;
+  campaignName: string;
+  status: string;
+  objective: string;
+  spend: number;
+  impressions: number;
+  reach: number;
+  clicks: number;
+  conversions: number;
+  ctr: number;
+  cpm: number;
+  roas: number;
+}
 
 interface KPICardProps {
   icon: React.ReactNode;
@@ -46,7 +75,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 }
 
 function formatNum(val: number) {
@@ -63,44 +92,99 @@ const PRESET_RANGES = [
   { label: 'Last 7 days', days: 7 },
   { label: 'Last 30 days', days: 30 },
   { label: 'Last 90 days', days: 90 },
-  { label: 'Last 12 months', days: 365 },
 ];
 
 export function MetaAdsTab() {
   const { currentOrganization } = useCurrentOrganization();
-  const [account, setAccount] = useState<FacebookAdsAccount | null | undefined>(undefined);
+  const [account, setAccount] = useState<FacebookAdsAccount | null>(null);
   const [kpis, setKpis] = useState<FacebookAdsKPIs | null>(null);
   const [campaigns, setCampaigns] = useState<FacebookAdsCampaignSummary[]>([]);
-  const [dailyData, setDailyData] = useState<{ date: string; spend: number; clicks: number; reach: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedRange, setSelectedRange] = useState(30);
 
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - selectedRange);
-
   const load = useCallback(async () => {
-    if (!currentOrganization) return;
     setLoading(true);
-    try {
-      const [acc, kpisData, campaignData, daily] = await Promise.all([
-        getFacebookAdsAccount(currentOrganization.id),
-        getFacebookAdsKPIs(currentOrganization.id, startDate, endDate),
-        getFacebookAdsCampaignSummaries(currentOrganization.id, startDate, endDate),
-        getFacebookAdsDailySpend(currentOrganization.id, startDate, endDate),
-      ]);
-      setAccount(acc);
-      setKpis(kpisData);
-      setCampaigns(campaignData);
-      setDailyData(daily);
-    } catch (err) {
-      console.error('Failed to load Meta Ads data:', err);
-      setAccount(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization, selectedRange]);
+    
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setAccount({
+      id: '1',
+      account_id: 'act_1020304050',
+      account_name: 'BuilderLync Social',
+      last_sync_at: new Date().toISOString()
+    });
+
+    setKpis({
+      totalSpend: 8420.75,
+      totalImpressions: 620000,
+      totalReach: 310000,
+      totalClicks: 9400,
+      totalConversions: 142,
+      avgCtr: 1.52,
+      avgCpc: 0.90,
+      avgCpm: 13.58,
+      roas: 5.6,
+      campaignCount: 8
+    });
+
+    setCampaigns([
+      {
+        campaignId: 'm1',
+        campaignName: 'Retargeting - Recent Visitors',
+        status: 'active',
+        objective: 'CONVERSIONS',
+        spend: 2100.50,
+        impressions: 120000,
+        reach: 45000,
+        clicks: 3200,
+        conversions: 84,
+        ctr: 2.67,
+        cpm: 17.50,
+        roas: 7.2
+      },
+      {
+        campaignId: 'm2',
+        campaignName: 'Prospecting - Lookalike Audience',
+        status: 'active',
+        objective: 'LEAD_GENERATION',
+        spend: 4500.25,
+        impressions: 400000,
+        reach: 220000,
+        clicks: 5100,
+        conversions: 48,
+        ctr: 1.28,
+        cpm: 11.25,
+        roas: 4.8
+      },
+      {
+        campaignId: 'm3',
+        campaignName: 'Awareness - Brand Video',
+        status: 'paused',
+        objective: 'AWARENESS',
+        spend: 1820.00,
+        impressions: 100000,
+        reach: 85000,
+        clicks: 1100,
+        conversions: 10,
+        ctr: 1.1,
+        cpm: 18.20,
+        roas: 1.2
+      }
+    ]);
+
+    setDailyData(
+      Array.from({ length: 14 }).map((_, i) => ({
+        date: new Date(Date.now() - (13 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        spend: 200 + Math.random() * 300,
+        clicks: 60 + Math.random() * 80
+      }))
+    );
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     load();
@@ -113,26 +197,19 @@ export function MetaAdsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
       </div>
     );
   }
 
-  if (account === null) {
+  if (!account) {
     return (
       <div className="p-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4">
-            <BarChart3 className="w-8 h-8 text-primary-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Meta Ads Account Connected</h3>
-          <p className="text-gray-500 dark:text-gray-400 max-w-sm mb-6">
-            Connect your Meta Ads (Facebook) account to view real-time campaign performance, spend, reach, and conversion data.
-          </p>
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors">
-            <Settings className="w-4 h-4" />
-            Connect Meta Ads
-          </button>
+          <BarChart3 className="w-12 h-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No Meta Ads Connected</h3>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-sm">Connect your Meta Ads account to see campaign insights.</p>
+          <button className="mt-6 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium">Connect Account</button>
         </div>
       </div>
     );
@@ -142,16 +219,9 @@ export function MetaAdsTab() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          {account && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Account: <span className="font-medium text-gray-700 dark:text-gray-300">{account.account_name ?? account.account_id}</span>
-              {account.last_sync_at && (
-                <span className="ml-2 text-xs text-gray-400">
-                  Last synced {new Date(account.last_sync_at).toLocaleDateString()}
-                </span>
-              )}
-            </p>
-          )}
+          <p className="text-sm text-gray-500">
+            Account: <span className="font-medium text-gray-900 dark:text-white">{account.account_name} ({account.account_id})</span>
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -161,15 +231,15 @@ export function MetaAdsTab() {
                 onClick={() => setSelectedRange(r.days)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   selectedRange === r.days
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    ? 'bg-cyan-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50'
                 }`}
               >
                 {r.label}
               </button>
             ))}
           </div>
-          <button onClick={load} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <button onClick={load} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition-colors">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
@@ -178,78 +248,50 @@ export function MetaAdsTab() {
       {kpis && (
         <div className="grid grid-cols-4 gap-4">
           <KPICard
-            icon={<DollarSign className="w-5 h-5 text-primary-600" />}
-            iconBg="bg-primary-500/10"
+            icon={<DollarSign className="w-5 h-5 text-cyan-600" />}
+            iconBg="bg-cyan-100 dark:bg-cyan-900/30"
             label="Total Spend"
             value={formatCurrency(kpis.totalSpend)}
           />
           <KPICard
-            icon={<Users className="w-5 h-5 text-sky-500" />}
-            iconBg="bg-sky-500/10"
+            icon={<Users className="w-5 h-5 text-sky-600" />}
+            iconBg="bg-sky-100 dark:bg-sky-900/30"
             label="Reach"
             value={formatNum(kpis.totalReach)}
-            sub={`Impressions: ${formatNum(kpis.totalImpressions)}`}
+            sub={`Impr: ${formatNum(kpis.totalImpressions)}`}
           />
           <KPICard
-            icon={<MousePointerClick className="w-5 h-5 text-teal-500" />}
-            iconBg="bg-teal-500/10"
+            icon={<MousePointerClick className="w-5 h-5 text-teal-600" />}
+            iconBg="bg-teal-100 dark:bg-teal-900/30"
             label="Clicks"
             value={formatNum(kpis.totalClicks)}
             sub={`CTR: ${formatPct(kpis.avgCtr)}`}
           />
           <KPICard
-            icon={<TrendingUp className="w-5 h-5 text-emerald-500" />}
-            iconBg="bg-emerald-500/10"
+            icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
+            iconBg="bg-emerald-100 dark:bg-emerald-900/30"
             label="Conversions"
-            value={kpis.totalConversions.toFixed(0)}
-            sub={`ROAS: ${kpis.roas.toFixed(2)}x`}
+            value={kpis.totalConversions.toString()}
+            sub={`ROAS: ${kpis.roas}x`}
           />
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-4">
-        {kpis && (
-          <>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg CPC</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis.avgCpc)}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg CPM</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis.avgCpm)}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Active Campaigns</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{kpis.campaignCount}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">ROAS</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{kpis.roas.toFixed(2)}x</p>
-            </div>
-          </>
-        )}
-      </div>
-
       {dailyData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Spend</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Daily Activity</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
-                  tickFormatter={(d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  interval="preserveStartEnd"
+              <BarChart data={dailyData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 11 }} 
+                  tickFormatter={(d) => d.split('-').slice(1).join('/')}
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={(v) => `$${v}`} />
-                <Tooltip
-                  formatter={(val: number) => [formatCurrency(val), 'Spend']}
-                  labelFormatter={(d) => new Date(d).toLocaleDateString()}
-                  contentStyle={{ background: 'var(--tooltip-bg, #fff)', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                />
-                <Bar dataKey="spend" fill="#dc2626" radius={[3, 3, 0, 0]} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <Tooltip />
+                <Bar dataKey="spend" fill="#2563eb" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -266,52 +308,43 @@ export function MetaAdsTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search campaigns..."
-              className="pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
             />
           </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3">
-            <BarChart3 className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No campaign data for the selected period</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Campaign</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Objective</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Spend</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Reach</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Clicks</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CTR</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">CPM</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Conversions</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ROAS</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Objective</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Spend</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Reach</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Clicks</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">CTR</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Conv.</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">ROAS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+              {filtered.map((c) => (
+                <tr key={c.campaignId} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{c.campaignName}</td>
+                  <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                  <td className="px-4 py-3 text-sm text-gray-500 capitalize">{c.objective.toLowerCase().replace('_', ' ')}</td>
+                  <td className="px-4 py-3 text-sm text-right">{formatCurrency(c.spend)}</td>
+                  <td className="px-4 py-3 text-sm text-right">{formatNum(c.reach)}</td>
+                  <td className="px-4 py-3 text-sm text-right">{formatNum(c.clicks)}</td>
+                  <td className="px-4 py-3 text-sm text-right">{formatPct(c.ctr)}</td>
+                  <td className="px-4 py-3 text-sm text-right">{c.conversions}</td>
+                  <td className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">{c.roas}x</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                {filtered.map((c) => (
-                  <tr key={c.campaignId} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{c.campaignName}</td>
-                    <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 capitalize">{c.objective ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{formatCurrency(c.spend)}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{formatNum(c.reach)}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{formatNum(c.clicks)}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{formatPct(c.ctr)}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{formatCurrency(c.cpm)}</td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{c.conversions.toFixed(1)}</td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-white">{c.roas.toFixed(2)}x</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

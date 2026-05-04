@@ -1,225 +1,257 @@
 import React, { useState, useEffect } from 'react';
-import { Info, Copy, RefreshCw, MoreVertical, Plus, ChevronDown } from 'lucide-react';
-import { useCurrentOrganization } from '../../../../shared/context/OrgContext';
-import { organizationsApi, OrganizationBusinessInfo } from '../../../../shared/services/organizationsApi';
+import { Info, Copy, RefreshCw, MoreVertical, Plus, ChevronDown, Upload, Trash2, Save } from 'lucide-react';
+import { BusinessInfo as BusinessInfoType, getBusinessInfo, updateBusinessInfo, uploadBusinessLogo, generateApiKey } from '../../../../shared/store/services/businessInfoApi';
 
 const BusinessInfo: React.FC = () => {
-  const { currentOrganizationId } = useCurrentOrganization();
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfoType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const [friendlyBusinessName, setFriendlyBusinessName] = useState('');
-  const [legalBusinessName, setLegalBusinessName] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('');
-  const [businessPhone, setBusinessPhone] = useState('');
-  const [brandedDomain, setBrandedDomain] = useState('');
-  const [businessWebsite, setBusinessWebsite] = useState('');
-  const [businessNiche, setBusinessNiche] = useState('Roofing Contractor');
-  const [businessCurrency, setBusinessCurrency] = useState('USD - US Dollar ($)');
-
-  const [streetAddress, setStreetAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [stateRegion, setStateRegion] = useState('Texas');
-  const [country, setCountry] = useState('United States');
-  const [timezone, setTimezone] = useState('GMT-06:00 America/Chicago (CST)');
-  const [platformLanguage, setPlatformLanguage] = useState('English (United States)');
-  const [outboundLanguage, setOutboundLanguage] = useState('');
-
-  const [businessType, setBusinessType] = useState('Limited Liability Company Or Sole-Proprietorship');
-  const [businessIndustry, setBusinessIndustry] = useState('CONSTRUCTION');
-  const [registrationIdType, setRegistrationIdType] = useState('USA: Employer Identification Number (EIN)');
-  const [registrationNumber, setRegistrationNumber] = useState('');
-  const [notRegistered, setNotRegistered] = useState(false);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(['usa-canada']);
-
-  const [repFirstName, setRepFirstName] = useState('');
-  const [repLastName, setRepLastName] = useState('');
-  const [repEmail, setRepEmail] = useState('');
-  const [repJobPosition, setRepJobPosition] = useState('CEO');
-  const [repPhone, setRepPhone] = useState('');
-
-  const [allowDuplicateContact, setAllowDuplicateContact] = useState(false);
-  const [contactSearchPref, setContactSearchPref] = useState('Email');
-  const [contactSearchSecondary, setContactSearchSecondary] = useState('Phone');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentOrganizationId) {
-      loadBusinessInfo();
-    }
-  }, [currentOrganizationId]);
-
+    loadBusinessInfo();
+  }, []);
   const loadBusinessInfo = async () => {
-    if (!currentOrganizationId) return;
-
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const data = await organizationsApi.getOrganizationBusinessInfo(currentOrganizationId);
-
-      if (data) {
-        setFriendlyBusinessName(data.friendly_business_name || '');
-        setLegalBusinessName(data.legal_business_name || '');
-        setBusinessEmail(data.business_email || '');
-        setBusinessPhone(data.business_phone || '');
-        setBrandedDomain(data.branded_domain || '');
-        setBusinessWebsite(data.business_website || '');
-        setBusinessNiche(data.business_niche || 'Roofing Contractor');
-        setBusinessCurrency(data.business_currency || 'USD - US Dollar ($)');
-
-        setStreetAddress(data.street_address || '');
-        setCity(data.city || '');
-        setPostalCode(data.postal_code || '');
-        setStateRegion(data.state_region || 'Texas');
-        setCountry(data.country || 'United States');
-        setTimezone(data.timezone || 'GMT-06:00 America/Chicago (CST)');
-        setPlatformLanguage(data.platform_language || 'English (United States)');
-        setOutboundLanguage(data.outbound_language || '');
-
-        setBusinessType(data.business_type || 'Limited Liability Company Or Sole-Proprietorship');
-        setBusinessIndustry(data.business_industry || 'CONSTRUCTION');
-        setRegistrationIdType(data.registration_id_type || 'USA: Employer Identification Number (EIN)');
-        setRegistrationNumber(data.registration_number || '');
-        setNotRegistered(data.not_registered || false);
-        setSelectedRegions(data.business_regions || ['usa-canada']);
-
-        setRepFirstName(data.representative_first_name || '');
-        setRepLastName(data.representative_last_name || '');
-        setRepEmail(data.representative_email || '');
-        setRepJobPosition(data.representative_job_position || 'CEO');
-        setRepPhone(data.representative_phone || '');
-
-        setAllowDuplicateContact(data.allow_duplicate_contact || false);
-        setContactSearchPref(data.contact_search_preference || 'Email');
-        setContactSearchSecondary(data.contact_search_secondary || 'Phone');
+      setLoading(true);
+      const response = await getBusinessInfo();
+      if (response.success) {
+        setBusinessInfo(response.data);
+        if (response.data.business_logo) {
+          setLogoPreview(response.data.business_logo);
+        }
+      } else {
+        // Show default values even if API fails
+        const defaultBusinessInfo: BusinessInfoType = {
+          friendly_business_name: '',
+          legal_business_name: '',
+          business_email: '',
+          business_phone: '',
+          branded_domain: '',
+          business_website: '',
+          business_niche: 'Roofing Contractor',
+          business_currency: 'USD',
+          business_logo: '',
+          street_address: '',
+          city: '',
+          postal_code: '',
+          state: '',
+          country: 'United States',
+          time_zone: 'GMT-06:00 America/Chicago (CST)',
+          platform_language: 'English (United States)',
+          outbound_language: '',
+          business_type: 'Limited Liability Company Or Sole-Proprietorship',
+          business_industry: 'CONSTRUCTION',
+          business_registration_id_type: 'USA: Employer Identification Number (EIN)',
+          business_registration_number: '',
+          is_not_registered: false,
+          business_regions: ['usa-canada'],
+          representative_first_name: '',
+          representative_last_name: '',
+          representative_email: '',
+          representative_job_position: 'CEO',
+          representative_phone: '',
+          allow_duplicate_contact: false,
+          primary_search_field: 'Email',
+          secondary_search_field: 'Phone',
+          location_id: 'Not generated',
+          api_key: 'Not generated'
+        };
+        setBusinessInfo(defaultBusinessInfo);
+        setError(null);
       }
-    } catch (err) {
+    } catch (err: any) {
+      // Show default values even if request fails
+      const defaultBusinessInfo: BusinessInfoType = {
+        friendly_business_name: '',
+        legal_business_name: '',
+        business_email: '',
+        business_phone: '',
+        branded_domain: '',
+        business_website: '',
+        business_niche: 'Roofing Contractor',
+        business_currency: 'USD',
+        business_logo: '',
+        street_address: '',
+        city: '',
+        postal_code: '',
+        state: '',
+        country: 'United States',
+        time_zone: 'GMT-06:00 America/Chicago (CST)',
+        platform_language: 'English (United States)',
+        outbound_language: '',
+        business_type: 'Limited Liability Company Or Sole-Proprietorship',
+        business_industry: 'CONSTRUCTION',
+        business_registration_id_type: 'USA: Employer Identification Number (EIN)',
+        business_registration_number: '',
+        is_not_registered: false,
+        business_regions: ['usa-canada'],
+        representative_first_name: '',
+        representative_last_name: '',
+        representative_email: '',
+        representative_job_position: 'CEO',
+        representative_phone: '',
+        allow_duplicate_contact: false,
+        primary_search_field: 'Email',
+        secondary_search_field: 'Phone',
+        location_id: 'Not generated',
+        api_key: 'Not generated'
+      };
+      setBusinessInfo(defaultBusinessInfo);
+      setError(null);
       console.error('Error loading business info:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load business information');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleUpdateBusinessInfo = async () => {
-    if (!currentOrganizationId) return;
+  const handleSave = async () => {
+    if (!businessInfo) return;
 
     try {
-      setIsSaving(true);
-      setError(null);
-      setSuccessMessage(null);
+      setSaving(true);
 
-      const businessInfoData: Partial<OrganizationBusinessInfo> = {
-        friendly_business_name: friendlyBusinessName,
-        legal_business_name: legalBusinessName,
-        business_email: businessEmail,
-        business_phone: businessPhone,
-        branded_domain: brandedDomain,
-        business_website: businessWebsite,
-        business_niche: businessNiche,
-        business_currency: businessCurrency,
-        street_address: streetAddress,
-        city: city,
-        postal_code: postalCode,
-        state_region: stateRegion,
-        country: country,
-        timezone: timezone,
-        platform_language: platformLanguage,
-        outbound_language: outboundLanguage,
-        business_type: businessType,
-        business_industry: businessIndustry,
-        registration_id_type: registrationIdType,
-        registration_number: registrationNumber,
-        not_registered: notRegistered,
-        business_regions: selectedRegions,
-        representative_first_name: repFirstName,
-        representative_last_name: repLastName,
-        representative_email: repEmail,
-        representative_job_position: repJobPosition,
-        representative_phone: repPhone,
-        allow_duplicate_contact: allowDuplicateContact,
-        contact_search_preference: contactSearchPref,
-        contact_search_secondary: contactSearchSecondary,
-      };
-
-      await organizationsApi.updateOrganizationBusinessInfo(currentOrganizationId, businessInfoData);
-
-      setSuccessMessage('Business information updated successfully!');
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      console.error('Error updating business info:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update business information');
+      const response = await updateBusinessInfo(businessInfo);
+      if (response.success) {
+        alert('Business information saved successfully!');
+      } else {
+        setError('Failed to save business information: ' + response.message);
+      }
+    } catch (err: any) {
+      setError('Failed to save business information');
+      console.error('Error saving business info:', err);
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
-  const toggleRegion = (region: string) => {
-    setSelectedRegions(prev =>
-      prev.includes(region)
-        ? prev.filter(r => r !== region)
-        : [...prev, region]
-    );
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2.5 * 1024 * 1024) {
+        setError('Logo file size must be less than 2.5MB');
+        return;
+      }
+
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload logo immediately
+      try {
+        const response = await uploadBusinessLogo(file);
+        if (response.success && businessInfo) {
+          const updatedInfo = { ...businessInfo, business_logo: response.data.logoUrl };
+          setBusinessInfo(updatedInfo);
+
+          // If no existing record (id is missing), create one with logo
+          if (!businessInfo.id) {
+            await updateBusinessInfo({ business_logo: response.data.logoUrl });
+          }
+        }
+      } catch (err) {
+        setError('Failed to upload logo');
+        console.error('Error uploading logo:', err);
+      }
+    }
+  };
+
+  const handleGenerateApiKey = async () => {
+    try {
+      const response = await generateApiKey();
+      if (response.success && businessInfo) {
+        setBusinessInfo({ ...businessInfo, api_key: response.data.apiKey });
+      }
+    } catch (error) {
+      console.error('Error generating API key:', error);
+    }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  if (isLoading) {
+  const updateField = (field: keyof BusinessInfoType, value: any) => {
+    if (businessInfo) {
+      setBusinessInfo({ ...businessInfo, [field]: value });
+    }
+  };
+
+  const toggleRegion = (region: string) => {
+    if (businessInfo && businessInfo.business_regions) {
+      const regions = businessInfo.business_regions.includes(region)
+        ? businessInfo.business_regions.filter((r: string) => r !== region)
+        : [...businessInfo.business_regions, region];
+      updateField('business_regions', regions);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600 dark:text-gray-400">Loading business information...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
+  if (!businessInfo) return null;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Information</h2>
-        <p className="text-gray-600 dark:text-gray-400">Manage your company details and locations</p>
-      </div>
-
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800 text-sm">{error}</p>
         </div>
       )}
 
-      {successMessage && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <p className="text-green-800 dark:text-green-200">{successMessage}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Information</h2>
+          <p className="text-gray-600 dark:text-gray-400">Manage your company details and locations</p>
         </div>
-      )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center space-x-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+        >
+          <Save className="w-4 h-4" />
+          <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">General Information</h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            {/* <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>Location ID</span>
               <Info className="w-4 h-4" />
-              <span className="font-mono">{currentOrganizationId?.substring(0, 20)}</span>
+              <span className="font-mono">{businessInfo.location_id || 'Not generated'}</span>
               <button
-                onClick={() => copyToClipboard(currentOrganizationId || '')}
+                onClick={() => copyToClipboard(businessInfo.location_id || '')}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Copy className="w-4 h-4" />
               </button>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-start space-x-6">
             <div className="flex-shrink-0">
-              <div className="w-64 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                  <p className="text-xs font-medium">{friendlyBusinessName?.toUpperCase() || 'BUSINESS LOGO'}</p>
-                </div>
+              <div className="w-64 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Business Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <p className="text-xs font-medium">{businessInfo.friendly_business_name || 'BUSINESS'}</p>
+                    <p className="text-xs font-medium">LOGO</p>
+                  </div>
+                )}
               </div>
               <div className="mt-3">
                 <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -228,12 +260,29 @@ const BusinessInfo: React.FC = () => {
                   The proposed size is 350px * 180px. No bigger than 2.5 MB
                 </p>
                 <div className="flex items-center space-x-2">
-                  <button className="px-4 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <label className="px-4 py-1.5 text-sm font-medium text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer">
+                    <Upload className="w-4 h-4 inline mr-1" />
                     Upload
-                  </button>
-                  <button className="px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                    Remove
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {logoPreview && (
+                    <button
+                      onClick={() => {
+                        setLogoPreview(null);
+                        setLogoFile(null);
+                        updateField('business_logo', '');
+                      }}
+                      className="px-4 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4 inline mr-1" />
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -245,9 +294,9 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="text"
-              value={friendlyBusinessName}
-              onChange={(e) => setFriendlyBusinessName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={businessInfo.friendly_business_name}
+              onChange={(e) => updateField('friendly_business_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -256,17 +305,12 @@ const BusinessInfo: React.FC = () => {
               <span>Legal Business Name</span>
               <Info className="w-4 h-4" />
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={legalBusinessName}
-                onChange={(e) => setLegalBusinessName(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.legal_business_name}
+              onChange={(e) => updateField('legal_business_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Enter the exact legal business name, as registered with the EIN
             </p>
@@ -279,9 +323,9 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="email"
-                value={businessEmail}
-                onChange={(e) => setBusinessEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.business_email}
+                onChange={(e) => updateField('business_email', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
@@ -290,9 +334,9 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="tel"
-                value={businessPhone}
-                onChange={(e) => setBusinessPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.business_phone}
+                onChange={(e) => updateField('business_phone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -305,15 +349,11 @@ const BusinessInfo: React.FC = () => {
             <div className="flex items-center space-x-2">
               <input
                 type="text"
-                value={brandedDomain}
-                onChange={(e) => setBrandedDomain(e.target.value)}
                 placeholder="Branded Domain"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={businessInfo.branded_domain || ''}
+                onChange={(e) => updateField('branded_domain', e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
-              <button className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
-                <Plus className="w-4 h-4" />
-                <span>Add Domain</span>
-              </button>
             </div>
           </div>
 
@@ -323,9 +363,9 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="url"
-              value={businessWebsite}
-              onChange={(e) => setBusinessWebsite(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={businessInfo.business_website || ''}
+              onChange={(e) => updateField('business_website', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
@@ -336,13 +376,13 @@ const BusinessInfo: React.FC = () => {
               </label>
               <div className="relative">
                 <select
-                  value={businessNiche}
-                  onChange={(e) => setBusinessNiche(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={businessInfo.business_niche}
+                  onChange={(e) => updateField('business_niche', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option>Roofing Contractor</option>
-                  <option>General Contractor</option>
-                  <option>Solar Installation</option>
+                  <option value="Roofing Contractor">Roofing Contractor</option>
+                  <option value="General Contractor">General Contractor</option>
+                  <option value="Solar Installation">Solar Installation</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
@@ -354,35 +394,38 @@ const BusinessInfo: React.FC = () => {
               </label>
               <div className="relative">
                 <select
-                  value={businessCurrency}
-                  onChange={(e) => setBusinessCurrency(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={businessInfo.business_currency}
+                  onChange={(e) => updateField('business_currency', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option>USD - US Dollar ($)</option>
-                  <option>EUR - Euro (€)</option>
-                  <option>GBP - British Pound (£)</option>
+                  <option value="USD">USD - US Dollar ($)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="GBP">GBP - British Pound (£)</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>API Key</span>
               <Info className="w-4 h-4" />
-              <span className="font-mono">eyJh****-****-****-*****-*****TRbNgE</span>
+              <span className="font-mono">{businessInfo.api_key ? `${businessInfo.api_key.substring(0, 8)}****` : 'Not generated'}</span>
               <button
-                onClick={() => copyToClipboard('eyJh****-****-****-*****-*****TRbNgE')}
+                onClick={() => copyToClipboard(businessInfo.api_key || '')}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+              <button
+                onClick={handleGenerateApiKey}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 space-y-6">
@@ -396,17 +439,12 @@ const BusinessInfo: React.FC = () => {
               <span>Street Address</span>
               <Info className="w-4 h-4" />
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={streetAddress}
-                onChange={(e) => setStreetAddress(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.street_address}
+              onChange={(e) => updateField('street_address', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -416,8 +454,8 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                value={businessInfo.city}
+                onChange={(e) => updateField('city', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -427,8 +465,8 @@ const BusinessInfo: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
+                value={businessInfo.postal_code}
+                onChange={(e) => updateField('postal_code', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -440,13 +478,61 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={stateRegion}
-                onChange={(e) => setStateRegion(e.target.value)}
+                value={businessInfo.state}
+                onChange={(e) => updateField('state', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
-                <option>Texas</option>
-                <option>California</option>
-                <option>Florida</option>
+                <option value="">Select State</option>
+                <option value="AL">Alabama</option>
+                <option value="AK">Alaska</option>
+                <option value="AZ">Arizona</option>
+                <option value="AR">Arkansas</option>
+                <option value="CA">California</option>
+                <option value="CO">Colorado</option>
+                <option value="CT">Connecticut</option>
+                <option value="DE">Delaware</option>
+                <option value="FL">Florida</option>
+                <option value="GA">Georgia</option>
+                <option value="HI">Hawaii</option>
+                <option value="ID">Idaho</option>
+                <option value="IL">Illinois</option>
+                <option value="IN">Indiana</option>
+                <option value="IA">Iowa</option>
+                <option value="KS">Kansas</option>
+                <option value="KY">Kentucky</option>
+                <option value="LA">Louisiana</option>
+                <option value="ME">Maine</option>
+                <option value="MD">Maryland</option>
+                <option value="MA">Massachusetts</option>
+                <option value="MI">Michigan</option>
+                <option value="MN">Minnesota</option>
+                <option value="MS">Mississippi</option>
+                <option value="MO">Missouri</option>
+                <option value="MT">Montana</option>
+                <option value="NE">Nebraska</option>
+                <option value="NV">Nevada</option>
+                <option value="NH">New Hampshire</option>
+                <option value="NJ">New Jersey</option>
+                <option value="NM">New Mexico</option>
+                <option value="NY">New York</option>
+                <option value="NC">North Carolina</option>
+                <option value="ND">North Dakota</option>
+                <option value="OH">Ohio</option>
+                <option value="OK">Oklahoma</option>
+                <option value="OR">Oregon</option>
+                <option value="PA">Pennsylvania</option>
+                <option value="RI">Rhode Island</option>
+                <option value="SC">South Carolina</option>
+                <option value="SD">South Dakota</option>
+                <option value="TN">Tennessee</option>
+                <option value="TX">Texas</option>
+                <option value="UT">Utah</option>
+                <option value="VT">Vermont</option>
+                <option value="VA">Virginia</option>
+                <option value="WA">Washington</option>
+                <option value="WV">West Virginia</option>
+                <option value="WI">Wisconsin</option>
+                <option value="WY">Wyoming</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -458,13 +544,13 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                value={businessInfo.country}
+                onChange={(e) => updateField('country', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>United States</option>
-                <option>Canada</option>
-                <option>Mexico</option>
+                {/* <option>Canada</option>
+                <option>Mexico</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -476,13 +562,16 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
+                value={businessInfo.time_zone}
+                onChange={(e) => updateField('time_zone', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
-                <option>GMT-06:00 America/Chicago (CST)</option>
-                <option>GMT-05:00 America/New_York (EST)</option>
-                <option>GMT-08:00 America/Los_Angeles (PST)</option>
+                <option value="GMT-05:00 America/New_York (EST)">GMT-05:00 America/New_York (EST)</option>
+                <option value="GMT-06:00 America/Chicago (CST)">GMT-06:00 America/Chicago (CST)</option>
+                <option value="GMT-07:00 America/Denver (MST)">GMT-07:00 America/Denver (MST)</option>
+                <option value="GMT-08:00 America/Los_Angeles (PST)">GMT-08:00 America/Los_Angeles (PST)</option>
+                <option value="GMT-09:00 America/Anchorage (AKST)">GMT-09:00 America/Anchorage (AKST)</option>
+                <option value="GMT-10:00 Pacific/Honolulu (HST)">GMT-10:00 Pacific/Honolulu (HST)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -495,13 +584,13 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={platformLanguage}
-                onChange={(e) => setPlatformLanguage(e.target.value)}
+                value={businessInfo.platform_language}
+                onChange={(e) => updateField('platform_language', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>English (United States)</option>
-                <option>Spanish (Spain)</option>
-                <option>French (France)</option>
+                {/* <option>Spanish (Spain)</option>
+                <option>French (France)</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -514,13 +603,13 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={outboundLanguage}
-                onChange={(e) => setOutboundLanguage(e.target.value)}
+                value={businessInfo.outbound_language || ''}
+                onChange={(e) => updateField('outbound_language', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>Select language</option>
                 <option>English</option>
-                <option>Spanish</option>
+                {/* <option>Spanish</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -528,11 +617,11 @@ const BusinessInfo: React.FC = () => {
 
           <div className="flex justify-end">
             <button
-              onClick={handleUpdateBusinessInfo}
-              disabled={isSaving}
-              className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
             >
-              {isSaving ? 'Saving...' : 'Update'}
+              {saving ? 'Saving...' : 'Update'}
             </button>
           </div>
         </div>
@@ -548,8 +637,8 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={businessType}
-                onChange={(e) => setBusinessType(e.target.value)}
+                value={businessInfo.business_type}
+                onChange={(e) => updateField('business_type', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>Limited Liability Company Or Sole-Proprietorship</option>
@@ -566,13 +655,13 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={businessIndustry}
-                onChange={(e) => setBusinessIndustry(e.target.value)}
+                value={businessInfo.business_industry}
+                onChange={(e) => updateField('business_industry', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>CONSTRUCTION</option>
-                <option>Technology</option>
-                <option>Healthcare</option>
+                {/* <option>Technology</option>
+                <option>Healthcare</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -584,13 +673,13 @@ const BusinessInfo: React.FC = () => {
             </label>
             <div className="relative">
               <select
-                value={registrationIdType}
-                onChange={(e) => setRegistrationIdType(e.target.value)}
+                value={businessInfo.business_registration_id_type}
+                onChange={(e) => updateField('business_registration_id_type', e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option>USA: Employer Identification Number (EIN)</option>
-                <option>Canada: Business Number (BN)</option>
-                <option>UK: Company Registration Number (CRN)</option>
+                {/* <option>Canada: Business Number (BN)</option>
+                <option>UK: Company Registration Number (CRN)</option> */}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -602,8 +691,8 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="text"
-              value={registrationNumber}
-              onChange={(e) => setRegistrationNumber(e.target.value)}
+              value={businessInfo.business_registration_number || ''}
+              onChange={(e) => updateField('business_registration_number', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
@@ -613,8 +702,8 @@ const BusinessInfo: React.FC = () => {
           <input
             type="checkbox"
             id="notRegistered"
-            checked={notRegistered}
-            onChange={(e) => setNotRegistered(e.target.checked)}
+            checked={businessInfo.is_not_registered}
+            onChange={(e) => updateField('is_not_registered', e.target.checked)}
             className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
           />
           <label htmlFor="notRegistered" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -622,7 +711,7 @@ const BusinessInfo: React.FC = () => {
           </label>
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Business Regions of Operations
           </label>
@@ -638,7 +727,7 @@ const BusinessInfo: React.FC = () => {
                 <input
                   type="checkbox"
                   id={region.id}
-                  checked={selectedRegions.includes(region.id)}
+                  checked={businessInfo.business_regions?.includes(region.id) || false}
                   onChange={() => toggleRegion(region.id)}
                   className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                 />
@@ -648,15 +737,15 @@ const BusinessInfo: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         <div className="flex justify-end">
           <button
-            onClick={handleUpdateBusinessInfo}
-            disabled={isSaving}
-            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
-            {isSaving ? 'Saving...' : 'Update Information'}
+            {saving ? 'Saving...' : 'Update Information'}
           </button>
         </div>
       </div>
@@ -669,17 +758,12 @@ const BusinessInfo: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First Name
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={repFirstName}
-                onChange={(e) => setRepFirstName(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-red-500 hover:bg-red-50 rounded">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+            <input
+              type="text"
+              value={businessInfo.representative_first_name}
+              onChange={(e) => updateField('representative_first_name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div>
@@ -688,8 +772,8 @@ const BusinessInfo: React.FC = () => {
             </label>
             <input
               type="text"
-              value={repLastName}
-              onChange={(e) => setRepLastName(e.target.value)}
+              value={businessInfo.representative_last_name}
+              onChange={(e) => updateField('representative_last_name', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
@@ -701,8 +785,8 @@ const BusinessInfo: React.FC = () => {
           </label>
           <input
             type="email"
-            value={repEmail}
-            onChange={(e) => setRepEmail(e.target.value)}
+            value={businessInfo.representative_email}
+            onChange={(e) => updateField('representative_email', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
@@ -713,8 +797,8 @@ const BusinessInfo: React.FC = () => {
           </label>
           <div className="relative">
             <select
-              value={repJobPosition}
-              onChange={(e) => setRepJobPosition(e.target.value)}
+              value={businessInfo.representative_job_position}
+              onChange={(e) => updateField('representative_job_position', e.target.value)}
               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option>CEO</option>
@@ -732,19 +816,19 @@ const BusinessInfo: React.FC = () => {
           </label>
           <input
             type="tel"
-            value={repPhone}
-            onChange={(e) => setRepPhone(e.target.value)}
+            value={businessInfo.representative_phone}
+            onChange={(e) => updateField('representative_phone', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
         <div className="flex justify-end">
           <button
-            onClick={handleUpdateBusinessInfo}
-            disabled={isSaving}
-            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
           >
-            {isSaving ? 'Saving...' : 'Update Information'}
+            {saving ? 'Saving...' : 'Update Information'}
           </button>
         </div>
       </div>
@@ -754,15 +838,13 @@ const BusinessInfo: React.FC = () => {
 
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setAllowDuplicateContact(!allowDuplicateContact)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-              allowDuplicateContact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
-            }`}
+            onClick={() => updateField('allow_duplicate_contact', !businessInfo.allow_duplicate_contact)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${businessInfo.allow_duplicate_contact ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                allowDuplicateContact ? 'translate-x-5' : 'translate-x-0'
-              }`}
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${businessInfo.allow_duplicate_contact ? 'translate-x-5' : 'translate-x-0'
+                }`}
             />
           </button>
           <span className="text-base text-gray-900 dark:text-white">Allow Duplicate Contact</span>
@@ -774,8 +856,8 @@ const BusinessInfo: React.FC = () => {
           </label>
           <div className="relative">
             <select
-              value={contactSearchPref}
-              onChange={(e) => setContactSearchPref(e.target.value)}
+              value={businessInfo.primary_search_field}
+              onChange={(e) => updateField('primary_search_field', e.target.value)}
               className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
             >
               <option>Email</option>
@@ -792,8 +874,8 @@ const BusinessInfo: React.FC = () => {
           </label>
           <div className="relative">
             <select
-              value={contactSearchSecondary}
-              onChange={(e) => setContactSearchSecondary(e.target.value)}
+              value={businessInfo.secondary_search_field || ''}
+              onChange={(e) => updateField('secondary_search_field', e.target.value)}
               className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-base"
             >
               <option>Phone</option>
@@ -802,6 +884,16 @@ const BusinessInfo: React.FC = () => {
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Update Preferences'}
+          </button>
         </div>
       </div>
     </div>

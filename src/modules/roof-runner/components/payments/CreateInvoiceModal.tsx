@@ -1,402 +1,395 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, Plus, Trash2, Upload, FileText, AlertCircle, Check, Link as LinkIcon, Package } from 'lucide-react';
-import {
-  createInvoice,
-  Invoice,
-  InvoiceItem,
-  InvoiceTemplate,
-  fetchInvoiceTemplates,
-  createInvoiceItems,
-  createInvoiceAttachment,
-  createRecurringSchedule,
-  RecurringInvoiceSchedule,
-  Coupon,
-  updateCoupon
-} from '../../../../shared/store/services/paymentsApi';
-import {
-  getQuickBooksStatus,
-  createQuickBooksInvoice,
-  QuickBooksInvoiceRequest,
-  QuickBooksInvoiceLineItem
-} from '../../../../shared/store/services/quickbooksApi';
-import { getAllProposals, Proposal } from '../../../../shared/store/services/proposalsApi';
-import { Contact } from '../../../../shared/store/services/contactsApi';
-import { filesApi } from '../../../../shared/services/filesApi';
-import CustomerSelection from './CustomerSelection';
-import LineItemsSection from './LineItemsSection';
-import FileAttachmentSection from './FileAttachmentSection';
-import RecurringInvoicePanel from './RecurringInvoicePanel';
-import CouponSelector from './CouponSelector';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Plus, Trash2, Upload, Edit2, Check } from 'lucide-react';
+import { createInvoice, updateInvoice, Invoice } from '../../../../shared/store/services/paymentsApi';
+import { getActiveCoupons, validateCoupon, Coupon } from '../../../../shared/store/services/couponsApi';
 
 interface CreateInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (invoice: Invoice) => void;
-  preselectedCustomer?: Contact;
+  editInvoice?: Invoice | null;
+  invoiceType?: 'invoice' | 'estimate';
+  isViewOnly?: boolean;
 }
 
-interface FormData {
-  customer_id: string | null;
-  customer_name: string;
-  invoice_number: string;
-  issue_date: string;
-  due_date: string;
-  payment_terms: string;
-  po_number: string;
-  notes: string;
-  customer_message: string;
-  subtotal: number;
-  discount_amount: number;
-  tax_amount: number;
-  shipping_amount: number;
-  amount: number;
-  status: 'draft' | 'due' | 'received' | 'overdue';
-  is_recurring: boolean;
+interface LineItem {
+  item_name?: string;
+  description: string;
+  qty: number;
+  rate: number;
+  discount: number;
+  tax: number;
+  total: number;
+  unit_price?: number; // for backend compatibility
 }
 
-const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  preselectedCustomer
-}) => {
+const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, onClose, onSuccess, editInvoice, invoiceType = 'invoice', isViewOnly = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quickbooksConnected, setQuickbooksConnected] = useState(false);
-  const [syncToQuickbooks, setSyncToQuickbooks] = useState(true);
-  const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Contact | null>(preselectedCustomer || null);
-  const [lineItems, setLineItems] = useState<InvoiceItem[]>([{
-    line_number: 1,
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [showTemplate, setShowTemplate] = useState(false);
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
+  const [showCouponList, setShowCouponList] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  // useRef so it's synchronous — useState would be async and miss the first render
+  const isLoadingExistingRef = useRef(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([{
     description: '',
-    quantity: 1,
+    qty: 1,
     rate: 0,
-    amount: 0,
-    discount_percentage: 0,
-    discount_amount: 0,
-    tax_rate: 0,
-    tax_amount: 0,
-    total_amount: 0
+    discount: 0,
+    tax: 5, // Static GST @ 5%
+    total: 0
   }]);
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [uploadedFileIds, setUploadedFileIds] = useState<string[]>([]);
-  const [recurringSchedule, setRecurringSchedule] = useState<Partial<RecurringInvoiceSchedule> | null>(null);
-  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
-  const [formData, setFormData] = useState<FormData>({
-    customer_id: preselectedCustomer?.id || null,
-    customer_name: preselectedCustomer?.full_name || '',
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    customer_name: '',
+    customer_email: '',
+    billing_address: '',
+    shipping_address: '',
     invoice_number: '',
     issue_date: new Date().toISOString().split('T')[0],
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    payment_terms: 'Net 30',
     po_number: '',
+    payment_terms: 'Net 30',
+    ship_method: '',
+    ship_date: '',
+    tracking_number: '',
     notes: '',
-    customer_message: '',
+    message_to_customer: '',
     subtotal: 0,
-    discount_amount: 0,
-    tax_amount: 0,
-    shipping_amount: 0,
-    amount: 0,
-    status: 'draft',
-    is_recurring: false
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    total: 0,
+    coupon_discount: 0,
+    status: 'draft' as 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled',
+    is_estimate: false,
+    job_id: ''
   });
 
   useEffect(() => {
     if (isOpen) {
-      checkQuickBooksConnection();
-      loadTemplates();
-      loadProposals();
-      generateInvoiceNumber();
+      if (editInvoice) {
+        setFormData({
+          customer_id: editInvoice.customer_id ? String(editInvoice.customer_id) : '',
+          customer_name: editInvoice.customer_name || '',
+          customer_email: (editInvoice as any).customer_email || '',
+          billing_address: (editInvoice as any).billing_address || '',
+          shipping_address: (editInvoice as any).shipping_address || '',
+          invoice_number: editInvoice.invoice_number || '',
+          issue_date: editInvoice.issue_date || new Date().toISOString().split('T')[0],
+          due_date: editInvoice.due_date || '',
+          po_number: editInvoice.po_number || '',
+          payment_terms: editInvoice.payment_terms || 'Net 30',
+          ship_method: (editInvoice as any).ship_method || '',
+          ship_date: (editInvoice as any).ship_date || '',
+          tracking_number: (editInvoice as any).tracking_number || '',
+          notes: editInvoice.notes || '',
+          message_to_customer: editInvoice.message_to_customer || '',
+          subtotal: editInvoice.subtotal || 0,
+          discount: editInvoice.discount || 0,
+          tax: editInvoice.tax || 0,
+          shipping: editInvoice.shipping || 0,
+          total: editInvoice.total || 0,
+          coupon_discount: editInvoice.coupon_discount || 0,
+          status: editInvoice.status || 'draft',
+          is_estimate: (editInvoice as any).is_estimate ?? false,
+          job_id: (editInvoice as any).job_id ? String((editInvoice as any).job_id) : ''
+        });
+
+        console.log('Loading invoice with coupon_discount:', editInvoice.coupon_discount);
+        console.log('Full editInvoice data:', editInvoice);
+
+        // Load coupon if exists
+        if ((editInvoice as any).coupon_id) {
+          const couponCode = (editInvoice as any).coupon_code || '';
+          if (couponCode) {
+            const couponData = {
+              id: (editInvoice as any).coupon_id,
+              coupon_code: couponCode,
+              discount_value: editInvoice.coupon_discount || 0,
+              discount_type: 'fixed' as const
+            };
+            setAppliedCoupon(couponData as any);
+            setCouponCode(couponCode);
+            setShowCouponInput(true);
+          }
+        }
+
+        // line_items is stored as JSONB in the invoices table with fields: qty, rate, discount, tax, total
+        const rawLineItems = (editInvoice as any).invoice_line_items?.length
+          ? (editInvoice as any).invoice_line_items.map((item: any) => ({
+            item_name: item.item_name || item.product_name || item.name || '',
+            description: item.description || '',
+            qty: item.quantity || item.qty || 1,
+            rate: item.unit_price || item.rate || item.price || 0,
+            discount: item.discount || 0,
+            tax: 5,
+            total: item.amount || item.total || ((item.quantity || 1) * (item.unit_price || 0))
+          }))
+          : ((editInvoice as any).line_items || []).map((item: any) => ({
+            item_name: item.item_name || item.product_name || item.name || '',
+            description: item.description || '',
+            qty: item.qty || item.quantity || 1,
+            rate: item.rate || item.unit_price || item.price || 0,
+            discount: item.discount || 0,
+            tax: 5,
+            total: item.total || item.amount || ((item.qty || 1) * (item.rate || 0))
+          }));
+        // Set flag synchronously via ref BEFORE setLineItems so the useEffect guard works
+        isLoadingExistingRef.current = true;
+        if (rawLineItems.length > 0) {
+          setLineItems(rawLineItems);
+        } else {
+          setLineItems([{ description: '', qty: 1, rate: 0, discount: 0, tax: 5, total: 0 }]);
+        }
+        // Clear flag after a tick - do NOT recalculate for view mode, keep stored values
+        setTimeout(() => {
+          isLoadingExistingRef.current = false;
+        }, 100);
+      }
+      else {
+        generateInvoiceNumber();
+        setFormData(prev => ({ ...prev, is_estimate: invoiceType === 'estimate' }));
+      }
+      loadActiveCoupons();
+      loadCustomers();
+      loadJobs();
     }
-  }, [isOpen]);
+  }, [isOpen, editInvoice, invoiceType]);
 
   useEffect(() => {
-    calculateTotals();
-  }, [lineItems, formData.discount_amount, formData.tax_amount, formData.shipping_amount]);
+    // Only auto-recalculate for NEW invoices. For existing invoices (view/edit),
+    // the stored subtotal/tax/total from DB are already set and should not be overwritten
+    // unless the user actually changes a line item.
+    if (!isLoadingExistingRef.current) {
+      calculateTotals(lineItems, formData.discount, formData.shipping, appliedCoupon);
+    }
+  }, [lineItems, formData.discount, formData.shipping, appliedCoupon]);
 
-  const checkQuickBooksConnection = async () => {
+  const loadCustomers = async () => {
     try {
-      const response = await getQuickBooksStatus();
-      setQuickbooksConnected(response.data.connected);
-      setSyncToQuickbooks(response.data.connected);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/contacts`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setCustomers(data.data.contacts || []);
     } catch (err) {
-      console.error('Error checking QuickBooks status:', err);
-      setQuickbooksConnected(false);
-      setSyncToQuickbooks(false);
+      console.error('Failed to load customers:', err);
+      setCustomers([]);
     }
   };
 
-  const loadTemplates = async () => {
+  const loadJobs = async () => {
     try {
-      const data = await fetchInvoiceTemplates({ isActive: true });
-      setTemplates(data);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/jobs?page=1&limit=1000`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setJobs(data.data?.data || data.data || []);
     } catch (err) {
-      console.error('Error loading templates:', err);
+      console.error('Failed to load jobs:', err);
+      setJobs([]);
     }
   };
 
-  const loadProposals = async () => {
+  const loadActiveCoupons = async () => {
     try {
-      const response = await getAllProposals();
-      if (response.success) {
-        setProposals(response.data);
-      }
+      const coupons = await getActiveCoupons();
+      setAvailableCoupons(coupons);
     } catch (err) {
-      console.error('Error loading proposals:', err);
+      console.error('Failed to load coupons:', err);
     }
-  };
-
-  const handleProposalSelect = (proposalId: string) => {
-    const proposal = proposals.find(p => p.id === proposalId);
-    if (proposal) {
-      setSelectedProposal(proposal);
-      setFormData(prev => ({
-        ...prev,
-        customer_id: proposal.customer_id || prev.customer_id,
-        notes: proposal.content?.notes || prev.notes
-      }));
-
-      if (proposal.content?.items && Array.isArray(proposal.content.items)) {
-        const importedItems = proposal.content.items.map((item: any, index: number) => ({
-          line_number: index + 1,
-          description: item.description || '',
-          quantity: item.quantity || 1,
-          rate: item.rate || 0,
-          amount: (item.quantity || 1) * (item.rate || 0),
-          discount_percentage: item.discount_percentage || 0,
-          discount_amount: item.discount_amount || 0,
-          tax_rate: item.tax_rate || 0,
-          tax_amount: item.tax_amount || 0,
-          total_amount: item.total_amount || 0
-        }));
-        setLineItems(importedItems);
-      }
-    }
-  };
-
-  const clearProposal = () => {
-    setSelectedProposal(null);
   };
 
   const generateInvoiceNumber = () => {
     const timestamp = Date.now().toString().slice(-6);
-    setFormData(prev => ({ ...prev, invoice_number: `INV-${timestamp}` }));
+    const prefix = invoiceType === 'estimate' ? 'EST' : 'INV';
+    setFormData(prev => ({ ...prev, invoice_number: `${prefix}-${timestamp}` }));
   };
 
-  const calculateCouponDiscount = (coupon: Coupon | null, subtotal: number): number => {
-    if (!coupon) return 0;
+  const calculateTotals = (
+    items = lineItems,
+    manualDiscount = formData.discount || 0,
+    shipping = formData.shipping || 0,
+    coupon = appliedCoupon
+  ) => {
+    // Step 1: subtotal = sum of (qty × rate), before any discounts
+    const subtotal = parseFloat(items.reduce((sum, item) => sum + (item.qty * item.rate), 0).toFixed(2));
 
-    if (coupon.discount_type === 'percentage') {
-      return (subtotal * coupon.discount_value) / 100;
-    } else {
-      return Math.min(coupon.discount_value, subtotal);
-    }
-  };
+    // Step 2: per-line discounts (percentage off each line's base amount)
+    const lineDiscountTotal = parseFloat(items.reduce((sum, item) => {
+      return sum + ((item.qty * item.rate) * ((item.discount || 0) / 100));
+    }, 0).toFixed(2));
 
-  const handleCouponSelect = (coupon: Coupon | null) => {
-    setSelectedCoupon(coupon);
+    // Step 3: coupon discount (applied on subtotal)
+    let coupon_discount = 0;
     if (coupon) {
-      const discount = calculateCouponDiscount(coupon, formData.subtotal);
-      setFormData(prev => ({ ...prev, discount_amount: discount }));
-    } else {
-      setFormData(prev => ({ ...prev, discount_amount: 0 }));
+      if (coupon.discount_type === 'percentage') {
+        coupon_discount = parseFloat((subtotal * (coupon.discount_value / 100)).toFixed(2));
+      } else {
+        coupon_discount = parseFloat(coupon.discount_value.toFixed(2));
+      }
+    }
+
+    // Step 4: total discount = line discounts + coupon + manual
+    const totalDiscounts = parseFloat((lineDiscountTotal + coupon_discount + manualDiscount).toFixed(2));
+
+    // Step 5: taxable base = subtotal minus ALL discounts (matches QBO exactly)
+    const taxableBase = parseFloat(Math.max(0, subtotal - totalDiscounts).toFixed(2));
+
+    // Step 6: tax = taxable base × weighted average tax rate across lines
+    // We apply each line's tax% proportionally to the taxable base
+    const weightedTaxRate = subtotal > 0
+      ? items.reduce((sum, item) => sum + ((item.qty * item.rate) / subtotal * (item.tax || 0)), 0)
+      : 0;
+    const tax = parseFloat((taxableBase * weightedTaxRate / 100).toFixed(2));
+
+    // Step 7: final total
+    const total = parseFloat((taxableBase + tax + shipping).toFixed(2));
+
+    console.log('Invoice Calculation:', {
+      subtotal,
+      lineDiscountTotal,
+      coupon_discount,
+      manualDiscount,
+      totalDiscounts,
+      taxableBase,
+      weightedTaxRate,
+      tax,
+      shipping,
+      total
+    });
+
+    setFormData(prev => ({ ...prev, subtotal, tax, total, coupon_discount, discount: manualDiscount }));
+  };
+
+  const handleSelectCustomer = (customer: any) => {
+    const customerName = customer.full_name || customer.fullName || `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    setFormData({
+      ...formData,
+      customer_id: customer.id,
+      customer_name: customerName,
+      customer_email: customer.email || formData.customer_email  // Auto-fill email from contact
+    });
+    setCustomerSearch(customerName);
+    setShowCustomerList(false);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+
+    try {
+      const coupon = await validateCoupon(couponCode);
+      setAppliedCoupon(coupon);
+      setShowCouponList(false);
+      setCouponCode('');
+      setError(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid coupon code');
+      setAppliedCoupon(null);
     }
   };
 
-  const calculateTotals = useCallback(() => {
-    const subtotal = lineItems.reduce((sum, item) => sum + item.total_amount, 0);
-    let discountAmount = formData.discount_amount;
+  const handleSelectCoupon = (coupon: Coupon) => {
+    setAppliedCoupon(coupon);
+    setCouponCode(coupon.coupon_code);
+    setShowCouponList(false);
+    setError(null);
+  };
 
-    if (selectedCoupon) {
-      discountAmount = calculateCouponDiscount(selectedCoupon, subtotal);
-    }
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
 
-    const total = subtotal - discountAmount + formData.tax_amount + formData.shipping_amount;
-
-    setFormData(prev => ({
-      ...prev,
-      subtotal,
-      discount_amount: discountAmount,
-      amount: total
-    }));
-  }, [lineItems, selectedCoupon, formData.tax_amount, formData.shipping_amount]);
-
-  const handleLineItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
+  const handleLineItemChange = (index: number, field: keyof LineItem, value: any) => {
     const updatedItems = [...lineItems];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-
+    const parsedValue = (field === 'qty' || field === 'rate' || field === 'discount' || field === 'tax')
+      ? parseFloat(value) || 0
+      : value;
+    updatedItems[index] = { ...updatedItems[index], [field]: parsedValue };
     const item = updatedItems[index];
-    item.amount = item.quantity * item.rate;
-    item.discount_amount = (item.amount * item.discount_percentage) / 100;
-    item.tax_amount = ((item.amount - item.discount_amount) * item.tax_rate) / 100;
-    item.total_amount = item.amount - item.discount_amount + item.tax_amount;
-
+    const baseAmount = item.qty * item.rate;
+    const discountAmount = baseAmount * ((item.discount || 0) / 100);
+    // total = post line-item discount (used for display in the row)
+    item.total = parseFloat((baseAmount - discountAmount).toFixed(2));
     setLineItems(updatedItems);
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, {
-      line_number: lineItems.length + 1,
-      description: '',
-      quantity: 1,
-      rate: 0,
-      amount: 0,
-      discount_percentage: 0,
-      discount_amount: 0,
-      tax_rate: 0,
-      tax_amount: 0,
-      total_amount: 0
-    }]);
+    setLineItems([...lineItems, { item_name: '', description: '', qty: 1, rate: 0, discount: 0, tax: 5, total: 0 }]);
   };
 
   const removeLineItem = (index: number) => {
     if (lineItems.length > 1) {
-      const updatedItems = lineItems.filter((_, i) => i !== index);
-      updatedItems.forEach((item, i) => item.line_number = i + 1);
-      setLineItems(updatedItems);
+      setLineItems(lineItems.filter((_, i) => i !== index));
     }
   };
 
-  const applyTemplate = (templateId: string, index: number) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      handleLineItemChange(index, 'description', template.description || template.name);
-      handleLineItemChange(index, 'quantity', template.default_quantity);
-      handleLineItemChange(index, 'rate', template.default_price);
-      handleLineItemChange(index, 'tax_rate', template.tax_rate);
-      handleLineItemChange(index, 'template_id', template.id);
-    }
-  };
-
-  const handleFileUpload = (files: File[]) => {
-    setAttachedFiles([...attachedFiles, ...files]);
-  };
-
-  const removeFile = (index: number) => {
-    setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
-  };
-
-  const validateForm = (): string | null => {
-    if (!selectedCustomer) return 'Please select a customer';
-    if (!formData.invoice_number) return 'Invoice number is required';
-    if (!formData.issue_date) return 'Issue date is required';
-    if (!formData.due_date) return 'Due date is required';
-    if (new Date(formData.due_date) < new Date(formData.issue_date)) {
-      return 'Due date must be after issue date';
-    }
-    if (lineItems.length === 0) return 'At least one line item is required';
-    if (lineItems.some(item => !item.description || item.quantity <= 0 || item.rate < 0)) {
-      return 'All line items must have a description, positive quantity, and valid rate';
-    }
-    return null;
-  };
-
-  const uploadFiles = async (invoiceId: string) => {
-    const fileIds: string[] = [];
-    for (const file of attachedFiles) {
-      try {
-        const uploadedFile = await filesApi.uploadFile(file);
-        await createInvoiceAttachment({
-          invoice_id: invoiceId,
-          file_id: uploadedFile.id,
-          file_name: file.name,
-          file_size: file.size,
-          mime_type: file.type
-        });
-        fileIds.push(uploadedFile.id);
-      } catch (err) {
-        console.error('Error uploading file:', err);
-      }
-    }
-    return fileIds;
-  };
-
-  const syncWithQuickBooks = async (invoice: Invoice, items: InvoiceItem[]) => {
-    if (!syncToQuickbooks || !quickbooksConnected || !selectedCustomer) return;
-
-    try {
-      const qbLineItems: QuickBooksInvoiceLineItem[] = items.map(item => ({
-        Description: item.description,
-        Amount: item.total_amount,
-        DetailType: 'SalesItemLineDetail',
-        SalesItemLineDetail: {
-          UnitPrice: item.rate,
-          Qty: item.quantity,
-          TaxCodeRef: item.tax_rate > 0 ? { value: 'TAX' } : undefined
-        }
-      }));
-
-      const qbInvoiceData: QuickBooksInvoiceRequest = {
-        CustomerRef: { value: selectedCustomer.id },
-        Line: qbLineItems,
-        TxnDate: formData.issue_date,
-        DueDate: formData.due_date,
-        PrivateNote: formData.notes,
-        CustomerMemo: formData.customer_message ? { value: formData.customer_message } : undefined,
-        PONumber: formData.po_number || undefined
-      };
-
-      await createQuickBooksInvoice(qbInvoiceData);
-    } catch (err) {
-      console.error('QuickBooks sync error:', err);
-    }
-  };
-
-  const handleSubmit = async () => {
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false, sendToQuickBooks: boolean = false) => {
+    e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    // Validate email if sending to QuickBooks
+    if (sendToQuickBooks && !formData.customer_email) {
+      setError('Customer email is required to send invoice to QuickBooks');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    if (sendToQuickBooks && formData.customer_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.customer_email)) {
+        setError('Please enter a valid customer email address');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
-      const invoiceData: Partial<Invoice> = {
+      const invoiceData: any = {
         ...formData,
-        customer_id: selectedCustomer?.id,
-        name: `Invoice for ${selectedCustomer?.full_name}`,
-        coupon_id: selectedCoupon?.id,
-        coupon_code: selectedCoupon?.code,
-        coupon_discount_amount: selectedCoupon ? formData.discount_amount : undefined,
-        quickbooks_sync_status: syncToQuickbooks && quickbooksConnected ? 'pending' : 'not_synced'
+        job_id: formData.job_id ? parseInt(formData.job_id) : null,
+        line_items: lineItems,
+        coupon_id: appliedCoupon?.id,
+        status: isDraft ? 'draft' : 'sent',
+        send_to_quickbooks: sendToQuickBooks
       };
 
-      const createdInvoice = await createInvoice(invoiceData);
-
-      const itemsWithInvoiceId = lineItems.map(item => ({
-        ...item,
-        invoice_id: createdInvoice.id
-      }));
-      const createdItems = await createInvoiceItems(itemsWithInvoiceId);
-
-      if (attachedFiles.length > 0) {
-        await uploadFiles(createdInvoice.id);
+      let response;
+      if (editInvoice) {
+        response = await updateInvoice(editInvoice.id, invoiceData);
+      } else {
+        response = await createInvoice(invoiceData);
       }
 
-      if (formData.is_recurring && recurringSchedule) {
-        await createRecurringSchedule({
-          ...recurringSchedule,
-          invoice_template_id: createdInvoice.id
-        });
+      if (response.warning) {
+        setError(response.warning);
+        // Still call onSuccess since invoice was created locally
+        onSuccess(response.data || response);
+      } else {
+        onSuccess(response.data || response);
+        onClose();
       }
-
-      if (syncToQuickbooks && quickbooksConnected) {
-        await syncWithQuickBooks(createdInvoice, createdItems);
-      }
-
-      if (selectedCoupon) {
-        await updateCoupon(selectedCoupon.id, {
-          redemption_count: selectedCoupon.redemption_count + 1
-        });
-      }
-
-      onSuccess(createdInvoice);
-      onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to create invoice');
     } finally {
@@ -407,335 +400,556 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Create {formData.is_recurring ? 'Recurring ' : ''}Invoice
-            </h2>
-            {quickbooksConnected && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full">
-                <Check size={16} className="text-green-600 dark:text-green-400" />
-                <span className="text-sm text-green-700 dark:text-green-300">QuickBooks Connected</span>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <X size={24} />
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {isViewOnly ? `View ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : editInvoice ? `Edit ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6">
           {error && (
-            <div className="flex items-center space-x-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <AlertCircle size={20} className="text-red-600 dark:text-red-400" />
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-            </div>
-          )}
-
-          {!quickbooksConnected && (
-            <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <AlertCircle size={20} className="text-yellow-600 dark:text-yellow-400" />
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  QuickBooks is not connected. Invoice will be saved locally only.
-                </p>
-              </div>
-              <button
-                onClick={() => window.location.href = '/settings/integrations'}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
-              >
-                <LinkIcon size={16} />
-                <span>Connect QuickBooks</span>
-              </button>
-            </div>
-          )}
-
-          {proposals.length > 0 && (
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <Package size={16} />
-                <span>Import from Proposal:</span>
-              </label>
-              <select
-                value={selectedProposal?.id || ''}
-                onChange={(e) => e.target.value ? handleProposalSelect(e.target.value) : clearProposal()}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="">Select a proposal (optional)</option>
-                {proposals.map(proposal => (
-                  <option key={proposal.id} value={proposal.id}>
-                    {proposal.title} - ${proposal.value.toFixed(2)}
-                  </option>
-                ))}
-              </select>
-              {selectedProposal && (
-                <button
-                  onClick={clearProposal}
-                  className="px-3 py-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                >
-                  Clear
+            <div className={`mb-4 rounded-lg p-3 flex items-start gap-2 ${error.toLowerCase().includes('quickbooks') ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' : 'bg-red-50 dark:bg-red-900/20 border-red-200'
+              } border`}>
+              <span className={`${error.toLowerCase().includes('quickbooks') ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
+                } text-sm flex-1`}>
+                {error}
+                {!error.toLowerCase().includes('quickbooks') && error.includes('Failed to create') && (
+                  <p className="mt-1 text-xs opacity-80">This might be due to a database error or missing permissions. Please contact support if this persists.</p>
+                )}
+              </span>
+              {error.toLowerCase().includes('quickbooks') && (
+                <button type="button" className="ml-auto px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded whitespace-nowrap">
+                  Connect QuickBooks
                 </button>
               )}
             </div>
           )}
 
-          <div className="flex items-center space-x-4">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.is_recurring}
-                onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
-                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Make this a recurring invoice
-              </span>
+          <div className="mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="rounded" disabled={isViewOnly} />
+              Make this a recurring invoice
             </label>
-
-            {quickbooksConnected && (
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={syncToQuickbooks}
-                  onChange={(e) => setSyncToQuickbooks(e.target.checked)}
-                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Sync to QuickBooks
-                </span>
-              </label>
-            )}
           </div>
 
-          <CustomerSelection
-            selectedCustomer={selectedCustomer}
-            onCustomerChange={setSelectedCustomer}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Invoice Number
-              </label>
-              <input
-                type="text"
-                value={formData.invoice_number}
-                onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Issue Date
-              </label>
-              <input
-                type="date"
-                value={formData.issue_date}
-                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Due Date
-              </label>
-              <input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Payment Terms
-              </label>
-              <select
-                value={formData.payment_terms}
-                onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="Due on receipt">Due on receipt</option>
-                <option value="Net 15">Net 15</option>
-                <option value="Net 30">Net 30</option>
-                <option value="Net 60">Net 60</option>
-                <option value="Net 90">Net 90</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                PO Number (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.po_number}
-                onChange={(e) => setFormData({ ...formData, po_number: e.target.value })}
-                placeholder="Purchase order number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-          </div>
-
-          <LineItemsSection
-            lineItems={lineItems}
-            templates={templates}
-            onLineItemChange={handleLineItemChange}
-            onAddLineItem={addLineItem}
-            onRemoveLineItem={removeLineItem}
-            onApplyTemplate={applyTemplate}
-          />
-
-          <CouponSelector
-            onCouponSelect={handleCouponSelect}
-            selectedCoupon={selectedCoupon}
-            subtotal={formData.subtotal}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
+          <div className="space-y-6">
+            {/* Customer & Address Section */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Notes (Internal)
+                  Customer <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  placeholder="Internal notes (not visible to customer)"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Message to Customer
-                </label>
-                <textarea
-                  value={formData.customer_message}
-                  onChange={(e) => setFormData({ ...formData, customer_message: e.target.value })}
-                  rows={3}
-                  placeholder="This message will appear on the invoice"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3 bg-paper dark:bg-canvas p-4 rounded-lg">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  ${formData.subtotal.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Discount:
-                  {selectedCoupon && (
-                    <span className="ml-2 text-xs text-primary-600 dark:text-primary-400">
-                      (Coupon Applied)
-                    </span>
-                  )}
-                </span>
                 <input
-                  type="number"
-                  value={formData.discount_amount}
-                  onChange={(e) => !selectedCoupon && setFormData({ ...formData, discount_amount: parseFloat(e.target.value) || 0 })}
-                  disabled={!!selectedCoupon}
-                  className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="text"
+                  required
+                  placeholder="Search customers..."
+                  value={customerSearch || formData.customer_name}
+                  disabled={isViewOnly}
+                  onChange={(e) => {
+                    setCustomerSearch(e.target.value);
+                    setFormData({ ...formData, customer_name: e.target.value });
+                    setShowCustomerList(true);
+                  }}
+                  onFocus={() => !isViewOnly && setShowCustomerList(true)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
+
+                {showCustomerList && customers.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {customers
+                      .filter(c => {
+                        const search = customerSearch.toLowerCase();
+                        const fullName = (c.fullName || c.first_name + ' ' + c.last_name).toLowerCase();
+                        const email = (c.email || '').toLowerCase();
+                        return fullName.includes(search) || email.includes(search);
+                      })
+                      .map((customer) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          onClick={() => handleSelectCustomer(customer)}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-0"
+                        >
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {customer.fullName || customer.first_name + ' ' + customer.last_name}
+                          </div>
+                          {customer.email && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{customer.email}</div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Customer Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.customer_email || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    placeholder="customer@example.com"
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Tax:</span>
-                <input
-                  type="number"
-                  value={formData.tax_amount}
-                  onChange={(e) => setFormData({ ...formData, tax_amount: parseFloat(e.target.value) || 0 })}
-                  className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-right"
-                />
-              </div>
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Shipping:</span>
-                <input
-                  type="number"
-                  value={formData.shipping_amount}
-                  onChange={(e) => setFormData({ ...formData, shipping_amount: parseFloat(e.target.value) || 0 })}
-                  className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-right"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between text-lg font-bold">
-                  <span className="text-gray-900 dark:text-white">Total:</span>
-                  <span className="text-gray-900 dark:text-white">
-                    ${formData.amount.toFixed(2)}
-                  </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Address</label>
+                  <textarea
+                    value={formData.billing_address || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shipping Address</label>
+                  <textarea
+                    value={formData.shipping_address || ''}
+                    disabled={isViewOnly}
+                    onChange={(e) => setFormData({ ...formData, shipping_address: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 text-sm"
+                  />
                 </div>
               </div>
             </div>
-          </div>
 
-          <FileAttachmentSection
-            files={attachedFiles}
-            onFileUpload={handleFileUpload}
-            onRemoveFile={removeFile}
-          />
+            {/* Invoice Details */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Invoice Number</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.invoice_number}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Issue Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.issue_date}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.due_date}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+            </div>
 
-          {formData.is_recurring && (
-            <RecurringInvoicePanel
-              schedule={recurringSchedule}
-              onScheduleChange={setRecurringSchedule}
-            />
-          )}
-        </div>
+            {/* Job Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job (Optional)</label>
+              <select
+                value={formData.job_id}
+                disabled={isViewOnly}
+                onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+              >
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    #{job.id} ({job.createdByName || 'Job'})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="flex justify-between items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
-          <button
-            onClick={() => setFormData({ ...formData, status: 'draft' })}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-          >
-            Save as Draft
-          </button>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                  <span>Creating...</span>
-                </>
-              ) : (
-                <>
-                  <FileText size={18} />
-                  <span>Create Invoice</span>
-                </>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Terms</label>
+                <select
+                  value={formData.payment_terms}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                >
+                  <option>Net 30</option>
+                  <option>Net 60</option>
+                  <option>Due on Receipt</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PO Number (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.po_number || ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, po_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            {/* Shipping Details */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ship Method</label>
+                <input
+                  type="text"
+                  value={formData.ship_method || ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, ship_method: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ship Date</label>
+                <input
+                  type="date"
+                  value={formData.ship_date ? formData.ship_date.split('T')[0] : ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, ship_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tracking Number</label>
+                <input
+                  type="text"
+                  value={formData.tracking_number || ''}
+                  disabled={isViewOnly}
+                  onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            {/* Line Items */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Line Items</label>
+                <button type="button" onClick={() => setShowTemplate(!showTemplate)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                  <span className="inline-block w-4 h-4 border border-current rounded"></span> Show Template
+                </button>
+              </div>
+
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <div className="col-span-2">Product/Service</div>
+                  <div className="col-span-3">Description</div>
+                  <div className="col-span-1">Qty</div>
+                  <div className="col-span-1">Rate</div>
+                  <div className="col-span-1">Discount %</div>
+                  <div className="col-span-1">Tax (GST 5%)</div>
+                  <div className="col-span-2">Total</div>
+                  {!isViewOnly && <div className="col-span-1">Action</div>}
+                </div>
+
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {lineItems.map((item, index) => (
+                    <div key={index} className="px-3 py-2 grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-900">
+                      <input
+                        type="text"
+                        placeholder="Product/Service"
+                        value={item.item_name || ''}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'item_name', e.target.value)}
+                        className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Description"
+                        value={item.description}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                        className="col-span-3 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="number"
+                        value={item.qty}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'qty', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="number"
+                        value={item.rate}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'rate', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="number"
+                        value={item.discount}
+                        disabled={isViewOnly}
+                        onChange={(e) => handleLineItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                      />
+                      <input
+                        type="number"
+                        value={5}
+                        disabled
+                        className="col-span-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white opacity-75"
+                      />
+                      <div className="col-span-2 px-2 text-sm text-gray-900 dark:text-white font-medium">
+                        ${(item.total > 0 ? item.total : ((item.qty * item.rate) * (1 - (item.discount || 0) / 100))).toFixed(2)}
+                      </div>
+                      {!isViewOnly && (
+                        <button type="button" onClick={() => removeLineItem(index)} className="col-span-1 text-red-600 hover:text-red-700 justify-self-center">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {!isViewOnly && (
+                <button type="button" onClick={addLineItem} className="mt-2 text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                  <Plus className="w-4 h-4" /> Add Line Item
+                </button>
               )}
-            </button>
+            </div>
+
+            {/* Apply Coupon Code */}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <input
+                  type="checkbox"
+                  checked={showCouponInput}
+                  disabled={isViewOnly}
+                  onChange={(e) => {
+                    console.log('Coupon checkbox clicked:', e.target.checked);
+                    setShowCouponInput(e.target.checked);
+                  }}
+                  className="rounded"
+                />
+                Apply Coupon Code
+              </label>
+
+              {showCouponInput && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value.toUpperCase());
+                        setShowCouponList(true);
+                      }}
+                      onFocus={() => setShowCouponList(true)}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      className="px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+                    >
+                      Apply
+                    </button>
+                  </div>
+
+                  {appliedCoupon && (
+                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm text-green-700 dark:text-green-300">
+                          {appliedCoupon.coupon_code} - {appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`} off
+                        </span>
+                      </div>
+                      {!isViewOnly && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-red-600 hover:text-red-700 text-xs"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {showCouponList && availableCoupons.length > 0 && !appliedCoupon && (
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto">
+                      {availableCoupons
+                        .filter(c => !couponCode || c.coupon_code.includes(couponCode))
+                        .map((coupon) => (
+                          <button
+                            key={coupon.id}
+                            type="button"
+                            onClick={() => handleSelectCoupon(coupon)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{coupon.coupon_code}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{coupon.coupon_name}</div>
+                              </div>
+                              <div className="text-sm font-semibold text-primary-600">
+                                {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `$${coupon.discount_value}`}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Totals and Notes */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                <textarea
+                  value={formData.notes || ''}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={4}
+                  disabled={isViewOnly}
+                  placeholder="Additional notes (not visible for customers)"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm disabled:opacity-50"
+                />
+                <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                  <Edit2 className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Additional Discount ($)</label>
+                    <input
+                      type="number"
+                      value={formData.discount}
+                      disabled={isViewOnly}
+                      onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shipping ($)</label>
+                    <input
+                      type="number"
+                      value={formData.shipping}
+                      disabled={isViewOnly}
+                      onChange={(e) => setFormData({ ...formData, shipping: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                    <span className="text-gray-900 dark:text-white font-medium">${formData.subtotal.toFixed(2)}</span>
+                  </div>
+                  {((formData.discount || 0) + (formData.coupon_discount || 0) > 0) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                      <span className="text-red-600 dark:text-red-400">-${((formData.discount || 0) + (formData.coupon_discount || 0)).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {formData.tax > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">GST @ 5%</span>
+                      <span className="text-gray-900 dark:text-white">${formData.tax.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {formData.shipping > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Shipping</span>
+                      <span className="text-gray-900 dark:text-white">${formData.shipping.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between text-base font-semibold">
+                    <span className="text-gray-900 dark:text-white">Total:</span>
+                    <span className="text-gray-900 dark:text-white">${formData.total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Message to Customer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message to Customer</label>
+              <textarea
+                value={formData.message_to_customer || ''}
+                onChange={(e) => setFormData({ ...formData, message_to_customer: e.target.value })}
+                rows={3}
+                disabled={isViewOnly}
+                placeholder="This message will appear on the invoice"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm disabled:opacity-50"
+              />
+              <button type="button" className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+                <Edit2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Attachments */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachments</label>
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">Drag and drop files here, or <span className="text-primary-600">Browse</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Supports: Image, PDF, Document, Video, Midi and Zip file</p>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Footer Actions */}
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            {!isViewOnly && (
+              <button
+                type="button"
+                onClick={(e: any) => handleSubmit(e, true)}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+              >
+                Save as Draft
+              </button>
+            )}
+            <div className={`flex gap-3 ${isViewOnly ? 'ml-auto' : ''}`}>
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                {isViewOnly ? 'Close' : 'Cancel'}
+              </button>
+              {!isViewOnly && !editInvoice && (
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={(e) => handleSubmit(e, false, true)}
+                  className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading ? 'Processing...' : 'Create and Send'}
+                </button>
+              )}
+              {!isViewOnly && (
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoading ? 'Creating...' : editInvoice ? `Update ${formData.is_estimate ? 'Estimate' : 'Invoice'}` : `Create ${invoiceType === 'estimate' ? 'Estimate' : 'Invoice'}`}
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

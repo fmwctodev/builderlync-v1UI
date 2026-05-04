@@ -9,6 +9,7 @@ interface Proposal {
   time: string;
   amount: string;
   status: string;
+  signatureStatus?: string | null;
   image: string;
 }
 
@@ -23,6 +24,12 @@ interface ProposalsListProps {
   openDropdown: string | null;
   setOpenDropdown: (id: string | null) => void;
   getStatusColor: (status: string) => string;
+  getSignatureStatusColor: (status: string) => string;
+  onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onProposalClick: (id: string) => void;
+  onMoveToWon: (id: string) => void;
+  onMoveToLost: (id: string) => void;
 }
 
 export default function ProposalsList({
@@ -35,7 +42,13 @@ export default function ProposalsList({
   setViewMode,
   openDropdown,
   setOpenDropdown,
-  getStatusColor
+  getStatusColor,
+  getSignatureStatusColor,
+  onDelete,
+  onDuplicate,
+  onProposalClick,
+  onMoveToWon,
+  onMoveToLost
 }: ProposalsListProps) {
   const dropdownActions = [
     'Move to won',
@@ -48,6 +61,20 @@ export default function ProposalsList({
     'Download proposal',
     'Delete'
   ];
+
+  const handleAction = (action: string, proposalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (action === 'Delete') {
+      onDelete(proposalId);
+    } else if (action === 'Make copy') {
+      onDuplicate(proposalId);
+    } else if (action === 'Move to won') {
+      onMoveToWon(proposalId);
+    } else if (action === 'Move to lost') {
+      onMoveToLost(proposalId);
+    }
+    setOpenDropdown(null);
+  };
 
   return (
     <>
@@ -108,11 +135,19 @@ export default function ProposalsList({
       </div>
 
       {viewMode === 'card' ? (
-        <div className="p-6">
+        <div className="p-6 overflow-visible">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {proposals.map((proposal) => (
-              <div key={proposal.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-32 bg-gray-200 dark:bg-gray-600"></div>
+              <div 
+                key={proposal.id} 
+                className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-visible hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => onProposalClick(proposal.id)}
+              >
+                {proposal.image ? (
+                  <img src={proposal.image} alt={proposal.title} className="h-48 w-full object-cover" />
+                ) : (
+                  <div className="h-48 bg-gray-200 dark:bg-gray-600"></div>
+                )}
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
@@ -121,17 +156,21 @@ export default function ProposalsList({
                     </div>
                     <div className="relative">
                       <button
-                        onClick={() => setOpenDropdown(openDropdown === proposal.id ? null : proposal.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(openDropdown === proposal.id ? null : proposal.id);
+                        }}
                         className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
                       >
                         <MoreVertical size={16} className="text-gray-400" />
                       </button>
                       {openDropdown === proposal.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[100]">
                           <div className="py-1">
                             {dropdownActions.map((action) => (
                               <button
                                 key={action}
+                                onClick={(e) => handleAction(action, proposal.id, e)}
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                   action === 'Delete' ? 'text-error-600' : 'text-gray-700 dark:text-gray-300'
                                 }`}
@@ -152,11 +191,18 @@ export default function ProposalsList({
                     <span>{proposal.time}</span>
                   </div>
 
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-3">
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">{proposal.amount}</span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                      {proposal.status}
-                    </span>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
+                        {proposal.status}
+                      </span>
+                      {proposal.signatureStatus && (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSignatureStatusColor(proposal.signatureStatus)}`}>
+                          {proposal.signatureStatus}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -178,35 +224,57 @@ export default function ProposalsList({
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {proposals.map((proposal) => (
-                <tr key={proposal.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <tr 
+                  key={proposal.id} 
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => onProposalClick(proposal.id)}
+                >
                   <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">{proposal.title}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{proposal.subtitle}</div>
+                    <div className="flex items-center gap-3">
+                      {proposal.image ? (
+                        <img src={proposal.image} alt={proposal.title} className="h-10 w-16 object-cover rounded" />
+                      ) : (
+                        <div className="h-10 w-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                      )}
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">{proposal.title}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{proposal.subtitle}</div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{proposal.assignedBy}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">{proposal.amount}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
-                      {proposal.status}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(proposal.status)}`}>
+                        {proposal.status}
+                      </span>
+                      {proposal.signatureStatus && (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSignatureStatusColor(proposal.signatureStatus)}`}>
+                          {proposal.signatureStatus}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{proposal.time}</td>
                   <td className="px-6 py-4">
                     <div className="relative">
                       <button
-                        onClick={() => setOpenDropdown(openDropdown === proposal.id ? null : proposal.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(openDropdown === proposal.id ? null : proposal.id);
+                        }}
                         className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <MoreVertical size={16} className="text-gray-400" />
                       </button>
                       {openDropdown === proposal.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[100]">
                           <div className="py-1">
                             {dropdownActions.map((action) => (
                               <button
                                 key={action}
+                                onClick={(e) => handleAction(action, proposal.id, e)}
                                 className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                   action === 'Delete' ? 'text-error-600' : 'text-gray-700 dark:text-gray-300'
                                 }`}

@@ -9,6 +9,7 @@ import OpportunityTasksTab from './OpportunityTasksTab';
 import OpportunityNotesTab from './OpportunityNotesTab';
 import OpportunityPaymentsTab from './OpportunityPaymentsTab';
 import OpportunityAssociatedObjectsTab from './OpportunityAssociatedObjectsTab';
+import PropertyAddressInput from './PropertyAddressInput';
 
 interface ViewEditOpportunityModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface ViewEditOpportunityModalProps {
   onClose: () => void;
   onUpdate: () => void;
   onDelete: () => void;
+  onCreateJob?: (opportunity: OpportunityWithDetails) => void;
 }
 
 type SidebarSection =
@@ -32,6 +34,7 @@ export default function ViewEditOpportunityModal({
   onClose,
   onUpdate,
   onDelete,
+  onCreateJob,
 }: ViewEditOpportunityModalProps) {
   const [activeSection, setActiveSection] = useState<SidebarSection>('opportunity-details');
   const [opportunity, setOpportunity] = useState<OpportunityWithDetails | null>(null);
@@ -45,7 +48,7 @@ export default function ViewEditOpportunityModal({
     pipeline_id: '',
     stage_id: '',
     status: 'open',
-    value: 0,
+    value: undefined,
     owner_id: undefined,
     business_name: '',
     source: '',
@@ -55,6 +58,13 @@ export default function ViewEditOpportunityModal({
     contact_email: '',
     contact_phone: '',
     follower_ids: [],
+    property_address: '',
+    property_city: '',
+    property_state: '',
+    property_zip: '',
+    property_country: '',
+    property_latitude: undefined,
+    property_longitude: undefined,
   });
   const [originalData, setOriginalData] = useState<OpportunityFormData | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,11 +100,20 @@ export default function ViewEditOpportunityModal({
         business_name: data.business_name || '',
         source: data.source || '',
         tags: data.tags || [],
-        appointment_time: data.appointment_time || '',
+        appointment_time: data.appointment_time
+          ? new Date(new Date(data.appointment_time).getTime() - new Date(data.appointment_time).getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+          : '',
         contact_name: primaryContact?.contact_name || '',
         contact_email: primaryContact?.contact_email || '',
         contact_phone: primaryContact?.contact_phone || '',
         follower_ids: data.followers?.map(f => f.user_id) || [],
+        property_address: data.property_address || '',
+        property_city: data.property_city || '',
+        property_state: data.property_state || '',
+        property_zip: data.property_zip || '',
+        property_country: data.property_country || '',
+        property_latitude: data.property_latitude,
+        property_longitude: data.property_longitude,
       };
 
       setFormData(formValues);
@@ -118,11 +137,11 @@ export default function ViewEditOpportunityModal({
     }
   };
 
-  const selectedPipeline = pipelines.find(p => p.id === formData.pipeline_id);
+  const selectedPipeline = pipelines.find(p => String(p.id) === String(formData.pipeline_id));
   const stages = selectedPipeline?.stages || [];
 
   const handlePipelineChange = (pipeline_id: string) => {
-    const pipeline = pipelines.find(p => p.id === pipeline_id);
+    const pipeline = pipelines.find(p => String(p.id) === String(pipeline_id));
     setFormData(prev => ({
       ...prev,
       pipeline_id,
@@ -157,18 +176,60 @@ export default function ViewEditOpportunityModal({
     try {
       await opportunitiesApi.updateOpportunity(opportunityId, formData);
 
-      if (opportunity?.contacts?.[0]) {
-        const primaryContact = opportunity.contacts[0];
-        if (formData.contact_name || formData.contact_email || formData.contact_phone) {
-        }
-      }
+      // Update originalData to match formData so there are no unsaved changes
+      setOriginalData({ ...formData });
 
       onUpdate();
       alert('Opportunity updated successfully!');
-      handleClose();
+      // Close without confirmation since changes are saved
+      setOpportunity(null);
+      setFormData({
+        opportunity_name: '',
+        pipeline_id: '',
+        stage_id: '',
+        status: 'open',
+        value: undefined,
+        owner_id: undefined,
+        business_name: '',
+        source: '',
+        tags: [],
+        appointment_time: '',
+        contact_name: '',
+        contact_email: '',
+        contact_phone: '',
+        follower_ids: [],
+        property_address: '',
+        property_city: '',
+        property_state: '',
+        property_zip: '',
+        property_country: '',
+        property_latitude: undefined,
+        property_longitude: undefined,
+      });
+      setOriginalData(null);
+      setErrors({});
+      setActiveSection('opportunity-details');
+      onClose();
     } catch (error) {
       console.error('Error updating opportunity:', error);
       alert('Failed to update opportunity. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConvertToJob = async () => {
+    if (!opportunityId || !formData.stage_id) return;
+
+    setSaving(true);
+    try {
+      await opportunitiesApi.createJobFromOpportunity(opportunityId, formData.stage_id);
+      alert('Opportunity converted to job successfully!');
+      onUpdate();
+      handleClose();
+    } catch (error) {
+      console.error('Error converting opportunity to job:', error);
+      alert('Failed to convert opportunity to job. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -202,7 +263,7 @@ export default function ViewEditOpportunityModal({
       pipeline_id: '',
       stage_id: '',
       status: 'open',
-      value: 0,
+      value: undefined,
       owner_id: undefined,
       business_name: '',
       source: '',
@@ -212,6 +273,13 @@ export default function ViewEditOpportunityModal({
       contact_email: '',
       contact_phone: '',
       follower_ids: [],
+      property_address: '',
+      property_city: '',
+      property_state: '',
+      property_zip: '',
+      property_country: '',
+      property_latitude: undefined,
+      property_longitude: undefined,
     });
     setOriginalData(null);
     setErrors({});
@@ -258,65 +326,59 @@ export default function ViewEditOpportunityModal({
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-paper dark:bg-canvas">
+            <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900">
               <nav className="p-4 space-y-1">
                 <button
                   onClick={() => setActiveSection('opportunity-details')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'opportunity-details'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'opportunity-details'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Opportunity Details
                 </button>
                 <button
                   onClick={() => setActiveSection('book-appointment')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'book-appointment'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'book-appointment'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Book/Update Appointment
                 </button>
                 <button
                   onClick={() => setActiveSection('tasks')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'tasks'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'tasks'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Tasks
                 </button>
                 <button
                   onClick={() => setActiveSection('notes')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'notes'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'notes'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Notes
                 </button>
                 <button
                   onClick={() => setActiveSection('payments')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'payments'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'payments'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Payments
                 </button>
                 <button
                   onClick={() => setActiveSection('associated-objects')}
-                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${
-                    activeSection === 'associated-objects'
-                      ? 'bg-primary-50 dark:bg-primary-900 text-red-700 dark:text-primary-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm rounded-md transition-colors ${activeSection === 'associated-objects'
+                    ? 'bg-primary-50 dark:bg-primary-900 text-blue-700 dark:text-primary-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
                 >
                   Associated Objects
                 </button>
@@ -391,6 +453,19 @@ export default function ViewEditOpportunityModal({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <PropertyAddressInput
+                      propertyAddress={formData.property_address || ''}
+                      propertyCity={formData.property_city || ''}
+                      propertyState={formData.property_state || ''}
+                      propertyZip={formData.property_zip || ''}
+                      propertyCountry={formData.property_country || ''}
+                      onAddressChange={(updates) => {
+                        setFormData(prev => ({ ...prev, ...updates }));
+                      }}
+                    />
                   </div>
 
                   <div>
@@ -474,8 +549,11 @@ export default function ViewEditOpportunityModal({
                             <span className="absolute left-3 top-2 text-gray-500">$</span>
                             <input
                               type="number"
-                              value={formData.value}
-                              onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                              value={formData.value ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData({ ...formData, value: val === '' ? undefined : parseFloat(val) });
+                              }}
                               className="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             />
                           </div>
@@ -504,12 +582,12 @@ export default function ViewEditOpportunityModal({
                             {formData.follower_ids?.map((followerId) => (
                               <span
                                 key={followerId}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-red-200"
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-blue-200"
                               >
                                 Follower
                                 <button
                                   onClick={() => removeFollower(followerId)}
-                                  className="ml-2 hover:text-primary-600 dark:hover:text-red-400"
+                                  className="ml-2 hover:text-primary-600 dark:hover:text-blue-400"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>
@@ -560,6 +638,7 @@ export default function ViewEditOpportunityModal({
                         <input
                           type="datetime-local"
                           value={formData.appointment_time}
+                          min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                           onChange={(e) => setFormData({ ...formData, appointment_time: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
@@ -591,6 +670,26 @@ export default function ViewEditOpportunityModal({
                 <p>Created on: {opportunity?.created_at ? new Date(opportunity.created_at).toLocaleString() : 'N/A'}</p>
               </div>
               <div className="flex items-center gap-3">
+                {formData.status === 'won' && opportunity && onCreateJob && (
+                  <button
+                    onClick={() => onCreateJob(opportunity)}
+                    className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors shadow-sm"
+                  >
+                    Create Job
+                  </button>
+                )}
+                <button
+                  onClick={handleConvertToJob}
+                  disabled={saving || !!opportunity?.job_id}
+                  className={`px-6 py-2 text-sm font-medium rounded-md transition-colors shadow-sm ${
+                    opportunity?.job_id
+                      ? 'bg-gray-400 dark:bg-gray-600 text-gray-200 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                  title={opportunity?.job_id ? 'Job already created' : 'Convert to Job'}
+                >
+                  {opportunity?.job_id ? 'Job Already Created' : 'Convert to Job'}
+                </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
@@ -607,7 +706,7 @@ export default function ViewEditOpportunityModal({
                 <button
                   onClick={handleUpdate}
                   disabled={saving || !hasUnsavedChanges()}
-                  className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {saving ? 'Updating...' : 'Update'}
                 </button>

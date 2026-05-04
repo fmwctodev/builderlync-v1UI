@@ -1,9 +1,10 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   Building, Users, Calendar, Mail, CreditCard,
-  Zap, Database, Shield, FileText, Palette, Settings as SettingsIcon
+  Zap, Database, Shield, FileText, Palette, Bell, Settings as SettingsIcon
 } from 'lucide-react';
+import { usePermissions } from '../../../../shared/utils/usePermissions';
 
 interface SettingsLayoutProps {
   children: React.ReactNode;
@@ -12,31 +13,31 @@ interface SettingsLayoutProps {
 const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+  const { can, canAccess } = usePermissions();
 
-  const tabs = [
-    { id: 'business-info', label: 'Business Info', icon: Building, path: 'business-info' },
-    { id: 'profile', label: 'Profile', icon: Users, path: 'profile' },
-    { id: 'billing', label: 'Billing', icon: CreditCard, path: 'billing' },
-    { id: 'staff', label: 'Staff Management', icon: Users, path: 'staff' },
-    { id: 'communications', label: 'Communications', icon: Mail, path: 'communications' },
-    { id: 'integrations', label: 'Integrations', icon: Zap, path: 'integrations' },
-    { id: 'custom-fields', label: 'Custom Fields', icon: Database, path: 'custom-fields' },
-    { id: 'permissions', label: 'Permissions', icon: Shield, path: 'permissions' },
-    { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: 'audit-logs' },
-    { id: 'brand-board', label: 'Brand Board', icon: Palette, path: 'brand-board' },
-    { id: 'email-service', label: 'Email Service', icon: Mail, path: 'email-service' },
+  const allTabs = [
+    { id: 'business-info', label: 'Business Info', icon: Building, path: `${orgPrefix}/settings/business-info` },
+    { id: 'profile', label: 'Profile', icon: Users, path: `${orgPrefix}/settings/profile` },
+    // { id: 'billing', label: 'Billing', icon: CreditCard, path: `${orgPrefix}/settings/billing`, permission: () => canAccess('financial') },
+    { id: 'staff', label: 'Staff Management', icon: Users, path: `${orgPrefix}/settings/staff`, permission: () => can('staff', 'view') },
+    { id: 'communications', label: 'Communications', icon: Mail, path: `${orgPrefix}/settings/communications`, permission: () => canAccess('communications') },
+    { id: 'integrations', label: 'Integrations', icon: Zap, path: `${orgPrefix}/settings/integrations`, permission: () => canAccess('integrations') },
+    { id: 'custom-fields', label: 'Custom Fields', icon: Database, path: `${orgPrefix}/settings/custom-fields` },
+    { id: 'permissions', label: 'Permissions', icon: Shield, path: `${orgPrefix}/settings/permissions`, permission: () => can('staff', 'assign_roles') },
+    // { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: `${orgPrefix}/settings/audit-logs`, permission: () => can('system', 'view_audit_logs') },
+    { id: 'brand-board', label: 'Brand Board', icon: Palette, path: `${orgPrefix}/settings/brand-board`, permission: () => can('system', 'manage_brand') },
+    { id: 'email-service', label: 'Email Service', icon: Mail, path: `${orgPrefix}/settings/email-service`, permission: () => canAccess('communications') },
+    { id: 'notifications', label: 'Notifications', icon: Bell, path: `${orgPrefix}/settings/notifications` },
   ];
 
-  const currentPath = location.pathname;
-  const currentSettingsPath = currentPath.split('/settings/')[1] || '';
+  const tabs = allTabs.filter(tab => !tab.permission || tab.permission());
 
-  // Extract org slug and build base settings path
-  const orgSlugMatch = currentPath.match(/\/org\/([^/]+)\//);
-  const orgSlug = orgSlugMatch ? orgSlugMatch[1] : '';
-  const baseSettingsPath = `/org/${orgSlug}/settings`;
+  const currentPath = location.pathname;
 
   return (
-    <div className="h-full flex bg-paper dark:bg-canvas">
+    <div className="h-full flex bg-gray-50 dark:bg-gray-900">
       <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -47,11 +48,11 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ children }) => {
         <nav className="p-4 space-y-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = currentSettingsPath === tab.path || currentSettingsPath.startsWith(tab.path + '/');
+            const isActive = currentPath === tab.path || currentPath.startsWith(tab.path + '/');
             return (
               <button
                 key={tab.id}
-                onClick={() => navigate(`${baseSettingsPath}/${tab.path}`)}
+                onClick={() => navigate(tab.path)}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'

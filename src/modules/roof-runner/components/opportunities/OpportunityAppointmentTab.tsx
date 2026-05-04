@@ -5,6 +5,7 @@ import {
   OpportunityAppointment,
   CreateOpportunityAppointmentRequest,
 } from '../../services/opportunityAppointmentsApi';
+import GooglePlacesAutocomplete from '../../../../shared/components/GooglePlacesAutocomplete';
 
 interface OpportunityAppointmentTabProps {
   opportunityId: string;
@@ -25,11 +26,11 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateOpportunityAppointmentRequest>({
-    opportunity_id: opportunityId,
+    opportunity_id: Number(opportunityId),
     appointment_type: 'Inspection',
     appointment_date: '',
     status: 'scheduled',
-    assigned_to: '',
+    assigned_to: null,
     location: '',
     notes: '',
     reminder_enabled: true,
@@ -71,11 +72,13 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
   const handleEdit = (appointment: OpportunityAppointment) => {
     setEditingId(appointment.id);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       appointment_type: appointment.appointment_type,
-      appointment_date: appointment.appointment_date,
+      appointment_date: appointment.appointment_date
+        ? new Date(new Date(appointment.appointment_date).getTime() - new Date(appointment.appointment_date).getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        : new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
       status: appointment.status,
-      assigned_to: appointment.assigned_to || '',
+      assigned_to: appointment.assigned_to || null,
       location: appointment.location || '',
       notes: appointment.notes || '',
       reminder_enabled: appointment.reminder_enabled,
@@ -99,11 +102,11 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
     setShowForm(false);
     setEditingId(null);
     setFormData({
-      opportunity_id: opportunityId,
+      opportunity_id: Number(opportunityId),
       appointment_type: 'Inspection',
       appointment_date: '',
       status: 'scheduled',
-      assigned_to: '',
+      assigned_to: null,
       location: '',
       notes: '',
       reminder_enabled: true,
@@ -118,13 +121,13 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
       case 'cancelled':
         return <XCircle className="h-5 w-5 text-red-600" />;
       default:
-        return <Clock className="h-5 w-5 text-red-600" />;
+        return <Clock className="h-5 w-5 text-blue-600" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     const colors = {
-      scheduled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
       rescheduled: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -145,7 +148,13 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointments</h3>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              resetForm();
+            } else {
+              setShowForm(true);
+            }
+          }}
           className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -154,7 +163,7 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-paper dark:bg-canvas rounded-lg p-6 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -181,6 +190,7 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
               <input
                 type="datetime-local"
                 value={formData.appointment_date}
+                min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                 onChange={(e) => setFormData({ ...formData, appointment_date: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 required
@@ -209,11 +219,10 @@ export default function OpportunityAppointmentTab({ opportunityId }: Opportunity
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Location
               </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter location"
+              <GooglePlacesAutocomplete
+                value={formData.location || ''}
+                onChange={(address) => setFormData({ ...formData, location: address })}
+                placeholder="Search location..."
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
               />
             </div>

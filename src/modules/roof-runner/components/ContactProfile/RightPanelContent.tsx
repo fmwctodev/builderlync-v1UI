@@ -10,41 +10,29 @@ import RelatedObjectsTab from './RelatedObjectsTab';
 interface RightPanelContentProps {
   activeTab: string;
   contactId: number;
-  documentsFilter: string;
   showPaymentActions: boolean;
-  onAddTask: () => void;
-  onAddNote: () => void;
-  onAddAppointment: () => void;
-  onAddDocument: () => void;
-  onDocumentsFilterChange: (filter: string) => void;
   onPaymentActionsToggle: () => void;
 }
 
 const RightPanelContent: React.FC<RightPanelContentProps> = ({
   activeTab,
   contactId,
-  documentsFilter,
   showPaymentActions,
-  onAddTask,
-  onAddNote,
-  onAddAppointment,
-  onAddDocument,
-  onDocumentsFilterChange,
   onPaymentActionsToggle
 }) => {
   switch (activeTab) {
     case 'activity':
       return <ActivityTab contactId={contactId} />;
     case 'tasks':
-      return <TasksTab onAddTask={onAddTask} />;
+      return <TasksTab contactId={contactId} />;
     case 'notes':
-      return <NotesTab contactId={contactId} onAddNote={onAddNote} />;
+      return <NotesTab contactId={contactId} />;
     case 'appointments':
-      return <AppointmentsTab onAddAppointment={onAddAppointment} />;
+      return <AppointmentsTab contactId={contactId} />;
     case 'documents':
-      return <DocumentsTab filter={documentsFilter} onFilterChange={onDocumentsFilterChange} onAddDocument={onAddDocument} />;
+      return <DocumentsTab contactId={contactId} />;
     case 'payments':
-      return <PaymentsTab showActions={showPaymentActions} onActionsToggle={onPaymentActionsToggle} />;
+      return <PaymentsTab contactId={contactId} showActions={showPaymentActions} onActionsToggle={onPaymentActionsToggle} />;
     case 'related':
       return <RelatedObjectsTab />;
     default:

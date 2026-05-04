@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Send, Smile } from 'lucide-react';
+import { Send, Smile, Tag } from 'lucide-react';
+import { TagDropdown } from '../../../../shared/components/TagDropdown';
+import { EmojiPicker } from '../../../../shared/components/EmojiPicker';
 
 interface MessageInputInternalCommentProps {
   onSend: (message: string, metadata: any) => void;
@@ -8,6 +10,8 @@ interface MessageInputInternalCommentProps {
 export function MessageInputInternalComment({ onSend }: MessageInputInternalCommentProps) {
   const [message, setMessage] = useState('');
   const [mentions, setMentions] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -82,9 +86,44 @@ export function MessageInputInternalComment({ onSend }: MessageInputInternalComm
       <div className="flex items-center justify-between">
         {/* Left: Action Buttons */}
         <div className="flex items-center space-x-2">
-          <button className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji">
-            <Smile className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowEmojiPicker(!showEmojiPicker); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert emoji"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  setMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }}
+                onClose={() => setShowEmojiPicker(false)}
+                position="top"
+              />
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowTagDropdown(!showTagDropdown); }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors" title="Insert tag"
+            >
+              <Tag className="w-5 h-5" />
+            </button>
+            {showTagDropdown && (
+              <TagDropdown
+                onSelect={(val) => {
+                  setMessage(prev => prev + val);
+                  setShowTagDropdown(false);
+                }}
+                onClose={() => setShowTagDropdown(false)}
+                position="top"
+              />
+            )}
+          </div>
         </div>
 
         {/* Right: Actions */}

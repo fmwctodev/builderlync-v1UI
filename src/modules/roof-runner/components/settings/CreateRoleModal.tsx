@@ -9,6 +9,7 @@ interface CreateRoleModalProps {
   onSuccess: () => void;
   role?: Role;
   isEdit?: boolean;
+  selectedTemplateId?: string;
 }
 
 const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
@@ -17,6 +18,7 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   onSuccess,
   role,
   isEdit = false,
+  selectedTemplateId = '',
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -36,10 +38,15 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
       setName('');
       setDescription('');
       setPermissions(getDefaultPermissions());
-      setSelectedTemplate('');
+      setSelectedTemplate(selectedTemplateId);
       setShowTemplates(true);
+      
+      // Auto-select template if provided
+      if (selectedTemplateId) {
+        handleTemplateSelect(selectedTemplateId);
+      }
     }
-  }, [role, isEdit, isOpen]);
+  }, [role, isEdit, isOpen, selectedTemplateId]);
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -72,14 +79,21 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
         permissions,
       };
 
+      console.log('=== Role Submission ===');
+      console.log('Mode:', isEdit ? 'Edit' : 'Create');
+      console.log('Role Data:', JSON.stringify(roleData, null, 2));
+
       if (isEdit && role) {
-        await updateRole(role.id, roleData);
+        const result = await updateRole(role.id, roleData);
+        console.log('Update Result:', result);
       } else {
-        await createRole(roleData);
+        const result = await createRole(roleData);
+        console.log('Create Result:', result);
       }
 
       onSuccess();
     } catch (err: any) {
+      console.error('Role submission error:', err);
       setError(err.response?.data?.message || 'Failed to save role');
     } finally {
       setLoading(false);
@@ -290,11 +304,11 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
                   ))}
                 </div>
                 {selectedTemplate && (
-                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <p className="text-xs text-red-800 dark:text-red-300">
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-xs text-blue-800 dark:text-blue-300">
                       <strong>Ideal for:</strong> {ROLE_TEMPLATES.find(t => t.id === selectedTemplate)?.ideal_for.join(', ')}
                     </p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       You can customize permissions below before creating.
                     </p>
                   </div>
@@ -311,6 +325,7 @@ const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Sales Manager"
+                maxLength={50}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required
               />

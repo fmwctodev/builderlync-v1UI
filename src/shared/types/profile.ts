@@ -1,17 +1,12 @@
 export interface UserProfile {
   id: string;
-  user_id: string;
-  avatar_url: string | null;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
-  extension: string;
-  platform_language: string;
-  timezone: string;
-  calendar_name: string;
-  created_at: string;
-  updated_at: string;
+  phone?: string;
+  profile?: string;
+  companyName?: string;
+  companySlug?: string;
 }
 
 export interface WorkingHours {
@@ -81,6 +76,7 @@ export interface UserPreferences {
   private_mode_enabled: boolean;
   meeting_location: string;
   custom_location: string;
+  timezone?: string | null;
   bcc_email: string | null;
   created_at: string;
   updated_at: string;

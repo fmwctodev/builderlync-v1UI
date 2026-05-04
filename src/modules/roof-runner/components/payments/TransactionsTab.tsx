@@ -1,20 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Search as SearchIcon, Filter } from 'lucide-react';
+import { Download, Search as SearchIcon, Filter, RefreshCw } from 'lucide-react';
 import PaymentDateRangeFilter from './PaymentDateRangeFilter';
 import PaymentSearchBar from './PaymentSearchBar';
 import PaymentFiltersSidebar from './PaymentFiltersSidebar';
 import StatusBadge from './StatusBadge';
 import EmptyState from './EmptyState';
-import { fetchTransactions, Transaction } from '../../../../shared/store/services/paymentsApi';
+import { fetchTransactions, Transaction, syncQuickBooksPayments } from '../../../../shared/store/services/paymentsApi';
 
 const TransactionsTab: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<{ startDate: string; endDate: string } | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  const handleSyncQuickBooks = async () => {
+    try {
+      setSyncing(true);
+      await syncQuickBooksPayments();
+      // Wait a moment for DB to update then reload
+      setTimeout(() => loadData(), 1000);
+    } catch (error) {
+      console.error('Error syncing QuickBooks payments:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { getQuickBooksStatus } = await import('../../../../shared/store/services/quickbooksApi');
+        const response = await getQuickBooksStatus();
+        setIsQuickBooksConnected(response.data.connected);
+      } catch (error) {
+        console.error('Error checking QuickBooks status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
     loadData();
   }, [searchQuery]);
 
@@ -30,67 +59,12 @@ const TransactionsTab: React.FC = () => {
     }
   };
 
-  const handleDateRangeChange = (startDate: string, endDate: string) => {
-    setDateRange({ startDate, endDate });
-  };
-
-  const getFilteredTransactions = () => {
-    if (!dateRange) return transactions;
-
-    return transactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.transaction_date);
-      const start = new Date(dateRange.startDate);
-      const end = new Date(dateRange.endDate);
-      return transactionDate >= start && transactionDate <= end;
-    });
-  };
-
   const handleExportCSV = () => {
-    const filteredTransactions = getFilteredTransactions();
-
-    if (filteredTransactions.length === 0) {
-      alert('No transactions to export');
-      return;
-    }
-
-    // Create CSV headers
-    const headers = ['Customer', 'Provider', 'Source', 'Transaction Date', 'Amount', 'Status'];
-
-    // Create CSV rows
-    const rows = filteredTransactions.map((transaction) => [
-      transaction.customer_name,
-      transaction.provider,
-      transaction.source,
-      new Date(transaction.transaction_date).toLocaleDateString(),
-      `$${Number(transaction.amount).toFixed(2)}`,
-      transaction.payment_status,
-    ]);
-
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    // Create and download the file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-
-    const dateRangeStr = dateRange
-      ? `_${dateRange.startDate}_to_${dateRange.endDate}`
-      : '';
-    link.setAttribute('download', `transactions${dateRangeStr}.csv`);
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    console.log('Exporting transactions as CSV...');
   };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -101,17 +75,28 @@ const TransactionsTab: React.FC = () => {
               Track customer payments at a single place
             </p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export as CSV</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleSyncQuickBooks}
+              disabled={syncing || loading || checkingStatus || !isQuickBooksConnected}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50"
+              title={!isQuickBooksConnected ? 'Connect QuickBooks in Settings to sync' : 'Sync payments with QuickBooks'}
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing...' : 'Sync QuickBooks'}</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
+            >
+              <Download className="w-4 h-4" />
+              <span>Import as CSV</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <PaymentDateRangeFilter onDateChange={handleDateRangeChange} />
+          <PaymentDateRangeFilter />
           <PaymentSearchBar
             value={searchQuery}
             onChange={setSearchQuery}

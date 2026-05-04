@@ -1,407 +1,522 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Search,
-  Filter,
-  Plus,
-  Check,
-  AlertCircle,
-  ShoppingCart,
-  RefreshCw,
-  Phone,
-  ChevronDown,
-  X,
-  Package
-} from 'lucide-react';
-import { useABCSupply } from '../context/ABCSupplyContext';
-import { useCurrentOrganization } from '../../../shared/context/OrgContext';
-import { AccountBranchHeader } from './abc-supply';
-import { searchProducts, ABCSupplyProduct } from '../services/abcSupplyApi';
+import React, { useState, useEffect } from "react";
+import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
+import { abcSupplyApi } from "../../abc-supply/services/api";
+import { srsApi } from "../services/srsApi";
+import { Product } from "../../abc-supply/types";
+import ShoppingCartComponent from "./ShoppingCart";
 
 interface ProductCatalogProps {
   onBack: () => void;
-  onViewCart?: () => void;
+  supplier?: string;
+  branchId?: string;
 }
 
-const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, onViewCart }) => {
-  const { currentOrganizationId } = useCurrentOrganization();
-  const organizationId = currentOrganizationId || '';
-
-  const {
-    selectedAccount,
-    selectedBranch,
-    addToCart,
-    cartItems,
-  } = useABCSupply();
-
+const ProductCatalog: React.FC<ProductCatalogProps> = ({ onBack, supplier = 'ABC Supply', branchId }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState<ABCSupplyProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showUnavailable, setShowUnavailable] = useState(false);
-
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [manufacturerFilter, setManufacturerFilter] = useState<string>('');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const [addingToCart, setAddingToCart] = useState<string | null>(null);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-
-  const canSearch = !!selectedAccount && !!selectedBranch;
-
-  const loadProducts = useCallback(async (query?: string) => {
-    if (!canSearch || !organizationId) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const results = await searchProducts(
-        {
-          query: query || '',
-          branchNumber: selectedBranch?.branchNumber,
-          category: categoryFilter || undefined,
-          manufacturer: manufacturerFilter || undefined,
-        },
-        organizationId
-      );
-      setProducts(results);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products');
-    } finally {
-      setIsLoading(false);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+  });
+  const [cart, setCart] = useState<Array<Product & { quantity: number }>>(
+    () => {
+      const cartKey =
+        supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+      const savedCart = localStorage.getItem(cartKey);
+      return savedCart ? JSON.parse(savedCart) : [];
     }
-  }, [canSearch, organizationId, selectedBranch?.branchNumber, categoryFilter, manufacturerFilter]);
+  );
+  const [showCart, setShowCart] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedManufacturers, setSelectedManufacturers] = useState<string[]>([]);
+  // Track selected option/UOM per product (keyed by itemNumber)
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, { option: string; uom: string }>>({});
 
   useEffect(() => {
-    if (canSearch) {
-      loadProducts();
-    }
-  }, [selectedBranch?.branchNumber, categoryFilter, manufacturerFilter]);
+    loadProducts();
+  }, [branchId]); // Reload if branch changes
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadProducts(searchQuery);
-  };
-
-  const handleAddToCart = async (product: ABCSupplyProduct) => {
-    const quantity = quantities[product.itemNumber] || 1;
-    setAddingToCart(product.itemNumber);
+  const loadProducts = async () => {
     try {
-      await addToCart(product, quantity, product.stockingUom);
+      setLoading(true);
+      if (supplier === "SRS") {
+        // Fetch a large number of products to handle locally
+        const response = await srsApi.searchItems('', branchId || '', 2000);
+        const srsData = response.data?.data || response.data || [];
+        const srsProducts = Array.isArray(srsData) ? srsData : [];
+
+        const mappedProducts = srsProducts.map((product: any) => ({
+          itemNumber: product.productId.toString(),
+          itemDescription: product.productName,
+          familyName: product.productCategory || product.familyName || '',
+          supplierName: product.manufacturer || product.supplierName || 'SRS Distribution',
+          status: "Active",
+          productImageUrl: product.productImageUrl,
+          productVariants: product.productVariants || product.productVariant || [],
+          productOptions: product.productOptions || [],
+          srsProductId: product.productId,
+        }));
+        setAllProducts(mappedProducts as any);
+      } else {
+        if (branchId) {
+          const data = await abcSupplyApi.filterItems([''], 50, pagination.page, branchId);
+          setAllProducts(Array.isArray(data) ? data : []);
+        } else {
+          const response = await abcSupplyApi.getItems(pagination.page, 50);
+          const items = (response as any).items?.items || (response as any).items || [];
+          setAllProducts(Array.isArray(items) ? items : []);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load products:", error);
+      setAllProducts([]);
     } finally {
-      setAddingToCart(null);
+      setLoading(false);
     }
   };
 
-  const getCartQuantity = (itemNumber: string) => {
-    const item = cartItems.find(i => i.product.itemNumber === itemNumber);
-    return item?.quantity || 0;
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  const filteredProducts = showUnavailable
-    ? products
-    : products.filter(p => p.isAvailable);
+  const handleAddToCart = (product: any) => {
+    const storageKey = supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+    // For SRS use composite cartKey so different color/UOM combos are separate line items
+    const uniqueKey = product.cartKey || product.itemNumber;
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item: any) =>
+        (item.cartKey || item.itemNumber) === uniqueKey
+      );
+      let newCart;
+      if (existingItem) {
+        newCart = prevCart.map((item: any) =>
+          (item.cartKey || item.itemNumber) === uniqueKey
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        newCart = [...prevCart, { ...product, quantity: 1 }];
+      }
+      localStorage.setItem(storageKey, JSON.stringify(newCart));
+      return newCart;
+    });
+  };
 
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-  const manufacturers = [...new Set(products.map(p => p.manufacturer).filter(Boolean))];
+  const handleUpdateQuantity = (uniqueKey: string, quantity: number) => {
+    const storageKey = supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+    setCart((prevCart) => {
+      if (quantity <= 0) {
+        const newCart = prevCart.filter((item: any) =>
+          (item.cartKey || item.itemNumber) !== uniqueKey
+        );
+        localStorage.setItem(storageKey, JSON.stringify(newCart));
+        return newCart;
+      }
+      const newCart = prevCart.map((item: any) =>
+        (item.cartKey || item.itemNumber) === uniqueKey ? { ...item, quantity } : item
+      );
+      localStorage.setItem(storageKey, JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
+  const handleRemoveItem = (uniqueKey: string) => {
+    const storageKey = supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+    setCart((prevCart) => {
+      const newCart = prevCart.filter((item: any) =>
+        (item.cartKey || item.itemNumber) !== uniqueKey
+      );
+      localStorage.setItem(storageKey, JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
+  const handleCheckout = () => {
+    const cartKey = supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+    setCart([]);
+    localStorage.removeItem(cartKey);
+  };
+
+  const handleCategoryFilter = async (category: string, checked: boolean) => {
+    if (supplier !== "ABC Supply") return;
+
+    const newCategories = checked
+      ? [...selectedCategories, category]
+      : selectedCategories.filter((c) => c !== category);
+
+    setSelectedCategories(newCategories);
+    // Note: ABC still uses API filtering logic here if needed
+  };
+
+  const handleManufacturerFilter = (manufacturer: string, checked: boolean) => {
+    setSelectedManufacturers((prev) =>
+      checked ? [...prev, manufacturer] : prev.filter((m) => m !== manufacturer)
+    );
+  };
+
+  const handleVariantChange = (oldItemNumber: string, newVariant: any) => {
+    const cartKey = supplier === "SRS" ? "srs-supply-cart" : "abc-supply-cart";
+    setCart((prevCart) => {
+      const newCart = prevCart.map((item) => {
+        if (item.itemNumber === oldItemNumber) {
+          const newProduct = allProducts.find(
+            (p) => p.itemNumber === newVariant.itemNumber
+          );
+          if (newProduct) {
+            return { ...newProduct, quantity: item.quantity };
+          }
+          return {
+            ...item,
+            itemNumber: newVariant.itemNumber,
+            itemDescription: newVariant.itemDescription,
+          };
+        }
+        return item;
+      });
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
+  // Local filtering logic for SRS
+  const filteredProducts = Array.isArray(allProducts) ? allProducts.filter(product => {
+    const matchesSearch = !searchQuery.trim() || 
+      product.itemDescription?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.itemNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.familyName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesManufacturer = selectedManufacturers.length === 0 ||
+      selectedManufacturers.includes(product.supplierName || '');
+
+    return matchesSearch && matchesManufacturer;
+  }) : [];
+
+  const paginatedProducts = supplier === 'SRS' 
+    ? filteredProducts.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit)
+    : filteredProducts;
+
+  useEffect(() => {
+    if (supplier === 'SRS') {
+      setPagination(prev => ({
+        ...prev,
+        total: filteredProducts.length,
+        totalPages: Math.ceil(filteredProducts.length / prev.limit),
+        page: 1 // Reset to page 1 on filter change
+      }));
+    }
+  }, [searchQuery, selectedManufacturers, allProducts.length]);
 
   return (
     <div className="space-y-6">
       <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <button
-                onClick={onBack}
-                className="text-white/70 hover:text-white text-sm mb-2 flex items-center gap-1"
-              >
-                <span>←</span> Back to Dashboard
-              </button>
-              <h1 className="text-2xl font-bold text-white">Product Catalog</h1>
-              <p className="text-white/70 mt-1">
-                Search and order materials from ABC Supply
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <AccountBranchHeader onViewCart={onViewCart} />
-
-      {!canSearch ? (
-        <div className="bg-gray-800 rounded-lg p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="h-16 w-16 mx-auto mb-4 bg-amber-500/20 rounded-full flex items-center justify-center">
-              <AlertCircle className="h-8 w-8 text-amber-400" />
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              Select Account and Branch to Continue
-            </h3>
-            <p className="text-gray-400 text-sm">
-              Product availability and pricing vary by branch. Please select your ship-to account
-              and preferred branch location above to start browsing products.
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <button
+              onClick={onBack}
+              className="text-white hover:text-white text-sm mb-2"
+            >
+              ← Back to Dashboard
+            </button>
+            <h1 className="text-2xl font-bold text-white">
+              {supplier} Product Catalog
+            </h1>
+            <p className="text-white mt-1">
+              Browse our complete selection of construction materials
             </p>
           </div>
-        </div>
-      ) : (
-        <>
-          <form onSubmit={handleSearch} className="flex gap-3">
+
+          <div className="flex gap-2 flex-1 max-w-md">
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Search by product name, SKU, or manufacturer..."
+                placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full bg-gray-800 dark:bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-              <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Search
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`px-4 py-3 text-sm font-medium rounded-lg border flex items-center gap-2 ${
-                isFilterOpen || categoryFilter || manufacturerFilter
-                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-400'
-                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {(categoryFilter || manufacturerFilter) && (
-                <span className="h-5 w-5 flex items-center justify-center bg-primary-500 text-white text-xs rounded-full">
-                  {(categoryFilter ? 1 : 0) + (manufacturerFilter ? 1 : 0)}
-                </span>
-              )}
-            </button>
-          </form>
+          </div>
+          <button
+            onClick={() => setShowCart(true)}
+            className="relative inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Cart
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
 
-          {isFilterOpen && (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="w-full lg:w-64 flex-shrink-0">
+          <div className="bg-primary-700 dark:bg-primary-600 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Filters</h2>
+              <Filter className="h-5 w-5 text-gray-400" />
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-white mb-2">
+                  Category
+                </h3>
+                <div className="space-y-2">
+                  {["Roofing", "Siding", "Gutters", "Insulation"].map(
+                    (category) => (
+                      <label key={category} className="flex items-center text-gray-300">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-600 text-primary-600 focus:ring-primary-500"
+                          checked={selectedCategories.includes(category)}
+                          onChange={(e) =>
+                            handleCategoryFilter(category, e.target.checked)
+                          }
+                        />
+                        <span className="ml-2 text-sm">
+                          {category}
+                        </span>
+                      </label>
+                    )
+                  )}
                 </div>
-                <div className="flex-1 min-w-[200px]">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Manufacturer
-                  </label>
-                  <select
-                    value={manufacturerFilter}
-                    onChange={(e) => setManufacturerFilter(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Manufacturers</option>
-                    {manufacturers.map(mfr => (
-                      <option key={mfr} value={mfr}>{mfr}</option>
-                    ))}
-                  </select>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-white mb-2">
+                  Manufacturer
+                </h3>
+                <div className="space-y-2">
+                  {["GAF", "Owens Corning", "CertainTeed", "IKO"].map(
+                    (brand) => (
+                      <label key={brand} className="flex items-center text-gray-300">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-600 text-primary-600 focus:ring-primary-500"
+                          checked={selectedManufacturers.includes(brand)}
+                          onChange={(e) =>
+                            handleManufacturerFilter(brand, e.target.checked)
+                          }
+                        />
+                        <span className="ml-2 text-sm">
+                          {brand}
+                        </span>
+                      </label>
+                    )
+                  )}
                 </div>
-                <div className="flex items-end gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showUnavailable}
-                      onChange={(e) => setShowUnavailable(e.target.checked)}
-                      className="rounded border-gray-600 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-300">Show unavailable items</span>
-                  </label>
-                </div>
-                {(categoryFilter || manufacturerFilter) && (
-                  <button
-                    onClick={() => {
-                      setCategoryFilter('');
-                      setManufacturerFilter('');
-                    }}
-                    className="flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear Filters
-                  </button>
-                )}
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
-          {error && (
-            <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <p className="text-sm text-red-400">{error}</p>
-              <button
-                onClick={() => loadProducts(searchQuery)}
-                className="ml-auto text-sm text-red-400 hover:text-red-300"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 text-primary-400 animate-spin" />
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="bg-gray-800 rounded-lg p-8 text-center">
-              <Package className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No Products Found</h3>
-              <p className="text-gray-400 text-sm">
-                {searchQuery
-                  ? 'Try adjusting your search terms or filters'
-                  : 'Start by searching for products above'}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead className="bg-gray-900">
+        <div className="flex-1 overflow-x-auto">
+          <div className="bg-gray-900 dark:bg-gray-800 rounded-lg overflow-hidden">
+            <table className="min-w-full table-fixed divide-y divide-gray-700">
+              <thead>
+                <tr className="bg-gray-800/50">
+                  {supplier === "SRS" && (
+                    <th className="w-16 px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Image
+                    </th>
+                  )}
+                  <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Item #
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Product
+                  </th>
+                  {supplier === "SRS" && (
+                    <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      Options
+                    </th>
+                  )}
+                  <th className="w-32 px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {loading ? (
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Item Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Manufacturer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      UOM
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Availability
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Qty
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                      <div className="flex justify-center items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading products...</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {filteredProducts.map((product) => {
-                    const inCartQty = getCartQuantity(product.itemNumber);
-                    const isAdding = addingToCart === product.itemNumber;
+                ) : paginatedProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                      No products found
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedProducts.map((product: any) => {
+                    const opts: string[] = product.productOptions || [];
+                    const variants: any[] = product.productVariants || product.productVariant || [];
+                    const selOption = selectedOptions[product.itemNumber]?.option || opts[0] || '';
+                    const selVariant = variants.find((v: any) => v.colorName === selOption || v.selectedOption === selOption);
+                    const availableUOMs: string[] = selVariant?.uoMs || selVariant?.uoms || ['BD'];
+                    const selUOM = selectedOptions[product.itemNumber]?.uom || selVariant?.defaultUOM || availableUOMs[0] || 'BD';
+                    const cartKey = `${product.itemNumber}__${selOption}__${selUOM}`;
+                    const cartItem = cart.find((i: any) => i.cartKey === cartKey);
+                    const quantity = cartItem?.quantity || 0;
 
                     return (
-                      <tr
-                        key={product.itemNumber}
-                        className={`${product.isAvailable ? 'hover:bg-gray-700' : 'opacity-60'}`}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-white">
-                            {product.itemNumber}
-                          </span>
+                      <tr key={product.itemNumber} className="hover:bg-gray-800/50 transition-colors">
+                        {supplier === 'SRS' && (
+                          <td className="px-4 py-3">
+                            {product.productImageUrl ? (
+                              <img
+                                src={product.productImageUrl}
+                                alt=""
+                                className="w-12 h-12 object-cover rounded bg-gray-700"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-700 rounded flex items-center justify-center text-gray-500 text-xs">
+                                N/A
+                              </div>
+                            )}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-xs font-mono text-gray-400 truncate">
+                          {product.itemNumber}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-300">
-                            {product.manufacturer}
-                          </span>
+                        <td className="px-4 py-3 text-sm text-gray-300">
+                          <div className="font-semibold text-white leading-tight">{product.itemDescription}</div>
+                          {product.familyName && <div className="text-xs text-gray-500 mt-0.5">{product.familyName}</div>}
+                          <div className="text-xs text-gray-600">{product.supplierName}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white">
-                              {product.familyName}
-                            </span>
-                            <span className="text-xs text-gray-400 line-clamp-2">
-                              {product.itemDescription}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-300">
-                            {product.stockingUom}
-                          </span>
-                          {product.availableUoms.length > 1 && (
-                            <span className="text-xs text-gray-500 block">
-                              +{product.availableUoms.length - 1} more
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {product.isAvailable ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
-                              <Check className="h-3 w-3" />
-                              Available
-                            </span>
-                          ) : (
-                            <div>
-                              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-500/20 text-red-400">
-                                <X className="h-3 w-3" />
-                                Not at this branch
-                              </span>
-                              {selectedBranch?.phone && (
-                                <button className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-primary-400">
-                                  <Phone className="h-3 w-3" />
-                                  Contact branch
-                                </button>
+                        {supplier === 'SRS' && (
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-2">
+                              {opts.length > 0 && (
+                                <select
+                                  value={selOption}
+                                  onChange={(e) =>
+                                    setSelectedOptions(prev => ({
+                                      ...prev,
+                                      [product.itemNumber]: { option: e.target.value, uom: selUOM }
+                                    }))
+                                  }
+                                  className="text-xs bg-gray-700 border border-gray-600 text-white rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500 w-full"
+                                >
+                                  {opts.map((opt: string) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
                               )}
+                              {availableUOMs.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {availableUOMs.map((uom: string) => (
+                                    <button
+                                      key={uom}
+                                      onClick={() =>
+                                        setSelectedOptions(prev => ({
+                                          ...prev,
+                                          [product.itemNumber]: { option: selOption, uom }
+                                        }))
+                                      }
+                                      className={`text-xs px-2 py-0.5 rounded border font-medium transition-colors ${
+                                        selUOM === uom
+                                          ? 'bg-primary-600 border-primary-500 text-white'
+                                          : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-primary-400 hover:text-white'
+                                      }`}
+                                    >
+                                      {uom}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-right">
+                          {quantity === 0 ? (
+                            <button
+                              onClick={() => handleAddToCart({
+                                ...product,
+                                cartKey,
+                                selectedOption: selOption,
+                                selectedUOM: selUOM,
+                                itemDescription: selOption
+                                  ? `${product.itemDescription} — ${selOption} (${selUOM})`
+                                  : product.itemDescription,
+                              })}
+                              className="inline-flex items-center px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded hover:bg-primary-700 transition"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add
+                            </button>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => handleUpdateQuantity(cartKey, quantity - 1)}
+                                className="w-7 h-7 flex items-center justify-center bg-gray-700 text-white rounded hover:bg-red-600 transition"
+                              >-</button>
+                              <span className="w-7 text-center text-sm font-bold text-white">{quantity}</span>
+                              <button
+                                onClick={() => handleUpdateQuantity(cartKey, quantity + 1)}
+                                className="w-7 h-7 flex items-center justify-center bg-gray-700 text-white rounded hover:bg-green-600 transition"
+                              >+</button>
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="number"
-                            min="1"
-                            value={quantities[product.itemNumber] || 1}
-                            onChange={(e) => setQuantities(prev => ({
-                              ...prev,
-                              [product.itemNumber]: parseInt(e.target.value) || 1
-                            }))}
-                            disabled={!product.isAvailable}
-                            className="w-16 px-2 py-1 text-center text-sm bg-gray-700 border border-gray-600 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          {inCartQty > 0 && (
-                            <span className="mr-2 text-xs text-primary-400">
-                              {inCartQty} in cart
-                            </span>
-                          )}
-                          <button
-                            onClick={() => handleAddToCart(product)}
-                            disabled={!product.isAvailable || isAdding}
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isAdding ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add
-                              </>
-                            )}
-                          </button>
-                        </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {!loading && pagination.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between px-2">
+              <span className="text-sm text-gray-400">
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={pagination.page === 1}
+                  onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+                  className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={pagination.page === pagination.totalPages}
+                  onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+                  className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
+
+      <ShoppingCartComponent
+        isOpen={showCart}
+        onClose={() => setShowCart(false)}
+        items={cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onCheckout={handleCheckout}
+        onVariantChange={handleVariantChange}
+        supplier={supplier}
+      />
     </div>
   );
 };

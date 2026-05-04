@@ -1,4 +1,14 @@
-import { supabase } from '../../lib/supabase';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
 
 export interface CalendarGroup {
   id: string;
@@ -20,6 +30,7 @@ export interface Calendar {
   owner_id: string;
   description?: string;
   color: string;
+  cal_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +50,7 @@ export interface Appointment {
   updated_at: string;
   contacts?: {
     id: string;
+    full_name?: string;
     first_name: string;
     last_name: string;
     email?: string;
@@ -85,343 +97,140 @@ export interface Equipment {
   updated_at: string;
 }
 
-// Calendar Groups API
 export const getCalendarGroups = async (): Promise<CalendarGroup[]> => {
-  const { data: groups, error: groupsError } = await supabase
-    .from('calendar_groups')
-    .select('*')
-    .order('name');
-
-  if (groupsError) throw groupsError;
-
-  // Get calendar counts for each group
-  const groupsWithCounts = await Promise.all(
-    (groups || []).map(async (group) => {
-      const { count } = await supabase
-        .from('calendars')
-        .select('*', { count: 'exact', head: true })
-        .eq('group_id', group.id);
-
-      return { ...group, calendar_count: count || 0 };
-    })
-  );
-
-  return groupsWithCounts;
+  const { data } = await axios.get(`${API_BASE_URL}/profile/calendar-groups`, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data || [];
 };
 
-export const createCalendarGroup = async (group: Omit<CalendarGroup, 'id' | 'created_at' | 'updated_at' | 'calendar_count'>): Promise<CalendarGroup> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('calendar_groups')
-    .insert([{ ...group, user_id: user.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const createCalendarGroup = async (
+  group: Omit<CalendarGroup, 'id' | 'created_at' | 'updated_at' | 'calendar_count' | 'user_id'>
+): Promise<CalendarGroup> => {
+  const { data } = await axios.post(`${API_BASE_URL}/profile/calendar-groups`, group, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const updateCalendarGroup = async (id: string, updates: Partial<CalendarGroup>): Promise<CalendarGroup> => {
-  const { data, error } = await supabase
-    .from('calendar_groups')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const { data } = await axios.put(`${API_BASE_URL}/profile/calendar-groups/${id}`, updates, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const deleteCalendarGroup = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('calendar_groups')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await axios.delete(`${API_BASE_URL}/profile/calendar-groups/${id}`, {
+    headers: getAuthHeaders(),
+  });
 };
 
-// Calendars API
 export const getCalendars = async (filters?: {
   status?: string;
   type?: string;
   owner_id?: string;
   group_id?: string;
 }): Promise<Calendar[]> => {
-  let query = supabase
-    .from('calendars')
-    .select('*, calendar_groups(name)');
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.type) params.set('type', filters.type);
+  if (filters?.owner_id) params.set('owner_id', filters.owner_id);
+  if (filters?.group_id) params.set('group_id', filters.group_id);
 
-  if (filters?.status && filters.status !== 'all') {
-    query = query.eq('status', filters.status);
-  }
-  if (filters?.type && filters.type !== 'all') {
-    query = query.eq('type', filters.type);
-  }
-  if (filters?.owner_id) {
-    query = query.eq('owner_id', filters.owner_id);
-  }
-  if (filters?.group_id) {
-    query = query.eq('group_id', filters.group_id);
-  }
-
-  const { data, error } = await query.order('updated_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+  const { data } = await axios.get(`${API_BASE_URL}/profile/calendars?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data || [];
 };
 
-export const createCalendar = async (calendar: Omit<Calendar, 'id' | 'created_at' | 'updated_at'>): Promise<Calendar> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('calendars')
-    .insert([{ ...calendar, owner_id: user.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const createCalendar = async (calendar: Omit<Calendar, 'id' | 'created_at' | 'updated_at' | 'owner_id'>): Promise<Calendar> => {
+  const { data } = await axios.post(`${API_BASE_URL}/profile/calendars`, calendar, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const updateCalendar = async (id: string, updates: Partial<Calendar>): Promise<Calendar> => {
-  const { data, error } = await supabase
-    .from('calendars')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const { data } = await axios.put(`${API_BASE_URL}/profile/calendars/${id}`, updates, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const deleteCalendar = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('calendars')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await axios.delete(`${API_BASE_URL}/profile/calendars/${id}`, {
+    headers: getAuthHeaders(),
+  });
 };
 
-// Appointments API
 export const getAppointments = async (filters?: {
   status?: string;
   calendar_id?: string;
   start_date?: string;
   end_date?: string;
 }): Promise<Appointment[]> => {
-  let query = supabase
-    .from('appointments')
-    .select(`
-      *,
-      calendars(name, color),
-      contacts(id, first_name, last_name, email)
-    `);
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.calendar_id) params.set('calendar_id', filters.calendar_id);
+  if (filters?.start_date) params.set('start_date', filters.start_date);
+  if (filters?.end_date) params.set('end_date', filters.end_date);
 
-  if (filters?.status && filters.status !== 'all') {
-    query = query.eq('status', filters.status);
-  }
-  if (filters?.calendar_id) {
-    query = query.eq('calendar_id', filters.calendar_id);
-  }
-  if (filters?.start_date) {
-    query = query.gte('appointment_time', filters.start_date);
-  }
-  if (filters?.end_date) {
-    query = query.lte('appointment_time', filters.end_date);
-  }
-
-  const { data: appointments, error } = await query.order('appointment_time', { ascending: true });
-
-  if (error) throw error;
-
-  if (!appointments || appointments.length === 0) return [];
-
-  const ownerIds = [...new Set(appointments.map(apt => apt.owner_id))];
-
-  const { data: staffMembers } = await supabase
-    .from('staff')
-    .select('user_id, first_name, last_name')
-    .in('user_id', ownerIds);
-
-  const staffMap = new Map(
-    (staffMembers || []).map(staff => [staff.user_id, staff])
-  );
-
-  const enrichedAppointments = appointments.map(appointment => ({
-    ...appointment,
-    staff: staffMap.get(appointment.owner_id) || undefined
-  }));
-
-  return enrichedAppointments;
+  const { data } = await axios.get(`${API_BASE_URL}/profile/appointments?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data || [];
 };
 
-export const createAppointment = async (appointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Promise<Appointment> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('appointments')
-    .insert([{ ...appointment, owner_id: user.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const createAppointment = async (appointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at' | 'owner_id'>): Promise<Appointment> => {
+  const { data } = await axios.post(`${API_BASE_URL}/profile/appointments`, appointment, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const updateAppointment = async (id: string, updates: Partial<Appointment>): Promise<Appointment> => {
-  const { data, error } = await supabase
-    .from('appointments')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  const { data } = await axios.put(`${API_BASE_URL}/profile/appointments/${id}`, updates, {
+    headers: getAuthHeaders(),
+  });
+  return data?.data;
 };
 
 export const deleteAppointment = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('appointments')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  await axios.delete(`${API_BASE_URL}/profile/appointments/${id}`, {
+    headers: getAuthHeaders(),
+  });
 };
 
-// Service Menu API
-export const getServiceMenuItems = async (): Promise<ServiceMenuItem[]> => {
-  const { data, error } = await supabase
-    .from('service_menu_items')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  return data || [];
+export const getServiceMenuItems = async (): Promise<ServiceMenuItem[]> => [];
+export const createServiceMenuItem = async (_item: Omit<ServiceMenuItem, 'id' | 'created_at' | 'updated_at'>): Promise<ServiceMenuItem> => {
+  throw new Error('Service menu API is not implemented');
+};
+export const updateServiceMenuItem = async (_id: string, _updates: Partial<ServiceMenuItem>): Promise<ServiceMenuItem> => {
+  throw new Error('Service menu API is not implemented');
+};
+export const deleteServiceMenuItem = async (_id: string): Promise<void> => {
+  throw new Error('Service menu API is not implemented');
 };
 
-export const createServiceMenuItem = async (item: Omit<ServiceMenuItem, 'id' | 'created_at' | 'updated_at'>): Promise<ServiceMenuItem> => {
-  const { data, error } = await supabase
-    .from('service_menu_items')
-    .insert([item])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const getRooms = async (): Promise<Room[]> => [];
+export const createRoom = async (_room: Omit<Room, 'id' | 'created_at' | 'updated_at'>): Promise<Room> => {
+  throw new Error('Rooms API is not implemented');
+};
+export const updateRoom = async (_id: string, _updates: Partial<Room>): Promise<Room> => {
+  throw new Error('Rooms API is not implemented');
+};
+export const deleteRoom = async (_id: string): Promise<void> => {
+  throw new Error('Rooms API is not implemented');
 };
 
-export const updateServiceMenuItem = async (id: string, updates: Partial<ServiceMenuItem>): Promise<ServiceMenuItem> => {
-  const { data, error } = await supabase
-    .from('service_menu_items')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const getEquipment = async (): Promise<Equipment[]> => [];
+export const createEquipment = async (_equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment> => {
+  throw new Error('Equipment API is not implemented');
 };
-
-export const deleteServiceMenuItem = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('service_menu_items')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+export const updateEquipment = async (_id: string, _updates: Partial<Equipment>): Promise<Equipment> => {
+  throw new Error('Equipment API is not implemented');
 };
-
-// Rooms API
-export const getRooms = async (): Promise<Room[]> => {
-  const { data, error } = await supabase
-    .from('rooms')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  return data || [];
-};
-
-export const createRoom = async (room: Omit<Room, 'id' | 'created_at' | 'updated_at'>): Promise<Room> => {
-  const { data, error } = await supabase
-    .from('rooms')
-    .insert([room])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateRoom = async (id: string, updates: Partial<Room>): Promise<Room> => {
-  const { data, error } = await supabase
-    .from('rooms')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const deleteRoom = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('rooms')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
-};
-
-// Equipment API
-export const getEquipment = async (): Promise<Equipment[]> => {
-  const { data, error } = await supabase
-    .from('equipment')
-    .select('*')
-    .order('name');
-
-  if (error) throw error;
-  return data || [];
-};
-
-export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment> => {
-  const { data, error } = await supabase
-    .from('equipment')
-    .insert([equipment])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateEquipment = async (id: string, updates: Partial<Equipment>): Promise<Equipment> => {
-  const { data, error } = await supabase
-    .from('equipment')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const deleteEquipment = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('equipment')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+export const deleteEquipment = async (_id: string): Promise<void> => {
+  throw new Error('Equipment API is not implemented');
 };

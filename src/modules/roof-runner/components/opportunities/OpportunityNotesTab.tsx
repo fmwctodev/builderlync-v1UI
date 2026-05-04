@@ -115,7 +115,7 @@ export default function OpportunityNotesTab({ opportunityId }: OpportunityNotesT
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-paper dark:bg-canvas rounded-lg p-6 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Note Content <span className="text-red-600">*</span>

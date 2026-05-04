@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
 import { pipelinesApi } from '../../services/pipelinesApi';
 import type { PipelineWithStages } from '../../types/opportunities';
-import { JOB_TYPE_COLORS } from '../../types/opportunities';
 
 interface ViewPipelineModalProps {
   isOpen: boolean;
@@ -88,18 +87,6 @@ export default function ViewPipelineModal({ isOpen, pipelineId, onClose, onEdit 
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Job Type
-                </label>
-                <span
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
-                  style={{ backgroundColor: JOB_TYPE_COLORS[pipeline.job_type] }}
-                >
-                  {pipeline.job_type}
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                   Default Pipeline
                 </label>
                 <p className="text-gray-900 dark:text-white">
@@ -129,7 +116,7 @@ export default function ViewPipelineModal({ isOpen, pipelineId, onClose, onEdit 
                         </div>
                         <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
                           {stage.include_in_funnel && (
-                            <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
                               Funnel
                             </span>
                           )}

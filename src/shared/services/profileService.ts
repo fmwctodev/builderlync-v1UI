@@ -1,82 +1,62 @@
-import { supabase, getCurrentUserId } from '../lib/supabase';
-import { UserProfile, WorkingHours, CalendarConnection, EmailConnection, UserSignature, User2FASettings, UserPreferences } from '../types/profile';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+const getAccessToken = () => localStorage.getItem('token') || localStorage.getItem('adminToken');
+
+const getAuthHeaders = () => {
+  const token = getAccessToken();
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
 
 export const profileService = {
-  async getUserProfile(): Promise<UserProfile | null> {
-    const userId = await getCurrentUserId();
-    if (!userId) return null;
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
+  async getUserProfile(): Promise<any> {
+    const { data } = await axios.get(`${API_BASE_URL}/auth/profile`, {
+      headers: getAuthHeaders(),
+    });
+    return data.data;
   },
 
-  async createUserProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
+  async updateUserProfile(updates: { firstName?: string; lastName?: string; phone?: string; email?: string; avatar_url?: string | null }): Promise<any> {
+    const formData = new FormData();
+    
+    if (updates.firstName) formData.append('firstName', updates.firstName);
+    if (updates.lastName) formData.append('lastName', updates.lastName);
+    if (updates.phone) formData.append('phone', updates.phone);
+    if (updates.avatar_url !== undefined) formData.append('avatar_url', updates.avatar_url || '');
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .insert({ ...profile, user_id: userId })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async updateUserProfile(updates: Partial<UserProfile>): Promise<UserProfile> {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const token = getAccessToken();
+    const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return data.data;
   },
 
   async uploadAvatar(file: File): Promise<string> {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
+    const formData = new FormData();
+    formData.append('profile', file);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('user-assets')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('user-assets')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    const token = getAccessToken();
+    const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return data.data.profile;
   },
 
-  async deleteAvatar(avatarUrl: string): Promise<void> {
-    const path = avatarUrl.split('/').slice(-2).join('/');
+  async deleteAvatar(): Promise<void> {
+    // Not implemented in API yet
+  },
 
-    const { error } = await supabase.storage
-      .from('user-assets')
-      .remove([path]);
-
-    if (error) throw error;
+  async createUserProfile(profile: any): Promise<any> {
+    return this.updateUserProfile(profile);
   },
 };
-
 export const workingHoursService = {
   async getWorkingHours(): Promise<WorkingHours[]> {
     const userId = await getCurrentUserId();
@@ -368,15 +348,20 @@ export const preferencesService = {
 
 export const passwordService = {
   async updatePassword(newPassword: string): Promise<void> {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) throw error;
+    // Not used - using authApi.changePassword instead
   },
 
   async signOutEverywhere(): Promise<void> {
-    const { error } = await supabase.auth.signOut({ scope: 'global' });
-    if (error) throw error;
+    try {
+      await axios.post(`${API_BASE_URL}/auth/sign-out-everywhere`, {}, {
+        headers: getAuthHeaders(),
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      // Always clear and redirect even if API call fails
+      localStorage.clear();
+      window.location.href = '/auth/login';
+    }
   },
 };

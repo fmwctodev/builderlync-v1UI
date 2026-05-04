@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
-import { StagingBanner } from '../components/common';
 
 const NewMaterial: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +11,7 @@ const NewMaterial: React.FC = () => {
     { id: 'custom', name: 'Add custom offering', icon: <Plus className="w-8 h-8 text-primary-600" />, selected: true },
     { id: 'asphalt', name: 'Asphalt', icon: <div className="w-8 h-8 bg-gray-800 rounded-full"></div> },
     { id: 'tile', name: 'Tile', icon: <div className="w-8 h-8 bg-red-600 rounded-full"></div> },
-    { id: 'metal', name: 'Metal', icon: <div className="w-8 h-8 bg-red-400 rounded-full"></div> },
+    { id: 'metal', name: 'Metal', icon: <div className="w-8 h-8 bg-blue-400 rounded-full"></div> },
     { id: 'cedar', name: 'Cedar', icon: <div className="w-8 h-8 bg-amber-700 rounded-full"></div> },
     { id: 'modified', name: 'Modified Bitumen', icon: <div className="w-8 h-8 bg-gray-600 rounded-full"></div> },
     { id: 'tpo', name: 'TPO', icon: <div className="w-8 h-8 bg-gray-300 rounded-full"></div> },
@@ -25,16 +24,15 @@ const NewMaterial: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
-      <StagingBanner />
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <button
-          onClick={() => navigate(`/instant-estimator/${id}/manage/materials`)}
-          className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm mb-4"
+          onClick={() => navigate(`/instant-estimator/${id}/manage`)}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to materials
+          Back to manage
         </button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">New material</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -62,7 +60,7 @@ const NewMaterial: React.FC = () => {
                 <div className="absolute top-3 right-3">
                   <div className={`w-5 h-5 rounded-full border-2 ${
                     selectedMaterial === material.name
-                      ? 'border-red-600 bg-red-600'
+                      ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {selectedMaterial === material.name && (
@@ -91,10 +89,10 @@ const NewMaterial: React.FC = () => {
       {/* Footer */}
       <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 flex justify-end gap-3">
         <button
-          onClick={() => navigate(`/instant-estimator/${id}/manage/materials`)}
+          onClick={() => navigate(`/instant-estimator/${id}/manage`)}
           className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          Cancel
+          Back
         </button>
         <button onClick={handleContinue} className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
           Continue

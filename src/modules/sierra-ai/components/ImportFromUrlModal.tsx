@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Globe, AlertCircle, CheckCircle, Loader, ChevronDown } from 'lucide-react';
-import { webScraperService } from '../services';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
+
 
 type CrawlType = 'exact' | 'path' | 'domain';
 
@@ -9,6 +10,8 @@ interface ImportFromUrlModalProps {
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
   onSuccess: (result: { webSource: any; articles: any[] }) => void;
+  agentId?: string;
+  organizationId?: string;
 }
 
 export function ImportFromUrlModal({
@@ -16,57 +19,72 @@ export function ImportFromUrlModal({
   onClose,
   collections,
   onSuccess,
+  agentId,
+  organizationId: propOrganizationId,
 }: ImportFromUrlModalProps) {
   const [url, setUrl] = useState('');
   const [crawlType, setCrawlType] = useState<CrawlType>('exact');
   const [showCrawlTypeDropdown, setShowCrawlTypeDropdown] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshFrequency, setRefreshFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'never'>('weekly');
+  const [refreshFrequency, setRefreshFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const crawlTypeOptions = [
-    { value: 'exact' as CrawlType, label: 'Exact URL' },
-    { value: 'path' as CrawlType, label: 'All URLs with the path' },
-    { value: 'domain' as CrawlType, label: 'All URLs in this domain' },
-  ];
-
-  if (!isOpen) return null;
-
+    { value: 'exact', label: 'Exact URL' },
+    { value: 'path', label: 'Path & Sub-paths' },
+    { value: 'domain', label: 'Entire Domain' },
+  ] as const;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
 
-    const validation = webScraperService.validateUrl(url);
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid URL');
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      setError('Please enter a valid URL');
       return;
     }
+    // const organizationId = propOrganizationId || localStorage.getItem('currentOrganizationId');
+    const user = localStorage.getItem('user');
+    const organizationId = JSON.parse(user || '{}')?.companySlug;
 
-    if (!selectedCollection) {
-      setError('Please select a collection');
+    if (!organizationId) {
+      setError('Organization not found. Please refresh the page.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await webScraperService.importFromUrl(url, selectedCollection, {
-        autoRefresh,
-        refreshFrequency: autoRefresh ? refreshFrequency : 'never',
+      const result = await knowledgeBaseApi.scrapeWebsite({
+        url,
+        organization_id: organizationId,
+        agent_id: agentId
       });
 
+      if (agentId) {
+        try {
+          const { vapiApi } = await import('../services/vapiApi');
+          await vapiApi.addKnowledgeBaseUrl(agentId, url, "Scraped: " + (new URL(url).hostname));
+        } catch (VapiError) {
+          console.error("Failed to add to Vapi KB:", VapiError);
+          // Don't fail the whole operation if just EL fails, but maybe notify user?
+        }
+      }
+
       setSuccess(true);
-      onSuccess(result);
+      onSuccess({ webSource: result, articles: [] }); // Adapt to expected format
 
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import content');
+      setError(err instanceof Error ? err.message : 'Failed to scrape website');
     } finally {
       setLoading(false);
     }
@@ -84,6 +102,8 @@ export function ImportFromUrlModal({
     setLoading(false);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -142,11 +162,10 @@ export function ImportFromUrlModal({
                             setCrawlType(option.value);
                             setShowCrawlTypeDropdown(false);
                           }}
-                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                            crawlType === option.value
-                              ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
-                              : 'text-gray-900 dark:text-white'
-                          } ${option.value === crawlTypeOptions[crawlTypeOptions.length - 1].value ? 'rounded-b-lg' : ''} ${option.value === crawlTypeOptions[0].value ? 'rounded-t-lg' : ''}`}
+                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${crawlType === option.value
+                            ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                            : 'text-gray-900 dark:text-white'
+                            } ${option.value === crawlTypeOptions[crawlTypeOptions.length - 1].value ? 'rounded-b-lg' : ''} ${option.value === crawlTypeOptions[0].value ? 'rounded-t-lg' : ''}`}
                         >
                           {option.label}
                           {crawlType === option.value && (

@@ -108,7 +108,6 @@ const DraggableFieldItem: React.FC<DraggableFieldItemProps> = ({ field, onAddFie
       style={style}
       {...attributes}
       {...listeners}
-      onClick={() => onAddField(field.type)}
       className="flex items-center space-x-3 px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-move group"
     >
       <GripVertical size={14} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-400 dark:group-hover:text-gray-500" />

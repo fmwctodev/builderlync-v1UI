@@ -6,11 +6,18 @@ export interface RegisterRequest {
   email: string;
   companyName: string;
   password: string;
+  betaCode?: string;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface Verify2FARequest {
+  tempToken: string;
+  code?: string;
+  backupCode?: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -27,19 +34,39 @@ export interface ResetPasswordRequest {
   newPassword: string;
 }
 
-export interface User {
-  id: string;
+export interface VerifyRegistrationOtpRequest {
   email: string;
+  otp: string;
+}
+
+export interface ResendRegistrationOtpRequest {
+  email: string;
+}
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  companyName: string;
+  companySlug?: string;
+  organizationId?: number | string;
+  organization_id?: number | string;
+  role?: {
+    id: string;
+    name: string;
+    permissions: any;
+  };
+  createdAt: string;
+  updatedAt: string;
+  is_beta_user?: boolean;
+  user_type?: string;
+  subscription_status?: string | null;
+  has_active_subscription?: boolean;
   user_metadata?: {
-    firstName?: string;
-    lastName?: string;
-    full_name?: string;
+    organization_id?: string | number;
+    [key: string]: any;
   };
-  app_metadata?: {
-    companyName?: string;
-  };
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface RegisterResponse {
@@ -55,8 +82,11 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   data: {
-    user: User;
-    token: string;
+    user?: User;
+    token?: string;
+    requires_2fa?: boolean;
+    temp_token?: string;
+    user_id?: string;
   };
 }
 
@@ -80,6 +110,32 @@ export interface ResetPasswordResponse {
   data: null;
 }
 
+export interface VerifyRegistrationOtpResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+}
+
+export interface ResendRegistrationOtpResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface Verify2FAResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+  error_code?: string;
+  attempts_remaining?: number;
+}
+
 export const authApi = {
   register: async (data: RegisterRequest): Promise<RegisterResponse> => {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -94,7 +150,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Registration failed');
+      throw new Error(result.message || result.error || 'Registration failed');
     }
 
     return result;
@@ -112,7 +168,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Login failed');
+      throw new Error(result.message || result.error || 'Login failed');
     }
 
     return result;
@@ -130,7 +186,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Failed to send OTP');
+      throw new Error(result.message || result.error || 'Failed to send OTP');
     }
 
     return result;
@@ -148,7 +204,7 @@ export const authApi = {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'OTP verification failed');
+      throw new Error(result.message || result.error || 'OTP verification failed');
     }
 
     return result;
@@ -161,13 +217,71 @@ export const authApi = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${data.token}`,
       },
-      body: JSON.stringify({token: data.token, newPassword: data.newPassword }),
+      body: JSON.stringify({ token: data.token, newPassword: data.newPassword }),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Password reset failed');
+      throw new Error(result.message || result.error || 'Password reset failed');
+    }
+
+    return result;
+  },
+  verifyRegistrationOtp: async (data: VerifyRegistrationOtpRequest): Promise<VerifyRegistrationOtpResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-registration-otp`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    console.log(result)
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || 'OTP verification failed');
+    }
+
+    return result;
+  },
+  resendRegistrationOtp: async (data: ResendRegistrationOtpRequest): Promise<ResendRegistrationOtpResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-registration-otp`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || 'Failed to resend OTP');
+    }
+
+    return result;
+  },
+  verify2FA: async (data: Verify2FARequest): Promise<Verify2FAResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/login/verify-2fa`, {
+      method: 'POST',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      const error: any = new Error(result.message || 'Verification failed');
+      error.errorCode = result.error_code;
+      error.attemptsRemaining = result.attempts_remaining;
+      throw error;
     }
 
     return result;

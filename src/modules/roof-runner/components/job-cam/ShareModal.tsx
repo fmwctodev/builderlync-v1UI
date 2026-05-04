@@ -29,6 +29,7 @@ const ShareModal: React.FC<Props> = ({ open, onClose, jobId, photoIds, reportId,
   const [creating, setCreating] = useState(false);
   const [createdLink, setCreatedLink] = useState<JobMediaShareLink | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -45,6 +46,7 @@ const ShareModal: React.FC<Props> = ({ open, onClose, jobId, photoIds, reportId,
 
   const handleCreate = async () => {
     setCreating(true);
+    setError(null);
     try {
       const input: CreateShareLinkInput = {
         job_id: jobId,
@@ -57,8 +59,9 @@ const ShareModal: React.FC<Props> = ({ open, onClose, jobId, photoIds, reportId,
       const link = await createShareLink(input);
       setCreatedLink(link);
       onCreated?.(link);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.response?.data?.message || e.message || 'Failed to create share link');
     } finally {
       setCreating(false);
     }
@@ -137,6 +140,12 @@ const ShareModal: React.FC<Props> = ({ open, onClose, jobId, photoIds, reportId,
                   ))}
                 </div>
               </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Recipient Label</label>

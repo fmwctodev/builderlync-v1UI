@@ -10,7 +10,6 @@ export interface ClientToolParameter {
 export interface ClientTool {
   id: string;
   agent_id: string;
-  organization_id: string;
   name: string;
   description: string;
   wait_for_response: boolean;
@@ -41,28 +40,16 @@ export interface UpdateClientToolInput extends Partial<CreateClientToolInput> {
 }
 
 export async function fetchClientTools(agentId: string): Promise<ClientTool[]> {
-  const { data, error } = await supabase
-    .from('ai_agent_client_tools')
-    .select('*')
-    .eq('agent_id', agentId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching client tools:', error);
-    throw error;
-  }
-
-  return data || [];
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.getClientTools(agentId);
+  return response.data || [];
 }
 
 export async function createClientTool(
   agentId: string,
-  organizationId: string,
   input: CreateClientToolInput
 ): Promise<ClientTool> {
   const toolData = {
-    agent_id: agentId,
-    organization_id: organizationId,
     name: input.name,
     description: input.description || '',
     wait_for_response: input.wait_for_response ?? false,
@@ -74,67 +61,30 @@ export async function createClientTool(
     enabled: input.enabled ?? true,
   };
 
-  const { data, error } = await supabase
-    .from('ai_agent_client_tools')
-    .insert(toolData)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating client tool:', error);
-    throw error;
-  }
-
-  return data;
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.createClientTool(agentId, toolData);
+  return response.data;
 }
 
 export async function updateClientTool(
   input: UpdateClientToolInput
 ): Promise<ClientTool> {
   const { id, ...updates } = input;
-
-  const { data, error } = await supabase
-    .from('ai_agent_client_tools')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating client tool:', error);
-    throw error;
-  }
-
-  return data;
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.updateClientTool(id, updates);
+  return response.data;
 }
 
 export async function deleteClientTool(toolId: string): Promise<void> {
-  const { error } = await supabase
-    .from('ai_agent_client_tools')
-    .delete()
-    .eq('id', toolId);
-
-  if (error) {
-    console.error('Error deleting client tool:', error);
-    throw error;
-  }
+  const { vapiApi } = await import('./vapiApi');
+  await vapiApi.deleteClientTool(toolId);
 }
 
 export async function toggleClientTool(
   toolId: string,
   enabled: boolean
 ): Promise<ClientTool> {
-  const { data, error } = await supabase
-    .from('ai_agent_client_tools')
-    .update({ enabled })
-    .eq('id', toolId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error toggling client tool:', error);
-    throw error;
-  }
-
-  return data;
+  const { vapiApi } = await import('./vapiApi');
+  const response = await vapiApi.updateClientTool(toolId, { enabled });
+  return response.data;
 }

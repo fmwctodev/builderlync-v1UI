@@ -2,43 +2,70 @@ import { useState, useEffect } from 'react';
 import { Plus, Phone, MessageSquare, Image, MoreVertical, Edit2, Trash2, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import { ImportPhoneNumbersModal } from './ImportPhoneNumbersModal';
 import { EditPhoneNumberModal } from './EditPhoneNumberModal';
+import { CreatePhoneNumberModal } from './CreatePhoneNumberModal';
 import {
   fetchOrganizationPhoneNumbers,
   deletePhoneNumber,
   unassignPhoneNumber,
   checkTwilioIntegration,
+  assignPhoneNumberToAgent,
   type PhoneNumber,
 } from '../services/phoneNumbersService';
+import { fetchAgents, type AIAgent } from '../services/agentsApi';
 
 interface PhoneNumbersSectionProps {
   organizationId: string;
+  agentId?: string;
 }
 
-export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps) {
+export function PhoneNumbersSection({ organizationId, agentId }: PhoneNumbersSectionProps) {
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<PhoneNumber | null>(null);
-  const [twilioConnected, setTwilioConnected] = useState(false);
+  const [twilioConnected, setTwilioConnected] = useState<boolean | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [showAssignToAgentId, setShowAssignToAgentId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPhoneNumbers();
     checkIntegration();
-  }, [organizationId]);
+    if (!agentId) {
+      loadAgents();
+    }
+  }, [organizationId, agentId]);
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const orgSlug = user.companySlug || 'default';
 
   const loadPhoneNumbers = async () => {
     setLoading(true);
     try {
-      const data = await fetchOrganizationPhoneNumbers(organizationId);
+      let data = await fetchOrganizationPhoneNumbers(organizationId);
+
+      if (agentId) {
+        data = data.filter(num => String(num.assigned_agent_id) === String(agentId) || (num.assigned_agent && String(num.assigned_agent.id) === String(agentId)));
+      }
+
       setPhoneNumbers(data);
     } catch (err) {
       console.error('Error loading phone numbers:', err);
       setError('Failed to load phone numbers');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAgents = async () => {
+    try {
+      const data = await fetchAgents(organizationId);
+      setAgents(data);
+    } catch (err) {
+      console.error('Error loading agents:', err);
     }
   };
 
@@ -72,6 +99,29 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
       setOpenMenuId(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to unassign phone number');
+    }
+  };
+
+  const handleAssign = async (phoneNumber: PhoneNumber) => {
+    if (!agentId) return;
+    
+    try {
+      await assignPhoneNumberToAgent(phoneNumber.id, agentId);
+      await loadPhoneNumbers();
+      setOpenMenuId(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to assign phone number');
+    }
+  };
+
+  const handleGlobalAssign = async (phoneNumberId: string, targetAgentId: string) => {
+    try {
+      await assignPhoneNumberToAgent(phoneNumberId, targetAgentId);
+      await loadPhoneNumbers();
+      setOpenMenuId(null);
+      setShowAssignToAgentId(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to assign phone number');
     }
   };
 
@@ -109,7 +159,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
   return (
     <div className="space-y-6">
       {/* Connection Status */}
-      {!twilioConnected && (
+      {!twilioConnected && twilioConnected !== null && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -120,7 +170,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
               Connect your Twilio account to import and manage phone numbers for your AI agents.
             </p>
             <a
-              href="/roof-runner/settings/integrations"
+              href={`/org/${orgSlug}/settings/integrations`}
               className="text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:underline"
             >
               Connect Twilio →
@@ -134,17 +184,26 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Phone numbers</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Import and manage your phone numbers
+            Create and manage your phone numbers with Vapi
           </p>
         </div>
-        <button
-          onClick={() => setShowImportModal(true)}
-          disabled={!twilioConnected}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-4 h-4" />
-          Import number
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            disabled={!twilioConnected}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Import from Twilio
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Create Number
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -176,7 +235,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
           )}
         </div>
       ) : (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
@@ -230,12 +289,12 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
                   </td>
                   <td className="px-6 py-4">
                     {number.assigned_agent ? (
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {number.assigned_agent.name}
+                      <span className={`text-sm font-medium ${String(number.assigned_agent.id) === String(agentId) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {number.assigned_agent.name} {String(number.assigned_agent.id) === String(agentId) && '(Current)'}
                       </span>
                     ) : (
-                      <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                        Missing agent
+                      <div className="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500 italic">
+                        Unassigned
                         <LinkIcon className="w-3.5 h-3.5" />
                       </div>
                     )}
@@ -260,7 +319,7 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
                             className="fixed inset-0 z-10"
                             onClick={() => setOpenMenuId(null)}
                           />
-                          <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                          <div className="absolute right-0 top-8 z-[9999] w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
                             <button
                               onClick={() => handleEdit(number)}
                               className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
@@ -268,14 +327,69 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
                               <Edit2 className="w-4 h-4" />
                               Edit name
                             </button>
-                            {number.assigned_agent && (
-                              <button
-                                onClick={() => handleUnassign(number)}
-                                className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                              >
-                                <LinkIcon className="w-4 h-4" />
-                                Unassign agent
-                              </button>
+                            {number.assigned_agent ? (
+                              String(number.assigned_agent.id) === String(agentId) ? (
+                                <button
+                                  onClick={() => handleUnassign(number)}
+                                  className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                  <LinkIcon className="w-4 h-4" />
+                                  Unassign agent
+                                </button>
+                              ) : (
+                                !agentId && (
+                                  <button
+                                    onClick={() => handleUnassign(number)}
+                                    className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                    <LinkIcon className="w-4 h-4" />
+                                    Unassign {number.assigned_agent.name}
+                                  </button>
+                                )
+                              )
+                            ) : (
+                              agentId ? (
+                                <button
+                                  onClick={() => handleAssign(number)}
+                                  className="w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                >
+                                  <LinkIcon className="w-4 h-4" />
+                                  Assign to this agent
+                                </button>
+                              ) : (
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowAssignToAgentId(showAssignToAgentId === number.id ? null : number.id);
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-between"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <LinkIcon className="w-4 h-4" />
+                                      Assign to AI Agent
+                                    </div>
+                                    <span className="text-[10px]">▶</span>
+                                  </button>
+                                  {showAssignToAgentId === number.id && (
+                                    <div className="absolute right-full top-0 mr-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-[10000]">
+                                      {agents.length === 0 ? (
+                                        <div className="px-4 py-2 text-xs text-gray-500">No agents found</div>
+                                      ) : (
+                                        agents.map(agent => (
+                                          <button
+                                            key={agent.id}
+                                            onClick={() => handleGlobalAssign(number.id, agent.id)}
+                                            className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                          >
+                                            {agent.name}
+                                          </button>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
                             )}
                             <button
                               onClick={() => handleDelete(number)}
@@ -302,6 +416,13 @@ export function PhoneNumbersSection({ organizationId }: PhoneNumbersSectionProps
         onClose={() => setShowImportModal(false)}
         organizationId={organizationId}
         onImportSuccess={handleImportSuccess}
+      />
+
+      <CreatePhoneNumberModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        organizationId={organizationId}
+        onSuccess={handleImportSuccess}
       />
 
       {selectedNumber && (

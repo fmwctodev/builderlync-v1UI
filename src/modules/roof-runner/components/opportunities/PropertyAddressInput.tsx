@@ -8,7 +8,7 @@ interface PropertyAddressInputProps {
   propertyState: string;
   propertyZip: string;
   propertyCountry: string;
-  onAddressChange: (field: string, value: string | number) => void;
+  onAddressChange: (updates: Record<string, string | number | undefined>) => void;
 }
 
 export default function PropertyAddressInput({
@@ -22,34 +22,33 @@ export default function PropertyAddressInput({
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  const handleGoogleAddressSelect = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
-    onAddressChange('property_address', address);
-
+  const handleGoogleAddressSelect = (
+    address: string,
+    isFromAutocomplete: boolean,
+    lat?: number,
+    lng?: number,
+    addressComponents?: any
+  ) => {
     if (isFromAutocomplete && lat && lng) {
-      onAddressChange('property_latitude', lat);
-      onAddressChange('property_longitude', lng);
+      const updates: any = {
+        property_address: address,
+        property_latitude: lat,
+        property_longitude: lng,
+      };
 
-      const parts = address.split(',').map(p => p.trim());
-      if (parts.length >= 3) {
-        const streetAddress = parts[0];
-        const cityPart = parts[1];
-        const stateZipCountry = parts[2];
-
-        onAddressChange('property_address', streetAddress);
-        onAddressChange('property_city', cityPart);
-
-        const stateZipMatch = stateZipCountry.match(/([A-Z]{2})\s+(\d{5}(-\d{4})?)/);
-        if (stateZipMatch) {
-          onAddressChange('property_state', stateZipMatch[1]);
-          onAddressChange('property_zip', stateZipMatch[2]);
-        }
-
-        if (parts.length > 3) {
-          onAddressChange('property_country', parts[3]);
-        }
+      if (addressComponents) {
+        const streetAddress = `${addressComponents.street_number || ''} ${addressComponents.route || ''}`.trim();
+        if (streetAddress) updates.property_address = streetAddress;
+        if (addressComponents.city) updates.property_city = addressComponents.city;
+        if (addressComponents.state) updates.property_state = addressComponents.state;
+        if (addressComponents.zip) updates.property_zip = addressComponents.zip;
+        if (addressComponents.country) updates.property_country = addressComponents.country;
       }
 
+      onAddressChange(updates);
       setShowDetails(true);
+    } else {
+      onAddressChange({ property_address: address });
     }
   };
 
@@ -82,7 +81,7 @@ export default function PropertyAddressInput({
             <input
               type="text"
               value={propertyAddress}
-              onChange={(e) => onAddressChange('property_address', e.target.value)}
+              onChange={(e) => onAddressChange({ property_address: e.target.value })}
               placeholder="Enter street address"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
@@ -96,7 +95,7 @@ export default function PropertyAddressInput({
               <input
                 type="text"
                 value={propertyCity}
-                onChange={(e) => onAddressChange('property_city', e.target.value)}
+                onChange={(e) => onAddressChange({ property_city: e.target.value })}
                 placeholder="City"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -109,7 +108,7 @@ export default function PropertyAddressInput({
               <input
                 type="text"
                 value={propertyState}
-                onChange={(e) => onAddressChange('property_state', e.target.value)}
+                onChange={(e) => onAddressChange({ property_state: e.target.value })}
                 placeholder="State"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -124,7 +123,7 @@ export default function PropertyAddressInput({
               <input
                 type="text"
                 value={propertyZip}
-                onChange={(e) => onAddressChange('property_zip', e.target.value)}
+                onChange={(e) => onAddressChange({ property_zip: e.target.value })}
                 placeholder="ZIP"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -137,7 +136,7 @@ export default function PropertyAddressInput({
               <input
                 type="text"
                 value={propertyCountry}
-                onChange={(e) => onAddressChange('property_country', e.target.value)}
+                onChange={(e) => onAddressChange({ property_country: e.target.value })}
                 placeholder="Country"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
@@ -181,7 +180,7 @@ export default function PropertyAddressInput({
                       <input
                         type="text"
                         value={propertyAddress}
-                        onChange={(e) => onAddressChange('property_address', e.target.value)}
+                        onChange={(e) => onAddressChange({ property_address: e.target.value })}
                         placeholder="Street address"
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
@@ -194,7 +193,7 @@ export default function PropertyAddressInput({
                       <input
                         type="text"
                         value={propertyCity}
-                        onChange={(e) => onAddressChange('property_city', e.target.value)}
+                        onChange={(e) => onAddressChange({ property_city: e.target.value })}
                         placeholder="City"
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
@@ -209,7 +208,7 @@ export default function PropertyAddressInput({
                       <input
                         type="text"
                         value={propertyState}
-                        onChange={(e) => onAddressChange('property_state', e.target.value)}
+                        onChange={(e) => onAddressChange({ property_state: e.target.value })}
                         placeholder="State"
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
@@ -222,7 +221,7 @@ export default function PropertyAddressInput({
                       <input
                         type="text"
                         value={propertyZip}
-                        onChange={(e) => onAddressChange('property_zip', e.target.value)}
+                        onChange={(e) => onAddressChange({ property_zip: e.target.value })}
                         placeholder="ZIP"
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
@@ -236,7 +235,7 @@ export default function PropertyAddressInput({
                     <input
                       type="text"
                       value={propertyCountry}
-                      onChange={(e) => onAddressChange('property_country', e.target.value)}
+                      onChange={(e) => onAddressChange({ property_country: e.target.value })}
                       placeholder="Country"
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />

@@ -1,69 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit, Copy, QrCode, Code, X } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, QrCode, Code, Plus, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useOrgPath } from '../../../shared/hooks/useOrgPath';
 import { apiService } from '../store/services/api';
-import { instantEstimatorSettingsApi } from '../services/instantEstimatorSettingsApi';
 import Toast from '../../../shared/components/Toast';
-import { StagingBanner } from '../components/common';
-import MaterialsTable from '../components/estimator/MaterialsTable';
-import MaterialFormModal from '../components/estimator/MaterialFormModal';
-import ContactCardPreview from '../components/estimator/ContactCardPreview';
-import { useCurrentOrganization } from '../../../shared/context/OrgContext';
-import type {
-  InstantEstimatorMaterial,
-  CreateMaterialData,
-  OrganizationProfile,
-  StaffMember,
-} from '../types/instantEstimatorSettings';
 
 const InstantEstimatorManage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentOrganization } = useCurrentOrganization();
+  const { getOrgPath } = useOrgPath();
   const [estimatorName, setEstimatorName] = useState('');
   const [publicUrl, setPublicUrl] = useState('');
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameName, setRenameName] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<any[]>([]);
-
-  const [materials, setMaterials] = useState<InstantEstimatorMaterial[]>([]);
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [editingMaterial, setEditingMaterial] = useState<InstantEstimatorMaterial | null>(null);
-
+  const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [restrictMaterials, setRestrictMaterials] = useState(false);
-  const [pricingType, setPricingType] = useState<'per-square-foot' | 'per-square'>('per-square-foot');
+  const [pricingType, setPricingType] = useState('per-square-foot');
   const [showPriceRange, setShowPriceRange] = useState(false);
   const [showFinancing, setShowFinancing] = useState(false);
   const [lowerRange, setLowerRange] = useState('0');
   const [upperRange, setUpperRange] = useState('0');
   const [termLength, setTermLength] = useState('1');
   const [interestRate, setInterestRate] = useState('0');
-  const [financingLink, setFinancingLink] = useState('');
-
-  const [defaultJobOwnerId, setDefaultJobOwnerId] = useState<string>('');
-  const [schedulingLink, setSchedulingLink] = useState('');
-  const [showCustomerReviews, setShowCustomerReviews] = useState(false);
   const [showProjectShowcase, setShowProjectShowcase] = useState(false);
   const [showSocialMedia, setShowSocialMedia] = useState(false);
-
-  const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile | null>(null);
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [customSlug, setCustomSlug] = useState('');
+  const [pipelines, setPipelines] = useState<any[]>([]);
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
+  const [proposalTemplates, setProposalTemplates] = useState<any[]>([]);
+  const [selectedProposalTemplateId, setSelectedProposalTemplateId] = useState<string>('');
+  const [staff, setStaff] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [notificationEmail, setNotificationEmail] = useState<string>('');
+  const [schedulingLink, setSchedulingLink] = useState<string>('');
 
   useEffect(() => {
     fetchEstimatorData();
+    fetchJobs();
+    fetchPipelines();
+    fetchProposalTemplates();
+    fetchStaff();
   }, [id]);
-
-  useEffect(() => {
-    if (currentOrganization?.id && id) {
-      fetchMaterials();
-      fetchOrganizationData();
-      fetchEstimatorConfig();
-    }
-  }, [currentOrganization?.id, id]);
 
   const fetchEstimatorData = async () => {
     if (!id) return;
@@ -73,8 +57,12 @@ const InstantEstimatorManage: React.FC = () => {
       if (response && response.data) {
         setEstimatorName(response.data.name);
         setPublicUrl(response.data.public_url || '');
+        setCustomSlug(response.data.public_url || '');
         setSelectedQuestions(response.data.questions || []);
+        setSelectedMaterials(response.data.materials || []);
+        setSelectedJobId(response.data.job_id?.toString() || '');
 
+        // Load pricing settings if they exist
         const pricingSettings = response.data.pricing_settings || {};
         setRestrictMaterials(pricingSettings.restrict_materials || false);
         setPricingType(pricingSettings.pricing_type || 'per-square-foot');
@@ -85,14 +73,24 @@ const InstantEstimatorManage: React.FC = () => {
         setTermLength(pricingSettings.term_length || '1');
         setInterestRate(pricingSettings.interest_rate || '0');
 
+        // Load additional settings
         const additionalSettings = response.data.additional_settings || {};
         setShowProjectShowcase(additionalSettings.show_project_showcase || false);
         setShowSocialMedia(additionalSettings.show_social_media || false);
+        setSelectedStageId(additionalSettings.stage_id || '');
+        setSelectedProposalTemplateId(additionalSettings.proposal_template_id || '');
+        setNotificationEmail(additionalSettings.notification_email || '');
+        setSchedulingLink(additionalSettings.scheduling_link || '');
+
+        // Load contact settings
+        const contactSettings = response.data.contact_settings || {};
+        setSelectedUserId(additionalSettings.default_job_owner_id?.toString() || contactSettings.user_id?.toString() || '');
       } else {
         setEstimatorName('Estimator Not Found');
       }
     } catch (error) {
       console.error('Failed to fetch estimator:', error);
+      // Fallback to fetching from list
       try {
         const listResponse = await apiService.getInstantEstimators();
         const responseData = listResponse.data || listResponse;
@@ -112,58 +110,60 @@ const InstantEstimatorManage: React.FC = () => {
     }
   };
 
-  const fetchMaterials = async () => {
-    if (!currentOrganization?.id || !id) return;
+  const fetchJobs = async () => {
     try {
-      const data = await instantEstimatorSettingsApi.getMaterials(currentOrganization.id, id);
-      setMaterials(data);
+      const response = await apiService.getJobs(1, 1000);
+      const jobsData = response?.data?.data || response?.data || [];
+      setJobs(jobsData);
     } catch (error) {
-      console.error('Failed to fetch materials:', error);
+      console.error('Failed to fetch jobs:', error);
     }
   };
 
-  const fetchOrganizationData = async () => {
-    if (!currentOrganization?.id) return;
+  const fetchPipelines = async () => {
     try {
-      setLoadingProfile(true);
-      const [profile, staff] = await Promise.all([
-        instantEstimatorSettingsApi.getOrganizationProfile(currentOrganization.id),
-        instantEstimatorSettingsApi.getStaffMembers(currentOrganization.id),
-      ]);
-      setOrganizationProfile(profile);
-      setStaffMembers(staff);
+      const data = await apiService.getPipelines();
+      setPipelines(data);
     } catch (error) {
-      console.error('Failed to fetch organization data:', error);
-    } finally {
-      setLoadingProfile(false);
+      console.error('Failed to fetch pipelines:', error);
     }
   };
 
-  const fetchEstimatorConfig = async () => {
-    if (!currentOrganization?.id || !id) return;
+  const fetchProposalTemplates = async () => {
     try {
-      const config = await instantEstimatorSettingsApi.getEstimatorConfig(currentOrganization.id, id);
-      if (config) {
-        setDefaultJobOwnerId(config.default_job_owner_id || '');
-        setSchedulingLink(config.scheduling_link || '');
-        setFinancingLink(config.financing_link || '');
-        setShowCustomerReviews(config.show_customer_reviews);
-        setShowProjectShowcase(config.show_project_showcase);
-        setShowSocialMedia(config.show_social_media);
+      const data = await apiService.getProposalTemplates();
+      setProposalTemplates(data);
+    } catch (error) {
+      console.error('Failed to fetch proposal templates:', error);
+    }
+  };
 
-        if (config.pricing_settings) {
-          setRestrictMaterials(config.pricing_settings.restrict_materials);
-          setPricingType(config.pricing_settings.pricing_type);
-          setShowPriceRange(config.pricing_settings.show_price_range);
-          setShowFinancing(config.pricing_settings.show_financing);
-          setLowerRange(config.pricing_settings.lower_range);
-          setUpperRange(config.pricing_settings.upper_range);
-          setTermLength(config.pricing_settings.term_length);
-          setInterestRate(config.pricing_settings.interest_rate);
+  const fetchStaff = async () => {
+    try {
+      const response = await apiService.getStaff();
+      const staffList = [...(response?.data || [])];
+
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const currentUser = JSON.parse(userStr);
+        const currentUserId = currentUser.id || currentUser.userId;
+
+        if (currentUserId) {
+          // Add current user if not already in list
+          if (!staffList.find((s: any) => (s.id?.toString() || s.userId?.toString()) === currentUserId.toString())) {
+            staffList.push({
+              id: currentUserId,
+              first_name: currentUser.first_name || 'Me',
+              last_name: currentUser.last_name ? `${currentUser.last_name} (Me)` : '(Me)',
+              email: currentUser.email
+            });
+          }
         }
       }
+      setStaff(staffList);
     } catch (error) {
-      console.error('Failed to fetch estimator config:', error);
+      console.error('Failed to fetch staff:', error);
     }
   };
 
@@ -179,74 +179,18 @@ const InstantEstimatorManage: React.FC = () => {
     }
   };
 
-  const handleAddMaterial = () => {
-    setEditingMaterial(null);
-    setShowMaterialModal(true);
+  const generateQRCode = (url: string) => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
   };
 
-  const handleEditMaterial = (material: InstantEstimatorMaterial) => {
-    setEditingMaterial(material);
-    setShowMaterialModal(true);
-  };
-
-  const handleDeleteMaterial = async (materialId: string) => {
-    if (!confirm('Are you sure you want to delete this material?')) return;
-    try {
-      await instantEstimatorSettingsApi.deleteMaterial(materialId);
-      setMaterials((prev) => prev.filter((m) => m.id !== materialId));
-      setToast({ message: 'Material deleted successfully', type: 'success' });
-    } catch (error) {
-      console.error('Failed to delete material:', error);
-      setToast({ message: 'Failed to delete material', type: 'error' });
-    }
-  };
-
-  const handleSaveMaterial = async (materialData: CreateMaterialData) => {
-    if (!currentOrganization?.id || !id) return;
-    try {
-      if (editingMaterial) {
-        const updated = await instantEstimatorSettingsApi.updateMaterial(editingMaterial.id, materialData);
-        setMaterials((prev) => prev.map((m) => (m.id === editingMaterial.id ? updated : m)));
-        setToast({ message: 'Material updated successfully', type: 'success' });
-      } else {
-        const created = await instantEstimatorSettingsApi.createMaterial(
-          currentOrganization.id,
-          id,
-          materialData
-        );
-        setMaterials((prev) => [...prev, created]);
-        setToast({ message: 'Material added successfully', type: 'success' });
-      }
-      setShowMaterialModal(false);
-      setEditingMaterial(null);
-    } catch (error) {
-      console.error('Failed to save material:', error);
-      setToast({ message: 'Failed to save material', type: 'error' });
-    }
+  const getEmbedCode = (url: string) => {
+    return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
   };
 
   const saveAllSettings = async () => {
-    if (!id || !currentOrganization?.id) return;
+    if (!id) return;
     try {
-      await instantEstimatorSettingsApi.upsertEstimatorConfig(currentOrganization.id, id, {
-        default_job_owner_id: defaultJobOwnerId || null,
-        scheduling_link: schedulingLink || null,
-        financing_link: financingLink || null,
-        show_customer_reviews: showCustomerReviews,
-        show_project_showcase: showProjectShowcase,
-        show_social_media: showSocialMedia,
-        pricing_settings: {
-          restrict_materials: restrictMaterials,
-          pricing_type: pricingType,
-          show_price_range: showPriceRange,
-          show_financing: showFinancing,
-          lower_range: lowerRange,
-          upper_range: upperRange,
-          term_length: termLength,
-          interest_rate: interestRate,
-        },
-      });
-
+      // Save pricing settings
       await apiService.updateInstantEstimatorPricingSettings(parseInt(id), {
         restrict_materials: restrictMaterials,
         pricing_type: pricingType,
@@ -255,13 +199,41 @@ const InstantEstimatorManage: React.FC = () => {
         lower_range: lowerRange,
         upper_range: upperRange,
         term_length: termLength,
-        interest_rate: interestRate,
+        interest_rate: interestRate
       });
 
+      // Find the pipeline_id for the selected stage
+      let pipelineId = '';
+      if (selectedStageId) {
+        const selectedPipeline = pipelines.find(p =>
+          p.stages && p.stages.some((s: any) => s.id?.toString() === selectedStageId.toString())
+        );
+        if (selectedPipeline) pipelineId = selectedPipeline.id;
+      }
+
+      // Save additional settings
       await apiService.updateInstantEstimatorAdditionalSettings(parseInt(id), {
         show_project_showcase: showProjectShowcase,
         show_social_media: showSocialMedia,
+        stage_id: selectedStageId,
+        pipeline_id: pipelineId,
+        proposal_template_id: selectedProposalTemplateId,
+        notification_email: notificationEmail,
+        default_job_owner_id: selectedUserId,
+        scheduling_link: schedulingLink
       });
+
+      // Save contact settings
+      await apiService.updateInstantEstimatorContactSettings(parseInt(id), {
+        user_id: selectedUserId
+      });
+
+      // Save job association
+      if (selectedJobId) {
+        await apiService.updateInstantEstimator(parseInt(id), {
+          job_id: parseInt(selectedJobId)
+        });
+      }
 
       setToast({ message: 'Settings saved successfully!', type: 'success' });
     } catch (error) {
@@ -271,11 +243,11 @@ const InstantEstimatorManage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
-      <StagingBanner variant="estimator" />
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
         <button
-          onClick={() => navigate('/instant-estimator')}
+          onClick={() => navigate(getOrgPath('instant-estimator'))}
           className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -298,17 +270,21 @@ const InstantEstimatorManage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={saveAllSettings}
-            className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
-          >
+          {/* <button className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            <ExternalLink className="w-4 h-4" />
+            Preview
+          </button> */}
+          <button onClick={saveAllSettings} className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
             Save All
           </button>
         </div>
       </div>
 
+      {/* Content */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-4xl mx-auto space-y-8">
+
+          {/* Share and embed */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Share and embed</h2>
 
@@ -319,45 +295,45 @@ const InstantEstimatorManage: React.FC = () => {
                 readOnly
                 className="flex-1 bg-transparent text-gray-600 dark:text-gray-300 text-sm"
               />
-              <button
-                onClick={async () => {
-                  const url = `${window.location.origin}/estimator/${publicUrl}`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
-                  } catch {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = url;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    setToast({ message: 'Link copied to clipboard!', type: 'success' });
-                  }
-                }}
-                className="flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm"
-              >
-                <Copy className="w-4 h-4" />
-                Copy link
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    const url = `${window.location.origin}/estimator/${publicUrl}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                    } catch (err) {
+                      const textArea = document.createElement('textarea');
+                      textArea.value = url;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      setToast({ message: 'Link copied to clipboard!', type: 'success' });
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </button>
+              </div>
+
             </div>
 
             <div className="flex gap-4">
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
-                <Edit className="w-4 h-4" />
-                Edit link
-              </button>
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
+              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm cursor-pointer" onClick={() => setShowQRModal(true)}>
                 <QrCode className="w-4 h-4" />
                 QR code
               </button>
-              <button disabled className="flex items-center gap-2 text-gray-400 cursor-not-allowed text-sm">
+              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm cursor-pointer" onClick={() => setShowEmbedModal(true)}>
                 <Code className="w-4 h-4" />
                 Embed code
               </button>
             </div>
           </div>
 
+          {/* Lead questionnaire */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lead questionnaire</h2>
@@ -370,25 +346,76 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
 
             <div className="mb-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                Questions ({selectedQuestions.length})
-              </span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Questions ({selectedQuestions.length})</span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
               {selectedQuestions.length > 0
-                ? selectedQuestions.map((q) => q.name || q).join(', ')
-                : 'No questions selected'}
+                ? selectedQuestions.map(q => q.name || q).join(', ')
+                : 'No questions selected'
+              }
             </p>
           </div>
 
-          <MaterialsTable
-            materials={materials}
-            onAdd={handleAddMaterial}
-            onEdit={handleEditMaterial}
-            onDelete={handleDeleteMaterial}
-            pricingType={pricingType}
-          />
+          {/* Material options */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Material options</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Add the materials you offer along with their approximate prices, which should include tear-off, waste, and markup costs. Your customers will have the option to choose the materials they want and will receive estimates based on the information you provide below.
+            </p>
 
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage/materials`)}
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              >
+                Manage materials
+              </button>
+              <button
+                onClick={() => navigate(`/instant-estimator/${id}/manage/materials/new`)}
+                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
+              >
+                <Plus className="w-4 h-4" />
+                Add
+              </button>
+            </div>
+
+            {selectedMaterials.length > 0 ? (
+              <div className="space-y-3">
+                {selectedMaterials.slice(0, 3).map((material, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-sm flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">
+                          {material.materialType?.charAt(0) || material.name?.charAt(0) || 'M'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {material.name}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          ${material.price?.toFixed(2) || '0.00'}/sqft
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {selectedMaterials.length > 3 && (
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    +{selectedMaterials.length - 3} more materials
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 italic mb-4">
+                  No materials added
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Pricing settings */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Pricing settings</h2>
 
@@ -412,21 +439,19 @@ const InstantEstimatorManage: React.FC = () => {
                 <div className="flex gap-4">
                   <button
                     onClick={() => setPricingType('per-square-foot')}
-                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${
-                      pricingType === 'per-square-foot'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
-                    }`}
+                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square-foot'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                      }`}
                   >
                     Per square foot
                   </button>
                   <button
                     onClick={() => setPricingType('per-square')}
-                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${
-                      pricingType === 'per-square'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
-                    }`}
+                    className={`flex-1 py-3 px-4 text-sm border rounded-lg ${pricingType === 'per-square'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                      }`}
                   >
                     Per square
                   </button>
@@ -446,9 +471,7 @@ const InstantEstimatorManage: React.FC = () => {
                 {showPriceRange && (
                   <div className="grid grid-cols-2 gap-4 ml-7">
                     <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        Lower range (-%)
-                      </label>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Lower range (-%)</label>
                       <input
                         type="number"
                         value={lowerRange}
@@ -457,9 +480,7 @@ const InstantEstimatorManage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        Upper range (+%)
-                      </label>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Upper range (+%)</label>
                       <input
                         type="number"
                         value={upperRange}
@@ -485,9 +506,7 @@ const InstantEstimatorManage: React.FC = () => {
                   <div className="ml-7 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          Term length (months)
-                        </label>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Term length (months)</label>
                         <input
                           type="number"
                           value={termLength}
@@ -496,9 +515,7 @@ const InstantEstimatorManage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          Interest rate (%)
-                        </label>
+                        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Interest rate (%)</label>
                         <input
                           type="number"
                           value={interestRate}
@@ -507,18 +524,15 @@ const InstantEstimatorManage: React.FC = () => {
                         />
                       </div>
                     </div>
+
                   </div>
                 )}
-              </div>
 
+              </div>
               <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Add financing link
-                </label>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">Add financing link</label>
                 <input
                   type="text"
-                  value={financingLink}
-                  onChange={(e) => setFinancingLink(e.target.value)}
                   placeholder="Add link"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
@@ -529,59 +543,111 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
           </div>
 
+          {/* Default job owner */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Default job owner</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Link to Job</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              The default assignee will be assigned to every new lead that is created from this estimator
+              Link this instant estimator to a specific job. The estimator will be visible on the job's instant estimate tab.
             </p>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Default job owner
+                Select Job
               </label>
               <select
-                value={defaultJobOwnerId}
-                onChange={(e) => setDefaultJobOwnerId(e.target.value)}
+                value={selectedJobId}
+                onChange={(e) => setSelectedJobId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <option value="">Select a team member</option>
-                {staffMembers.map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.first_name} {staff.last_name}
+                <option value="">No job selected</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.name} - {job.location}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Pipeline & Automation */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Contact information</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Your organization profile will be shown to customers. Update your contact information in{' '}
-              <button
-                onClick={() => navigate('/settings/brand-board')}
-                className="text-primary-600 hover:text-primary-700"
-              >
-                profile & branding settings
-              </button>
-              .
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Pipeline & Automation</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Configure which pipeline stage leads will be sent to and automate proposal generation.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-8">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Point of contact
+                  Opportunities Pipeline Stage
                 </label>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Organization profile is used for the contact card
-                </p>
+                <select
+                  value={selectedStageId}
+                  onChange={(e) => setSelectedStageId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">No stage selected</option>
+                  {pipelines.map((pipeline: any) => (
+                    <optgroup label={pipeline.name} key={pipeline.id}>
+                      {pipeline.stages && pipeline.stages.map((stage: any) => (
+                        <option key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
-              <ContactCardPreview organization={organizationProfile} loading={loadingProfile} />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Automatic Proposal Template
+                </label>
+                <select
+                  value={selectedProposalTemplateId}
+                  onChange={(e) => setSelectedProposalTemplateId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">No template selected</option>
+                  {proposalTemplates.map((template: any) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
+          {/* Contact information */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Contact information</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Select a user profile to populate the contact card. To update your contact information please edit your profile in setting. Other users will need to edit their own profile if changes are required.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Default Job Owner & Profile
+              </label>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="">Select a team member</option>
+                {staff.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.first_name} {member.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Scheduling */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className="grid grid-cols-2 gap-8">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Scheduling</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -603,56 +669,25 @@ const InstantEstimatorManage: React.FC = () => {
             </div>
           </div>
 
+          {/* Additional content */}
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-2 gap-8">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Additional content</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Tell your customers more about your business with additional content that can help build
-                  trust. Manage the content in{' '}
-                  <button
-                    onClick={() => navigate('/instant-estimator', { state: { activeTab: 'settings' } })}
-                    className="text-primary-600 hover:text-primary-700"
-                  >
-                    Instant Estimator settings
-                  </button>
-                  .
+                  Tell your customers more about your business with additional content that can help build trust. Manage the content in <a href="#" className="text-primary-600 hover:text-primary-700">Instant Estimator settings</a>.
                 </p>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Show customer reviews</span>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
-                      Beta
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowCustomerReviews(!showCustomerReviews)}
-                    className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
-                      showCustomerReviews ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                        showCustomerReviews ? 'translate-x-5' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Show project showcase</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show CompanyCam Project Showcase</span>
                   <button
                     onClick={() => setShowProjectShowcase(!showProjectShowcase)}
-                    className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
-                      showProjectShowcase ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                        showProjectShowcase ? 'translate-x-5' : 'translate-x-1'
+                    className={`relative inline-block w-10 h-6 rounded-full transition-colors ${showProjectShowcase ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
-                    />
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showProjectShowcase ? 'translate-x-5' : 'translate-x-1'
+                      }`}></div>
                   </button>
                 </div>
                 <div>
@@ -660,25 +695,31 @@ const InstantEstimatorManage: React.FC = () => {
                     <span className="text-sm text-gray-700 dark:text-gray-300">Show social media links</span>
                     <button
                       onClick={() => setShowSocialMedia(!showSocialMedia)}
-                      className={`relative inline-block w-10 h-6 rounded-full transition-colors ${
-                        showSocialMedia ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          showSocialMedia ? 'translate-x-5' : 'translate-x-1'
+                      className={`relative inline-block w-10 h-6 rounded-full transition-colors ${showSocialMedia ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
-                      />
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${showSocialMedia ? 'translate-x-5' : 'translate-x-1'
+                        }`}></div>
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Manage social media links in{' '}
-                    <button
-                      onClick={() => navigate('/settings/brand-board')}
-                      className="text-primary-600 hover:text-primary-700"
-                    >
-                      profile & branding settings
-                    </button>
+                    Manage social media links in <a href="#" className="text-primary-600 hover:text-primary-700">profile & branding settings</a>
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Notification Email
+                  </label>
+                  <input
+                    type="email"
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
+                    placeholder="Enter email to receive lead notifications"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    This email will be notified when a customer clicks "Get free proposal"
                   </p>
                 </div>
               </div>
@@ -687,14 +728,87 @@ const InstantEstimatorManage: React.FC = () => {
         </div>
       </div>
 
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">QR Code</h3>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="text-center">
+                <img
+                  src={generateQRCode(`${window.location.origin}/estimator/${publicUrl}`)}
+                  alt="QR Code"
+                  className="mx-auto mb-4"
+                />
+                <p className="text-sm text-gray-600 dark:text-gray-400">Scan to access the estimator</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embed Code Modal */}
+      {showEmbedModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Embed Code</h3>
+                <button
+                  onClick={() => setShowEmbedModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <textarea
+                  value={getEmbedCode(`${window.location.origin}/estimator/${publicUrl}`)}
+                  readOnly
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  const embedCode = getEmbedCode(`${window.location.origin}/estimator/${publicUrl}`);
+                  try {
+                    await navigator.clipboard.writeText(embedCode);
+                    setToast({ message: 'Embed code copied to clipboard!', type: 'success' });
+                  } catch (err) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = embedCode;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    setToast({ message: 'Embed code copied to clipboard!', type: 'success' });
+                  }
+                  setShowEmbedModal(false);
+                }}
+                className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+              >
+                Copy Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Modal */}
       {showRenameModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Rename Instant Estimator
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rename Instant Estimator</h3>
                 <button
                   onClick={() => {
                     setShowRenameModal(false);
@@ -746,19 +860,13 @@ const InstantEstimatorManage: React.FC = () => {
           </div>
         </div>
       )}
-
-      <MaterialFormModal
-        isOpen={showMaterialModal}
-        onClose={() => {
-          setShowMaterialModal(false);
-          setEditingMaterial(null);
-        }}
-        onSave={handleSaveMaterial}
-        material={editingMaterial}
-        pricingType={pricingType}
-      />
-
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

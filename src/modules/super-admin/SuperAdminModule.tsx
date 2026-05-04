@@ -8,6 +8,8 @@ import { Accounts } from './pages/Accounts';
 import { AccountDetail } from './pages/AccountDetail';
 import { Users } from './pages/Users';
 import { UserDetail } from './pages/UserDetail';
+import { UserImport } from './pages/UserImport';
+import { UserCustomJobImport } from './pages/UserCustomJobImport';
 import { Roles } from './pages/Roles';
 import { Billing } from './pages/Billing';
 import { Usage } from './pages/Usage';
@@ -18,6 +20,10 @@ import { Support } from './pages/Support';
 import { System } from './pages/System';
 import { Maintenance } from './pages/Maintenance';
 import { Settings } from './pages/Settings';
+import { Templates } from './pages/Templates';
+import { TemplateEditor } from './pages/TemplateEditor';
+import { BetaCodes } from './pages/BetaCodes';
+import { Affiliates } from './pages/Affiliates';
 
 export const SuperAdminModule: React.FC = () => {
   return (
@@ -30,6 +36,8 @@ export const SuperAdminModule: React.FC = () => {
         <Route path="accounts/:accountId" element={<AccountDetail />} />
         <Route path="users" element={<Users />} />
         <Route path="users/:userId" element={<UserDetail />} />
+        <Route path="users/:userId/import" element={<UserImport />} />
+        <Route path="users/:userId/import/custom-jobs" element={<UserCustomJobImport />} />
         <Route path="roles" element={<Roles />} />
         <Route path="billing" element={<Billing />} />
         <Route path="usage" element={<Usage />} />
@@ -37,6 +45,10 @@ export const SuperAdminModule: React.FC = () => {
         <Route path="integrations" element={<Integrations />} />
         <Route path="security" element={<Security />} />
         <Route path="support" element={<Support />} />
+        <Route path="templates" element={<Templates />} />
+        <Route path="templates/:templateId" element={<TemplateEditor />} />
+        <Route path="beta-codes" element={<BetaCodes />} />
+        <Route path="affiliates" element={<Affiliates />} />
         <Route path="system" element={<System />} />
         <Route path="maintenance" element={<Maintenance />} />
         <Route path="settings/*" element={<Settings />} />

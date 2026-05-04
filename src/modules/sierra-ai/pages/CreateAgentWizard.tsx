@@ -4,9 +4,10 @@ import { X, ArrowLeft, User, Briefcase } from 'lucide-react';
 import { agentTemplates, industries, personalUseCases, businessUseCases } from '../lib/agentMockData';
 import { Industry, UseCase } from '../lib/agentTypes';
 import * as LucideIcons from 'lucide-react';
-import { useCurrentOrganization } from '../../../shared/context/OrgContext';
+
 import { createAgent } from '../services/agentsApi';
 import { supabase } from '../../../shared/lib/supabase';
+import { useAppSelector } from '../../roof-runner/store/hooks';
 
 type WizardStep = 'template' | 'industry' | 'usecase' | 'details';
 
@@ -22,7 +23,6 @@ interface WizardState {
 
 export function CreateAgentWizard() {
   const navigate = useNavigate();
-  const { currentOrganizationSlug, currentOrganization } = useCurrentOrganization();
   const [currentStep, setCurrentStep] = useState<WizardStep>('template');
   const [isCreating, setIsCreating] = useState(false);
   const [wizardState, setWizardState] = useState<WizardState>({
@@ -32,10 +32,12 @@ export function CreateAgentWizard() {
     mainGoal: '',
     chatOnly: false,
   });
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   const handleBack = () => {
     if (currentStep === 'template') {
-      navigate(`/org/${currentOrganizationSlug}/ai-agents`);
+      navigate(`/org/${orgSlug}/ai-agents`);
     } else if (currentStep === 'industry') {
       setCurrentStep('template');
     } else if (currentStep === 'usecase') {
@@ -54,7 +56,7 @@ export function CreateAgentWizard() {
   };
 
   const handleClose = () => {
-    navigate(`/org/${currentOrganizationSlug}/ai-agents`);
+    navigate(`/org/${orgSlug}/ai-agents`);
   };
 
   const handleTemplateSelect = (templateId: string) => {
@@ -79,41 +81,32 @@ export function CreateAgentWizard() {
   };
 
   const handleCreateAgent = async () => {
-    if (!currentOrganization?.id) return;
     if (!wizardState.agentName || !wizardState.mainGoal) return;
 
     setIsCreating(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { vapiApi } = await import('../services/vapiApi');
 
-      const agentType = wizardState.template === 'business_assistant' ? 'chat' : 'chat';
+      const agentType = wizardState.template === 'business_assistant' ? 'voice' : 'voice';
 
-      const newAgent = await createAgent(
-        currentOrganization.id,
-        {
-          name: wizardState.agentName,
-          description: wizardState.mainGoal,
-          agent_type: agentType,
-          status: 'draft',
-          template_id: wizardState.template,
-          template_type: wizardState.template,
-          industry: wizardState.industry,
-          use_case: wizardState.useCase,
-          website: wizardState.website,
-          main_goal: wizardState.mainGoal,
-          chat_only: wizardState.chatOnly,
-          channels: {
-            voice: { enabled: false, configured: false },
-            sms: { enabled: false, configured: false },
-            webchat: { enabled: true, configured: false },
-            email: { enabled: false, configured: false },
-          },
-        },
-        user?.id
-      );
+      const response = await vapiApi.createAgent({
+        organization_id: (user?.organization_id || user?.organizationId || orgSlug || '').toString(),
+        name: wizardState.agentName,
+        description: wizardState.mainGoal,
+        agent_type: agentType,
+        system_prompt: wizardState.mainGoal,
+        first_message: 'Hello! How can I help you today?',
+        language: 'en',
+        temperature: 0.7,
+        max_tokens: 500,
+        template: wizardState.template,
+        industry: wizardState.industry,
+        use_case: wizardState.useCase,
+        website: wizardState.website,
+      });
 
-      navigate(`/org/${currentOrganizationSlug}/ai-agents/agent/${newAgent.id}`);
+      navigate(`/org/${orgSlug}/ai-agents/agent/${response.data.id}`);
     } catch (error) {
       console.error('Error creating agent:', error);
       alert('Failed to create agent. Please try again.');
@@ -140,7 +133,7 @@ export function CreateAgentWizard() {
   const currentStepIndex = progressDots.indexOf(currentStep);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-gray-900 flex items-center justify-center p-4 min-h-screen">
       {/* Close Button */}
       <button
         onClick={handleClose}
@@ -238,11 +231,10 @@ export function CreateAgentWizard() {
                   <button
                     key={industry.id}
                     onClick={() => handleIndustrySelect(industry.id)}
-                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${
-                      isOther
-                        ? 'border-dashed border-gray-300 dark:border-gray-600'
-                        : 'border-gray-200 dark:border-gray-700'
-                    } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
+                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${isOther
+                      ? 'border-dashed border-gray-300 dark:border-gray-600'
+                      : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
                   >
                     <div className="flex flex-col items-center text-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
@@ -290,11 +282,10 @@ export function CreateAgentWizard() {
                   <button
                     key={useCase.id}
                     onClick={() => handleUseCaseSelect(useCase.id)}
-                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${
-                      isOtherPersonal
-                        ? 'border-dashed border-gray-300 dark:border-gray-600'
-                        : 'border-gray-200 dark:border-gray-700'
-                    } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
+                    className={`p-6 bg-white dark:bg-gray-800 border-2 ${isOtherPersonal
+                      ? 'border-dashed border-gray-300 dark:border-gray-600'
+                      : 'border-gray-200 dark:border-gray-700'
+                      } rounded-xl hover:border-red-500 dark:hover:border-red-500 transition-all group`}
                   >
                     <div className="flex flex-col items-center text-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
@@ -385,19 +376,17 @@ export function CreateAgentWizard() {
                 />
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              {/* <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <button
                   onClick={() =>
                     setWizardState({ ...wizardState, chatOnly: !wizardState.chatOnly })
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    wizardState.chatOnly ? 'bg-gray-400' : 'bg-gray-300'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${wizardState.chatOnly ? 'bg-gray-400' : 'bg-gray-300'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      wizardState.chatOnly ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wizardState.chatOnly ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
                 <div>
@@ -406,7 +395,7 @@ export function CreateAgentWizard() {
                     Audio will not be processed and only text will be used
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="flex items-center justify-between">
@@ -433,13 +422,12 @@ export function CreateAgentWizard() {
           {progressDots.map((step, index) => (
             <div
               key={step}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentStepIndex
-                  ? 'bg-gray-900 dark:bg-white'
-                  : index < currentStepIndex
+              className={`w-2 h-2 rounded-full transition-colors ${index === currentStepIndex
+                ? 'bg-gray-900 dark:bg-white'
+                : index < currentStepIndex
                   ? 'bg-gray-400 dark:bg-gray-600'
                   : 'bg-gray-300 dark:bg-gray-700'
-              }`}
+                }`}
             />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { getAuthToken } from '../utils/auth';
 
 export interface Conversation {
   id: string;
@@ -81,166 +81,181 @@ export interface SendInternalCommentRequest {
 }
 
 /**
- * Get all conversations for the current user
+ * Get all conversations for the current user with filters
  */
-export const getConversations = async (): Promise<Conversation[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+export const getConversations = async (filters?: {
+  status?: 'open' | 'closed' | 'archived' | 'all';
+  channel?: 'sms' | 'email' | 'phone' | 'web' | 'all';
+  sortBy?: 'latest' | 'oldest' | 'name' | 'unread';
+  search?: string;
+}): Promise<Conversation[]> => {
+  const token = getAuthToken();
+  if (!token) {
+    console.error('No auth token found');
+    throw new Error('Not authenticated');
+  }
 
-  const { data: conversations, error } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      contact:contacts(
-        id,
-        full_name,
-        email,
-        phone,
-        first_name,
-        last_name
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('last_message_at', { ascending: false });
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
-  if (error) throw error;
+  const params = new URLSearchParams();
+  if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+  if (filters?.channel && filters.channel !== 'all') params.append('channel', filters.channel);
+  if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters?.search) params.append('search', filters.search);
 
-  // Get last message and unread count for each conversation
-  const conversationsWithDetails = await Promise.all(
-    (conversations || []).map(async (conv) => {
-      // Get last message
-      const { data: lastMessage } = await supabase
-        .from('conversation_messages')
-        .select('*')
-        .eq('conversation_id', conv.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/conversations${queryString ? `?${queryString}` : ''}`;
 
-      // Get unread count (inbound messages that haven't been marked as read)
-      const { count: unreadCount } = await supabase
-        .from('conversation_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', conv.id)
-        .eq('direction', 'inbound')
-        .neq('delivery_status', 'read');
+  console.log('Fetching conversations with filters:', filters);
 
-      return {
-        ...conv,
-        last_message: lastMessage,
-        unread_count: unreadCount || 0,
-      };
-    })
-  );
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
-  return conversationsWithDetails;
+  if (!response.ok) {
+    console.error('API Response:', response.status, response.statusText);
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    throw new Error(`Failed to get conversations: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 /**
  * Get a single conversation by ID
  */
 export const getConversation = async (conversationId: string): Promise<Conversation | null> => {
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      contact:contacts(
-        id,
-        full_name,
-        email,
-        phone,
-        first_name,
-        last_name
-      )
-    `)
-    .eq('id', conversationId)
-    .maybeSingle();
+  console.log('Getting conversation:', conversationId);
 
-  if (error) throw error;
-  return data;
+  // Handle mock conversation IDs
+  if (conversationId.startsWith('conv_')) {
+    const contactId = conversationId.replace('conv_', '').split('_')[0];
+    console.log('Extracting contact ID:', contactId);
+
+    try {
+      const token = getAuthToken();
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+
+      const response = await fetch(`${API_BASE_URL}/conversations/contacts/${contactId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch contact');
+        return null;
+      }
+
+      const contact = await response.json();
+      console.log('Contact data:', contact);
+
+      return {
+        id: conversationId,
+        contact_id: contact.id.toString(),
+        subject: null,
+        channel: 'sms',
+        status: 'open',
+        assigned_to: null,
+        user_id: contact.created_by?.toString() || 'mock_user',
+        last_message_at: contact.created_at,
+        created_at: contact.created_at,
+        updated_at: contact.created_at,
+        contact: {
+          id: contact.id.toString(),
+          full_name: contact.full_name || 'Unknown Contact',
+          email: contact.email || null,
+          phone: contact.phone || null,
+          first_name: contact.full_name?.split(' ')[0] || '',
+          last_name: contact.full_name?.split(' ').slice(1).join(' ') || ''
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      return null;
+    }
+  }
+
+  return null;
 };
 
 /**
  * Get all messages in a conversation
  */
 export const getConversationMessages = async (conversationId: string): Promise<ConversationMessage[]> => {
-  const { data: messages, error } = await supabase
-    .from('conversation_messages')
-    .select(`
-      *,
-      sender:auth.users(id, email),
-      attachments:message_attachments(*)
-    `)
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+  try {
+    const token = getAuthToken();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
 
-  if (error) throw error;
-  return messages || [];
+    const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch messages');
+      return [];
+    }
+
+    const messages = await response.json();
+    return messages.map((msg: any) => ({
+      id: msg.id.toString(),
+      conversation_id: msg.conversation_id,
+      message_type: msg.message_type,
+      direction: msg.direction,
+      sender_id: msg.sender_id?.toString(),
+      content: msg.content,
+      is_internal: false,
+      email_metadata: msg.subject ? { subject: msg.subject } : {},
+      sms_metadata: {},
+      delivery_status: msg.delivery_status,
+      external_id: null,
+      created_at: msg.created_at,
+      updated_at: msg.updated_at
+    }));
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return [];
+  }
+
+
 };
 
 /**
  * Create a new conversation
  */
 export const createConversation = async (contactId: string, channel: 'sms' | 'email' = 'sms'): Promise<Conversation> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('conversations')
-    .insert({
-      contact_id: contactId,
-      channel,
-      status: 'open',
-      user_id: user.id,
-    })
-    .select(`
-      *,
-      contact:contacts(
-        id,
-        full_name,
-        email,
-        phone,
-        first_name,
-        last_name
-      )
-    `)
-    .single();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+  const response = await fetch(`${API_BASE_URL}/conversations`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ contact_id: contactId, channel }),
+  });
 
-  if (error) throw error;
-  return data;
+  if (!response.ok) {
+    throw new Error('Failed to create conversation');
+  }
+
+  return response.json();
 };
 
 /**
  * Find or create a conversation for a contact
  */
 export const findOrCreateConversation = async (contactId: string, channel: 'sms' | 'email' = 'sms'): Promise<Conversation> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
-
-  // Try to find existing open conversation
-  const { data: existing } = await supabase
-    .from('conversations')
-    .select(`
-      *,
-      contact:contacts(
-        id,
-        full_name,
-        email,
-        phone,
-        first_name,
-        last_name
-      )
-    `)
-    .eq('contact_id', contactId)
-    .eq('channel', channel)
-    .eq('status', 'open')
-    .maybeSingle();
-
-  if (existing) {
-    return existing;
-  }
-
-  // Create new conversation
+  // Current backend logic will create/find based on contact_id
   return createConversation(contactId, channel);
 };
 
@@ -248,20 +263,21 @@ export const findOrCreateConversation = async (contactId: string, channel: 'sms'
  * Send SMS message
  */
 export const sendSMS = async (request: SendSMSRequest): Promise<{ success: boolean; message_id?: string }> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Not authenticated');
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
 
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    }
-  );
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://builderlyncapi.testenvapp.com/api';
+  const response = await fetch(`${API_BASE_URL}/conversations/send-sms`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contact_id: request.conversation_id.replace('conv_', ''), // Simple mapping for now
+      message: request.message
+    }),
+  });
 
   if (!response.ok) {
     const error = await response.json();
@@ -274,105 +290,130 @@ export const sendSMS = async (request: SendSMSRequest): Promise<{ success: boole
 /**
  * Send internal comment
  */
-export const sendInternalComment = async (request: SendInternalCommentRequest): Promise<ConversationMessage> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
-
-  const { data, error } = await supabase
-    .from('conversation_messages')
-    .insert({
-      conversation_id: request.conversation_id,
-      message_type: 'internal_comment',
-      direction: 'outbound',
-      sender_id: user.id,
-      content: request.message,
-      is_internal: true,
-      email_metadata: { mentions: request.mentions || [] },
-      delivery_status: 'sent',
-    })
-    .select(`
-      *,
-      sender:auth.users(id, email)
-    `)
-    .single();
-
-  if (error) throw error;
-  return data;
+export const sendInternalComment = async (_request: SendInternalCommentRequest): Promise<ConversationMessage> => {
+  // Logic not yet implemented in backend, returning mock or throwing
+  throw new Error('Internal comments not implemented in backend yet');
 };
 
 /**
  * Mark conversation messages as read
  */
 export const markConversationAsRead = async (conversationId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('conversation_messages')
-    .update({ delivery_status: 'read' })
-    .eq('conversation_id', conversationId)
-    .eq('direction', 'inbound')
-    .neq('delivery_status', 'read');
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
 
-  if (error) throw error;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/mark-read`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    console.error('Failed to mark conversation as read');
+  }
 };
 
 /**
  * Update conversation status
  */
 export const updateConversationStatus = async (
-  conversationId: string,
-  status: 'open' | 'closed' | 'archived'
+  _conversationId: string,
+  _status: 'open' | 'closed' | 'archived'
 ): Promise<void> => {
-  const { error } = await supabase
-    .from('conversations')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', conversationId);
-
-  if (error) throw error;
+  // Needs backend update, for now NO-OP or error
+  console.warn('updateConversationStatus not yet implemented in backend');
 };
 
 /**
- * Subscribe to new messages in a conversation
+ * Subscribe to new messages (Supabase direct disabled)
  */
 export const subscribeToConversationMessages = (
-  conversationId: string,
-  callback: (message: ConversationMessage) => void
+  _conversationId: string,
+  _callback: (message: ConversationMessage) => void
 ) => {
-  return supabase
-    .channel(`conversation:${conversationId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'conversation_messages',
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => {
-        callback(payload.new as ConversationMessage);
-      }
-    )
-    .subscribe();
+  console.warn('Supabase Realtime disabled. Reverting to polling or no-op.');
+  return { unsubscribe: () => { } };
 };
 
 /**
- * Subscribe to conversation list changes
+ * Subscribe to conversation list changes (Supabase direct disabled)
  */
 export const subscribeToConversations = (
-  userId: string,
-  callback: () => void
+  _userId: string,
+  _callback: () => void
 ) => {
-  return supabase
-    .channel(`user_conversations:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'conversations',
-        filter: `user_id=eq.${userId}`,
-      },
-      () => {
-        callback();
-      }
-    )
-    .subscribe();
+  console.warn('Supabase Realtime disabled. Reverting to polling or no-op.');
+  return { unsubscribe: () => { } };
+};
+
+/**
+ * Search contacts
+ */
+export const searchContacts = async (query: string) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  const response = await fetch(`${API_BASE_URL}/conversations/contacts/search?q=${encodeURIComponent(query)}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to search contacts');
+  }
+
+  return response.json();
+};
+
+/**
+ * Create new contact
+ */
+export const createContact = async (contactData: { full_name: string; email?: string; phone?: string }) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  const response = await fetch(`${API_BASE_URL}/conversations/contacts`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(contactData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create contact');
+  }
+
+  return response.json();
+};
+
+/**
+ * Create conversation via API
+ */
+export const createConversationAPI = async (contactId: string, channel: string = 'sms') => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
+  const response = await fetch(`${API_BASE_URL}/conversations`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ contact_id: contactId, channel }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create conversation');
+  }
+
+  return response.json();
 };

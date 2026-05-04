@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Copy, Trash2, Loader2 } from 'lucide-react';
-import { workingHoursService, preferencesService } from '../../../../shared/services/profileService';
-import { WorkingHours, DAY_NAMES, UserPreferences } from '../../../../shared/types/profile';
+import { availabilityService, AvailabilityWorkingHour } from '../../../../shared/services/availabilityService';
 
 interface TimeSlot {
   start: string;
@@ -16,11 +15,18 @@ interface DaySchedule {
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DEFAULT_SLOT: TimeSlot = { start: '10:00', end: '19:00' };
+
+const createDefaultSchedule = (): DaySchedule[] =>
+  Array.from({ length: 7 }, (_, i) => ({
+    day: i,
+    enabled: false,
+    slots: [{ ...DEFAULT_SLOT }],
+  }));
 
 const AvailabilitySection: React.FC = () => {
-  const [schedule, setSchedule] = useState<DaySchedule[]>([]);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [schedule, setSchedule] = useState<DaySchedule[]>(createDefaultSchedule());
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -35,19 +41,18 @@ const AvailabilitySection: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [hours, prefs] = await Promise.all([
-        workingHoursService.getWorkingHours(),
-        preferencesService.getUserPreferences(),
-      ]);
+      const { workingHours, preferences: prefs } = await availabilityService.getAvailability();
 
       if (prefs) {
-        setPreferences(prefs);
-        setMeetingLocation(prefs.meeting_location);
-        setCustomLocation(prefs.custom_location);
+        setMeetingLocation(prefs.meeting_location || 'google_meet');
+        setCustomLocation(prefs.custom_location || '');
+        if (prefs.timezone) {
+          setTimezone(prefs.timezone);
+        }
       }
 
       const scheduleMap = new Map<number, TimeSlot[]>();
-      hours.forEach(h => {
+      workingHours.forEach((h: any) => {
         if (!scheduleMap.has(h.day_of_week)) {
           scheduleMap.set(h.day_of_week, []);
         }
@@ -60,7 +65,7 @@ const AvailabilitySection: React.FC = () => {
       const newSchedule: DaySchedule[] = Array.from({ length: 7 }, (_, i) => ({
         day: i,
         enabled: scheduleMap.has(i),
-        slots: scheduleMap.get(i) || [{ start: '10:00', end: '19:00' }],
+        slots: scheduleMap.get(i) || [{ ...DEFAULT_SLOT }],
       }));
 
       setSchedule(newSchedule);
@@ -76,7 +81,7 @@ const AvailabilitySection: React.FC = () => {
     setSchedule(prev =>
       prev.map(s =>
         s.day === day
-          ? { ...s, enabled: !s.enabled, slots: s.slots.length === 0 ? [{ start: '10:00', end: '19:00' }] : s.slots }
+          ? { ...s, enabled: !s.enabled, slots: s.slots.length === 0 ? [{ ...DEFAULT_SLOT }] : s.slots }
           : s
       )
     );
@@ -88,7 +93,7 @@ const AvailabilitySection: React.FC = () => {
       prev.map(s => ({
         ...s,
         enabled: !allEnabled,
-        slots: s.slots.length === 0 ? [{ start: '10:00', end: '19:00' }] : s.slots,
+        slots: s.slots.length === 0 ? [{ ...DEFAULT_SLOT }] : s.slots,
       }))
     );
   };
@@ -97,7 +102,7 @@ const AvailabilitySection: React.FC = () => {
     setSchedule(prev =>
       prev.map(s =>
         s.day === day
-          ? { ...s, slots: [...s.slots, { start: '10:00', end: '19:00' }] }
+          ? { ...s, slots: [...s.slots, { ...DEFAULT_SLOT }] }
           : s
       )
     );
@@ -106,9 +111,12 @@ const AvailabilitySection: React.FC = () => {
   const removeTimeSlot = (day: number, slotIndex: number) => {
     setSchedule(prev =>
       prev.map(s =>
-        s.day === day
-          ? { ...s, slots: s.slots.filter((_, i) => i !== slotIndex) }
-          : s
+        s.day !== day
+          ? s
+          : {
+              ...s,
+              slots: s.slots.length > 1 ? s.slots.filter((_, i) => i !== slotIndex) : [{ ...DEFAULT_SLOT }],
+            }
       )
     );
   };
@@ -145,7 +153,23 @@ const AvailabilitySection: React.FC = () => {
     try {
       setSaving(true);
 
-      const workingHours: Partial<WorkingHours>[] = [];
+      for (const day of schedule) {
+        if (!day.enabled) continue;
+        if (day.slots.length === 0) {
+          throw new Error(`${DAYS[day.day]} must have at least one time slot`);
+        }
+
+        for (const slot of day.slots) {
+          if (!slot.start || !slot.end) {
+            throw new Error(`${DAYS[day.day]} has an incomplete time slot`);
+          }
+          if (slot.start >= slot.end) {
+            throw new Error(`${DAYS[day.day]} has a slot where start time must be before end time`);
+          }
+        }
+      }
+
+      const workingHours: AvailabilityWorkingHour[] = [];
       schedule.forEach(day => {
         if (day.enabled) {
           day.slots.forEach(slot => {
@@ -159,17 +183,19 @@ const AvailabilitySection: React.FC = () => {
         }
       });
 
-      await workingHoursService.saveWorkingHours(workingHours);
-
-      await preferencesService.updateUserPreferences({
-        meeting_location: meetingLocation,
-        custom_location: customLocation,
+      await availabilityService.saveAvailability({
+        workingHours,
+        preferences: {
+          meeting_location: meetingLocation,
+          custom_location: customLocation,
+          timezone,
+        },
       });
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError('Failed to save availability settings');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save availability settings');
       console.error(err);
     } finally {
       setSaving(false);

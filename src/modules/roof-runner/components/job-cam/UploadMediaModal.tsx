@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Image, CheckCircle } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import type { PhotoCategory, PhotoPhase } from '../../types/jobCam';
 
 interface UploadFile {
@@ -55,10 +55,6 @@ const UploadMediaModal: React.FC<Props> = ({ open, onClose, onUpload }) => {
       copy.splice(index, 1);
       return copy;
     });
-  };
-
-  const updateFile = (index: number, patch: Partial<UploadFile>) => {
-    setFiles(prev => prev.map((f, i) => i === index ? { ...f, ...patch } : f));
   };
 
   const applyBatchCategory = (cat: PhotoCategory) => {
