@@ -53,11 +53,10 @@ export const STAGING_MOCK_USER: User = {
   companySlug: 'staging-org',
   organizationId: 1,
   organization_id: 1,
-  role: {
-    id: 'staff-admin',
-    name: 'Staff Admin',
-    permissions: { all: true },
-  },
+  // NOTE: deliberately no `role` field. `permissions.isParentUser()` checks
+  // `!user.role` to grant blanket access — keeping role undefined makes the
+  // staging user pass every `canAccessModule()` / `hasPermission()` check
+  // without needing to enumerate every module's permission object.
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-05-04T00:00:00.000Z',
   // Permission flags so ProtectedRoute lets the user past billing gate:
