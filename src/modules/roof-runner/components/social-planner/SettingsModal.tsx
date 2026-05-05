@@ -224,7 +224,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="flex items-center text-red-600 hover:text-red-700 dark:text-red-400 mb-3"
+            className="flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 mb-3"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
@@ -241,7 +241,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab.id
-                    ? 'border-red-600 text-red-600 dark:text-red-400'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
               >
@@ -262,7 +262,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                   onClick={() => setSelectedPlatform('all')}
                   className={`w-full text-left px-4 py-2 rounded-md mb-1 ${
                     selectedPlatform === 'all'
-                      ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -274,7 +274,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                     onClick={() => setSelectedPlatform(platform.id)}
                     className={`w-full text-left px-4 py-2 rounded-md mb-1 flex items-center space-x-2 ${
                       selectedPlatform === platform.id
-                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -292,7 +292,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Social Integration</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Connect multiple social accounts</p>
                     </div>
-                    <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                       <Plus className="h-4 w-4 mr-2" />
                       Connect Social
                     </button>
@@ -341,7 +341,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                       placeholder="Search for a social"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-red-600 focus:border-red-600"
+                      className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                         <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold">
+                              <div className="flex-shrink-0 h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                                 {account.platform.charAt(0)}
                               </div>
                               <div className="ml-4">
@@ -382,7 +382,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                                     {account.accountName}
                                   </div>
                                   {account.verified && (
-                                    <CheckCircle className="ml-2 h-4 w-4 text-red-600" />
+                                    <CheckCircle className="ml-2 h-4 w-4 text-blue-600" />
                                   )}
                                 </div>
                                 {account.accountId && (
@@ -429,7 +429,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                   <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                     Previous
                   </button>
-                  <button className="px-3 py-1 bg-red-600 text-white rounded text-sm">
+                  <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
                     1
                   </button>
                   <button className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -498,7 +498,7 @@ export default function SettingsModal({ isOpen, onClose, initialTab = 'social-ac
                           <button
                             onClick={() => handleToggleNotification(setting.id)}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              setting.enabled ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'
+                              setting.enabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                             }`}
                           >
                             <span

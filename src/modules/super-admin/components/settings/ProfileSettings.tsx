@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import PersonalDataSection from '../profile/PersonalDataSection';
-import PasswordSection from '../profile/PasswordSection';
-import SignatureSection from '../profile/SignatureSection';
-import EmailSyncSection from '../profile/EmailSyncSection';
-import TwoFactorAuthSection from '../profile/TwoFactorAuthSection';
-import CalendarSettingsSection from '../profile/CalendarSettingsSection';
-import AvailabilitySection from '../profile/AvailabilitySection';
+import PersonalDataSection from '../../../roof-runner/components/profile/PersonalDataSection';
+import PasswordSection from '../../../roof-runner/components/profile/PasswordSection';
+import SignatureSection from '../../../roof-runner/components/profile/SignatureSection';
+import EmailSyncSection from '../../../roof-runner/components/profile/EmailSyncSection';
+import TwoFactorAuthSection from '../../../roof-runner/components/profile/TwoFactorAuthSection';
+import CalendarSettingsSection from '../../../roof-runner/components/profile/CalendarSettingsSection';
+import AvailabilitySection from '../../../roof-runner/components/profile/AvailabilitySection';
 
 type TabId = 'personal' | 'password' | 'signature' | 'email' | '2fa' | 'calendar' | 'availability';
 

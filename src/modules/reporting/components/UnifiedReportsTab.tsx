@@ -4,10 +4,7 @@ import {
   FileText, Loader2, Clock, TrendingUp, Search, Filter, X,
   Sparkles, Phone, Calendar, BarChart3, ChevronDown,
 } from 'lucide-react';
-import { supabase } from '../../../shared/lib/supabase';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
-import { getAIReports, getAIReportStats } from '../../../services/aiReports';
-import type { AIReportStats } from '../../../types/aiReports';
 
 type ReportType = 'ai' | 'call' | 'appointment' | 'lead_source' | 'google_ads' | 'meta_ads';
 
@@ -22,17 +19,10 @@ interface UnifiedReport {
   switchTab?: string;
 }
 
-interface CombinedStats {
-  total: number;
-  running: number;
-  scheduled: number;
-  lastGenerated: string | null;
-}
-
 const TYPE_CONFIG: Record<ReportType, { label: string; color: string; icon: React.ReactNode }> = {
   ai: {
     label: 'AI Report',
-    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
+    color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   call: {
@@ -42,7 +32,7 @@ const TYPE_CONFIG: Record<ReportType, { label: string; color: string; icon: Reac
   },
   appointment: {
     label: 'Appointments',
-    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
+    color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
     icon: <Calendar className="w-3.5 h-3.5" />,
   },
   lead_source: {
@@ -52,12 +42,12 @@ const TYPE_CONFIG: Record<ReportType, { label: string; color: string; icon: Reac
   },
   google_ads: {
     label: 'Google Ads',
-    color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     icon: <BarChart3 className="w-3.5 h-3.5" />,
   },
   meta_ads: {
     label: 'Meta Ads',
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    color: 'bg-slate-100 text-slate-700 dark:bg-slate-600 dark:text-slate-300',
     icon: <BarChart3 className="w-3.5 h-3.5" />,
   },
 };
@@ -96,186 +86,62 @@ interface Props {
 
 export function UnifiedReportsTab({ onSwitchTab }: Props) {
   const navigate = useNavigate();
-  const { currentOrganization } = useCurrentOrganization();
+  const { currentOrganization, currentOrganizationSlug } = useCurrentOrganization();
 
   const [reports, setReports] = useState<UnifiedReport[]>([]);
-  const [stats, setStats] = useState<CombinedStats>({ total: 0, running: 0, scheduled: 0, lastGenerated: null });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [typeFilter, setTypeFilter] = useState<ReportType | ''>('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
-
-  const formatDateRange = (start: Date, end: Date) => {
-    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return `${fmt(start)} – ${fmt(end)}`;
-  };
-
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const load = useCallback(async () => {
     if (!currentOrganization) return;
     setLoading(true);
-    try {
-      const orgId = currentOrganization.id;
-      const yearStart = new Date(`${selectedYear}-01-01`);
-      const yearEnd = new Date(`${selectedYear}-12-31`);
+    
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 600));
 
-      const [aiReportsData, aiStatsData, callData, appointmentData, attributionData, googleData, metaData] = await Promise.all([
-        getAIReports(orgId, {}).catch(() => []),
-        getAIReportStats(orgId).catch(() => ({ totalReports: 0, runningReports: 0, scheduledReports: 0, lastGeneratedDate: null } as AIReportStats)),
-        supabase
-          .from('call_logs')
-          .select('id, started_at, ended_at, status')
-          .eq('organization_id', orgId)
-          .gte('started_at', yearStart.toISOString())
-          .lte('started_at', yearEnd.toISOString())
-          .order('started_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-        supabase
-          .from('appointments')
-          .select('id, start_time, end_time, status')
-          .eq('organization_id', orgId)
-          .gte('start_time', yearStart.toISOString())
-          .lte('start_time', yearEnd.toISOString())
-          .order('start_time', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-        supabase
-          .from('lead_source_attribution')
-          .select('id, created_at')
-          .eq('organization_id', orgId)
-          .gte('created_at', yearStart.toISOString())
-          .lte('created_at', yearEnd.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-        supabase
-          .from('google_ads_metrics')
-          .select('id, date')
-          .eq('organization_id', orgId)
-          .gte('date', yearStart.toISOString().split('T')[0])
-          .lte('date', yearEnd.toISOString().split('T')[0])
-          .order('date', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-        supabase
-          .from('facebook_ads_metrics')
-          .select('id, date')
-          .eq('organization_id', orgId)
-          .gte('date', yearStart.toISOString().split('T')[0])
-          .lte('date', yearEnd.toISOString().split('T')[0])
-          .order('date', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-      ]);
-
-      const unified: UnifiedReport[] = [];
-
-      for (const r of aiReportsData as any[]) {
-        const yearMatch = r.created_at && new Date(r.created_at).getFullYear().toString() === selectedYear;
-        if (!yearMatch) continue;
-        unified.push({
-          id: r.id,
-          name: r.report_name,
-          type: 'ai',
-          dateRange: r.timeframe_start && r.timeframe_end
-            ? `${formatDate(r.timeframe_start)} – ${formatDate(r.timeframe_end)}`
-            : 'Custom range',
-          createdAt: r.created_at,
-          status: r.status as UnifiedReport['status'],
-          navigateTo: `/reporting/${r.id}`,
-        });
+    // Mock unified list
+    setReports([
+      {
+        id: 'r1',
+        name: 'Weekly Sales Analysis',
+        type: 'ai',
+        dateRange: 'Oct 01 – Oct 07, 2024',
+        createdAt: new Date().toISOString(),
+        status: 'complete',
+        navigateTo: `/org/${currentOrganizationSlug}/reporting/r1`
+      },
+      {
+        id: 'call-summary',
+        name: 'Full Call Report',
+        type: 'call',
+        dateRange: 'Year to Date',
+        createdAt: new Date().toISOString(),
+        status: 'available',
+        switchTab: 'call-report'
+      },
+      {
+        id: 'google-ads-summary',
+        name: 'Google Ads Performance',
+        type: 'google_ads',
+        dateRange: 'Last 30 Days',
+        createdAt: new Date().toISOString(),
+        status: 'available',
+        switchTab: 'google-ads'
+      },
+      {
+        id: 'appointment-summary',
+        name: 'Appointment Overview',
+        type: 'appointment',
+        dateRange: 'Next 30 Days',
+        createdAt: new Date().toISOString(),
+        status: 'available',
+        switchTab: 'appointment'
       }
+    ]);
 
-      if (callData) {
-        unified.push({
-          id: 'call-summary',
-          name: `Call Report — ${selectedYear}`,
-          type: 'call',
-          dateRange: formatDateRange(new Date(`${selectedYear}-01-01`), new Date(`${selectedYear}-12-31`)),
-          createdAt: new Date().toISOString(),
-          status: 'available',
-          switchTab: 'call-report',
-        });
-      }
-
-      if (appointmentData) {
-        unified.push({
-          id: 'appointment-summary',
-          name: `Appointment Report — ${selectedYear}`,
-          type: 'appointment',
-          dateRange: formatDateRange(new Date(`${selectedYear}-01-01`), new Date(`${selectedYear}-12-31`)),
-          createdAt: new Date().toISOString(),
-          status: 'available',
-          switchTab: 'appointment',
-        });
-      }
-
-      if (attributionData) {
-        unified.push({
-          id: 'attribution-summary',
-          name: `Lead Sources Report — ${selectedYear}`,
-          type: 'lead_source',
-          dateRange: formatDateRange(new Date(`${selectedYear}-01-01`), new Date(`${selectedYear}-12-31`)),
-          createdAt: new Date().toISOString(),
-          status: 'available',
-          switchTab: 'attribution-report',
-        });
-      }
-
-      if (googleData) {
-        unified.push({
-          id: 'google-ads-summary',
-          name: `Google Ads Report — ${selectedYear}`,
-          type: 'google_ads',
-          dateRange: formatDateRange(new Date(`${selectedYear}-01-01`), new Date(`${selectedYear}-12-31`)),
-          createdAt: new Date().toISOString(),
-          status: 'available',
-          switchTab: 'google-ads',
-        });
-      }
-
-      if (metaData) {
-        unified.push({
-          id: 'meta-ads-summary',
-          name: `Meta Ads Report — ${selectedYear}`,
-          type: 'meta_ads',
-          dateRange: formatDateRange(new Date(`${selectedYear}-01-01`), new Date(`${selectedYear}-12-31`)),
-          createdAt: new Date().toISOString(),
-          status: 'available',
-          switchTab: 'facebook-ads',
-        });
-      }
-
-      unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      const nonAiCount = [callData, appointmentData, attributionData, googleData, metaData].filter(Boolean).length;
-      const combinedStats: CombinedStats = {
-        total: (aiStatsData.totalReports ?? 0) + nonAiCount,
-        running: aiStatsData.runningReports ?? 0,
-        scheduled: aiStatsData.scheduledReports ?? 0,
-        lastGenerated: aiStatsData.lastGeneratedDate,
-      };
-
-      setReports(unified);
-      setStats(combinedStats);
-    } catch (err) {
-      console.error('Failed to load unified reports:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrganization, selectedYear]);
+    setLoading(false);
+  }, [currentOrganization, currentOrganizationSlug]);
 
   useEffect(() => {
     load();
@@ -295,134 +161,86 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
     return true;
   });
 
-  const hasFilters = !!(typeFilter || search);
-
   return (
     <div className="p-6 space-y-6 bg-gray-50 dark:bg-slate-900 min-h-full">
       <div className="grid grid-cols-4 gap-4">
         <StatCard
-          icon={<FileText className="w-5 h-5 text-primary-500 dark:text-primary-400" />}
-          iconBg="bg-primary-500/20"
+          icon={<FileText className="w-5 h-5 text-cyan-500" />}
+          iconBg="bg-cyan-500/10"
           label="Total Reports"
-          value={stats.total}
+          value={reports.length}
         />
         <StatCard
-          icon={<Loader2 className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-          iconBg="bg-amber-500/20"
-          label="Running"
-          value={stats.running}
+          icon={<Sparkles className="w-5 h-5 text-purple-500" />}
+          iconBg="bg-purple-500/10"
+          label="AI Insights"
+          value={reports.filter(r => r.type === 'ai').length}
         />
         <StatCard
-          icon={<Clock className="w-5 h-5 text-teal-500 dark:text-teal-400" />}
-          iconBg="bg-teal-500/20"
-          label="Scheduled"
-          value={stats.scheduled}
+          icon={<TrendingUp className="w-5 h-5 text-emerald-500" />}
+          iconBg="bg-emerald-500/10"
+          label="Conversion Rate"
+          value="12.4%"
         />
         <StatCard
-          icon={<TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />}
-          iconBg="bg-emerald-500/20"
-          label="Last Generated"
-          value={stats.lastGenerated
-            ? new Date(stats.lastGenerated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : '-'}
+          icon={<Clock className="w-5 h-5 text-blue-500" />}
+          iconBg="bg-blue-500/10"
+          label="Avg. Gen Time"
+          value="45s"
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center gap-3">
-          <div className="flex items-center justify-between w-full gap-3">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search reports..."
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                  typeFilter
-                    ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
-                    : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                Filters
-              </button>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="flex gap-3 flex-1">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search reports..."
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm"
+              />
             </div>
-
-            <div className="relative">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-        </div>
-
-        {showFilters && (
-          <div className="px-5 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as ReportType | '')}
-              className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none"
+              className="px-3 py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm"
             >
               <option value="">All Types</option>
-              {(Object.keys(TYPE_CONFIG) as ReportType[]).map((t) => (
-                <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
-              ))}
+              <option value="ai">AI Reports</option>
+              <option value="call">Calls</option>
+              <option value="google_ads">Google Ads</option>
+              <option value="meta_ads">Meta Ads</option>
             </select>
-            {hasFilters && (
-              <button
-                onClick={() => { setTypeFilter(''); setSearch(''); }}
-                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-500 text-sm"
-              >
-                <X className="w-3.5 h-3.5" />
-                Clear
-              </button>
-            )}
           </div>
-        )}
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <BarChart3 className="w-12 h-12 text-gray-300 dark:text-slate-600" />
-            <p className="text-gray-900 dark:text-white font-medium">No reports found</p>
-            <p className="text-gray-500 dark:text-slate-400 text-sm">
-              {hasFilters ? 'Try adjusting your filters' : 'Generate an AI report or data will appear as activity is recorded'}
-            </p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <BarChart3 className="w-12 h-12 text-gray-300 mb-4" />
+            <p className="text-gray-900 dark:text-white font-medium">No reports matches your search</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Report</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Date Range</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Generated</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-gray-700/50">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Report Name</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Range</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
                 {filtered.map((report) => {
                   const typeConf = TYPE_CONFIG[report.type];
-                  const statusStyle = STATUS_STYLES[report.status] ?? STATUS_STYLES.available;
+                  const statusStyle = STATUS_STYLES[report.status];
                   return (
                     <tr
                       key={report.id}
@@ -431,25 +249,20 @@ export function UnifiedReportsTab({ onSwitchTab }: Props) {
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-gray-500 dark:text-slate-400">
+                          <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-500">
                             {typeConf.icon}
                           </div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{report.name}</p>
+                          <span className="text-sm font-medium">{report.name}</span>
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${typeConf.color}`}>
-                          {typeConf.icon}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${typeConf.color}`}>
                           {typeConf.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">{report.dateRange}</td>
-                      <td className="px-5 py-3 text-sm text-gray-500 dark:text-slate-400">
-                        {formatDate(report.createdAt)}
-                      </td>
+                      <td className="px-5 py-3 text-sm text-gray-500">{report.dateRange}</td>
                       <td className="px-5 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
-                          {report.status === 'running' && <Loader2 className="w-3 h-3 animate-spin" />}
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusStyle.bg} ${statusStyle.text}`}>
                           {statusStyle.label}
                         </span>
                       </td>

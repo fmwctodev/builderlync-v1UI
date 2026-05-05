@@ -74,7 +74,7 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
       waiting: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
       completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      payments: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      payments: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       archived: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     };
     return colors[status as keyof typeof colors] || colors.draft;
@@ -94,7 +94,7 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
     const colors = {
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      processing: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       error: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
       archived: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
@@ -104,9 +104,9 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
 
   const getReportTypeIcon = (reportType: string) => {
     return reportType === 'eagleview' ? (
-      <Satellite className="h-4 w-4 text-red-600" />
+      <Satellite className="h-4 w-4 text-purple-600" />
     ) : (
-      <ClipboardList className="h-4 w-4 text-red-600" />
+      <ClipboardList className="h-4 w-4 text-blue-600" />
     );
   };
 
@@ -144,14 +144,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {proposals.length === 0 ? (
-          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <FileText className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No proposals linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
@@ -224,14 +224,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {invoices.length === 0 ? (
-          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <DollarSign className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No invoices linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Invoice #</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
@@ -291,7 +291,7 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-              <ClipboardList className="h-5 w-5 mr-2 text-red-600" />
+              <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
               Reports
               <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                 ({reports.length})
@@ -308,14 +308,14 @@ export default function OpportunityAssociatedObjectsTab({ opportunityId }: Oppor
         </div>
 
         {reports.length === 0 ? (
-          <div className="text-center py-8 bg-paper dark:bg-canvas rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
             <ClipboardList className="h-10 w-10 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600 dark:text-gray-400 text-sm">No reports linked to this opportunity</p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full">
-              <thead className="bg-paper dark:bg-canvas border-b border-gray-200 dark:border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Report Name</th>

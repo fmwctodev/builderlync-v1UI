@@ -1,45 +1,109 @@
-import { supabase } from '../../lib/supabase';
-import { requireOrganizationId, withOrgId } from '../../utils/organizationHelpers';
+import { getAuthToken } from '../../utils/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
 export interface Job {
   id: number;
   name: string;
   location: string;
-  assignees: string[];
-  jobOwner: string;
+  customerId?: number | null;
+  customer_id?: number | null;
+  assignees: number[];
+  assigneeUsers?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>;
+  jobOwner: number;
+  job_owner?: number | null;
+  jobOwnerUser?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  customer?: {
+    id: number;
+    full_name?: string;
+    fullName?: string;
+    name?: string;
+    email: string;
+    phone: string;
+    company: string;
+  };
   workflowStages: string;
+  workflow_stages?: string;
   closeDate: string;
+  close_date?: string;
   jobValue: number;
+  job_value?: string;
   source: string;
   details: string;
-  createdBy: string;
+  createdBy: number;
+  created_by?: number;
   insuranceEnabled: boolean;
+  insurance_enabled?: boolean;
   insuranceCompany: string;
+  insurance_company?: string;
   policyAccountNumber: string;
+  policy_account_number?: string;
   claimNumber: string;
+  claim_number?: string;
   dateOfLoss: string;
+  date_of_loss?: string | null;
   typeOfDamage: string;
+  type_of_damage?: string;
   claimAmount: number;
+  claim_amount?: string;
   deductible: number;
   claimDetails: string;
+  claim_details?: string;
   measurementsId: number | null;
+  measurements_id?: number | null;
   proposalsId: number | null;
+  proposals_id?: number | null;
   pdfSignerId: number | null;
+  pdf_signer_id?: number | null;
   materialOrdersId: number | null;
+  material_orders_id?: number | null;
   workOrdersId: number | null;
+  work_orders_id?: number | null;
   invoiceId: number | null;
+  invoice_id?: number | null;
   jobCostingsId: number | null;
-  attachmentsId: number | null;
+  job_costings_id?: number | null;
+  attachmentsId: number[] | null;
+  attachments_id?: number[] | null;
   instantEstimateId: number | null;
+  instant_estimate_id?: number | null;
+  instantEstimatorLeadId?: string | null;
+  instant_estimator_lead_id?: string | null;
   integrationsId: number | null;
+  integrations_id?: number | null;
   createdAt: string;
+  created_at?: string;
   updatedAt: string;
+  updated_at?: string;
   createdByName: string;
   editedByName: string | null;
-  editedBy: string | null;
-  jobType?: 'residential' | 'commercial' | 'insurance';
+  editedBy: number | null;
+  edited_by?: number | null;
+  jobType?: 'residential' | 'commercial' | 'insurance' | 'multifamily';
   contactId?: number | null;
+  contact_id?: number | null;
+  opportunity_id?: string | null;
   contactName?: string | null;
+  distance?: number | null;
+  latitude?: string;
+  longitude?: string;
+  is_deleted?: boolean;
+  deleted_by?: number | null;
+  deleted_at?: string | null;
+  tags?: string[];
+  pipelineId?: string | null;
+  stageId?: string | null;
+  pipelineName?: string | null;
 }
 
 export interface JobsResponse {
@@ -58,11 +122,14 @@ export interface JobsResponse {
 export interface CreateJobRequest {
   name: string;
   location: string;
-  assignees: string[];
-  jobOwner: string;
+  latitude?: number;
+  longitude?: number;
+  customerId?: number | null;
+  assignees: number[];
+  jobOwner: number | null;
   workflowStages: string;
   closeDate?: string;
-  jobValue: number;
+  jobValue: string;
   source: string;
   details: string;
   insuranceEnabled: boolean;
@@ -74,281 +141,171 @@ export interface CreateJobRequest {
   claimAmount: number;
   deductible: number;
   claimDetails: string;
-  createdBy: string;
-  createdByName: string;
-  editedBy: string;
-  editedByName: string;
-  jobType?: 'residential' | 'commercial' | 'insurance';
+  createdBy: number | null;
+  editedBy?: number | null;
+  jobType?: 'residential' | 'commercial' | 'insurance' | 'multifamily';
   contactId?: number | null;
   contactName?: string | null;
+  opportunity_id?: string | null;
+  tags?: string[];
+  pipelineId?: string | null;
+  stageId?: string | null;
 }
 
-function camelToSnake(obj: any): any {
-  const snakeObj: any = {};
+class JobsApiService {
+  private async makeRequest(endpoint: string, options: RequestInit = {}) {
+    const token = getAuthToken();
 
-  const keyMap: Record<string, string> = {
-    jobOwner: 'job_owner',
-    workflowStages: 'workflow_stages',
-    closeDate: 'close_date',
-    jobValue: 'job_value',
-    insuranceEnabled: 'insurance_enabled',
-    insuranceCompany: 'insurance_company',
-    policyAccountNumber: 'policy_account_number',
-    claimNumber: 'claim_number',
-    dateOfLoss: 'date_of_loss',
-    typeOfDamage: 'type_of_damage',
-    claimAmount: 'claim_amount',
-    claimDetails: 'claim_details',
-    measurementsId: 'measurements_id',
-    proposalsId: 'proposals_id',
-    pdfSignerId: 'pdf_signer_id',
-    materialOrdersId: 'material_orders_id',
-    workOrdersId: 'work_orders_id',
-    invoiceId: 'invoice_id',
-    jobCostingsId: 'job_costings_id',
-    attachmentsId: 'attachments_id',
-    instantEstimateId: 'instant_estimate_id',
-    integrationsId: 'integrations_id',
-    createdBy: 'created_by',
-    createdByName: 'created_by_name',
-    editedBy: 'edited_by',
-    editedByName: 'edited_by_name',
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    jobType: 'job_type',
-    contactId: 'contact_id',
-    contactName: 'contact_name'
-  };
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
 
-  for (const key in obj) {
-    const snakeKey = keyMap[key] || key;
-    snakeObj[snakeKey] = obj[key];
-  }
-
-  return snakeObj;
-}
-
-function snakeToCamel(obj: any): any {
-  const camelObj: any = {};
-
-  const keyMap: Record<string, string> = {
-    job_owner: 'jobOwner',
-    workflow_stages: 'workflowStages',
-    close_date: 'closeDate',
-    job_value: 'jobValue',
-    insurance_enabled: 'insuranceEnabled',
-    insurance_company: 'insuranceCompany',
-    policy_account_number: 'policyAccountNumber',
-    claim_number: 'claimNumber',
-    date_of_loss: 'dateOfLoss',
-    type_of_damage: 'typeOfDamage',
-    claim_amount: 'claimAmount',
-    claim_details: 'claimDetails',
-    measurements_id: 'measurementsId',
-    proposals_id: 'proposalsId',
-    pdf_signer_id: 'pdfSignerId',
-    material_orders_id: 'materialOrdersId',
-    work_orders_id: 'workOrdersId',
-    invoice_id: 'invoiceId',
-    job_costings_id: 'jobCostingsId',
-    attachments_id: 'attachmentsId',
-    instant_estimate_id: 'instantEstimateId',
-    integrations_id: 'integrationsId',
-    created_by: 'createdBy',
-    created_by_name: 'createdByName',
-    edited_by: 'editedBy',
-    edited_by_name: 'editedByName',
-    created_at: 'createdAt',
-    updated_at: 'updatedAt',
-    job_type: 'jobType',
-    contact_id: 'contactId',
-    contact_name: 'contactName'
-  };
-
-  for (const key in obj) {
-    const camelKey = keyMap[key] || key;
-    camelObj[camelKey] = obj[key];
-  }
-
-  return camelObj;
-}
-
-export const getJobs = async (
-  organizationId: string | null,
-  page: number = 1,
-  limit: number = 10
-): Promise<JobsResponse> => {
-  requireOrganizationId(organizationId, 'getJobs');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
-  }
-
-  const offset = (page - 1) * limit;
-
-  const { count } = await supabase
-    .from('jobs')
-    .select('*', { count: 'exact', head: true })
-    .eq('organization_id', organizationId);
-
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const jobs = (data || []).map(snakeToCamel) as Job[];
-
-  const total = count || 0;
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    success: true,
-    data: {
-      data: jobs,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages
-      }
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-  };
-};
 
-export const createJob = async (
-  jobData: CreateJobRequest,
-  organizationId: string | null
-) => {
-  requireOrganizationId(organizationId, 'createJob');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    return response.json();
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  async getJobs(page: number = 1, limit: number = 10, filters?: {
+    jobType?: string;
+    workflowStage?: string;
+    status?: string;
+    source?: string;
+    search?: string;
+    sortBy?: string;
+    assignees?: number[];
+    stages?: string[];
+    updatedDate?: string[];
+    closeDate?: string[];
+    createdDate?: string[];
+    leadSources?: string[];
+    pipelineId?: string;
+    contactId?: number;
+  }): Promise<JobsResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
 
-  if (!user) {
-    throw new Error('User not authenticated');
+    if (filters?.jobType && filters.jobType !== 'all') {
+      params.append('jobType', filters.jobType);
+    }
+    if (filters?.workflowStage) {
+      params.append('workflowStage', filters.workflowStage);
+    }
+    if (filters?.source) {
+      params.append('source', filters.source);
+    }
+    if (filters?.status) {
+      params.append('status', filters.status);
+    }
+    if (filters?.search) {
+      params.append('search', filters.search);
+    }
+    if (filters?.sortBy) {
+      params.append('sortBy', filters.sortBy);
+    }
+    if (filters?.assignees && filters.assignees.length > 0) {
+      params.append('assignees', filters.assignees.join(','));
+    }
+    if (filters?.stages && filters.stages.length > 0) {
+      params.append('stages', filters.stages.join(','));
+    }
+    if (filters?.updatedDate && filters.updatedDate.length > 0) {
+      params.append('updatedDate', filters.updatedDate.join(','));
+    }
+    if (filters?.closeDate && filters.closeDate.length > 0) {
+      params.append('closeDate', filters.closeDate.join(','));
+    }
+    if (filters?.createdDate && filters.createdDate.length > 0) {
+      params.append('createdDate', filters.createdDate.join(','));
+    }
+    if (filters?.leadSources && filters.leadSources.length > 0) {
+      params.append('leadSources', filters.leadSources.join(','));
+    }
+    if (filters?.pipelineId) {
+      params.append('pipelineId', filters.pipelineId);
+    }
+    if (filters?.contactId) {
+      params.append('contactId', filters.contactId.toString());
+    }
+
+    return this.makeRequest(`/jobs?${params}`);
   }
 
-  const snakeData = camelToSnake(jobData);
-  snakeData.created_by = user.id;
-  snakeData.edited_by = user.id;
+  async getNearbyJobs(latitude: number, longitude: number, radius: number = 25): Promise<JobsResponse> {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      radius: radius.toString(),
+    });
 
-  if (!snakeData.close_date) delete snakeData.close_date;
-  if (!snakeData.date_of_loss) delete snakeData.date_of_loss;
-
-  const dataWithOrg = withOrgId(snakeData, organizationId);
-
-  const { data, error } = await supabase
-    .from('jobs')
-    .insert([dataWithOrg])
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
+    return this.makeRequest(`/jobs?${params}`);
   }
 
-  return {
-    success: true,
-    data: snakeToCamel(data)
-  };
-};
-
-export const updateJob = async (
-  id: number,
-  jobData: CreateJobRequest,
-  organizationId: string | null
-) => {
-  requireOrganizationId(organizationId, 'updateJob');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  async createJob(jobData: CreateJobRequest) {
+    return this.makeRequest('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(jobData),
+    });
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('User not authenticated');
+  async updateJob(id: number, jobData: CreateJobRequest) {
+    return this.makeRequest(`/jobs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(jobData),
+    });
   }
 
-  const snakeData = camelToSnake(jobData);
-  snakeData.edited_by = user.id;
-
-  if (!snakeData.close_date) delete snakeData.close_date;
-  if (!snakeData.date_of_loss) delete snakeData.date_of_loss;
-
-  delete snakeData.created_by;
-  delete snakeData.created_at;
-
-  const { data, error } = await supabase
-    .from('jobs')
-    .update(snakeData)
-    .eq('id', id)
-    .eq('organization_id', organizationId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
+  async deleteJob(id: number) {
+    return this.makeRequest(`/jobs/${id}`, {
+      method: 'DELETE',
+    });
   }
 
-  return {
-    success: true,
-    data: snakeToCamel(data)
-  };
-};
-
-export const deleteJob = async (id: number, organizationId: string | null) => {
-  requireOrganizationId(organizationId, 'deleteJob');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  async getJobById(id: number) {
+    return this.makeRequest(`/jobs/${id}`);
   }
 
-  const { error } = await supabase
-    .from('jobs')
-    .delete()
-    .eq('id', id)
-    .eq('organization_id', organizationId);
-
-  if (error) {
-    throw new Error(error.message);
+  async updateJobAttachmentsIds(id: number, attachmentIds: (number | string)[]) {
+    return this.makeRequest(`/jobs/${id}/attachments-ids`, {
+      method: 'PUT',
+      body: JSON.stringify({ attachmentIds }),
+    });
   }
 
-  return {
-    success: true,
-    message: 'Job deleted successfully'
-  };
-};
+  async getJobCounts(filters: any = {}) {
+    const params = new URLSearchParams();
+    
+    // Add all filter keys to query params
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null) {
+        if (Array.isArray(filters[key])) {
+          filters[key].forEach((val: any) => params.append(`${key}[]`, val));
+        } else {
+          params.append(key, filters[key]);
+        }
+      }
+    });
 
-export const getJobById = async (id: number, organizationId: string | null) => {
-  requireOrganizationId(organizationId, 'getJobById');
-
-  if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    const queryString = params.toString();
+    return this.makeRequest(`/jobs/counts${queryString ? `?${queryString}` : ''}`);
   }
+}
 
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*')
-    .eq('id', id)
-    .eq('organization_id', organizationId)
-    .single();
+const jobsApiService = new JobsApiService();
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    success: true,
-    data: snakeToCamel(data)
-  };
-};
+export const getJobs = jobsApiService.getJobs.bind(jobsApiService);
+export const getNearbyJobs = jobsApiService.getNearbyJobs.bind(jobsApiService);
+export const createJob = jobsApiService.createJob.bind(jobsApiService);
+export const updateJob = jobsApiService.updateJob.bind(jobsApiService);
+export const deleteJob = jobsApiService.deleteJob.bind(jobsApiService);
+export const getJobById = jobsApiService.getJobById.bind(jobsApiService);
+export const updateJobAttachmentsIds = jobsApiService.updateJobAttachmentsIds.bind(jobsApiService);
+export const getJobCounts = jobsApiService.getJobCounts.bind(jobsApiService);

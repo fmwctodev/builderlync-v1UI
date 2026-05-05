@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -7,28 +7,35 @@ import {
   Globe,
   Settings,
   Zap,
-  Shield,
   Play,
   Pause,
   ArrowLeft,
   Save,
+  Code2,
+  FileText,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { useCurrentOrganization } from '../../../shared/context/OrgContext';
 import { fetchAgentById, updateAgent, updateAgentStatus, AIAgent, VoiceConfig, LanguageConfig, SystemTool, DEFAULT_SYSTEM_TOOLS, SecurityOverrides, WebhookConfig, DEFAULT_SECURITY_OVERRIDES, DEFAULT_WEBHOOK_CONFIG } from '../services/agentsApi';
+import { vapiApi } from '../services/vapiApi';
 import { SystemPromptSection } from '../components/SystemPromptSection';
-import { VoicesSection } from '../components/VoicesSection';
-import { LanguageSection } from '../components/LanguageSection';
 import { FirstMessageSection } from '../components/FirstMessageSection';
 import { ToolsSection } from '../components/ToolsSection';
 import { SecuritySection } from '../components/SecuritySection';
 import { PhoneNumbersSection } from '../components/PhoneNumbersSection';
+import { WidgetSection } from '../components/WidgetSectionNew';
+import { KnowledgeBaseSection } from '../components/KnowledgeBaseSection';
+import { VoicesSectionEnhanced } from '../components/VoicesSectionEnhanced';
+import { CallLogsTab } from '../components/CallLogsTab';
+import { useAppSelector } from '../../roof-runner/store/hooks';
 
-type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'tools' | 'security';
+type BuilderTab = 'overview' | 'voice-sms' | 'webchat' | 'knowledge-base' | 'voices' | 'tools' | 'security' | 'widget' | 'call-logs';
 
 export function AgentBuilder() {
   const { agentId } = useParams();
   const navigate = useNavigate();
-  const { currentOrganizationSlug, currentOrganization } = useCurrentOrganization();
+  const { currentOrganization } = useCurrentOrganization();
   const [activeTab, setActiveTab] = useState<BuilderTab>('overview');
   const [agent, setAgent] = useState<AIAgent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,9 +56,17 @@ export function AgentBuilder() {
   const [dailyCallLimit, setDailyCallLimit] = useState(100000);
   const [concurrentCallLimit, setConcurrentCallLimit] = useState(-1);
   const [burstingEnabled, setBurstingEnabled] = useState(true);
+  const [recordingEnabled, setRecordingEnabled] = useState(false);
+  const { user } = useAppSelector((state) => state.auth);
+  const orgSlug = user?.companySlug || localStorage.getItem('currentOrganizationSlug');
 
   useEffect(() => {
-    loadAgent();
+    console.log('AgentBuilder mounted, agentId:', agentId);
+    if (agentId) {
+      loadAgent();
+    } else {
+      setLoading(false);
+    }
   }, [agentId]);
 
   useEffect(() => {
@@ -71,15 +86,22 @@ export function AgentBuilder() {
       setDailyCallLimit(agent.daily_call_limit ?? 100000);
       setConcurrentCallLimit(agent.concurrent_call_limit ?? -1);
       setBurstingEnabled(agent.bursting_enabled ?? true);
+      setRecordingEnabled(agent.recording_enabled ?? false);
     }
   }, [agent]);
 
   const loadAgent = async () => {
-    if (!agentId) return;
+    console.log('loadAgent called with agentId:', agentId);
+    if (!agentId || agentId === 'undefined') {
+      console.warn('Invalid agentId, skipping load');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const data = await fetchAgentById(agentId);
+      console.log('Agent loaded:', data);
       setAgent(data);
     } catch (error) {
       console.error('Error loading agent:', error);
@@ -90,7 +112,6 @@ export function AgentBuilder() {
 
   const handleSaveChanges = async () => {
     if (!agent) return;
-
     try {
       setSaving(true);
       const updated = await updateAgent({
@@ -109,6 +130,7 @@ export function AgentBuilder() {
         daily_call_limit: dailyCallLimit,
         concurrent_call_limit: concurrentCallLimit,
         bursting_enabled: burstingEnabled,
+        recording_enabled: recordingEnabled,
       });
       setAgent(updated);
       alert('Changes saved successfully');
@@ -122,7 +144,7 @@ export function AgentBuilder() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <div className="text-gray-600 dark:text-gray-400">Loading agent...</div>
       </div>
     );
@@ -130,7 +152,7 @@ export function AgentBuilder() {
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <div className="max-w-md mx-auto px-4 text-center">
           <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
             <Bot className="w-10 h-10 text-gray-400" />
@@ -142,7 +164,7 @@ export function AgentBuilder() {
             The agent you're looking for doesn't exist or has been removed.
           </p>
           <button
-            onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents`)}
+            onClick={() => navigate(`/org/${orgSlug}/ai-agents`)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -152,6 +174,19 @@ export function AgentBuilder() {
       </div>
     );
   }
+
+  const handleRecordingToggle = async () => {
+    if (!agent) return;
+    try {
+      const newState = !recordingEnabled;
+      setRecordingEnabled(newState);
+      await vapiApi.updateRecordingStatus(agent.id, newState);
+    } catch (error) {
+      console.error('Error updating recording status:', error);
+      setRecordingEnabled(recordingEnabled);
+      alert('Failed to update recording status. Please ensure the "recording_enabled" column exists in the database.');
+    }
+  };
 
   const handleStatusToggle = async () => {
     if (!agent) return;
@@ -170,20 +205,24 @@ export function AgentBuilder() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Bot },
     { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
-    { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels.webchat?.enabled },
+    { id: 'webchat', label: 'Webchat', icon: Globe, enabled: agent.channels?.webchat?.enabled },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: MessageSquare },
+    { id: 'voices', label: 'Voices', icon: Phone },
     { id: 'tools', label: 'Tools', icon: Zap },
-    { id: 'security', label: 'Security', icon: Shield },
+    // { id: 'security', label: 'Security', icon: Shield },
+    { id: 'widget', label: 'Widget', icon: Code2 },
+    { id: 'call-logs', label: 'Call Logs', icon: FileText },
   ];
 
   return (
-    <div className="min-h-screen bg-paper dark:bg-canvas">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents`)}
+                onClick={() => navigate(`/org/${orgSlug}/ai-agents`)}
                 className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -192,19 +231,40 @@ export function AgentBuilder() {
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {agent.name}
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{agent.description}</p>
+                {/* <p className="text-sm text-gray-600 dark:text-gray-400">{agent.description}</p> */}
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Recording Toggle */}
+              <button
+                onClick={handleRecordingToggle}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${recordingEnabled
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-400'
+                  }`}
+                title={recordingEnabled ? 'Call recording is enabled' : 'Call recording is disabled'}
+              >
+                {recordingEnabled ? (
+                  <>
+                    <Mic className="w-4 h-4" />
+                    Recording On
+                  </>
+                ) : (
+                  <>
+                    <MicOff className="w-4 h-4" />
+                    Recording Off
+                  </>
+                )}
+              </button>
+
               {/* Status Toggle */}
               <button
                 onClick={handleStatusToggle}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  agent.status === 'active'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                }`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${agent.status === 'active'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  }`}
               >
                 {agent.status === 'active' ? (
                   <>
@@ -251,13 +311,12 @@ export function AgentBuilder() {
                   key={tab.id}
                   onClick={() => !isDisabled && setActiveTab(tab.id as BuilderTab)}
                   disabled={isDisabled}
-                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'border-red-600 text-red-600 dark:border-red-500 dark:text-red-500'
-                      : isDisabled
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors whitespace-nowrap ${isActive
+                    ? 'border-red-600 text-red-600 dark:border-red-500 dark:text-red-500'
+                    : isDisabled
                       ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
@@ -280,7 +339,7 @@ export function AgentBuilder() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.callsHandled || 0}
+                    {agent.stats?.callsHandled || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Total Calls Handled
@@ -288,7 +347,7 @@ export function AgentBuilder() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.messagesHandled || 0}
+                    {agent.stats?.messagesHandled || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Messages Processed
@@ -296,7 +355,7 @@ export function AgentBuilder() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {agent.stats.appointmentsBooked || 0}
+                    {agent.stats?.appointmentsBooked || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     Appointments Booked
@@ -308,7 +367,7 @@ export function AgentBuilder() {
             {/* Main Configuration Grid - System Prompt on left, Voices & Languages on right */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - System Prompt (takes up 2 columns) */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-3">
                 <SystemPromptSection
                   value={systemPrompt}
                   onChange={setSystemPrompt}
@@ -317,10 +376,10 @@ export function AgentBuilder() {
               </div>
 
               {/* Right Column - Voices & Languages (takes up 1 column) */}
-              <div className="space-y-6">
+              {/* <div className="space-y-6">
                 <VoicesSection voices={voices} onChange={setVoices} />
                 <LanguageSection languages={languages} onChange={setLanguages} />
-              </div>
+              </div> */}
             </div>
 
             {/* First Message Section (full width) */}
@@ -373,6 +432,40 @@ export function AgentBuilder() {
               </div>
             </div>
 
+            {/* Security & Settings */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Privacy & Recording
+              </h2>
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-full ${recordingEnabled ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-gray-200 dark:bg-gray-600 text-gray-500'}`}>
+                    {recordingEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">Call Recording</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {recordingEnabled 
+                        ? 'Sierra will record and transcribe all voice conversations.' 
+                        : 'Call recording is currently disabled.'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRecordingToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    recordingEnabled ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      recordingEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Enabled Channels */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -380,72 +473,66 @@ export function AgentBuilder() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.voice?.enabled
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.voice?.enabled
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Phone
-                      className={`w-6 h-6 ${
-                        agent.channels.voice?.enabled
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-400'
-                      }`}
+                      className={`w-6 h-6 ${agent.channels?.voice?.enabled
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-400'
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Voice</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.voice?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.voice?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.sms?.enabled
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.sms?.enabled
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <MessageSquare
-                      className={`w-6 h-6 ${
-                        agent.channels.sms?.enabled
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-400'
-                      }`}
+                      className={`w-6 h-6 ${agent.channels?.sms?.enabled
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-400'
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">SMS</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.sms?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.sms?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 border-2 rounded-lg ${
-                    agent.channels.webchat?.enabled
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
-                  }`}
+                  className={`p-4 border-2 rounded-lg ${agent.channels?.webchat?.enabled
+                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Globe
-                      className={`w-6 h-6 ${
-                        agent.channels.webchat?.enabled
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-gray-400'
-                      }`}
+                      className={`w-6 h-6 ${agent.channels?.webchat?.enabled
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-400'
+                        }`}
                     />
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">Webchat</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {agent.channels.webchat?.enabled ? 'Configured' : 'Not configured'}
+                        {agent.channels?.webchat?.enabled ? 'Configured' : 'Not configured'}
                       </div>
                     </div>
                   </div>
@@ -455,9 +542,9 @@ export function AgentBuilder() {
           </div>
         )}
 
-        {activeTab === 'voice-sms' && currentOrganization && (
+        {activeTab === 'voice-sms' && user?.id && agentId && (
           <div className="max-w-7xl">
-            <PhoneNumbersSection organizationId={currentOrganization.id} />
+            <PhoneNumbersSection organizationId={String(user.id)} agentId={agentId} />
           </div>
         )}
 
@@ -493,7 +580,28 @@ export function AgentBuilder() {
           />
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'tools' && activeTab !== 'security' && (
+        {activeTab === 'knowledge-base' && (
+          <KnowledgeBaseSection
+            agentId={agentId}
+            organizationId={currentOrganization?.id}
+          />
+        )}
+
+        {activeTab === 'voices' && (
+          <VoicesSectionEnhanced agentId={agentId} />
+        )}
+
+        {activeTab === 'widget' && (
+          <WidgetSection
+            agentId={agentId}
+          />
+        )}
+
+        {activeTab === 'call-logs' && (
+          <CallLogsTab agentId={agentId} />
+        )}
+
+        {activeTab !== 'overview' && activeTab !== 'voice-sms' && activeTab !== 'knowledge-base' && activeTab !== 'voices' && activeTab !== 'tools' && activeTab !== 'security' && activeTab !== 'widget' && activeTab !== 'call-logs' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -119,7 +119,7 @@ export function VerificationModal({
           <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
             step === 'success' ? 'bg-green-100 dark:bg-green-900' :
             step === 'error' ? 'bg-red-100 dark:bg-red-900' :
-            verificationType === 'email' ? 'bg-red-100 dark:bg-red-900' : 'bg-green-100 dark:bg-green-900'
+            verificationType === 'email' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-green-100 dark:bg-green-900'
           }`}>
             {step === 'success' ? (
               <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -127,7 +127,7 @@ export function VerificationModal({
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             ) : (
               <Icon className={`w-8 h-8 ${
-                verificationType === 'email' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                verificationType === 'email' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'
               }`} />
             )}
           </div>
@@ -149,8 +149,8 @@ export function VerificationModal({
             disabled={isLoading}
             className={`w-full py-3 rounded-xl font-medium transition-all shadow-md ${
               verificationType === 'email'
-                ? 'bg-red-600 hover:bg-red-600 text-white'
-                : 'bg-red-600 hover:bg-red-600 text-white'
+                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                : 'bg-green-500 hover:bg-green-600 text-white'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isLoading ? 'Sending...' : 'Send Verification Code'}
@@ -187,8 +187,8 @@ export function VerificationModal({
               disabled={isLoading || code.join('').length !== 6}
               className={`w-full py-3 rounded-xl font-medium transition-all shadow-md mb-3 ${
                 verificationType === 'email'
-                  ? 'bg-red-600 hover:bg-red-600 text-white'
-                  : 'bg-red-600 hover:bg-red-600 text-white'
+                  ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                  : 'bg-green-500 hover:bg-green-600 text-white'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isLoading ? 'Verifying...' : 'Verify Code'}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, MoreHorizontal, ChevronDown, User, Calendar as CalendarIcon, X } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   getJobTasks,
   createJobTask,
@@ -19,6 +20,8 @@ interface TasksTabProps {
 }
 
 const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange }) => {
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [tasks, setTasks] = useState<JobTask[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +37,16 @@ const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange 
     fetchTasks();
     fetchStaff();
   }, [jobId]);
+
+  const formatDateForInput = (dateString: string | undefined | null): string => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toISOString().split('T')[0];
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -263,7 +276,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ jobId, currentStage, onTasksChange 
                         <div className="relative">
                           <input
                             type="date"
-                            value={task.due_date || ''}
+                            value={formatDateForInput(task.due_date)}
                             onChange={(e) => handleUpdateDueDate(task.id, e.target.value)}
                             className="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 pr-8 text-gray-700 dark:text-gray-200"
                           />

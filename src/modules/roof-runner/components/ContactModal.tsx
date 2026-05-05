@@ -17,7 +17,7 @@ interface ContactModalProps {
   onFormDataChange: (data: any) => void;
   onPhoneChange: (value: string) => void;
   onSecondaryPhoneChange: (value: string) => void;
-  onAddressChange: (address: string, lat: number, lng: number) => void;
+  onAddressChange: (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => void;
   onSecondaryEmailChange: (value: string) => void;
   onSecondaryPhoneDataChange: (data: { phone: string; extension: string }) => void;
   addSecondaryEmail: () => void;
@@ -115,7 +115,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               <input
                 type="text"
                 value={formData.firstName}
-                onChange={(e) => onFormDataChange({...formData, firstName: e.target.value})}
+                onChange={(e) => onFormDataChange({ ...formData, firstName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter First Name"
               />
@@ -127,7 +127,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               <input
                 type="text"
                 value={formData.lastName}
-                onChange={(e) => onFormDataChange({...formData, lastName: e.target.value})}
+                onChange={(e) => onFormDataChange({ ...formData, lastName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter Last Name"
               />
@@ -135,13 +135,13 @@ const ContactModal: React.FC<ContactModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span className="text-red-500">*</span></label>
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => onFormDataChange({...formData, email: e.target.value})}
+                  onChange={(e) => onFormDataChange({ ...formData, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Please enter email address"
                 />
@@ -174,18 +174,18 @@ const ContactModal: React.FC<ContactModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone <span className="text-red-500">*</span></label>
             <div className="flex gap-2">
               <div className="w-32">
                 <CustomDropdown
                   options={PHONE_TYPES}
                   value={formData.phoneType || 'mobile'}
-                  onChange={(value) => onFormDataChange({...formData, phoneType: value})}
+                  onChange={(value) => onFormDataChange({ ...formData, phoneType: value })}
                   placeholder="Select"
                 />
               </div>
               <input
-                type="tel"
+                type="text"
                 value={formData.phone}
                 onChange={(e) => onPhoneChange(e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
@@ -207,12 +207,12 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   <CustomDropdown
                     options={PHONE_TYPES}
                     value={formData.secondaryPhoneType || 'mobile'}
-                    onChange={(value) => onFormDataChange({...formData, secondaryPhoneType: value})}
+                    onChange={(value) => onFormDataChange({ ...formData, secondaryPhoneType: value })}
                     placeholder="Select"
                   />
                 </div>
                 <input
-                  type="tel"
+                  type="text"
                   value={secondaryPhone.phone}
                   onChange={(e) => onSecondaryPhoneChange(e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
@@ -233,7 +233,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
             <input
               type="text"
               value={formData.company}
-              onChange={(e) => onFormDataChange({...formData, company: e.target.value})}
+              onChange={(e) => onFormDataChange({ ...formData, company: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="Company name"
             />
@@ -266,7 +266,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
                   { value: 'other', label: 'Other' }
                 ]}
                 value={formData.type}
-                onChange={(value) => onFormDataChange({...formData, type: value})}
+                onChange={(value) => onFormDataChange({ ...formData, type: value })}
                 placeholder="Select an option"
               />
             </div>
@@ -277,7 +277,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               <CustomDropdown
                 options={TIMEZONES}
                 value={formData.timezone || ''}
-                onChange={(value) => onFormDataChange({...formData, timezone: value})}
+                onChange={(value) => onFormDataChange({ ...formData, timezone: value })}
                 placeholder="Select an option"
               />
             </div>
@@ -364,7 +364,9 @@ const ContactModal: React.FC<ContactModalProps> = ({
                 <label htmlFor="dndInbound" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                   Inbound Calls and SMS
                 </label>
-                <Info className="ml-1 w-4 h-4 text-gray-400 cursor-help" title="Block incoming calls and text messages from this contact" />
+                <span title="Block incoming calls and text messages from this contact">
+                  <Info className="ml-1 w-4 h-4 text-gray-400 cursor-help" />
+                </span>
               </div>
             </div>
           </div>

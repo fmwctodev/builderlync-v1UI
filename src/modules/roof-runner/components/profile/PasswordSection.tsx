@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, MoreHorizontal } from 'lucide-react';
+import { authApi } from '../../../../shared/services/authApi';
 import { passwordService } from '../../../../shared/services/profileService';
 
 const PasswordSection: React.FC = () => {
@@ -55,7 +56,7 @@ const PasswordSection: React.FC = () => {
 
     try {
       setLoading(true);
-      await passwordService.updatePassword(formData.newPassword);
+      const response = await authApi.changePassword(formData.currentPassword, formData.newPassword);
       setSuccess(true);
       setFormData({
         currentPassword: '',
@@ -63,7 +64,8 @@ const PasswordSection: React.FC = () => {
         confirmPassword: '',
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to update password');
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update password';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

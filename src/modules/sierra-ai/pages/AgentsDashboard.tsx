@@ -34,14 +34,14 @@ export function AgentsDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper dark:bg-canvas flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-600 dark:text-gray-400">Loading agents...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-paper dark:bg-canvas">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -67,14 +67,14 @@ export function AgentsDashboard() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
-                  onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents/create`)}
+                  onClick={() => navigate(`/ai-agents/create`)}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
                 >
                   <Plus className="w-5 h-5" />
                   Create Your First Agent
                 </button>
                 <button
-                  onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents/create`)}
+                  onClick={() => navigate(`/ai-agents/create`)}
                   className="px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors font-medium"
                 >
                   Start from Blank
@@ -89,7 +89,7 @@ export function AgentsDashboard() {
             <div
               key={agent.id}
               className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents/agent/${agent.id}`)}
+              onClick={() => navigate(`/ai-agents/agent/${agent.id}`)}
             >
               {/* Agent Header with Visual */}
               <div className="relative h-48 bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center">
@@ -200,13 +200,13 @@ export function AgentsDashboard() {
             {/* Create New Agent Buttons */}
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents/create`)}
+                onClick={() => navigate(`/ai-agents/create`)}
                 className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
               >
                 Start from blank
               </button>
               <button
-                onClick={() => navigate(`/org/${currentOrganizationSlug}/ai-agents/create`)}
+                onClick={() => navigate(`/ai-agents/create`)}
                 className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
               >
                 Create agent

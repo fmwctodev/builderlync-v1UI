@@ -24,9 +24,13 @@ export interface Campaign {
 }
 
 export interface TargetAudience {
-  filter_type?: 'all' | 'tags' | 'status' | 'custom';
+  filter_type?: 'all' | 'status' | 'opportunities';
   tags?: string[];
   job_statuses?: string[];
+  opportunity_stages?: string[];
+  pipeline_id?: number;
+  job_type?: 'residential' | 'commercial';
+  search?: string;
   date_range?: {
     start: string;
     end: string;

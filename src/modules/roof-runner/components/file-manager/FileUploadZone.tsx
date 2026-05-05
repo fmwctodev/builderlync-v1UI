@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, CheckCircle, AlertCircle, File } from 'lucide-react';
-import { filesApi } from '../../../../shared/services/filesApi';
+import { backendFilesApi } from '../../../../shared/services/backendFilesApi';
 
 interface FileUploadZoneProps {
-  folderId: string | null;
+  folderId: string | number | null;
   onUploadComplete: () => void;
   onClose: () => void;
 }
@@ -35,7 +35,7 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
       const file = acceptedFiles[i];
 
       try {
-        await filesApi.uploadFile(file, folderId, (progress, fileName) => {
+        await backendFilesApi.uploadFile(file, folderId, 'google', (progress, fileName) => {
           setUploadingFiles(prev =>
             prev.map(uf =>
               uf.file.name === fileName
@@ -91,11 +91,10 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
           {uploadingFiles.length === 0 ? (
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
-              }`}
+              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
+                }`}
             >
               <input {...getInputProps()} />
               <Upload className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
@@ -122,7 +121,7 @@ export default function FileUploadZone({ folderId, onUploadComplete, onClose }: 
                     ) : uploadFile.status === 'error' ? (
                       <AlertCircle className="h-5 w-5 text-red-600" />
                     ) : (
-                      <File className="h-5 w-5 text-red-600" />
+                      <File className="h-5 w-5 text-blue-600" />
                     )}
                   </div>
 

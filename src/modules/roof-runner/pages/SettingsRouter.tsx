@@ -12,16 +12,17 @@ import Permissions from '../components/settings/Permissions';
 import AuditLogs from '../components/settings/AuditLogs';
 import BrandBoard from '../components/settings/BrandBoard';
 import EmailService from '../components/settings/EmailService';
+import Notifications from '../components/settings/Notifications';
 
 const SettingsRouter: React.FC = () => {
   return (
     <SettingsLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="business-info" replace />} />
+        <Route index element={<Navigate to="business-info" replace />} />
         <Route path="business-info" element={<BusinessInfo />} />
         <Route path="profile" element={<Profile />} />
         <Route path="integrations" element={<Integrations />} />
-        <Route path="billing" element={<Billing />} />
+        {/* <Route path="billing" element={<Billing />} />c */}
         <Route path="staff" element={<StaffManagement initialTab="staff" />} />
         <Route path="staff/roles" element={<StaffManagement initialTab="roles" />} />
         <Route path="communications" element={<Communications />} />
@@ -30,6 +31,7 @@ const SettingsRouter: React.FC = () => {
         <Route path="audit-logs" element={<AuditLogs />} />
         <Route path="brand-board" element={<BrandBoard />} />
         <Route path="email-service" element={<EmailService />} />
+        <Route path="notifications" element={<Notifications />} />
       </Routes>
     </SettingsLayout>
   );

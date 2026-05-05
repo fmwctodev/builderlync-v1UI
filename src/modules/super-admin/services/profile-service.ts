@@ -4,8 +4,10 @@ import {
   UpdateProfileRequest,
   ChangePasswordRequest,
 } from '../types/settings';
-import { authenticator } from 'otplib';
+import { OTP } from 'otplib';
 import QRCode from 'qrcode';
+
+const totp = new OTP({ strategy: 'totp' });
 
 export async function getSuperAdminProfile(
   staffId: string
@@ -79,7 +81,7 @@ export async function enable2FA(
   staffId: string
 ): Promise<{ success: boolean; data?: { secret: string; qrCode: string; backupCodes: string[] }; error?: string }> {
   try {
-    const secret = authenticator.generateSecret();
+    const secret = totp.generateSecret();
 
     const { data: staffData, error: staffError } = await supabase
       .from('super_admin_staff')
@@ -89,11 +91,11 @@ export async function enable2FA(
 
     if (staffError) throw staffError;
 
-    const otpauth = authenticator.keyuri(
-      staffData.email,
-      'BuilderLync Super Admin',
-      secret
-    );
+    const otpauth = totp.generateURI({
+      label: staffData.email,
+      issuer: 'BuilderLync Super Admin',
+      secret,
+    });
 
     const qrCode = await QRCode.toDataURL(otpauth);
 
@@ -301,7 +303,7 @@ export const profileService = {
         return { success: false, error: '2FA not enabled' };
       }
 
-      const isValid = authenticator.verify({
+      const isValid = totp.verify({
         token: code,
         secret: profileData.two_factor_secret,
       });

@@ -1,53 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Phone, Mail, Search, Filter, CreditCard as Edit, ChevronDown } from 'lucide-react';
+import { MessageSquare, Phone, Mail, Search, Filter, Edit, ChevronDown, MoreVertical, UserPlus, Info } from 'lucide-react';
 import {
   getConversations,
   subscribeToConversations,
+  createConversationAPI,
   Conversation,
 } from '../../../../shared/services/conversationsApi';
 import { supabase } from '../../../../shared/lib/supabase';
+import { ConversationEditModal } from './ConversationEditModal';
+import { DirectMessageModal } from './DirectMessageModal';
 
 interface ConversationsListProps {
   selectedConversation: string | null;
   onSelectConversation: (id: string) => void;
 }
 
-type FilterTab = 'unread' | 'recents' | 'starred' | 'all';
+type FilterTab = 'unread' | 'recents' | 'all';
+type SortOption = 'latest' | 'oldest' | 'name' | 'unread';
+type ChannelFilter = 'all' | 'sms' | 'email' | 'phone' | 'web';
+type StatusFilter = 'all' | 'open' | 'closed' | 'archived';
 
 export function ConversationsList({ selectedConversation, onSelectConversation }: ConversationsListProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('unread');
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('latest');
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showDirectModal, setShowDirectModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     loadConversations();
   }, []);
 
-  useEffect(() => {
-    const setupSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const handleDirectModalClose = () => {
+    setShowDirectModal(false);
+  };
 
-      const subscription = subscribeToConversations(user.id, () => {
-        loadConversations();
-      });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    };
-
-    setupSubscription();
-  }, []);
+  const handleConversationCreated = (contactId: string) => {
+    setShowDirectModal(false);
+    handleCreateConversation(contactId);
+  };
 
   const loadConversations = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getConversations();
-      setConversations(data);
+      const filters = {
+        status: statusFilter,
+        channel: channelFilter,
+        sortBy,
+        search: searchQuery
+      };
+      const data = await getConversations(filters);
+      setConversations(data || []);
     } catch (err: any) {
       console.error('Failed to load conversations:', err);
       setError(err.message || 'Failed to load conversations');
@@ -82,7 +93,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   const getChannelLabel = (channel: string) => {
     switch (channel) {
       case 'sms':
-        return 'Call';
+        return 'SMS';
       case 'email':
         return 'Email';
       case 'phone':
@@ -93,6 +104,7 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   };
 
   const formatDate = (timestamp: string) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -108,7 +120,8 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
   };
 
   const filteredConversations = conversations.filter((conv) => {
-    if (activeFilter === 'unread' && (!conv.unread_count || conv.unread_count === 0)) {
+    const unreadCount = Number(conv.unread_count || 0);
+    if (activeFilter === 'unread' && unreadCount <= 0) {
       return false;
     }
 
@@ -124,25 +137,38 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
     return true;
   });
 
+  const handleEditClick = () => {
+    setShowDirectModal(true);
+  };
+
+  const handleCreateConversation = async (contactId: string) => {
+    try {
+      const conversation = await createConversationAPI(contactId, 'sms');
+      setIsEditModalOpen(false);
+      onSelectConversation(conversation.id);
+      loadConversations();
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+    }
+  };
+
   return (
-    <div className="w-[380px] border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
+    <div className="w-[320px] border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
       {/* Filter Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex">
           {[
             { key: 'unread' as FilterTab, label: 'Unread' },
             { key: 'recents' as FilterTab, label: 'Recents' },
-            { key: 'starred' as FilterTab, label: 'Starred' },
             { key: 'all' as FilterTab, label: 'All' },
           ].map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
-              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeFilter === key
-                  ? 'border-red-600 text-red-600 dark:text-red-400'
+              className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-all ${activeFilter === key
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+                }`}
             >
               {label}
             </button>
@@ -158,30 +184,39 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search"
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            placeholder="Search contacts..."
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-600"
-            />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {filteredConversations.length} RESULTS
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              {filteredConversations.length} {activeFilter.toUpperCase()}
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-1.5 rounded transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+            >
               <Filter className="w-4 h-4" />
             </button>
-            <button className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <button
+              onClick={handleEditClick}
+              className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            >
               <Edit className="w-4 h-4" />
             </button>
-            <button className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-              <span>Latest-All</span>
+            <button
+              onClick={() => {
+                const newSort = sortBy === 'latest' ? 'oldest' : 'latest';
+                setSortBy(newSort);
+                loadConversations();
+              }}
+              className="flex items-center space-x-1 px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            >
               <ChevronDown className="w-3 h-3" />
             </button>
           </div>
@@ -192,50 +227,44 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-gray-500 dark:text-gray-400 text-sm">Loading conversations...</div>
+            <div className="text-gray-500 dark:text-gray-400 text-sm animate-pulse">Loading...</div>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-red-500 dark:text-red-400 text-sm">{error}</div>
-          </div>
-        ) : filteredConversations.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center px-4">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">No conversations found</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {searchQuery ? 'Try a different search term' : 'Start a new conversation'}
-              </p>
-            </div>
+            <div className="text-red-500 dark:text-red-400 text-sm px-4 text-center">{error}</div>
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredConversations.map((conversation) => {
               const isSelected = selectedConversation === conversation.id;
-              const hasUnread = conversation.unread_count && conversation.unread_count > 0;
+              const unreadCount = Number(conversation.unread_count || 0);
+              const hasUnread = unreadCount > 0;
 
               return (
                 <div
                   key={conversation.id}
-                  onClick={() => onSelectConversation(conversation.id)}
-                  className={`p-3 cursor-pointer transition-all ${
-                    isSelected
-                      ? 'bg-red-50 dark:bg-red-900/20 border-l-4 border-l-primary-500'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-750 border-l-4 border-l-transparent'
-                  }`}
+                  onClick={() => {
+                    setConversations((prev) =>
+                      prev.map((item) =>
+                        item.id === conversation.id
+                          ? { ...item, unread_count: 0 }
+                          : item,
+                      ),
+                    );
+                    onSelectConversation(conversation.id);
+                  }}
+                  className={`p-4 cursor-pointer transition-all border-l-4 ${isSelected
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-l-blue-500'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-750 border-l-transparent'
+                    }`}
                 >
                   <div className="flex items-start space-x-3">
                     <div className="relative flex-shrink-0">
-                      <div className="w-11 h-11 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-white">
-                          {getInitials(conversation.contact?.full_name || '')}
-                        </span>
+                      <div className="w-11 h-11 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white shadow-sm font-semibold">
+                        {getInitials(conversation.contact?.full_name || '')}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center ${
-                        conversation.channel === 'sms' ? 'bg-white dark:bg-gray-700' :
-                        conversation.channel === 'email' ? 'bg-white dark:bg-gray-700' :
-                        'bg-white dark:bg-gray-700'
-                      }`}>
-                        <div className="text-gray-600 dark:text-gray-400">
+                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center bg-white dark:bg-gray-700 shadow-sm`}>
+                        <div className="text-gray-600 dark:text-gray-400 scale-75">
                           {getChannelIcon(conversation.channel)}
                         </div>
                       </div>
@@ -243,40 +272,41 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
-                        <h3 className={`text-sm font-semibold truncate ${
-                          hasUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
-                        }`}>
+                        <h3 className={`text-sm font-bold truncate ${hasUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                          }`}>
                           {conversation.contact?.full_name || 'Unknown Contact'}
                         </h3>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2 uppercase">
                           {formatDate(conversation.last_message_at)}
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-1 mb-1">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          conversation.channel === 'sms' ? 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400' :
-                          conversation.channel === 'email' ? 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400' :
-                          'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {getChannelIcon(conversation.channel)}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {getChannelLabel(conversation.channel)}
-                        </span>
+                      {/* Contact Details Hover-like Info */}
+                      <div className="flex flex-col space-y-0.5 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        {conversation.contact?.email && (
+                          <div className="flex items-center truncate">
+                            <Mail className="w-2.5 h-2.5 mr-1" />
+                            <span className="truncate">{conversation.contact.email}</span>
+                          </div>
+                        )}
+                        {conversation.contact?.phone && (
+                          <div className="flex items-center">
+                            <Phone className="w-2.5 h-2.5 mr-1" />
+                            <span>{conversation.contact.phone}</span>
+                          </div>
+                        )}
                       </div>
 
-                      <p className={`text-sm truncate ${
-                        hasUnread ? 'text-gray-900 dark:text-gray-200 font-medium' : 'text-gray-600 dark:text-gray-400'
-                      }`}>
+                      <p className={`text-sm mt-1 truncate ${hasUnread ? 'text-gray-900 dark:text-gray-200 font-medium' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
                         {conversation.last_message?.content || 'No messages yet'}
                       </p>
                     </div>
 
                     {hasUnread && (
                       <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
-                          {conversation.unread_count}
+                        <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-blue-500 rounded-full">
+                          {unreadCount}
                         </span>
                       </div>
                     )}
@@ -287,6 +317,12 @@ export function ConversationsList({ selectedConversation, onSelectConversation }
           </div>
         )}
       </div>
+
+      <DirectMessageModal
+        isOpen={showDirectModal}
+        onClose={handleDirectModalClose}
+        onCreateConversation={handleConversationCreated}
+      />
     </div>
   );
 }

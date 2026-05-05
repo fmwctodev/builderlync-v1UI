@@ -29,7 +29,7 @@ export function FirstMessageSection({
           onChange={(e) => onChange(e.target.value)}
           placeholder="e.g. Hello, how can I help you today?"
           rows={4}
-          className="w-full px-4 py-3 bg-paper dark:bg-canvas border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 focus:border-transparent"
+          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 focus:border-transparent"
         />
 
         <div className="absolute bottom-3 left-3">

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Settings as SettingsIcon } from 'lucide-react';
-import { getCalendars, getCalendarGroups, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
+import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Code, X } from 'lucide-react';
+import { getCalendars, getCalendarGroups, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
 import { format } from 'date-fns';
 
 interface CalendarSettingsViewProps {
   onNewCalendar: () => void;
+  onEditCalendar: (calendar: Calendar) => void;
 }
 
-const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalendar }) => {
+const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalendar, onEditCalendar }) => {
   const [activeTab, setActiveTab] = useState<'calendars' | 'service-menu' | 'rooms' | 'equipment'>('calendars');
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [groups, setGroups] = useState<CalendarGroup[]>([]);
@@ -16,10 +17,16 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [selectedEmbedUrl, setSelectedEmbedUrl] = useState('');
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const getEmbedCode = (url: string) => {
+    return `<iframe src="${url}" width="100%" height="600" frameborder="0"></iframe>`;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,6 +54,59 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
     setExpandedGroups(newExpanded);
   };
 
+  const handleDeleteCalendar = async (calendarId: string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this calendar?');
+    if (!confirmed) return;
+
+    try {
+      await deleteCalendar(calendarId);
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting calendar:', error);
+      alert('Failed to delete calendar');
+    }
+  };
+
+  const handleShareCalendar = async (calendar: Calendar) => {
+    if (!calendar.cal_url) {
+      alert('No booking URL found for this calendar');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(calendar.cal_url);
+      alert('Booking URL copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy booking URL:', error);
+      alert('Failed to copy booking URL');
+    }
+  };
+
+  const handleOpenEmbedModal = (calendar: Calendar) => {
+    if (!calendar.cal_url) {
+      alert('No booking URL found for this calendar');
+      return;
+    }
+
+    setSelectedEmbedUrl(calendar.cal_url);
+    setShowEmbedModal(true);
+  };
+
+  const handleCopyEmbedCode = async () => {
+    const embedCode = getEmbedCode(selectedEmbedUrl);
+
+    try {
+      await navigator.clipboard.writeText(embedCode);
+      alert('Embed code copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy embed code:', error);
+      alert('Failed to copy embed code');
+      return;
+    }
+
+    setShowEmbedModal(false);
+  };
+
   const filteredCalendars = calendars.filter(cal => {
     const matchesSearch = cal.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || cal.status === statusFilter;
@@ -58,11 +118,11 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
   const ungroupedCalendars = calendars.filter(cal => !cal.group_id);
 
   return (
-    <div className="flex h-full bg-paper dark:bg-canvas">
+    <div className="flex h-full bg-gray-50 dark:bg-gray-900">
       {/* Left Sidebar - Groups */}
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
         <div className="p-4">
-          <button className="w-full px-4 py-3 bg-primary-50 dark:bg-primary-900/20 text-red-700 dark:text-primary-400 rounded-lg font-medium hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
+          <button className="w-full px-4 py-3 bg-primary-50 dark:bg-primary-900/20 text-blue-700 dark:text-primary-400 rounded-lg font-medium hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
             All Calendars ({totalCalendars})
           </button>
         </div>
@@ -136,7 +196,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               >
                 Calendars
                 {activeTab === 'calendars' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
@@ -149,7 +209,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               >
                 Service Menu
                 {activeTab === 'service-menu' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
@@ -162,7 +222,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               >
                 Rooms
                 {activeTab === 'rooms' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
               <button
@@ -175,7 +235,7 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               >
                 Equipment
                 {activeTab === 'equipment' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-red-400"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-blue-400"></div>
                 )}
               </button>
             </div>
@@ -300,13 +360,28 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center gap-2">
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => onEditCalendar(calendar)}
+                            >
                               <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleShareCalendar(calendar)}
+                            >
                               <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleOpenEmbedModal(calendar)}
+                            >
+                              <Code className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <button
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              onClick={() => handleDeleteCalendar(calendar.id)}
+                            >
                               <XIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             </button>
                             <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -323,6 +398,37 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
           )}
         </div>
       </div>
+
+      {showEmbedModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Embed Code</h3>
+                <button
+                  onClick={() => setShowEmbedModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <textarea
+                  value={getEmbedCode(selectedEmbedUrl)}
+                  readOnly
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <button
+                onClick={handleCopyEmbedCode}
+                className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg"
+              >
+                Copy Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

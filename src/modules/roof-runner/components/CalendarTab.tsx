@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Calendar as CalendarIcon, X, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
-import { createJobEvent, getAllEvents, Event } from '../../../shared/store/services/eventsApi';
+import { createJobEvent, getAllEvents, getJobEvents, updateJobEvent, Event } from '../../../shared/store/services/eventsApi';
 
 interface CalendarTabProps {
   jobId?: number;
@@ -16,7 +16,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [formData, setFormData] = useState({
     type: '',
     title: '',
@@ -30,19 +30,19 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     location: '',
     teamMember: '',
     invitees: [] as string[],
-    description: ''
+    description: '',
+    syncToGoogle: false
   });
 
   const fetchEvents = async () => {
     try {
-      const response = await getAllEvents();
-      const allEvents = response.data || [];
+      let response;
       if (jobId) {
-        const jobEvents = allEvents.filter((event: any) => event.job_id === jobId);
-        setEvents(jobEvents);
+        response = await getJobEvents(jobId);
       } else {
-        setEvents(allEvents);
+        response = await getAllEvents();
       }
+      setEvents(response.data || []);
     } catch (error: any) {
       console.error('Error fetching events:', error);
     }
@@ -76,7 +76,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
           if (place.formatted_address) {
-            setFormData(prev => ({...prev, location: place.formatted_address || ''}));
+            setFormData(prev => ({ ...prev, location: place.formatted_address || '' }));
           }
         });
       }
@@ -97,9 +97,9 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     const day = today.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const defaultAssignee = jobData?.assignees && jobData.assignees.length > 0
-      ? staff.find(s => s.id === parseInt(jobData.assignees[0]))
+      ? staff.find(s => String(s.id) === String(jobData.assignees[0]))
       : jobData?.jobOwner
-        ? staff.find(s => `${s.first_name} ${s.last_name}` === jobData.jobOwner)
+        ? staff.find(s => String(s.id) === String(jobData.jobOwner))
         : staff[0];
 
     setFormData({
@@ -115,7 +115,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
       location: jobData?.location || '',
       teamMember: defaultAssignee ? `${defaultAssignee.first_name} ${defaultAssignee.last_name}` : '',
       invitees: [],
-      description: jobData ? `Event for job: ${jobData.name}` : ''
+      description: jobData ? `Event for job: ${jobData.name}` : '',
+      syncToGoogle: false
     });
     setShowModal(true);
   };
@@ -144,6 +145,10 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
         location: formData.location,
         invitees: formData.invitees,
         description: formData.description,
+        syncToGoogle: formData.syncToGoogle,
+        refreshToken: localStorage.getItem('google_refresh_token'),
+        googleEmail: localStorage.getItem('google_email'),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         createdBy: 1,
         createdByName: 'Current User'
       };
@@ -160,16 +165,18 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
     }
   };
 
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+
   const handleViewCalendar = () => {
-    navigate('/calendars');
+    navigate(`${orgPrefix}/calendars`);
   };
 
   return (
     <div className="h-full flex flex-col">
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}>
           {toast.message}
         </div>
       )}
@@ -290,7 +297,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Event Type</label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required
                   >
@@ -307,7 +314,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Enter event title..."
                     required
@@ -337,7 +344,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                       <input
                         type="date"
                         value={formData.startDate}
-                        onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         required
                       />
@@ -347,7 +355,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                       <input
                         type="time"
                         value={formData.startTime}
-                        onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         required={!formData.allDay}
                         disabled={formData.allDay}
@@ -367,7 +375,8 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                       <input
                         type="date"
                         value={formData.endDate}
-                        onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                        min={formData.startDate || new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         required
                       />
@@ -377,7 +386,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                       <input
                         type="time"
                         value={formData.endTime}
-                        onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         required={!formData.allDay}
                         disabled={formData.allDay}
@@ -386,15 +395,29 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.allDay}
-                      onChange={(e) => setFormData({...formData, allDay: e.target.checked})}
-                      className="mr-2 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">All Day Event</span>
+                <div className="flex items-center space-x-6">
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.allDay}
+                        onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 transition-all duration-200"
+                      />
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">All Day Event</span>
+                  </label>
+
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.syncToGoogle}
+                        onChange={(e) => setFormData({ ...formData, syncToGoogle: e.target.checked })}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 transition-all duration-200"
+                      />
+                    </div>
+                    <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">Sync to Google</span>
                   </label>
                 </div>
 
@@ -405,7 +428,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Enter event location..."
                     id="calendar-location-input"
@@ -430,7 +453,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   </label>
                   <select
                     value={formData.teamMember}
-                    onChange={(e) => setFormData({...formData, teamMember: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, teamMember: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required
                   >
@@ -447,7 +470,7 @@ const CalendarTab: React.FC<CalendarTabProps> = ({ jobId, jobData, staff = [] })
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Description</label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full h-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Add event details, notes, or agenda..."
                   />

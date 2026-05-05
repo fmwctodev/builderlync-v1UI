@@ -24,18 +24,11 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose, onSuccess
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadRolesAndTemplates();
+    loadRoles();
   }, []);
 
-  const loadRolesAndTemplates = async () => {
-    const [templatesRes, rolesRes] = await Promise.all([
-      getRoleTemplates(),
-      getSuperAdminRoles(),
-    ]);
-
-    if (templatesRes.success && templatesRes.data) {
-      setTemplates(templatesRes.data);
-    }
+  const loadRoles = async () => {
+    const rolesRes = await getSuperAdminRoles();
     if (rolesRes.success && rolesRes.data) {
       setRoles(rolesRes.data);
     }
@@ -47,22 +40,12 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose, onSuccess
     setError('');
 
     try {
-      let roleId = formData.role_id;
-
-      if (roleId.startsWith('template:')) {
-        const templateId = roleId.replace('template:', '');
-        const roleResponse = await createRoleFromTemplate(templateId);
-        if (roleResponse.success && roleResponse.data) {
-          roleId = roleResponse.data.id;
-        }
-      }
-
       const response = await createSuperAdminStaff({
         email: formData.email,
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
-        role_id: roleId,
+        role_id: formData.role_id,
         send_invitation: formData.send_invitation,
       });
 
@@ -155,31 +138,24 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({ onClose, onSuccess
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              User Role
+              User Role *
             </label>
             <select
               value={formData.role_id}
               onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
             >
               <option value="">Select a role...</option>
-              {roles.length > 0 && (
-                <optgroup label="Active Roles">
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              <optgroup label="Role Templates">
-                {templates.map((template) => (
-                  <option key={template.id} value={`template:${template.id}`}>
-                    {template.name}
-                  </option>
-                ))}
-              </optgroup>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
             </select>
+            {roles.length === 0 && (
+              <p className="text-xs text-red-600 mt-1">No roles available. Create roles first.</p>
+            )}
           </div>
 
           <div className="flex items-center">

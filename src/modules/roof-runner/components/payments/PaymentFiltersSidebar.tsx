@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface FilterOption {
@@ -10,15 +10,14 @@ interface FilterSection {
   title: string;
   type: 'radio' | 'checkbox';
   options: FilterOption[];
-  selectedValues?: string[];
-  onSelectionChange?: (values: string[]) => void;
+  selectedValues: string[];
 }
 
 interface PaymentFiltersSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   sections: FilterSection[];
-  onApply: () => void;
+  onApply: (sections: FilterSection[]) => void;
   onReset?: () => void;
 }
 
@@ -29,20 +28,28 @@ const PaymentFiltersSidebar: React.FC<PaymentFiltersSidebarProps> = ({
   onApply,
   onReset,
 }) => {
+  const [localSections, setLocalSections] = useState<FilterSection[]>(sections);
+
+  useEffect(() => {
+    setLocalSections(sections);
+  }, [sections]);
+
   if (!isOpen) return null;
 
-  const handleOptionChange = (section: FilterSection, value: string) => {
-    if (!section.onSelectionChange) return;
+  const handleOptionChange = (sectionIndex: number, value: string) => {
+    const newSections = [...localSections];
+    const section = newSections[sectionIndex];
 
     if (section.type === 'radio') {
-      section.onSelectionChange([value]);
+      section.selectedValues = [value];
     } else {
       const currentValues = section.selectedValues || [];
-      const newValues = currentValues.includes(value)
+      section.selectedValues = currentValues.includes(value)
         ? currentValues.filter((v) => v !== value)
         : [...currentValues, value];
-      section.onSelectionChange(newValues);
     }
+
+    setLocalSections(newSections);
   };
 
   return (
@@ -60,7 +67,7 @@ const PaymentFiltersSidebar: React.FC<PaymentFiltersSidebarProps> = ({
           </button>
         </div>
 
-        {sections.map((section, index) => (
+        {localSections.map((section, index) => (
           <div key={index} className="mb-6">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               {section.title}
@@ -74,7 +81,7 @@ const PaymentFiltersSidebar: React.FC<PaymentFiltersSidebarProps> = ({
                       type={section.type}
                       name={section.title}
                       checked={isSelected}
-                      onChange={() => handleOptionChange(section, option.value)}
+                      onChange={() => handleOptionChange(index, option.value)}
                       className="mr-2 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -89,7 +96,7 @@ const PaymentFiltersSidebar: React.FC<PaymentFiltersSidebarProps> = ({
 
         <div className="flex flex-col space-y-3">
           <button
-            onClick={onApply}
+            onClick={() => onApply(localSections)}
             className="w-full px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:scale-105"
           >
             Apply Filters

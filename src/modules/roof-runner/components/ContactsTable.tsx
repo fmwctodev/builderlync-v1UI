@@ -1,8 +1,10 @@
 import React from 'react';
-import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake } from 'lucide-react';
+import { MoreHorizontal, User, Briefcase, ChevronDown, Eye, Edit, FileText, Trash2, UserPlus, Handshake, Plus } from 'lucide-react';
+import { hasPermission } from '../../../shared/utils/permissions';
 
 interface Contact {
   id: string;
+  fullName: string;
   createdByName: string;
   type: string;
   labelOrRole?: string;
@@ -52,7 +54,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                 checked={selectedContacts.length === contacts.length}
                 onChange={onSelectAll}
                 className="rounded border-gray-300 focus:ring-2"
-                style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties}
+                style={{ '--tw-ring-color': '#dc2626', 'accentColor': '#dc2626' } as React.CSSProperties}
               />
             </th>
             <th className="text-left px-6 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -102,7 +104,7 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                     checked={selectedContacts.includes(contact.id)}
                     onChange={() => onSelectContact(contact.id)}
                     className="rounded border-gray-300 focus:ring-2"
-                    style={{'--tw-ring-color': '#dc2626', 'accentColor': '#dc2626'} as React.CSSProperties}
+                    style={{ '--tw-ring-color': '#dc2626', 'accentColor': '#dc2626' } as React.CSSProperties}
                   />
                 </td>
                 <td className="px-6 py-4 text-sm font-medium">
@@ -168,23 +170,27 @@ const ContactsTable: React.FC<ContactsTableProps> = ({
                             onClick={() => onViewJob(contact)}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
                           >
-                            <FileText className="w-4 h-4" />
-                            View Job
+                            <Plus className="w-4 h-4" />
+                            Create Job
                           </button>
-                          <button
-                            onClick={() => onEdit(contact)}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => onDelete(contact)}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
+                          {hasPermission('contacts', 'update') && (
+                            <button
+                              onClick={() => onEdit(contact)}
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                          )}
+                          {hasPermission('contacts', 'delete') && (
+                            <button
+                              onClick={() => onDelete(contact)}
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}

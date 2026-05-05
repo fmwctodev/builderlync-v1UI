@@ -5,7 +5,7 @@ import { DateRangePicker, DateRange } from '../../../shared/components/DateRange
 import { analyticsExportService, AnalyticsData } from '../../../shared/services/analyticsExportService';
 
 const PlatformAnalyticsDetail: React.FC = () => {
-  const { platform = 'all' } = useParams<{ platform: string }>();
+  const { platform = 'all', orgSlug } = useParams<{ platform: string; orgSlug?: string }>();
   const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
@@ -22,8 +22,7 @@ const PlatformAnalyticsDetail: React.FC = () => {
   const platformName = analyticsExportService.formatPlatformName(platform);
 
   useEffect(() => {
-    const mockData = analyticsExportService.generateMockData(platform, dateRange);
-    setAnalyticsData(mockData);
+    setAnalyticsData([]);
   }, [platform, dateRange]);
 
   const handleExport = async (format: 'csv' | 'pdf') => {
@@ -106,7 +105,10 @@ const PlatformAnalyticsDetail: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/marketing')}
+            onClick={() => {
+              const basePath = orgSlug ? `/org/${orgSlug}` : '';
+              navigate(`${basePath}/marketing`);
+            }}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -134,8 +136,8 @@ const PlatformAnalyticsDetail: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metricCards.map((metric) => {
           const value = aggregatedMetrics[metric.key] || 0;
-          const growth = analyticsExportService.calculateGrowth(value, value * 0.9);
-          const isPositive = growth >= 0;
+          const growth = 0;
+          const isPositive = true;
 
           return (
             <div
@@ -192,17 +194,25 @@ const PlatformAnalyticsDetail: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-              {analyticsData.slice(0, 10).map((item, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{item.date}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                    {item.metricLabel || item.metricType}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {item.metricValue.toLocaleString()}
+              {analyticsData.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No analytics data yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                analyticsData.slice(0, 10).map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{item.date}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {item.metricLabel || item.metricType}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                      {item.metricValue.toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

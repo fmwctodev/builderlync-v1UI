@@ -1,15 +1,26 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Sparkles, Download } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Plus, Search, X, ChevronDown, Download, Sparkles } from 'lucide-react';
 import { ProposalsList, TemplatesGrid, SettingsPanel, TabNavigation, TemplateBuilder } from '../components/proposals';
-import ProposalEditor from '../components/ProposalEditor';
-import {
-  PageContainer, PageHeader, Section, Button, Modal, Input, Field,
-} from '../../../shared/components/ui';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
+import { templateApi } from '../services/templateApi';
+import { proposalsApi } from '../services/proposalsApi';
+import GooglePlacesAutocomplete from '../../../shared/components/GooglePlacesAutocomplete';
+
+import { getNearbyJobs, getJobById, Job } from '../../../shared/store/services/jobsApi';
+import { abcSupplyService } from '../services/abcSupplyService';
+import { eagleViewService } from '../services/eagleViewService';
 
 export default function Proposals() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Proposals');
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
+  const initialTab = (location.state as { activeTab?: string })?.activeTab || 'Proposals';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  const isAiProposalEnabled = useFeatureFlag('ai-proposal');
+
   const [filterStatus, setFilterStatus] = useState('All proposals');
   const [showFilter, setShowFilter] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
@@ -17,12 +28,132 @@ export default function Proposals() {
   const [showNewProposalDropdown, setShowNewProposalDropdown] = useState(false);
   const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hasHandledJobIdRef = useRef(false);
+  const [currentStep, setCurrentStep] = useState<'measurement' | 'location' | 'template'>('measurement');
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
-  const [showProposalEditor, setShowProposalEditor] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [proposalAddress, setProposalAddress] = useState('');
+  const [proposalLat, setProposalLat] = useState<number | null>(null);
+  const [proposalLng, setProposalLng] = useState<number | null>(null);
+  const [nearbyJobs, setNearbyJobs] = useState<Job[]>([]);
+  const [loadingNearbyJobs, setLoadingNearbyJobs] = useState(false);
+  const [attachToJob, setAttachToJob] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+  const [selectedMeasurement, setSelectedMeasurement] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [creatingProposal, setCreatingProposal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  const [loadingMeasurements, setLoadingMeasurements] = useState(false);
+
+  const fetchProposals = async (status?: string) => {
+    try {
+      setLoading(true);
+      const filters = status && status !== 'All proposals' ? { status } : undefined;
+      const data = await proposalsApi.getProposals(filters);
+      setProposals(data);
+    } catch (error) {
+      console.error('Error fetching proposals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProposals(filterStatus);
+  }, [filterStatus]);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const data = await templateApi.getTemplates();
+      setTemplates(data);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showTemplateModal) {
+      fetchTemplates();
+    }
+  }, [showTemplateModal]);
+
+  const fetchMeasurements = async () => {
+    try {
+      setLoadingMeasurements(true);
+      const reports = await eagleViewService.getReports();
+      setMeasurements(reports);
+    } catch (error) {
+      console.error('Error fetching measurements:', error);
+      setMeasurements([]);
+    } finally {
+      setLoadingMeasurements(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showNewProposalModal && currentStep === 'measurement') {
+      fetchMeasurements();
+    }
+  }, [showNewProposalModal, currentStep]);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (hasHandledJobIdRef.current) return;
+
+    const params = new URLSearchParams(location.search);
+    const rawJobId = params.get('JobId') || params.get('jobId');
+    const parsedJobId = rawJobId ? Number(rawJobId) : NaN;
+    if (!parsedJobId || Number.isNaN(parsedJobId)) return;
+
+    hasHandledJobIdRef.current = true;
+
+    const initializeFromJobId = async () => {
+      try {
+        const response = await getJobById(parsedJobId);
+        const job: Job | undefined = response?.data || response;
+
+        if (job) {
+          setSelectedJobId(parsedJobId);
+          setAttachToJob(true);
+          setNearbyJobs([job]);
+          setProposalAddress(job.location || '');
+
+          const lat = job.latitude ? Number(job.latitude) : null;
+          const lng = job.longitude ? Number(job.longitude) : null;
+          if (lat && lng) {
+            setProposalLat(lat);
+            setProposalLng(lng);
+          }
+        } else {
+          setSelectedJobId(parsedJobId);
+          setAttachToJob(true);
+        }
+      } catch (error) {
+        console.error('Error loading job from query param:', error);
+        setSelectedJobId(parsedJobId);
+        setAttachToJob(true);
+      } finally {
+        setCurrentStep('measurement');
+        setShowNewProposalModal(true);
+      }
+    };
+
+    initializeFromJobId();
+  }, [location.search]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,38 +171,78 @@ export default function Proposals() {
     };
   }, [showNewProposalDropdown]);
 
-  const proposals = [
-    {
-      id: '001',
-      title: 'Roof Replacement - Johnson Residence',
-      subtitle: '123 Main St, Anytown, ST 12345',
-      assignedBy: 'Mike Johnson',
-      time: '2 hours ago',
-      amount: '$15,250',
-      status: 'Sent',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '002',
-      title: 'Commercial Roof Repair',
-      subtitle: '456 Oak Ave, Business District',
-      assignedBy: 'Sarah Wilson',
-      time: '1 day ago',
-      amount: '$8,750',
-      status: 'Open',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: '003',
-      title: 'Residential Shingle Replacement',
-      subtitle: '789 Pine St, Residential Area',
-      assignedBy: 'John Smith',
-      time: '3 days ago',
-      amount: '$12,500',
-      status: 'Won',
-      image: '/api/placeholder/300/200'
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+  };
+
+  const mapStatusToProposalStatus = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'incomplete': return 'Draft';
+      case 'complete': return 'Open';
+      case 'sent': return 'Sent';
+      case 'signed': return 'Won';
+      case 'lost': return 'Lost';
+      default: return 'Open';
     }
-  ];
+  };
+
+  const handleDeleteProposal = async () => {
+    if (!deletingProposalId) return;
+
+    try {
+      await proposalsApi.deleteProposal(Number(deletingProposalId));
+      setProposals(proposals.filter(p => p.id !== Number(deletingProposalId)));
+      setShowDeleteModal(false);
+      setDeletingProposalId(null);
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      alert('Failed to delete proposal. Please try again.');
+    }
+  };
+
+  const handleDuplicateProposal = async (id: string) => {
+    try {
+      const duplicated = await proposalsApi.duplicateProposal(Number(id));
+      await fetchProposals();
+      navigate(`${orgPrefix}/proposals/editor/${duplicated.id}`);
+    } catch (error) {
+      console.error('Error duplicating proposal:', error);
+      alert('Failed to duplicate proposal. Please try again.');
+    }
+  };
+
+  const handleMoveToWon = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'signed' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to won:', error);
+      alert('Failed to update proposal status. Please try again.');
+    }
+  };
+
+  const handleMoveToLost = async (id: string) => {
+    try {
+      await proposalsApi.updateProposal(Number(id), { status: 'lost' });
+      await fetchProposals();
+    } catch (error) {
+      console.error('Error moving proposal to lost:', error);
+      alert('Failed to update proposal status. Please try again.');
+    }
+  };
+
+  const getCoverImage = (sections: any) => {
+    return sections?.settings?.coverImage || null;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -84,249 +255,633 @@ export default function Proposals() {
     }
   };
 
+  const formatSignatureStatus = (status?: string | null) => {
+    if (!status || status === 'not_sent') return null;
+
+    switch (status) {
+      case 'pending_signature': return 'Pending Signature';
+      case 'viewed': return 'Viewed';
+      case 'signed': return 'Signed';
+      case 'declined': return 'Declined';
+      case 'expired': return 'Expired';
+      case 'voided': return 'Voided';
+      default: return status;
+    }
+  };
+
+  const getSignatureStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending Signature': return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300';
+      case 'Viewed': return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'Signed': return 'bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-300';
+      case 'Declined': return 'bg-error-50 text-error-700 dark:bg-error-900/20 dark:text-error-300';
+      case 'Expired': return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300';
+      case 'Voided': return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+      default: return 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const proposalsList = proposals.map(proposal => ({
+    id: String(proposal.id),
+    title: proposal.title,
+    subtitle: proposal.address?.address || 'No address',
+    assignedBy: proposal.author?.name || 'Unknown',
+    time: formatTimeAgo(proposal.created_at),
+    amount: `$${proposal.total?.toFixed(2) || '0.00'}`,
+    status: mapStatusToProposalStatus(proposal.status),
+    signatureStatus: formatSignatureStatus(proposal.signature_status),
+    image: getCoverImage(proposal.sections)
+  }));
+
   return (
-    <PageContainer>
-      <PageHeader
-        eyebrow="Workspace"
-        title="Proposals"
-        actions={
-          <div className="relative" ref={dropdownRef}>
-            <Button
-              variant="primary"
-              leadingIcon={<Plus />}
-              trailingIcon={<ChevronDown />}
-              onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
-            >
-              New Proposal
-            </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <nav className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <span>Home</span> / <span className="text-gray-900 dark:text-white">Proposals & Invoices</span>
+          </nav>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Proposals & Invoices</h1>
+        </div>
 
-            {showNewProposalDropdown && (
-              <div className="absolute right-0 mt-2 w-60 z-30 rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s2 overflow-hidden">
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setShowNewProposalDropdown(false);
-                      setShowNewProposalModal(true);
-                    }}
-                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
-                  >
-                    Create from scratch
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNewProposalDropdown(false);
-                      setShowMeasurementsModal(true);
-                    }}
-                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
-                  >
-                    Create from report
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNewProposalDropdown(false);
-                      setShowTemplateModal(true);
-                    }}
-                    className="w-full text-left px-3 h-10 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
-                  >
-                    Create from template
-                  </button>
-                  <div className="border-t border-edge-soft dark:border-edge-d-soft my-1" />
-                  <button
-                    onClick={() => {
-                      setShowNewProposalDropdown(false);
-                      navigate('ai-generate');
-                    }}
-                    className="w-full text-left px-3 h-10 studio-text-body text-signal-500 hover:bg-signal-50 dark:hover:bg-signal-500/10 transition-colors duration-fast flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Generate with AI
-                  </button>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowNewProposalDropdown(!showNewProposalDropdown)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 shadow-sm"
+          >
+            <Plus size={16} />
+            <span>New Proposal</span>
+            <ChevronDown size={14} className={`ml-1 transition-transform duration-200 ${showNewProposalDropdown ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showNewProposalDropdown && (
+            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[60] py-1.5 animate-in fade-in zoom-in-95 duration-200">
+              <button
+                onClick={() => {
+                  setShowNewProposalDropdown(false);
+                  setCurrentStep('measurement');
+                  setShowNewProposalModal(true);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2.5 transition-colors"
+              >
+                <div className="p-1 bg-gray-100 dark:bg-gray-700 rounded">
+                  <Plus size={14} className="text-gray-500" />
                 </div>
-              </div>
-            )}
-          </div>
-        }
-      />
+                <span className="font-medium">Manual Proposal</span>
+              </button>
+              
+              {isAiProposalEnabled && (
+                <button
+                  onClick={() => {
+                    setShowNewProposalDropdown(false);
+                    navigate(`${orgPrefix}/proposals/ai-generate`);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2.5 transition-colors"
+                >
+                  <div className="p-1 bg-primary-100 dark:bg-primary-900/30 rounded">
+                    <Sparkles size={14} className="text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <span className="font-semibold">Generate with AI</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
-      <Section className="rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s1">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {activeTab === 'Proposals' && (
-          <ProposalsList
-            proposals={proposals}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            showFilter={showFilter}
-            setShowFilter={setShowFilter}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            openDropdown={openDropdown}
-            setOpenDropdown={setOpenDropdown}
-            getStatusColor={getStatusColor}
-          />
+          loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-gray-500 dark:text-gray-400">Loading proposals...</div>
+            </div>
+          ) : (
+            <ProposalsList
+              proposals={proposalsList}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              showFilter={showFilter}
+              setShowFilter={setShowFilter}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              openDropdown={openDropdown}
+              setOpenDropdown={setOpenDropdown}
+              getStatusColor={getStatusColor}
+              getSignatureStatusColor={getSignatureStatusColor}
+              onDelete={(id) => {
+                setDeletingProposalId(id);
+                setShowDeleteModal(true);
+              }}
+              onDuplicate={handleDuplicateProposal}
+              onProposalClick={(id) => navigate(`${orgPrefix}/proposals/editor/${id}`)}
+              onMoveToWon={handleMoveToWon}
+              onMoveToLost={handleMoveToLost}
+            />
+          )
         )}
 
         {activeTab === 'Templates' && (
           <TemplatesGrid
             openDropdown={openDropdown}
             setOpenDropdown={setOpenDropdown}
-            onCreateTemplate={() => setShowTemplateBuilder(true)}
           />
         )}
 
         {activeTab === 'Settings' && <SettingsPanel />}
-      </Section>
+      </div>
 
-      <Modal
-        open={showMeasurementsModal}
-        onClose={() => setShowMeasurementsModal(false)}
-        title="Measurements"
-        description="Select the measurement you would like to use for this proposal"
-        size="lg"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => { setShowMeasurementsModal(false); setShowNewProposalModal(true); }}
-            >
-              Create without measurement
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => { setShowMeasurementsModal(false); setShowTemplateModal(true); }}
-            >
-              Use this measurement
-            </Button>
-          </>
-        }
-      >
-        <div className="flex-1 flex flex-col gap-4 max-h-[60vh]">
-          <Input leadingIcon={<Search />} placeholder="Search all measurement reports" />
-
-          <div className="flex-1 overflow-y-auto scrollbar-studio space-y-2 min-h-0 -mx-1 px-1">
-            {[
-              { address: '1907 Morrow Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 08, 2025' },
-              { address: '7925 Tusman Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 07, 2025' },
-              { address: '3339 Hancock Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 06, 2025' },
-              { address: '7807 Lonesome Dove Cove, Austin, Texas, United States', version: '1/1', date: 'Oct. 04, 2025' },
-              { address: '11315 Drumellan Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-              { address: '7901 Havenwood Drive, Austin, Texas, United States', version: '1/1', date: 'Oct. 03, 2025' },
-              { address: '4701 Camacho Street, Austin, Texas, United States', version: '1/1', date: 'Oct. 02, 2025' },
-              { address: '2125 Independence Drive, Austin, Texas, United States', version: '1/1', date: 'Sept. 29, 2025' },
-              { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '8/8', date: 'Sept. 29, 2025', latest: true },
-              { address: '7920 Rockwood Lane, Austin, Texas, United States', version: '7/8', date: 'Sept. 29, 2025' },
-            ].map((measurement, index) => (
-              <div key={index} className="flex items-center justify-between gap-3 p-3 rounded-studio-2 border border-edge-soft dark:border-edge-d-soft hover:bg-surface-2 dark:hover:bg-surface-d-2 cursor-pointer">
-                <div className="flex-1 min-w-0">
-                  <div className="studio-text-body-strong truncate">{measurement.address}</div>
-                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3 mt-0.5">
-                    {measurement.version} BuilderLync Report{measurement.latest ? ' · Latest' : ''}
-                  </div>
-                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3">Completed {measurement.date}</div>
-                </div>
-                <Button variant="quiet" size="sm" leadingIcon={<Download />}>Download</Button>
+      {showNewProposalModal && currentStep === 'measurement' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">New Proposal</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Select measurement report (optional)</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        open={showNewProposalModal}
-        onClose={() => setShowNewProposalModal(false)}
-        title="New proposal"
-        size="md"
-        footer={
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={() => { setShowNewProposalModal(false); setShowTemplateModal(true); }}
-          >
-            Continue
-          </Button>
-        }
-      >
-        <Field label="Job address">
-          {(props) => (
-            <Input
-              {...props}
-              value={proposalAddress}
-              onChange={(e) => setProposalAddress(e.target.value)}
-              placeholder="Enter address and select"
-            />
-          )}
-        </Field>
-      </Modal>
-
-      <Modal
-        open={showTemplateModal}
-        onClose={() => setShowTemplateModal(false)}
-        title="Choose a template"
-        description="Pick from one of your existing proposal templates to get started"
-        size="lg"
-        footer={
-          <>
-            <Button variant="secondary">Create without template</Button>
-            <Button
-              variant="primary"
-              onClick={() => { setShowTemplateModal(false); setShowProposalEditor(true); }}
-            >
-              Use this template
-            </Button>
-          </>
-        }
-      >
-        <div className="flex-1 flex flex-col gap-4 max-h-[60vh]">
-          <Input leadingIcon={<Search />} placeholder="Search templates" />
-
-          <div className="flex-1 overflow-y-auto scrollbar-studio space-y-2 min-h-0 -mx-1 px-1">
-            {[
-              'New template',
-              'RFP | Edgewick HOA | Roofing Inspection, Maintenance & Repair Services',
-              'Commercial Roof Repair Template',
-              'Commercial - TPO/PVC',
-              'NEW COMMERCIAL',
-              'Retail Residential - Standing Seam (Snap Lock) - Metal Estimate 24G',
-              'Retail - Multifamily IKO/Dynasty',
-              'Multi Family - Retail (Shingle)',
-              'Insurance Scope Template (IKO Dynasty & Nordic)',
-              'Roofing Labor',
-              'Insurance Restoration Work Authorization',
-              'Service Agreement',
-              'Shingle Coatings'
-            ].map((template, index) => (
-              <button
-                key={index}
-                type="button"
-                className="w-full flex items-center justify-between gap-3 p-3 rounded-studio-2 border border-edge-soft dark:border-edge-d-soft hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast text-left"
-                onClick={() => {
-                  setSelectedTemplateId(template);
-                  setShowTemplateModal(false);
-                  setShowProposalEditor(true);
-                }}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="studio-text-body-strong truncate">{template}</div>
-                  <div className="studio-text-caption text-ink-3 dark:text-ink-d-3 mt-0.5">Template cover image</div>
-                </div>
+              <button onClick={() => {
+                setShowNewProposalModal(false);
+                setSelectedMeasurement(null);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
               </button>
-            ))}
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col p-6">
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search measurement reports"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
+                {loadingMeasurements ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading measurements...</div>
+                  </div>
+                ) : (measurements?.length || 0) === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No measurement reports found</div>
+                  </div>
+                ) : (
+                  measurements.map((measurement, index) => (
+                    <div
+                      key={measurement.id || index}
+                      className={`flex items-center justify-between p-3 border rounded-md ${selectedMeasurement?.id === measurement.id
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                    >
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => setSelectedMeasurement(measurement)}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{measurement.address}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {measurement.reference_id || 'BuilderLync Report'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Created {new Date(measurement.created_at).toLocaleDateString()}</div>
+                      </div>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const reportId = measurement.response_data?.ReportIds?.[0];
+                          if (!reportId) return;
+
+                          try {
+                            const token = localStorage.getItem('token');
+                            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+                            const reportResponse = await fetch(
+                              `${API_BASE_URL}/eagleview/report?reportId=${reportId}`,
+                              {
+                                headers: {
+                                  Authorization: `Bearer ${token}`
+                                }
+                              }
+                            );
+
+                            const reportData = await reportResponse.json();
+
+                            if (reportData.success && reportData.data?.ReportDownloadLink) {
+                              const link = document.createElement('a');
+                              link.href = reportData.data.ReportDownloadLink;
+                              link.setAttribute('download', `report-${reportId}.pdf`);
+                              link.setAttribute('target', '_blank');
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                            } else {
+                              alert('Report download link not available.');
+                            }
+                          } catch (error) {
+                            console.error('Error downloading report:', error);
+                            alert('Failed to download report. Please try again.');
+                          }
+                        }}
+                        className="ml-3 p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded"
+                        title="Download report"
+                      >
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setSelectedMeasurement(null);
+                  if (selectedJobId) {
+                    setShowTemplateModal(true);
+                  } else {
+                    setCurrentStep('location');
+                  }
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Create Without Measurement
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedMeasurement) {
+                    setProposalAddress(selectedMeasurement.address);
+                    setProposalLat(selectedMeasurement.order_data?.orderReports?.reportAddresses?.latitude);
+                    setProposalLng(selectedMeasurement.order_data?.orderReports?.reportAddresses?.longitude);
+                    setShowTemplateModal(true);
+                  }
+                }}
+                disabled={!selectedMeasurement}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
-      </Modal>
-
-      {showTemplateBuilder && (
-        <TemplateBuilder onClose={() => setShowTemplateBuilder(false)} />
       )}
 
-      <ProposalEditor
-        isOpen={showProposalEditor}
-        onClose={() => {
-          setShowProposalEditor(false);
-          setSelectedTemplateId(undefined);
-        }}
-        templateId={selectedTemplateId}
-      />
-    </PageContainer>
+      {showNewProposalModal && currentStep === 'location' && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">New Proposal</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter job location</p>
+              </div>
+              <button onClick={() => {
+                setShowNewProposalModal(false);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Job address <span className="text-red-500">*</span>
+                </label>
+                <GooglePlacesAutocomplete
+                  value={proposalAddress}
+                  onChange={async (address, isFromAutocomplete, lat, lng) => {
+                    setProposalAddress(address);
+                    if (isFromAutocomplete && lat && lng) {
+                      setProposalLat(lat);
+                      setProposalLng(lng);
+
+                      // Fetch nearby jobs
+                      try {
+                        setLoadingNearbyJobs(true);
+                        const response = await getNearbyJobs(lat, lng, 25);
+                        const jobs = response.data.data || [];
+                        setNearbyJobs(jobs);
+                        if ((jobs?.length || 0) > 0) {
+                          setAttachToJob(true);
+                        }
+                      } catch (error) {
+                        console.error('Error fetching nearby jobs:', error);
+                        setNearbyJobs([]);
+                      } finally {
+                        setLoadingNearbyJobs(false);
+                      }
+                    }
+                  }}
+                  placeholder="Enter address and select from dropdown"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                {proposalAddress && !proposalLat && (
+                  <p className="mt-1 text-xs text-orange-600">Please select an address from the dropdown to get coordinates</p>
+                )}
+              </div>
+
+              {loadingNearbyJobs && (
+                <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">Loading nearby jobs...</div>
+              )}
+
+              {(nearbyJobs?.length || 0) > 0 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={attachToJob}
+                      onChange={(e) => {
+                        setAttachToJob(e.target.checked);
+                        if (!e.target.checked) setSelectedJobId(null);
+                      }}
+                      className="form-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Attach to matching job ({(nearbyJobs?.length || 0)} found nearby)
+                    </span>
+                  </label>
+
+                  {attachToJob && (
+                    <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                      {nearbyJobs.map((job) => (
+                        <label
+                          key={job.id}
+                          className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${selectedJobId === job.id
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                            : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="selectedJob"
+                            checked={selectedJobId === job.id}
+                            onChange={() => setSelectedJobId(job.id!)}
+                            className="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 dark:text-white text-sm">{job.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{job.location}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setCurrentStep('measurement')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => {
+                  if (!proposalAddress || !proposalLat || !proposalLng) {
+                    alert('Please enter and select a valid address from the dropdown');
+                    return;
+                  }
+                  if (attachToJob && !selectedJobId) {
+                    alert('Please select a job to attach to');
+                    return;
+                  }
+                  setShowTemplateModal(true);
+                }}
+                disabled={!proposalAddress || !proposalLat || !proposalLng || (attachToJob && !selectedJobId)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Choose a template</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick from one of your existing proposal templates to get started</p>
+              </div>
+              <button onClick={() => {
+                setShowTemplateModal(false);
+                setSelectedTemplate(null);
+                setProposalAddress('');
+                setProposalLat(null);
+                setProposalLng(null);
+                setNearbyJobs([]);
+                setAttachToJob(false);
+                setSelectedJobId(null);
+                setSelectedMeasurement(null);
+                setCurrentStep('measurement');
+              }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col p-6">
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search templates"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
+                {creatingProposal && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                    <div className="text-white text-sm">Creating proposal...</div>
+                  </div>
+                )}
+                {loadingTemplates ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">Loading templates...</div>
+                  </div>
+                ) : (templates?.length || 0) === 0 ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-gray-500 dark:text-gray-400">No templates found</div>
+                  </div>
+                ) : (
+                  templates.map((template) => {
+                    const coverImage = template.content?.settings?.coverImage || template.summary?.coverImage;
+                    return (
+                    <div
+                      key={template.id}
+                      className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer ${selectedTemplate?.id === template.id
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                      }}
+                    >
+                      {coverImage ? (
+                        <img
+                          src={coverImage}
+                          alt={template.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No Image</span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{template.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {template.summary?.sectionCount || 0} sections, {template.summary?.itemCount || 0} items
+                        </div>
+                      </div>
+                    </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowTemplateModal(false);
+                  setSelectedTemplate(null);
+                  setCurrentStep(selectedMeasurement ? 'measurement' : 'location');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Back
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedTemplate) {
+                    alert('Please select a template to create a proposal');
+                    return;
+                  }
+                  try {
+                    setCreatingProposal(true);
+
+                    // Get address and coordinates
+                    const address = proposalAddress || selectedMeasurement?.address;
+                    const latitude = proposalLat || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.latitude;
+                    const longitude = proposalLng || selectedMeasurement?.order_data?.orderReports?.reportAddresses?.longitude;
+                    const templateId = String(selectedTemplate.id || '').trim();
+                    const reportId = selectedMeasurement?.id ? String(selectedMeasurement.id) : undefined;
+                    const lat = latitude !== null && latitude !== undefined ? String(latitude) : undefined;
+                    const lng = longitude !== null && longitude !== undefined ? String(longitude) : undefined;
+
+                    if (!templateId) {
+                      alert('Invalid template selected. Please reselect a template.');
+                      return;
+                    }
+
+                    // Get customer details from selected job if available
+                    const selectedJob = nearbyJobs.find(job => job.id === selectedJobId);
+
+                    const proposalData = {
+                      template_id: templateId,
+                      title: selectedTemplate?.name || 'New Proposal',
+                      address: {
+                        address: address,
+                        lat,
+                        lng
+                      },
+                      ...(reportId && { report_id: reportId }),
+                      ...(selectedJobId && { job_id: selectedJobId }),
+                      ...(selectedJob && {
+                        customer_name: selectedJob.customer?.full_name || selectedJob.contactName,
+                        customer_email: selectedJob.customer?.email,
+                        customer_phone: selectedJob.customer?.phone
+                      })
+                    };
+
+                    const proposal = await proposalsApi.createProposal(proposalData);
+                    setShowTemplateModal(false);
+                    setShowNewProposalModal(false);
+                    setProposalAddress('');
+                    setProposalLat(null);
+                    setProposalLng(null);
+                    setSelectedTemplate(null);
+                    setNearbyJobs([]);
+                    setAttachToJob(false);
+                    setSelectedJobId(null);
+                    setSelectedMeasurement(null);
+                    setCurrentStep('measurement');
+                    navigate(`${orgPrefix}/proposals/editor/${proposal.id}`);
+                  } catch (error) {
+                    console.error('Error creating proposal:', error);
+                    const errorMessage =
+                      (error as any)?.response?.data?.message ||
+                      (error as any)?.response?.data?.error ||
+                      (error as any)?.message ||
+                      'Failed to create proposal. Please try again.';
+                    alert(errorMessage);
+                  } finally {
+                    setCreatingProposal(false);
+                  }
+                }}
+                disabled={!selectedTemplate || creatingProposal}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!selectedTemplate ? 'Select a template to continue' : ''}
+              >
+                {creatingProposal ? 'Creating...' : 'Create Proposal'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Proposal</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to delete this proposal? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletingProposalId(null);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProposal}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

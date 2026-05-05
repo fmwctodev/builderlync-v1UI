@@ -1,374 +1,409 @@
-import React, { useState, useCallback } from 'react';
-import { Search, Package, Plus, ArrowUpRight, Eye, RefreshCw, Filter, MapPin, Download } from 'lucide-react';
-import type { MeasurementOrder, OrderStatus, ProductId } from '../../types/measurementOrder';
-import { PRODUCT_DISPLAY_NAMES } from '../../types/measurementOrder';
-import { isOrderUpgradeEligible } from '../../utils/upgradeEligibility';
-import { useOrderHistory } from '../../hooks/useOrderHistory';
-import { useCurrentOrganizationSafe } from '../../../../shared/context/OrgContext';
-import { downloadPdf } from '../../services/orderDownloadService';
-import { OrderStatusPill } from './OrderStatusPill';
-import { OrderSourceBadge } from './OrderSourceBadge';
-import UpgradeConfirmationModal from './UpgradeConfirmationModal';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Search, Plus, Calendar, MapPin, User, Filter, Download, ChevronDown, ChevronUp, Clock, FileText } from 'lucide-react';
+import axios from 'axios';
 
 interface OrderHistoryPageProps {
-  onBack?: () => void;
+  onBack: () => void;
   onPlaceNewOrder: () => void;
-  onUpgradeOrder: (order: MeasurementOrder) => void;
-  onViewOrder?: (orderId: string) => void;
 }
 
-const STATUS_OPTIONS: { value: OrderStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All Status' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
+const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ onBack, onPlaceNewOrder }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-const PRODUCT_OPTIONS: { value: ProductId | 'all'; label: string }[] = [
-  { value: 'all', label: 'All Products' },
-  { value: 'measure_bidperfect', label: 'BidPerfect' },
-  { value: 'measure_full_house', label: 'Full House' },
-  { value: 'measure_premium', label: 'Premium' },
-  { value: 'property_roof_area_estimate', label: 'Property Data' },
-  { value: 'solar_solar_report', label: 'Solar Report' },
-];
-
-const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({
-  onBack,
-  onPlaceNewOrder,
-  onUpgradeOrder,
-  onViewOrder,
-}) => {
-  const { currentOrganizationId } = useCurrentOrganizationSafe();
-  const {
-    orders,
-    isLoading,
-    error,
-    filters,
-    setStatusFilter,
-    setProductFilter,
-    setSearchFilter,
-    refresh,
-  } = useOrderHistory(currentOrganizationId);
-
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
-  const [selectedOrderForUpgrade, setSelectedOrderForUpgrade] = useState<MeasurementOrder | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchFilter(e.target.value);
-  }, [setSearchFilter]);
-
-  const handleUpgradeClick = (order: MeasurementOrder) => {
-    setSelectedOrderForUpgrade(order);
-    setUpgradeModalOpen(true);
+  const productNameMap: { [key: string]: string } = {
+    "99": "Whole Home",
+    "31": "Premium - Residential",
+    "32": "Premium - Commercial",
+    "13": "Claims Ready - Residential",
+    "14": "Claims Ready - Commercial",
+    "84": "Bid Perfect™",
+    "102": "Bid Perfect™ - Commercial",
+    "46": "Gutter - Residential",
+    "47": "Gutter - Commercial",
+    "11": "EagleView Inform Essentials+ (for residential)",
+    "12": "EagleView Inform Essentials+ for Commercial",
+    "62": "EagleView Inform Advanced",
+    "63": "EagleView Inform Advanced for Commercial",
+    "90": "TrueDesign™ for Sales",
+    "91": "TrueDesign™ for Planning",
+    "85": "Walls, Windows, & Doors",
+    "86": "Walls",
+    "35": "Commercial - Walls Only",
   };
 
-  const handleUpgradeConfirm = () => {
-    if (selectedOrderForUpgrade) {
-      onUpgradeOrder(selectedOrderForUpgrade);
+  const deliveryProductNameMap: { [key: string]: string } = {
+    "4": "ExpressDelivery",
+    "7": "ThreeHourDelivery",
+    "8": "RegularDelivery",
+    "45": "QuickDelivery"
+  };
+
+  const subStatusNameMap: { [key: string]: string } = {
+    "5": "UnderReview",
+    "6": "ProcessStarted",
+    "8": "NeedToID",
+    "9": "Duplicate",
+    "10": "CanceledByClient",
+    "11": "PoorImages",
+    "12": "NoID",
+    "14": "ReportTypeChange",
+    "15": "NoImages",
+    "16": "Other",
+    "18": "CardRejected",
+    "19": "Sent",
+    "20": "Sent",
+    "21": "CustomerResponse",
+    "24": "WrongHouse",
+    "27": "CreditCardFailure",
+    "31": "Processing",
+    "32": "MeasurementData",
+    "38": "UnsupportedStructure",
+    "43": "ReadyToCapturePayment",
+  };
+
+
+  const getStatusInfo = (statusId: number) => {
+    switch (statusId) {
+      case 1: return { label: 'CREATED', color: 'bg-blue-100 text-blue-800' };
+      case 2: return { label: 'IN PROCESS', color: 'bg-purple-100 text-purple-800' };
+      case 3: return { label: 'PENDING', color: 'bg-orange-100 text-orange-800' };
+      case 4: return { label: 'CLOSED', color: 'bg-gray-100 text-gray-800' };
+      case 5: return { label: 'COMPLETED', color: 'bg-green-100 text-green-800' };
+      default: return { label: 'UNKNOWN', color: 'bg-gray-100 text-gray-800' };
     }
-    setUpgradeModalOpen(false);
-    setSelectedOrderForUpgrade(null);
   };
 
-  const handleUpgradeCancel = () => {
-    setUpgradeModalOpen(false);
-    setSelectedOrderForUpgrade(null);
+  const handleDownloadReport = async (e: React.MouseEvent, order: any) => {
+    e.stopPropagation();
+    if (!order.response_data?.ReportIds?.length && !order.report_id) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const reportId = order.report_id || order.response_data.ReportIds[0];
+
+      // First get report details
+      const reportResponse = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/eagleview/report?reportId=${reportId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (reportResponse.data.success && reportResponse.data.data?.ReportDownloadLink) {
+        // Use the download link to download the file
+        const downloadLink = reportResponse.data.data.ReportDownloadLink;
+        const link = document.createElement('a');
+        link.href = downloadLink;
+        link.setAttribute('download', `report-${reportId}.pdf`);
+        link.setAttribute('target', '_blank');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        alert('Report download link not available yet. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Failed to download report. Please try again.');
+    }
   };
 
-  const handlePdfDownload = async (order: MeasurementOrder) => {
-    await downloadPdf(order.outputs.pdfUrl, order.id);
+  const loadOrders = useCallback(async (search = '', status = 'all') => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+
+      const params = new URLSearchParams();
+      if (search.trim()) params.append('search', search.trim());
+      if (status !== 'all') params.append('status', status);
+
+      const url = `${import.meta.env.VITE_API_BASE_URL}/eagleview/orders${params.toString() ? '?' + params.toString() : ''}`;
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.data.success) {
+        setOrders(response.data.data || []);
+        setTotalOrders(response.data.total || response.data.data?.length || 0);
+      } else {
+        setOrders([]);
+        setTotalOrders(0);
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      setOrders([]);
+      setTotalOrders(0);
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadOrders(searchQuery, statusFilter);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, statusFilter, loadOrders]);
+
+  const toggleExpand = (orderId: string) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatDateShort = (dateString: string | null | undefined) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
-  const renderLoadingSkeleton = () => (
-    <div className="space-y-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
-          <div className="flex justify-between items-start mb-4">
-            <div className="space-y-2">
-              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-64" />
-            </div>
-            <div className="flex gap-2">
-              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-          </div>
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="grid grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((j) => (
-                <div key={j} className="space-y-2">
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16" />
-                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderOrderCard = (order: MeasurementOrder) => {
-    const createdDate = formatDateShort(order.datePlaced);
-    const completedDate = formatDateShort(order.dateCompleted);
-
-    const roofArea = order.outputs?.totalArea || order.outputs?.roof_area;
-    const perimeter = order.outputs?.perimeter;
-    const primaryPitch = order.outputs?.primaryPitch || order.outputs?.primary_pitch;
-    const facets = order.outputs?.facets || order.outputs?.facet_count;
-
+  if (initialLoad && loading) {
     return (
-      <div
-        key={order.id}
-        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-      >
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {order.orderNumber}
-            </h3>
-            <OrderStatusPill status={order.status} size="sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            {onViewOrder && (
-              <button
-                onClick={() => onViewOrder(order.id)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                title="View details"
-              >
-                <Eye className="w-5 h-5" />
-              </button>
-            )}
-            <button
-              onClick={() => handlePdfDownload(order)}
-              disabled={!order.outputs?.pdfUrl}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title={order.outputs?.pdfUrl ? "Download PDF" : "PDF not available"}
-            >
-              <Download className="w-5 h-5" />
+      <div className="space-y-6">
+        <div className="bg-primary-600 rounded-lg p-6 text-white">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="text-white hover:text-gray-200">
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            {isOrderUpgradeEligible(order) && (
-              <button
-                onClick={() => handleUpgradeClick(order)}
-                className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
-                title="Upgrade to Premium"
-              >
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
-            )}
+            <h1 className="text-2xl font-bold">Order History</h1>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-2">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
-          <span className="text-sm">{order.address}</span>
+        <div className="bg-white rounded-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading orders...</p>
         </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {order.productName}
-          {createdDate && <span> &bull; Created: {createdDate}</span>}
-          {completedDate && <span> &bull; Completed: {completedDate}</span>}
-        </p>
-
-        {(roofArea || perimeter || primaryPitch || facets) && (
-          <>
-            <div className="border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {roofArea && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Roof Area</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {typeof roofArea === 'number' ? roofArea.toLocaleString() : roofArea} sq ft
-                    </p>
-                  </div>
-                )}
-                {perimeter && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Perimeter</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {typeof perimeter === 'number' ? perimeter.toLocaleString() : perimeter} ft
-                    </p>
-                  </div>
-                )}
-                {primaryPitch && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Primary Pitch</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {primaryPitch}
-                    </p>
-                  </div>
-                )}
-                {facets && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Facets</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {facets}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
       </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-6">
-      <div className="bg-primary-600 dark:bg-primary-700 rounded-lg p-6 text-white">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold">Order History</h1>
-          <p className="text-primary-100">View and track your measurement orders</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Search by address..."
-              value={filters.search || ''}
-              onChange={handleSearchChange}
-              className="pl-10 pr-4 py-2 w-full bg-primary-700 border border-primary-500 rounded-lg text-white placeholder-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-primary-200" />
+      {/* Header */}
+      <div className="bg-primary-600 rounded-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="text-white hover:text-gray-200">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Order History</h1>
+              <p className="text-primary-100">View and track your Eagle View orders</p>
+            </div>
           </div>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="sm:hidden inline-flex items-center gap-2 px-3 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-
-          <div className={`flex flex-col sm:flex-row gap-2 ${showFilters ? 'block' : 'hidden sm:flex'}`}>
-            <select
-              value={filters.status || 'all'}
-              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
-              className="px-3 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.product || 'all'}
-              onChange={(e) => setProductFilter(e.target.value as ProductId | 'all')}
-              className="px-3 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300"
-            >
-              {PRODUCT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={refresh}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white hover:bg-primary-800 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-
           <button
             onClick={onPlaceNewOrder}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-50 font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-50 font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Order
           </button>
         </div>
+
+        <div className="flex gap-4 max-w-2xl">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search by reference ID, address, city, or state..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full bg-primary-700 border border-primary-500 rounded-lg text-white placeholder-primary-200 focus:outline-none focus:ring-2 focus:ring-white/50"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-primary-200" />
+          </div>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="pl-10 pr-8 py-2 bg-primary-700 border border-primary-500 rounded-lg text-white appearance-none min-w-[160px] focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="1">CREATED</option>
+              <option value="2">IN PROCESS</option>
+              <option value="3">PENDING</option>
+              <option value="4">CLOSED</option>
+              <option value="5">COMPLETED</option>
+            </select>
+            <Filter className="absolute left-3 top-2.5 h-5 w-5 text-primary-200 pointer-events-none" />
+          </div>
+        </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">
-            {error}
-          </p>
-          <button
-            onClick={refresh}
-            className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-          >
-            Try again
-          </button>
-        </div>
-      )}
-
-      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
-        <p className="text-gray-700 dark:text-gray-300">
-          {isLoading ? 'Loading orders...' : `Showing ${orders.length} orders`}
-          {filters.search && (
-            <span className="text-sm font-normal ml-2">
-              (filtered by: "{filters.search}")
-            </span>
-          )}
+      {/* Results Summary */}
+      <div className="flex justify-between items-center px-2">
+        <p className="text-gray-700 font-medium">
+          Showing {orders.length} orders
+          {(searchQuery || statusFilter !== 'all') && ` (filtered)`}
         </p>
       </div>
 
-      {isLoading ? (
-        renderLoadingSkeleton()
-      ) : orders.length > 0 ? (
-        <div className="space-y-4">
-          {orders.map((order) => renderOrderCard(order))}
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {filters.search || filters.status !== 'all' || filters.product !== 'all'
-              ? 'No orders found'
-              : 'No orders yet'}
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {filters.search
-              ? `No orders match your search for "${filters.search}"`
-              : filters.status !== 'all' || filters.product !== 'all'
-                ? 'Try adjusting your filters'
-                : "You haven't placed any measurement orders yet."
-            }
-          </p>
-          <button
-            onClick={onPlaceNewOrder}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-          >
-            <Plus className="w-4 h-4" />
-            Place Your First Order
-          </button>
-        </div>
-      )}
+      {/* Orders List */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Updating results...</p>
+          </div>
+        ) : orders.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {orders.map((order) => {
+              const statusInfo = getStatusInfo(order.status_id);
+              const isExpanded = expandedOrderId === order.id;
 
-      <UpgradeConfirmationModal
-        isOpen={upgradeModalOpen}
-        onConfirm={handleUpgradeConfirm}
-        onCancel={handleUpgradeCancel}
-        orderNumber={selectedOrderForUpgrade?.orderNumber || ''}
-        addressText={selectedOrderForUpgrade?.address || ''}
-      />
+              return (
+                <div
+                  key={order.id}
+                  className={`transition-colors hover:bg-gray-50 cursor-pointer ${isExpanded ? 'bg-gray-50' : ''}`}
+                  onClick={() => toggleExpand(order.id)}
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600">
+                            {order.address}, {order.city}, {order.state}
+                          </h3>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                          {/* {(order.response_data?.ReportIds?.length > 0 || order.report_id) && (
+                            <button
+                              onClick={(e) => handleDownloadReport(e, order)}
+                              className="ml-2 flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition-colors"
+                              title="Download Report"
+                            >
+                              <Download className="w-3 h-3" />
+                              Download
+                            </button>
+                          )} */}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span>Ref ID: {order.reference_id || 'N/A'}</span>
+                        </div>
+
+                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span>Ordered: {new Date(order.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {order.order_data?.placeOrderUser && (
+                            <div className="flex items-center gap-1.5">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span>By: {order.users ? `${order.users.first_name} ${order.users.last_name}` : 'Unknown'}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-end gap-2">
+                          {(order.response_data?.ReportIds?.length > 0 || order.report_id) && (order.status_id >= 3) && (
+                            <button
+                              onClick={(e) => handleDownloadReport(e, order)}
+                              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 shadow-sm transition-all"
+                            >
+                              <Download className="w-4 h-4" />
+                              Download Report
+                            </button>
+                          )}
+                          {/* Show chevron */}
+                          {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wider mb-3">Order Details</h4>
+                          <div className="bg-white p-4 rounded-lg border border-gray-100 space-y-3 shadow-sm">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Product:</span>
+                              <span className="font-medium text-gray-900">
+                                {productNameMap[order.primary_product_id] || order.primary_product_id || '-'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Delivery Product:</span>
+                              <span className="font-medium text-gray-900">{deliveryProductNameMap[order.delivery_product_id] || order.delivery_product_id || '-'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Last Updated:</span>
+                              <span className="font-medium text-gray-900">
+                                {order.updated_at ? new Date(order.updated_at).toLocaleString() : '-'}
+                              </span>
+                            </div>
+                            {order.order_data?.orderReports?.claimNumber && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Claim Number:</span>
+                                <span className="font-medium text-gray-900">{order.order_data.orderReports.claimNumber}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wider mb-3">System Info</h4>
+                          <div className="bg-white p-4 rounded-lg border border-gray-100 space-y-3 shadow-sm">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Order ID (EV):</span>
+                              <span className="font-mono text-gray-900 bg-gray-50 px-2 py-0.5 rounded">{order.response_data?.OrderId || '-'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Report ID (EV):</span>
+                              <span className="font-mono text-gray-900 bg-gray-50 px-2 py-0.5 rounded">
+                                {order.report_id || order.response_data?.ReportIds?.join(', ') || '-'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Sub-Status:</span>
+                              <span className="font-medium text-gray-900">{subStatusNameMap[order.sub_status_id] || order.sub_status_id || '-'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {order.order_data?.orderReports?.comments && (
+                          <div className="md:col-span-2">
+                            <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wider mb-2">Comments</h4>
+                            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 text-sm text-yellow-800">
+                              {order.order_data.orderReports.comments}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <div className="text-gray-300 mb-4">
+              <FileText className="w-16 h-16 mx-auto" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Try adjusting your search or filters to find what you are looking for.'
+                : 'Get started by placing your first measurement order.'}
+            </p>
+            <button
+              onClick={onPlaceNewOrder}
+              className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 shadow-sm transition-all"
+            >
+              Place Your First Order
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

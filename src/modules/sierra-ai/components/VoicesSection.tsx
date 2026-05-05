@@ -13,12 +13,12 @@ export function VoicesSection({ voices, onChange }: VoicesSectionProps) {
   const primaryVoice = voices.find((v) => v.isPrimary);
 
   const availableVoices = [
-    { id: 'eric', name: 'Eric', provider: 'ElevenLabs' },
-    { id: 'rachel', name: 'Rachel', provider: 'ElevenLabs' },
-    { id: 'dave', name: 'Dave', provider: 'ElevenLabs' },
-    { id: 'sarah', name: 'Sarah', provider: 'ElevenLabs' },
-    { id: 'josh', name: 'Josh', provider: 'ElevenLabs' },
-    { id: 'nicole', name: 'Nicole', provider: 'ElevenLabs' },
+    { id: 'eric', name: 'Eric', provider: 'Vapi' },
+    { id: 'rachel', name: 'Rachel', provider: 'Vapi' },
+    { id: 'dave', name: 'Dave', provider: 'Vapi' },
+    { id: 'sarah', name: 'Sarah', provider: 'Vapi' },
+    { id: 'josh', name: 'Josh', provider: 'Vapi' },
+    { id: 'nicole', name: 'Nicole', provider: 'Vapi' },
   ];
 
   const handleAddVoice = (voice: { id: string; name: string; provider: string }) => {
@@ -54,7 +54,7 @@ export function VoicesSection({ voices, onChange }: VoicesSectionProps) {
         <div>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">Voices</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Select the ElevenLabs voices you want to use for the agent.
+            Select the Vapi voices you want to use for the agent.
           </p>
         </div>
         <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -66,7 +66,7 @@ export function VoicesSection({ voices, onChange }: VoicesSectionProps) {
         {voices.map((voice) => (
           <div
             key={voice.id}
-            className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600 group"
+            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600 group"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
@@ -145,7 +145,7 @@ export function VoicesSection({ voices, onChange }: VoicesSectionProps) {
                     <button
                       key={voice.id}
                       onClick={() => handleAddVoice(voice)}
-                      className="w-full flex items-center justify-between p-4 bg-paper dark:bg-canvas rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
+                      className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">

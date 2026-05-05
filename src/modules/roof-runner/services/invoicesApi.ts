@@ -1,5 +1,4 @@
 import { supabase } from '../../../shared/lib/supabase';
-import { requireOrganizationId } from '../../../shared/utils/organizationHelpers';
 
 export interface Invoice {
   id: string;
@@ -19,17 +18,11 @@ export interface Invoice {
 }
 
 export const invoicesApi = {
-  async getInvoicesByOpportunity(
-    opportunityId: string,
-    organizationId: string | null
-  ): Promise<Invoice[]> {
-    requireOrganizationId(organizationId, 'getInvoicesByOpportunity');
-
+  async getInvoicesByOpportunity(opportunityId: string): Promise<Invoice[]> {
     try {
       const { data, error } = await supabase
         .from('invoices')
         .select('*')
-        .eq('organization_id', organizationId)
         .eq('opportunity_id', opportunityId)
         .order('issue_date', { ascending: false });
 
@@ -41,17 +34,11 @@ export const invoicesApi = {
     }
   },
 
-  async getAvailableInvoices(
-    organizationId: string | null,
-    excludeOpportunityId?: string
-  ): Promise<Invoice[]> {
-    requireOrganizationId(organizationId, 'getAvailableInvoices');
-
+  async getAvailableInvoices(excludeOpportunityId?: string): Promise<Invoice[]> {
     try {
       let query = supabase
         .from('invoices')
         .select('*')
-        .eq('organization_id', organizationId)
         .order('issue_date', { ascending: false });
 
       if (excludeOpportunityId) {
@@ -70,19 +57,12 @@ export const invoicesApi = {
     }
   },
 
-  async linkInvoiceToOpportunity(
-    invoiceId: string,
-    opportunityId: string,
-    organizationId: string | null
-  ): Promise<void> {
-    requireOrganizationId(organizationId, 'linkInvoiceToOpportunity');
-
+  async linkInvoiceToOpportunity(invoiceId: string, opportunityId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('invoices')
         .update({ opportunity_id: opportunityId })
-        .eq('id', invoiceId)
-        .eq('organization_id', organizationId);
+        .eq('id', invoiceId);
 
       if (error) throw error;
     } catch (error) {
@@ -91,18 +71,12 @@ export const invoicesApi = {
     }
   },
 
-  async unlinkInvoiceFromOpportunity(
-    invoiceId: string,
-    organizationId: string | null
-  ): Promise<void> {
-    requireOrganizationId(organizationId, 'unlinkInvoiceFromOpportunity');
-
+  async unlinkInvoiceFromOpportunity(invoiceId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('invoices')
         .update({ opportunity_id: null })
-        .eq('id', invoiceId)
-        .eq('organization_id', organizationId);
+        .eq('id', invoiceId);
 
       if (error) throw error;
     } catch (error) {
@@ -111,17 +85,11 @@ export const invoicesApi = {
     }
   },
 
-  async getTotalInvoiceAmount(
-    opportunityId: string,
-    organizationId: string | null
-  ): Promise<number> {
-    requireOrganizationId(organizationId, 'getTotalInvoiceAmount');
-
+  async getTotalInvoiceAmount(opportunityId: string): Promise<number> {
     try {
       const { data, error } = await supabase
         .from('invoices')
         .select('amount')
-        .eq('organization_id', organizationId)
         .eq('opportunity_id', opportunityId);
 
       if (error) throw error;

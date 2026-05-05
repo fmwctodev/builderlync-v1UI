@@ -31,7 +31,7 @@ export function Automations() {
           <button className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700">
             Create custom
           </button>
-          <button className="px-4 py-2 rounded-lg bg-primary-100 text-red-700 hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-300">
+          <button className="px-4 py-2 rounded-lg bg-primary-100 text-blue-700 hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-300">
             Browse automations
           </button>
         </div>

@@ -1,22 +1,16 @@
 import FileCard from './FileCard';
-
-interface File {
-  id: string;
-  name: string;
-  type: string;
-  pages: number;
-  thumbnail: string;
-}
+import { FileItem } from '../../../../shared/services/fileManagerApi';
 
 interface FileGridProps {
-  files: File[];
+  files: FileItem[];
+  onDeleteFile: (fileId: string | number) => void;
 }
 
-export default function FileGrid({ files }: FileGridProps) {
+export default function FileGrid({ files, onDeleteFile }: FileGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       {files.map((file) => (
-        <FileCard key={file.id} file={file} />
+        <FileCard key={file.id} file={file} onDelete={onDeleteFile} />
       ))}
     </div>
   );

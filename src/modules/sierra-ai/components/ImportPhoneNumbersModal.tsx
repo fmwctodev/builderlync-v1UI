@@ -4,7 +4,8 @@ import {
   fetchTwilioPhoneNumbers,
   importPhoneNumbers,
   fetchOrganizationPhoneNumbers,
-  type TwilioPhoneNumber
+  type TwilioPhoneNumber,
+  type PhoneNumber
 } from '../services/phoneNumbersService';
 
 interface ImportPhoneNumbersModalProps {
@@ -24,7 +25,7 @@ export function ImportPhoneNumbersModal({
 }: ImportPhoneNumbersModalProps) {
   const [loading, setLoading] = useState(false);
   const [twilioNumbers, setTwilioNumbers] = useState<TwilioPhoneNumber[]>([]);
-  const [existingNumbers, setExistingNumbers] = useState<Set<string>>(new Set());
+  const [existingNumbers, setExistingNumbers] = useState<Map<string, PhoneNumber>>(new Map());
   const [selectedNumbers, setSelectedNumbers] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<PhoneNumberType>('all');
@@ -45,10 +46,9 @@ export function ImportPhoneNumbersModal({
       const twilioData = await fetchTwilioPhoneNumbers(organizationId);
       setTwilioNumbers(twilioData);
 
-      // Fetch existing numbers from database
       const existingData = await fetchOrganizationPhoneNumbers(organizationId);
-      const existingSet = new Set(existingData.map((n) => n.phone_number));
-      setExistingNumbers(existingSet);
+      const existingMap = new Map(existingData.map((n) => [n.phone_number, n]));
+      setExistingNumbers(existingMap);
     } catch (err) {
       console.error('Error loading phone numbers:', err);
       setError(err instanceof Error ? err.message : 'Failed to load phone numbers');
@@ -232,7 +232,7 @@ export function ImportPhoneNumbersModal({
                     key={number.sid}
                     className={`flex items-center gap-4 p-4 border rounded-lg ${
                       isExisting
-                        ? 'bg-paper dark:bg-canvas/50 border-gray-200 dark:border-gray-700 opacity-60'
+                        ? 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-60'
                         : isSelected
                         ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -255,11 +255,11 @@ export function ImportPhoneNumbersModal({
                             number.phoneNumberType
                           )}`}
                         >
-                          {number.phoneNumberType.replace('-', ' ')}
+                          {number.phoneNumberType?.replace('-', ' ') || 'local'}
                         </span>
                         {isExisting && (
                           <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            Already imported
+                            Already imported {existingNumbers.get(number.phoneNumber)?.assigned_agent?.name ? `(Assigned to ${existingNumbers.get(number.phoneNumber)?.assigned_agent?.name})` : '(Unassigned)'}
                           </span>
                         )}
                       </div>
@@ -268,17 +268,17 @@ export function ImportPhoneNumbersModal({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {number.capabilities.voice && (
+                      {number.capabilities?.voice && (
                         <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                           <Phone className="w-4 h-4" />
                         </div>
                       )}
-                      {number.capabilities.sms && (
+                      {number.capabilities?.sms && (
                         <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                           <MessageSquare className="w-4 h-4" />
                         </div>
                       )}
-                      {number.capabilities.mms && (
+                      {number.capabilities?.mms && (
                         <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                           <Image className="w-4 h-4" />
                         </div>

@@ -1,91 +1,161 @@
 import React, { useState, useEffect } from 'react';
-import {
-  ShoppingBag,
-  MapPin,
-  ClipboardList,
-  ChevronRight,
-  Package,
-  Truck,
-  ChevronDown,
-  Building2,
-  ShoppingCart,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { ShoppingBag, MapPin, ClipboardList, ChevronRight, Package, Truck, ChevronDown, AlertCircle, Settings, AlertTriangle, ArrowRight, Building } from 'lucide-react';
 import ProductCatalog from './ProductCatalog';
 import BranchLocator from './BranchLocator';
 import OrderHistory from './OrderHistory';
-import { ABCSupplyProvider, useABCSupply } from '../context/ABCSupplyContext';
-import { AccountBranchHeader, ABCSupplyCart, ABCSupplyCheckout, OrderDetailsModal } from './abc-supply';
-import { ABCSupplyOrder, fetchRecentOrders } from '../services/abcSupplyApi';
+import OrderDetailsModal from './OrderDetailsModal';
+import { abcSupplyApi } from '../../abc-supply/services/api';
+import { Product, Branch, ShipTo } from '../../abc-supply/types';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
-type ViewType = 'dashboard' | 'products' | 'branches' | 'orders' | 'cart' | 'checkout' | 'confirmation';
+const ABCSupplyView: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('tab') || searchParams.get('view') || 'dashboard';
+  const [currentView, setCurrentViewLocal] = useState(initialView);
 
-interface OrderConfirmation {
-  orderId: string;
-  orderNumber: string;
-}
-
-const ABCSupplyViewContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewType>(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return (urlParams.get('view') as ViewType) || 'dashboard';
-  });
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState('ABC Supply');
-  const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
-
-  const {
-    selectedAccount,
-    selectedBranch,
-    cartItemCount,
-    cartSubtotal,
-  } = useABCSupply();
-
-  const [recentOrders, setRecentOrders] = useState<ABCSupplyOrder[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<ABCSupplyOrder | null>(null);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-
-  useEffect(() => {
-    const loadOrders = async () => {
-      const orders = await fetchRecentOrders('', 3);
-      setRecentOrders(orders);
-    };
-    loadOrders();
-  }, []);
-
-  const handleOrderClick = (order: ABCSupplyOrder) => {
-    setSelectedOrder(order);
-    setIsOrderModalOpen(true);
+  const setCurrentView = (view: string) => {
+    setCurrentViewLocal(view);
+    setSearchParams(prev => {
+      prev.set('tab', view);
+      return prev;
+    });
   };
 
-  const [featuredProducts] = useState([
-    { id: '1', name: 'GAF Timberline HD Shingles', manufacturer: 'GAF', sku: 'TL-HD-001' },
-    { id: '2', name: 'Owens Corning Duration', manufacturer: 'Owens Corning', sku: 'OC-DUR-002' },
-    { id: '3', name: 'CertainTeed Landmark', manufacturer: 'CertainTeed', sku: 'CT-LM-003' },
-    { id: '4', name: 'Atlas StormMaster', manufacturer: 'Atlas', sku: 'AT-SM-004' }
-  ]);
-
-  const [nearestBranches] = useState([
-    {
-      id: '1',
-      name: 'ABC Supply - Austin North',
-      address: { city: 'Austin', state: 'TX' },
-      phone: '(512) 555-0123'
-    },
-    {
-      id: '2',
-      name: 'ABC Supply - Austin South',
-      address: { city: 'Austin', state: 'TX' },
-      phone: '(512) 555-0124'
-    },
-    {
-      id: '3',
-      name: 'ABC Supply - Round Rock',
-      address: { city: 'Round Rock', state: 'TX' },
-      phone: '(512) 555-0125'
+  // Sync state if URL changes externally
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') || searchParams.get('view');
+    if (urlTab && urlTab !== currentView) {
+      setCurrentViewLocal(urlTab);
     }
-  ]);
+  }, [searchParams]);
+
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState({
+    orders: true,
+    products: true,
+    connection: true
+  });
+  const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
+  const [selectedShipTo, setSelectedShipTo] = useState<ShipTo | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    // Check connection status
+    const checkConnection = async () => {
+      try {
+        const status = await abcSupplyApi.getStatus();
+        setIsConnected(status.connected);
+      } catch (error) {
+        setIsConnected(false);
+      } finally {
+        setLoading(prev => ({ ...prev, connection: false }));
+      }
+    };
+    checkConnection();
+
+    // Load selected branch and account from local storage
+    loadSelection();
+  }, []);
+
+  const loadSelection = () => {
+    const savedBranch = localStorage.getItem('abc_selected_branch');
+    const savedShipTo = localStorage.getItem('abc_selected_shipto');
+
+    if (savedBranch) {
+      try {
+        setSelectedBranch(JSON.parse(savedBranch));
+      } catch (e) { console.error(e); }
+    } else {
+      setSelectedBranch(null);
+    }
+
+    if (savedShipTo) {
+      try {
+        setSelectedShipTo(JSON.parse(savedShipTo));
+      } catch (e) { console.error(e); }
+    } else {
+      setSelectedShipTo(null);
+    }
+  };
+
+  // Reload selected branch when view changes to dashboard
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+      loadSelection();
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    const loadRecentOrders = async () => {
+      try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const endDate = tomorrow.toISOString().split('T')[0];
+
+        const response = await abcSupplyApi.getOrdersHistory({
+          startDate: '2024-03-15',
+          endDate: endDate,
+          itemsPerPage: 20,
+          pageNumber: 1
+        });
+
+        if (response.success) {
+          const orders = response.data.items || [];
+          setRecentOrders(orders.slice(0, 10));
+        } else {
+          setRecentOrders([]);
+        }
+      } catch (error) {
+        console.error('Failed to load recent orders:', error);
+      } finally {
+        setLoading(prev => ({ ...prev, orders: false }));
+      }
+    };
+    if (isConnected) {
+      loadRecentOrders();
+    } else {
+      setLoading(prev => ({ ...prev, orders: false }));
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      try {
+        // If branch selected, try to get products available at that branch via search filter
+        let products = [];
+        if (selectedBranch && selectedBranch.number) {
+          // Use filterItems with empty query to get branch availability
+          // Note: If empty query not supported well, this might return empty.
+          // Using a generic term or wildcard might be needed. 
+          // For featured, we might just want to show *something*.
+          // Assume searching for "shingle" or similar generic term, or just getItems if no robust branch filter for "all"
+          // Actually, best to just use getItems for featured if search isn't robust for "all"
+          // But user said: "Search Items... across all branches... misleadingly select items not available".
+          // So we really should filter.
+          // Let's try searching for "s" (very broad) or just use getItems and hope for best if no search term specific.
+          // Actually, ProductCatalog logic (calling filterItems with '') is what we should mirror.
+          const response = await abcSupplyApi.filterItems([''], 4, 1, selectedBranch.number);
+          products = Array.isArray(response) ? response : [];
+        } else {
+          const response = await abcSupplyApi.getItems(1, 4);
+          products = Array.isArray((response as any).items) ? (response as any).items : (response as any).items?.items || [];
+        }
+        setFeaturedProducts(products);
+      } catch (error) {
+        console.error('Failed to load featured products:', error);
+      } finally {
+        setLoading(prev => ({ ...prev, products: false }));
+      }
+    };
+    if (isConnected) {
+      loadFeaturedProducts();
+    } else {
+      setLoading(prev => ({ ...prev, products: false }));
+    }
+  }, [isConnected, selectedBranch]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -94,376 +164,248 @@ const ABCSupplyViewContent: React.FC = () => {
     return 'Good evening';
   };
 
-  const handleOrderPlaced = (orderId: string, orderNumber: string) => {
-    setOrderConfirmation({ orderId, orderNumber });
-    setCurrentView('confirmation');
-  };
-
-  const renderConfirmation = () => (
-    <div className="space-y-6">
-      <div className="bg-green-600 rounded-lg p-8 text-center">
-        <CheckCircle className="h-16 w-16 text-white mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-white mb-2">Order Placed Successfully!</h1>
-        <p className="text-white/80">Your order has been submitted to ABC Supply</p>
-      </div>
-
-      <div className="bg-gray-800 rounded-lg p-6 text-center">
-        <p className="text-gray-400 mb-2">Order Number</p>
-        <p className="text-2xl font-bold text-white">{orderConfirmation?.orderNumber}</p>
-        <p className="text-sm text-gray-400 mt-4">
-          You will receive an email confirmation shortly. Track your order in the Order History section.
-        </p>
-      </div>
-
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => setCurrentView('orders')}
-          className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
-        >
-          View Order History
-        </button>
-        <button
-          onClick={() => setCurrentView('products')}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-        >
-          Continue Shopping
-        </button>
-      </div>
-    </div>
-  );
-
   const renderDashboard = () => (
     <div className="space-y-6">
-      <section className="bg-primary-600 dark:bg-primary-500 rounded-lg p-6 md:p-8">
-        <div className="flex justify-between items-start">
+      <section className="bg-[#D71920] rounded-lg p-6 md:p-8 relative overflow-visible">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
               {getGreeting()}, Contractor
             </h1>
-            <p className="mt-2 text-gray-200">
-              Welcome to your ABC Supply Contractor Portal. Here's what's happening with your account today.
+            <p className="mt-2 text-white/90">
+              Welcome to your ABC Supply Contractor Portal.
             </p>
           </div>
 
-          <div className="relative">
+          {/* Branch Selector Button */}
+          <div className="relative flex flex-col items-end gap-2">
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-700 transition"
+              onClick={() => setCurrentView('branches')}
+              className="flex items-center gap-2 px-4 py-2 bg-[#A31318] text-white rounded-md hover:bg-[#8F1115] transition-colors border border-[#A31318]"
             >
-              {selectedSupplier}
-              <ChevronDown className="ml-2 h-4 w-4" />
+              <div className="flex flex-col items-start">
+                <span className="text-xs text-red-200 uppercase font-bold tracking-wider">
+                  {selectedBranch ? 'Selected Branch' : 'Select Account & Branch'}
+                </span>
+                <span className="font-medium truncate max-w-[200px]">
+                  {selectedBranch ? selectedBranch.name : 'Find a Location'}
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 ml-2" />
             </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={() => { setSelectedSupplier('ABC Supply'); setDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                  >
-                    ABC Supply
-                  </button>
-                  <button
-                    disabled
-                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
-                  >
-                    SRS
-                  </button>
-                  <button
-                    disabled
-                    className="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
-                  >
-                    QXO
-                  </button>
-                </div>
+            {selectedShipTo && (
+              <div className="text-xs text-red-100 flex items-center gap-1">
+                <Building className="h-3 w-3" />
+                Account: {selectedShipTo.name} ({selectedShipTo.number})
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             onClick={() => setCurrentView('products')}
-            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
+            className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!selectedBranch || !isConnected ? 'opacity-70 pointer-events-none' : ''}`}
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <div className="h-12 w-12 flex-shrink-0 bg-red-50 rounded-lg flex items-center justify-center">
+              <ShoppingBag className="h-6 w-6 text-[#D71920]" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Browse Products</h3>
-              <p className="text-sm text-primary-600 dark:text-gray-400">Search our catalog</p>
+              <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#D71920] transition">Browse Products</h3>
+              <p className="text-sm text-[#D71920]">Search our catalog</p>
             </div>
           </div>
 
           <div
             onClick={() => setCurrentView('branches')}
-            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
+            className="bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group"
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <div className="h-12 w-12 flex-shrink-0 bg-red-50 rounded-lg flex items-center justify-center">
+              <MapPin className="h-6 w-6 text-[#D71920]" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">Find Branches</h3>
-              <p className="text-sm text-primary-600 dark:text-gray-400">Locate nearest stores</p>
+              <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#D71920] transition">Find Branches</h3>
+              <p className="text-sm text-[#D71920]">Locate nearest stores</p>
             </div>
           </div>
 
           <div
             onClick={() => setCurrentView('orders')}
-            className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 flex items-center hover:bg-primary-100 dark:hover:bg-primary-900/30 transition cursor-pointer group"
+            className={`bg-white rounded-lg p-4 flex items-center hover:shadow-lg transition cursor-pointer group ${!isConnected ? 'opacity-70 pointer-events-none' : ''}`}
           >
-            <div className="h-10 w-10 flex-shrink-0 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <div className="h-12 w-12 flex-shrink-0 bg-red-50 rounded-lg flex items-center justify-center">
+              <ClipboardList className="h-6 w-6 text-[#D71920]" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-primary-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition">View Orders</h3>
-              <p className="text-sm text-primary-600 dark:text-gray-400">Check status and history</p>
+              <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#D71920] transition">View Orders</h3>
+              <p className="text-sm text-[#D71920]">Check status and history</p>
             </div>
           </div>
-
-          {cartItemCount > 0 && (
-            <div
-              onClick={() => setCurrentView('cart')}
-              className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex items-center hover:bg-green-100 dark:hover:bg-green-900/30 transition cursor-pointer group border-2 border-green-500/30"
-            >
-              <div className="h-10 w-10 flex-shrink-0 bg-green-100 dark:bg-green-500/20 rounded-lg flex items-center justify-center relative">
-                <ShoppingCart className="h-5 w-5 text-green-600 dark:text-green-400" />
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-green-500 text-white text-xs flex items-center justify-center rounded-full">
-                  {cartItemCount}
-                </span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium text-green-900 dark:text-white group-hover:text-green-700 dark:group-hover:text-green-400 transition">View Cart</h3>
-                <p className="text-sm text-green-600 dark:text-gray-400">${cartSubtotal.toFixed(2)}</p>
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
-      <AccountBranchHeader
-        onViewCart={() => setCurrentView('cart')}
-        showCartSummary={false}
-      />
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
 
-      {(!selectedAccount || !selectedBranch) && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-400">Setup Required</p>
-            <p className="text-xs text-amber-400/80 mt-1">
-              Select your ship-to account and branch above to enable product browsing and ordering.
-              Product availability and pricing vary by branch location.
-            </p>
+      {/* Connection & Branch Warnings */}
+      {(!isConnected || !selectedBranch) && !loading.connection && (
+        <div className="space-y-6">
+          <div className="bg-[#1E293B] border border-gray-700 rounded-lg p-0 overflow-hidden shadow-sm">
+            <div className="p-4 bg-[#2C3344] bg-opacity-40 border-b border-gray-700/50 flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-base font-bold text-yellow-500">
+                  {!isConnected ? 'Connect Your ABC Supply Account' : 'Select Account & Branch'}
+                </h3>
+                <p className="text-sm text-yellow-500/80 mt-1">
+                  {!isConnected
+                    ? 'To access products, pricing, and place orders, you must first connect your ABC Supply account.'
+                    : 'Please select your Ship-To Account and Branch to view products and pricing available to you.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-[#1E293B] flex flex-col md:flex-row gap-6 md:items-center text-sm text-gray-400">
+              {!isConnected ? (
+                <div className="flex items-center gap-2 text-red-400">
+                  <Settings className="h-4 w-4" />
+                  <span>No ABC Supply accounts configured</span>
+                  <a href={`/org/${orgSlug}/settings/integrations`} className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
+                    Go to Settings <ArrowRight className="h-3 w-3" />
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <MapPin className="h-4 w-4" />
+                  <span>Account/Branch not selected</span>
+                  <button onClick={() => setCurrentView('branches')} className="text-blue-400 hover:text-blue-300 ml-2 flex items-center gap-1">
+                    Select Now <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
-            <button
-              onClick={() => setCurrentView('orders')}
-              className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
-            >
-              View all <ChevronRight className="h-4 w-4 ml-1" />
-            </button>
-          </div>
+      {isConnected && selectedBranch ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
+              <button onClick={() => setCurrentView('orders')} className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
+                View all <ChevronRight className="h-4 w-4 ml-1" />
+              </button>
+            </div>
 
-          <div className="p-6">
-            {recentOrders.length > 0 ? (
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    onClick={() => handleOrderClick(order)}
-                    className="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
+            <div className="p-6">
+              {loading.orders ? (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 dark:text-gray-400">Loading recent orders...</p>
+                </div>
+              ) : recentOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {recentOrders.map((order, index) => (
+                    <div
+                      key={order.orderNumber || index}
+                      onClick={() => setSelectedOrder(order)}
+                      className="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer border-l-4 border-transparent hover:border-[#D71920]"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             Order #{order.orderNumber}
                           </span>
-                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                            order.status === 'processing' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
-                            order.status === 'shipped' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                            order.status === 'delivered' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
-                            'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {order.status === 'processing' && <Package className="h-3 w-3" />}
-                            {order.status === 'shipped' && <Truck className="h-3 w-3" />}
-                            {order.status === 'delivered' && <CheckCircle className="h-3 w-3" />}
-                            <span className="capitalize">{order.status}</span>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {order.branchCityState} - {order.productQty} items
+                          </p>
+                          <div className="mt-1 flex items-center">
+                            <span className={`text-sm capitalize ${order.orderStatus === 'processing' ? 'text-yellow-600' :
+                              order.orderStatus === 'shipped' ? 'text-red-600' :
+                                order.orderStatus === 'delivered' ? 'text-green-600' :
+                                  'text-gray-500'
+                              }`}>
+                              {order.orderStatus || order.orderType}
+                            </span>
                           </div>
                         </div>
-                        <p className="font-medium text-primary-600 dark:text-primary-400">
-                          ${order.total.toFixed(2)} - {order.items.length} items
-                        </p>
-                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                          <div className="font-medium mb-1">Items:</div>
-                          {order.items.slice(0, 2).map((item) => (
-                            <div key={item.id} className="ml-2">
-                              {'\u2022'} {item.description} (Qty: {item.quantity})
-                            </div>
-                          ))}
-                          {order.items.length > 2 && (
-                            <div className="ml-2 text-gray-500">
-                              +{order.items.length - 2} more items
-                            </div>
-                          )}
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {order.invoiceDate ? new Date(order.invoiceDate).toLocaleDateString() : 'Pending'}
+                          </span>
                         </div>
-                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          <div>Ordered: {new Date(order.createdAt).toLocaleDateString()}</div>
-                          {order.status !== 'delivered' && order.estimatedDeliveryDate && (
-                            <div>Est. Delivery: {new Date(order.estimatedDeliveryDate).toLocaleDateString()}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-gray-500 dark:text-gray-400">No recent orders found.</p>
-                <button
-                  onClick={() => setCurrentView('products')}
-                  className="mt-3 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-                >
-                  Start Shopping
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 dark:text-gray-400">No recent orders found for this branch.</p>
+                  <button onClick={() => setCurrentView('products')} className="mt-3 px-4 py-2 text-sm font-medium text-white bg-[#D71920] rounded-md hover:bg-red-700">
+                    Start Shopping
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <div className="space-y-6">
+            <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
+                <button onClick={() => setCurrentView('products')} className="text-[#D71920] flex items-center text-sm font-medium hover:text-red-700 transition">
+                  View all <ChevronRight className="h-4 w-4 ml-1" />
                 </button>
               </div>
-            )}
+
+              <div className="p-4">
+                {loading.products ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 dark:text-gray-400">Loading featured products...</p>
+                  </div>
+                ) : featuredProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    {featuredProducts.map((product, key) => (
+                      <div
+                        key={product.itemNumber || key}
+                        className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer border-l-2 border-transparent hover:border-[#D71920]"
+                      >
+                        <div className="flex items-center">
+                          <div className="h-12 w-12 bg-white dark:bg-gray-600 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-500">
+                            <ShoppingBag className="h-6 w-6 text-gray-400 dark:text-gray-300" />
+                          </div>
+                          <div className="ml-3 overflow-hidden">
+                            <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                              {product.familyName || product.itemDescription || 'Product'}
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {product.supplierName} - {product.itemNumber}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 dark:text-gray-400">No featured products available.</p>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
-        </section>
-
-        <div className="space-y-6">
-          <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Featured Products</h2>
-              <button
-                onClick={() => setCurrentView('products')}
-                className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
-              >
-                View all <ChevronRight className="h-4 w-4 ml-1" />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="grid grid-cols-1 gap-3">
-                {featuredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    onClick={() => setCurrentView('products')}
-                    className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                        <ShoppingBag className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <div className="ml-3 overflow-hidden">
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                          {product.name}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {product.manufacturer} - {product.sku}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Nearest Branches</h2>
-              <button
-                onClick={() => setCurrentView('branches')}
-                className="text-primary-600 flex items-center text-sm font-medium hover:text-primary-700 transition"
-              >
-                View all <ChevronRight className="h-4 w-4 ml-1" />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="space-y-3">
-                {nearestBranches.map((branch) => (
-                  <div
-                    key={branch.id}
-                    className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer"
-                  >
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">
-                        {branch.name}
-                      </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {branch.address.city}, {branch.address.state}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {branch.phone}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
         </div>
-      </div>
-
-      <OrderDetailsModal
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        order={selectedOrder}
-      />
+      ) : null}
     </div>
   );
 
-  if (currentView === 'products') {
-    return (
-      <ProductCatalog
-        onBack={() => setCurrentView('dashboard')}
-        onViewCart={() => setCurrentView('cart')}
-      />
-    );
-  }
+  if (currentView === 'products') return <ProductCatalog onBack={() => setCurrentView('dashboard')} supplier="ABC Supply" branchId={selectedBranch?.number} />;
   if (currentView === 'branches') return <BranchLocator onBack={() => setCurrentView('dashboard')} />;
   if (currentView === 'orders') return <OrderHistory onBack={() => setCurrentView('dashboard')} />;
-  if (currentView === 'cart') {
-    return (
-      <ABCSupplyCart
-        onBack={() => setCurrentView('products')}
-        onCheckout={() => setCurrentView('checkout')}
-      />
-    );
-  }
-  if (currentView === 'checkout') {
-    return (
-      <ABCSupplyCheckout
-        onBack={() => setCurrentView('cart')}
-        onOrderPlaced={handleOrderPlaced}
-      />
-    );
-  }
-  if (currentView === 'confirmation') {
-    return renderConfirmation();
-  }
   return renderDashboard();
 };
-
-const ABCSupplyView: React.FC = () => {
-  return (
-    <ABCSupplyProvider>
-      <ABCSupplyViewContent />
-    </ABCSupplyProvider>
-  );
-};
-
 export default ABCSupplyView;

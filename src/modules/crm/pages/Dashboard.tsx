@@ -55,7 +55,7 @@ export function Dashboard() {
           value="$24,500" 
           change="+18%" 
           timeframe="This Month"
-          icon={<DollarSign className="w-10 h-10 text-primary-500 dark:text-red-400" />} 
+          icon={<DollarSign className="w-10 h-10 text-primary-500 dark:text-purple-400" />} 
         />
         <StatCard 
           title="Conversion Rate" 

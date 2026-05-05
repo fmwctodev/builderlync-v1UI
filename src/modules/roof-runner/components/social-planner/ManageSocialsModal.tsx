@@ -133,7 +133,7 @@ export default function ManageSocialsModal({ isOpen, onClose }: ManageSocialsMod
                     <button
                       onClick={() => handleConnect(platform.id)}
                       disabled={isConnecting}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                     >
                       {connectingPlatform === platform.id ? 'Connecting...' : 'Connect'}
                     </button>
@@ -143,9 +143,9 @@ export default function ManageSocialsModal({ isOpen, onClose }: ManageSocialsMod
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-gray-700 dark:text-gray-300">
                 <p className="font-medium mb-1">OAuth Configuration Required</p>
                 <p>

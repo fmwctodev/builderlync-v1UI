@@ -5,6 +5,7 @@ import CalendarSettingsView from '../components/calendar/CalendarSettingsView';
 import NewAppointmentModal from '../components/calendar/NewAppointmentModal';
 import NewCalendarModal from '../components/calendar/NewCalendarModal';
 import CalendarsOld from './Calendars';
+import { Calendar } from '../../../shared/store/services/calendarsApi';
 
 type ViewMode = 'calendar' | 'appointments' | 'settings';
 
@@ -12,6 +13,7 @@ const CalendarsNew: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewMode>('calendar');
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
   const [showNewCalendarModal, setShowNewCalendarModal] = useState(false);
+  const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAppointmentSuccess = () => {
@@ -19,31 +21,30 @@ const CalendarsNew: React.FC = () => {
   };
 
   const handleCalendarSuccess = () => {
+    setEditingCalendar(null);
     setRefreshKey(prev => prev + 1);
   };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+    <div className="h-full min-h-0 flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
-        <div className="flex items-center gap-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 overflow-x-auto">
+        <div className="flex items-center gap-4 min-w-max">
           <button
             onClick={() => setActiveView('calendar')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeView === 'calendar'
+            className={`px-6 py-3 font-medium transition-all relative ${activeView === 'calendar'
                 ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
-            }`}
+              }`}
           >
             Calendar View
           </button>
           <button
             onClick={() => setActiveView('appointments')}
-            className={`px-6 py-3 font-medium transition-all relative ${
-              activeView === 'appointments'
+            className={`px-6 py-3 font-medium transition-all relative ${activeView === 'appointments'
                 ? 'bg-primary-600 text-white rounded-t-lg'
                 : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700'
-            }`}
+              }`}
           >
             Appointment List View
           </button>
@@ -62,7 +63,7 @@ const CalendarsNew: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-auto">
         {activeView === 'calendar' && (
           <CalendarsOld />
         )}
@@ -75,7 +76,14 @@ const CalendarsNew: React.FC = () => {
         {activeView === 'settings' && (
           <CalendarSettingsView
             key={`settings-${refreshKey}`}
-            onNewCalendar={() => setShowNewCalendarModal(true)}
+            onNewCalendar={() => {
+              setEditingCalendar(null);
+              setShowNewCalendarModal(true);
+            }}
+            onEditCalendar={(calendar) => {
+              setEditingCalendar(calendar);
+              setShowNewCalendarModal(true);
+            }}
           />
         )}
       </div>
@@ -88,8 +96,12 @@ const CalendarsNew: React.FC = () => {
       />
       <NewCalendarModal
         isOpen={showNewCalendarModal}
-        onClose={() => setShowNewCalendarModal(false)}
+        onClose={() => {
+          setShowNewCalendarModal(false);
+          setEditingCalendar(null);
+        }}
         onSuccess={handleCalendarSuccess}
+        editingCalendar={editingCalendar}
       />
     </div>
   );

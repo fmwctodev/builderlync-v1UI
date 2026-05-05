@@ -2,13 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, User, Plus, Eye, Edit2 } from 'lucide-react';
 import { searchContactsByTypeAndName, Contact } from '../../../shared/store/services/contactsApi';
 
+const DEFAULT_CONTACT_TYPES = ['customer', 'lead'];
+
 interface ContactSearchDropdownProps {
   selectedContact: { id: string; name: string } | null;
   onSelectContact: (contact: { id: string; name: string } | null) => void;
   disabled?: boolean;
   required?: boolean;
   hasError?: boolean;
-  onCreateNew?: () => void;
+  contactTypes?: string[];
+  placeholder?: string;
+  onCreateNew?: (name: string) => void;
   onViewProfile?: (contactId: string) => void;
   onEditContact?: (contactId: string) => void;
 }
@@ -19,6 +23,8 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   disabled = false,
   required = false,
   hasError = false,
+  contactTypes = DEFAULT_CONTACT_TYPES,
+  placeholder = 'Search for customer or lead...',
   onCreateNew,
   onViewProfile,
   onEditContact
@@ -30,6 +36,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const contactTypesKey = contactTypes.join('|');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,7 +58,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
 
       setLoading(true);
       try {
-        const results = await searchContactsByTypeAndName(searchTerm, ['customer', 'lead']);
+        const results = await searchContactsByTypeAndName(searchTerm, contactTypes);
         setContacts(results);
         setHighlightedIndex(-1);
       } catch (error) {
@@ -64,12 +71,12 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
 
     const debounce = setTimeout(searchContacts, 300);
     return () => clearTimeout(debounce);
-  }, [searchTerm]);
+  }, [contactTypesKey, searchTerm]);
 
   const handleSelectContact = (contact: Contact) => {
     onSelectContact({
       id: contact.id,
-      name: contact.full_name
+      name: contact.fullName
     });
     setSearchTerm('');
     setIsOpen(false);
@@ -113,11 +120,10 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
   if (selectedContact) {
     return (
       <div className="relative">
-        <div className={`flex items-center justify-between px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 ${
-          hasError
-            ? 'border-red-500 dark:border-red-500'
-            : 'border-gray-300 dark:border-gray-600'
-        }`}>
+        <div className={`flex items-center justify-between px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-700 ${hasError
+          ? 'border-red-500 dark:border-red-500'
+          : 'border-gray-300 dark:border-gray-600'
+          }`}>
           <div className="flex items-center space-x-2 flex-1">
             <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
               <User className="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -182,16 +188,16 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
           }}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Search for customer or lead..."
-          className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${
-            hasError
-              ? 'border-red-500 dark:border-red-500 focus:border-red-500'
-              : 'border-gray-300 dark:border-gray-600 focus:border-primary-500'
-          }`}
+          required={required}
+          placeholder={placeholder}
+          className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed ${hasError
+            ? 'border-red-500 dark:border-red-500 focus:border-red-500'
+            : 'border-gray-300 dark:border-gray-600 focus:border-primary-500'
+            }`}
         />
       </div>
 
-      {isOpen && searchTerm.length >= 2 && (
+      {isOpen && (searchTerm.length >= 2 || (searchTerm.length > 0 && onCreateNew)) && (
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
           {loading ? (
             <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
@@ -199,20 +205,21 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
             </div>
           ) : (
             <>
-              {contacts.length === 0 ? (
+              {searchTerm.length >= 2 && contacts.length === 0 && (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   No contacts found
                 </div>
-              ) : (
+              )}
+
+              {contacts.length > 0 && (
                 <ul className="py-1">
                   {contacts.map((contact, index) => (
                     <li key={contact.id}>
                       <button
                         type="button"
                         onClick={() => handleSelectContact(contact)}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          index === highlightedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
-                        }`}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${index === highlightedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                          }`}
                       >
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
@@ -220,7 +227,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {contact.full_name}
+                              {contact.fullName}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {contact.email || contact.phone}
@@ -237,20 +244,20 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
                 </ul>
               )}
 
-              {onCreateNew && (
+              {onCreateNew && searchTerm.length > 0 && (
                 <>
                   <div className="border-t border-gray-200 dark:border-gray-700"></div>
                   <button
                     type="button"
                     onClick={() => {
                       setIsOpen(false);
+                      onCreateNew(searchTerm);
                       setSearchTerm('');
-                      onCreateNew();
                     }}
                     className="w-full px-4 py-2.5 text-left hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors flex items-center space-x-2 text-primary-600 dark:text-primary-400 font-medium"
                   >
                     <Plus className="w-4 h-4" />
-                    <span className="text-sm">Create New Contact</span>
+                    <span className="text-sm">Create New "{searchTerm}"</span>
                   </button>
                 </>
               )}
@@ -259,7 +266,7 @@ const ContactSearchDropdown: React.FC<ContactSearchDropdownProps> = ({
         </div>
       )}
 
-      {searchTerm.length > 0 && searchTerm.length < 2 && (
+      {searchTerm.length > 0 && searchTerm.length < 2 && !onCreateNew && (
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Type at least 2 characters to search
         </p>

@@ -1,6 +1,6 @@
 export type OpportunityStatus = 'open' | 'won' | 'lost' | 'abandoned';
 
-export type JobType = 'Residential' | 'Commercial' | 'Insurance';
+export type JobType = 'Residential' | 'Commercial' | 'Insurance' | 'Multifamily';
 
 export type PipelineType = 'system' | 'custom';
 
@@ -14,6 +14,7 @@ export interface Pipeline {
   pipeline_type: PipelineType;
   created_at: string;
   updated_at: string;
+  is_job_workflow?: boolean;
 }
 
 export interface PipelineStage {
@@ -69,6 +70,8 @@ export interface Opportunity {
   property_country?: string;
   property_latitude?: number;
   property_longitude?: number;
+  job_id?: number | null;
+  contact_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -85,7 +88,7 @@ export interface OpportunityFormData {
   pipeline_id: string;
   stage_id: string;
   status: OpportunityStatus;
-  value: number;
+  value?: number;
   owner_id?: string;
   business_name?: string;
   source?: string;
@@ -102,6 +105,7 @@ export interface OpportunityFormData {
   property_country?: string;
   property_latitude?: number;
   property_longitude?: number;
+  job_id?: number | null;
 }
 
 export interface CreateOpportunityRequest {
@@ -132,26 +136,26 @@ export const OPPORTUNITY_SOURCES = [
   'Email Campaign',
   'Trade Show',
   'Partner',
-  'Canvassing',
   'Other'
 ] as const;
 
-export const JOB_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance'];
+export const JOB_TYPES: JobType[] = ['Residential', 'Commercial', 'Insurance', 'Multifamily'];
 
 export const JOB_TYPE_COLORS: Record<JobType, string> = {
   Residential: '#10b981',
-  Commercial: '#DC2626',
+  Commercial: '#2563eb',
   Insurance: '#ea580c',
+  Multifamily: '#9333ea',
 };
 
 export const STAGE_COLORS = [
   { name: 'Red', value: '#dc2626', tw: 'border-red-600' },
-  { name: 'Blue', value: '#DC2626', tw: 'border-red-600' },
+  { name: 'Blue', value: '#2563eb', tw: 'border-blue-600' },
   { name: 'Yellow', value: '#eab308', tw: 'border-yellow-500' },
   { name: 'Green', value: '#16a34a', tw: 'border-green-600' },
-  { name: 'Purple', value: '#DC2626', tw: 'border-red-600' },
+  { name: 'Purple', value: '#9333ea', tw: 'border-purple-600' },
   { name: 'Emerald', value: '#10b981', tw: 'border-emerald-500' },
-  { name: 'Indigo', value: '#DC2626', tw: 'border-red-500' },
+  { name: 'Indigo', value: '#6366f1', tw: 'border-indigo-500' },
   { name: 'Orange', value: '#ea580c', tw: 'border-orange-600' },
   { name: 'Pink', value: '#ec4899', tw: 'border-pink-500' },
 ] as const;

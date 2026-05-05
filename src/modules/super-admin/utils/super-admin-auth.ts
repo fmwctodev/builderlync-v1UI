@@ -53,6 +53,7 @@ export const getSuperAdminSession = (): SuperAdminSession | null => {
 
 export const clearSuperAdminSession = (): void => {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('adminToken');
 };
 
 export const isSuperAdminAuthenticated = (): boolean => {

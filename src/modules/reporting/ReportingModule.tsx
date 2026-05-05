@@ -1,14 +1,13 @@
 import { Routes, Route } from 'react-router-dom';
+import Layout from '../roof-runner/components/Layout/Layout';
 import { Dashboard } from './pages/Dashboard';
-import { ReportView } from './pages/ReportView';
-import { AIReporting } from './pages/AIReporting';
 
 export function ReportingModule() {
   return (
     <Routes>
-      <Route index element={<Dashboard />} />
-      <Route path="ai" element={<AIReporting />} />
-      <Route path=":id" element={<ReportView />} />
+      <Route path="/*" element={<Layout />}>
+        <Route index element={<Dashboard />} />
+      </Route>
     </Routes>
   );
 }

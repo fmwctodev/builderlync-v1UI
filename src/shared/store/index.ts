@@ -8,6 +8,9 @@ import notesReducer, { notesSaga } from './slices/notesSlice';
 import callReducer from './slices/callSlice';
 import { watchAuthSagas } from './sagas/authSaga';
 import { default as contactsSaga } from './sagas/contactsSaga';
+import { dashboardApi } from './services/dashboardApi';
+import { pipelinesApi } from './services/pipelinesApi';
+import { jobPipelinesApi } from './services/jobPipelinesApi';
 
 const sagaMiddleware = createSagaMiddleware();
 
@@ -27,14 +30,21 @@ export const store = configureStore({
     tasks: tasksReducer,
     notes: notesReducer,
     call: callReducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [pipelinesApi.reducerPath]: pipelinesApi.reducer,
+    [jobPipelinesApi.reducerPath]: jobPipelinesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      thunk: false,
       serializableCheck: {
         ignoredActions: ['persist/PERSIST'],
       },
-    }).concat(sagaMiddleware),
+    }).concat([
+      dashboardApi.middleware,
+      pipelinesApi.middleware,
+      jobPipelinesApi.middleware,
+      sagaMiddleware,
+    ]),
 });
 
 sagaMiddleware.run(rootSaga);

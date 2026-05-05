@@ -221,7 +221,7 @@ export function LogsTestingPage() {
             {/* Transcript */}
             <div className="mb-6">
               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Transcript</h4>
-              <div className="space-y-3 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-paper dark:bg-canvas">
+              <div className="space-y-3 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                 {selectedConv.transcript.map((msg) => (
                   <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                     {msg.sender === 'sierra' && (

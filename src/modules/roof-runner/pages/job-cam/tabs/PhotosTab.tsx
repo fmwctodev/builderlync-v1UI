@@ -1,21 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  Search, SlidersHorizontal, LayoutGrid, List, RefreshCw,
-  Briefcase, Shield, Star
+  Search, SlidersHorizontal, LayoutGrid, List,
+  Briefcase, Shield, Star, Camera
 } from 'lucide-react';
 import type {
   JobPhoto, JobMediaFilters, BulkUpdatePayload,
-  PhotoCategory, ReviewStatus
+  PhotoCategory, ReviewStatus, JobFile
 } from '../../../types/jobCam';
-import {
-  fetchJobMediaByJob, bulkUpdateJobPhotos,
-} from '../../../services/jobCamApi';
+import { bulkUpdateJobPhotos, bulkDeleteJobPhotos, addMediaToGallery } from '../../../services/jobCamApi';
 import MediaCard from '../../../components/job-cam/MediaCard';
 import BulkActionBar from '../../../components/job-cam/BulkActionBar';
 import EmptyStateActionCard from '../../../components/job-cam/EmptyStateActionCard';
+import GallerySelectModal from '../../../components/job-cam/GallerySelectModal';
 import JobCamMediaDrawer from '../JobCamMediaDrawer';
 import { format } from 'date-fns';
-import { Camera } from 'lucide-react';
 
 const CATEGORIES: { value: PhotoCategory; label: string }[] = [
   { value: 'before', label: 'Before' },
@@ -34,9 +32,9 @@ const REVIEW_STATUSES: { value: ReviewStatus; label: string }[] = [
 ];
 
 const reviewBadge: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
+  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
 const categoryColor: Record<string, string> = {
@@ -44,27 +42,51 @@ const categoryColor: Record<string, string> = {
   during: 'bg-amber-100 text-amber-700',
   after: 'bg-green-100 text-green-700',
   damage: 'bg-red-100 text-red-700',
-  inspection: 'bg-sky-100 text-sky-700',
+  inspection: 'bg-purple-100 text-purple-700',
   completion: 'bg-teal-100 text-teal-700',
   claim: 'bg-orange-100 text-orange-700',
+  material: 'bg-blue-100 text-blue-700',
+  receipt: 'bg-stone-100 text-stone-700',
+  other: 'bg-gray-100 text-gray-700',
 };
 
 interface Props {
   jobId: number;
   photos: JobPhoto[];
+  files?: JobFile[];
   setPhotos: (photos: JobPhoto[] | ((prev: JobPhoto[]) => JobPhoto[])) => void;
   onUploadClick: () => void;
   onRefresh: () => void;
 }
 
-const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, onRefresh }) => {
+const PhotosTab: React.FC<Props> = ({ jobId, photos, files = [], setPhotos, onUploadClick, onRefresh }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<JobMediaFilters>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerPhoto, setDrawerPhoto] = useState<JobPhoto | null>(null);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  
+  // Merge image files into photos view
+  const imageFilesAsPhotos: JobPhoto[] = files
+    .filter(f => f.mime_type?.startsWith('image/'))
+    .map(f => ({
+      id: f.id,
+      file_url: f.file_url,
+      thumbnail_url: f.file_url,
+      file_name: f.file_name,
+      capture_date: f.created_at,
+      category: (f.category as PhotoCategory) || 'other',
+      review_status: 'approved' as ReviewStatus,
+      is_customer_shareable: true,
+      is_marketing_approved: false,
+      is_claim_relevant: false,
+      source: 'attachment' as any
+    })) as unknown as JobPhoto[];
 
-  const filteredPhotos = photos.filter(p => {
+  const allMedia = [...photos, ...imageFilesAsPhotos];
+
+  const filteredPhotos = allMedia.filter(p => {
     if (filters.category && p.category !== filters.category) return false;
     if (filters.reviewStatus && p.review_status !== filters.reviewStatus) return false;
     if (filters.isClaimRelevant && !p.is_claim_relevant) return false;
@@ -97,8 +119,34 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} photos? This will remove them permanently from all sources.`)) return;
+    try {
+      await bulkDeleteJobPhotos(Array.from(selected));
+      setSelected(new Set());
+      onRefresh();
+    } catch (e) {
+      console.error('Bulk delete failed:', e);
+    }
+  };
+
+  const handleAddToGallery = async (galleryId: string) => {
+    if (selected.size === 0) return;
+    try {
+      await addMediaToGallery(galleryId, Array.from(selected));
+      setSelected(new Set());
+      setShowGalleryModal(false);
+      onRefresh();
+    } catch (e) {
+      console.error('Failed to add to gallery:', e);
+      alert('Failed to add photos to gallery');
+    }
+  };
+
   const groupedByDate = filteredPhotos.reduce<Record<string, JobPhoto[]>>((acc, photo) => {
-    const key = format(new Date(photo.capture_date), 'MMMM d, yyyy');
+    const dateToFormat = photo.capture_date || photo.created_at;
+    const key = dateToFormat ? format(new Date(dateToFormat), 'MMMM d, yyyy') : 'Unknown Date';
     if (!acc[key]) acc[key] = [];
     acc[key].push(photo);
     return acc;
@@ -107,7 +155,7 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
   const drawerIndex = drawerPhoto ? filteredPhotos.findIndex(p => p.id === drawerPhoto.id) : -1;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-[200px]">
@@ -134,33 +182,33 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
           <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 ${viewMode === 'grid' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              className={`p-2 transition-all ${viewMode === 'grid' ? 'bg-primary-600 text-white shadow-inner' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             >
               <LayoutGrid size={15} />
             </button>
             <button
               onClick={() => setViewMode('timeline')}
-              className={`p-2 ${viewMode === 'timeline' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              className={`p-2 transition-all ${viewMode === 'timeline' ? 'bg-primary-600 text-white shadow-inner' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             >
               <List size={15} />
             </button>
           </div>
-          <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{filteredPhotos.length} photos</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium ml-2">{filteredPhotos.length} photos</span>
         </div>
 
         {showFilters && (
-          <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex flex-wrap gap-4">
+          <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl flex flex-wrap gap-4 border border-gray-100 dark:border-gray-700 shadow-inner">
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Category</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Category</p>
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map(c => (
                   <button
                     key={c.value}
                     onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? undefined : c.value }))}
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    className={`text-xs px-2.5 py-1 rounded-full font-bold transition-all border ${
                       filters.category === c.value
-                        ? (categoryColor[c.value] ?? 'bg-gray-200 text-gray-700')
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                        ? (categoryColor[c.value] ?? 'bg-primary-600 text-white border-primary-600 shadow-md')
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
                     }`}
                   >
                     {c.label}
@@ -169,16 +217,16 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Review Status</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Review Status</p>
               <div className="flex gap-1.5">
                 {REVIEW_STATUSES.map(r => (
                   <button
                     key={r.value}
                     onClick={() => setFilters(f => ({ ...f, reviewStatus: f.reviewStatus === r.value ? undefined : r.value }))}
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    className={`text-xs px-2.5 py-1 rounded-full font-bold transition-all border ${
                       filters.reviewStatus === r.value
                         ? reviewBadge[r.value]
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
                     }`}
                   >
                     {r.label}
@@ -187,7 +235,7 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Flags</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Flags</p>
               <div className="flex gap-1.5">
                 {[
                   { key: 'isClaimRelevant' as const, label: 'Claim', icon: Briefcase },
@@ -197,10 +245,10 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
                   <button
                     key={flag.key}
                     onClick={() => setFilters(f => ({ ...f, [flag.key]: f[flag.key] ? undefined : true }))}
-                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-bold transition-all border ${
                       filters[flag.key]
-                        ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                        ? 'bg-primary-600 text-white border-primary-600 shadow-md'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
                     }`}
                   >
                     <flag.icon size={11} />
@@ -211,9 +259,9 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
             </div>
             <button
               onClick={() => setFilters({})}
-              className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline self-end"
+              className="text-xs font-bold text-primary-600 hover:text-primary-700 underline self-end mb-1"
             >
-              Clear all
+              Reset All
             </button>
           </div>
         )}
@@ -223,12 +271,14 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
         <BulkActionBar
           count={selected.size}
           onAction={handleBulkAction}
+          onDelete={handleBulkDelete}
+          onAddToGallery={() => setShowGalleryModal(true)}
           onSelectAll={() => setSelected(new Set(filteredPhotos.map(p => p.id)))}
           onClear={() => setSelected(new Set())}
         />
       )}
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {filteredPhotos.length === 0 ? (
           <EmptyStateActionCard
             icon={Camera}
@@ -238,7 +288,7 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
             onAction={onUploadClick}
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
             {filteredPhotos.map(photo => (
               <MediaCard
                 key={photo.id}
@@ -250,13 +300,19 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
             ))}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {Object.entries(groupedByDate).map(([date, datePhotos]) => (
               <div key={date}>
-                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 sticky top-0 bg-paper dark:bg-canvas py-1 z-10">
-                  {date} &bull; {datePhotos.length} photo{datePhotos.length !== 1 ? 's' : ''}
-                </h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+                <div className="flex items-center gap-4 mb-4 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 py-2">
+                  <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 titlecase tracking-widest whitespace-nowrap">
+                    {date}
+                  </h3>
+                  <div className="h-px bg-gray-200 dark:bg-gray-800 flex-1" />
+                  <span className="text-xs text-gray-400 font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800">
+                    {datePhotos.length} item{datePhotos.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
                   {datePhotos.map(photo => (
                     <MediaCard
                       key={photo.id}
@@ -277,14 +333,25 @@ const PhotosTab: React.FC<Props> = ({ jobId, photos, setPhotos, onUploadClick, o
         <JobCamMediaDrawer
           photo={drawerPhoto}
           onClose={() => setDrawerPhoto(null)}
-          onUpdate={updated => {
+          onUpdate={(updated: JobPhoto) => {
             setPhotos((ps: JobPhoto[]) => ps.map(p => p.id === updated.id ? updated : p));
             setDrawerPhoto(updated);
+          }}
+          onDelete={(id: string) => {
+            setPhotos((ps: JobPhoto[]) => ps.filter(p => p.id !== id));
+            onRefresh();
           }}
           onNext={drawerIndex < filteredPhotos.length - 1 ? () => setDrawerPhoto(filteredPhotos[drawerIndex + 1]) : undefined}
           onPrev={drawerIndex > 0 ? () => setDrawerPhoto(filteredPhotos[drawerIndex - 1]) : undefined}
         />
       )}
+
+      <GallerySelectModal
+        open={showGalleryModal}
+        onClose={() => setShowGalleryModal(false)}
+        onSelect={handleAddToGallery}
+        jobId={jobId}
+      />
     </div>
   );
 };

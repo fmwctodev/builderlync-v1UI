@@ -11,7 +11,7 @@ export const LeadsList: React.FC<LeadsListProps> = ({ leads }) => {
       case 'new': return 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300';
       case 'contacted': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       case 'qualified': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'proposal': return 'bg-primary-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'proposal': return 'bg-primary-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       case 'closed': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
@@ -25,7 +25,7 @@ export const LeadsList: React.FC<LeadsListProps> = ({ leads }) => {
       <div className="p-6">
         <div className="space-y-4">
           {leads.map((lead) => (
-            <div key={lead.id} className="flex items-center justify-between p-3 bg-paper dark:bg-canvas rounded-lg">
+            <div key={lead.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{lead.name}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{lead.company}</p>

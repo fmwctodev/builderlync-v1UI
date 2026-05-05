@@ -31,15 +31,15 @@ const RelatedObjectsTab: React.FC = () => {
               
               <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
                 <div className="w-4 h-2 bg-primary-600 rounded"></div>
-                <div className="w-4 h-2 bg-red-400 rounded"></div>
+                <div className="w-4 h-2 bg-blue-400 rounded"></div>
               </div>
             </div>
             
-            <div className="absolute top-4 left-8 text-red-400 text-xs">BOO!</div>
-            <div className="absolute top-12 right-6 w-1 h-1 bg-red-400 rounded-full"></div>
-            <div className="absolute top-6 right-12 w-1 h-1 bg-red-300 rounded-full"></div>
-            <div className="absolute bottom-16 left-4 w-1 h-1 bg-red-400 rounded-full"></div>
-            <div className="absolute bottom-8 right-8 w-1 h-1 bg-red-300 rounded-full"></div>
+            <div className="absolute top-4 left-8 text-blue-400 text-xs">BOO!</div>
+            <div className="absolute top-12 right-6 w-1 h-1 bg-blue-400 rounded-full"></div>
+            <div className="absolute top-6 right-12 w-1 h-1 bg-blue-300 rounded-full"></div>
+            <div className="absolute bottom-16 left-4 w-1 h-1 bg-blue-400 rounded-full"></div>
+            <div className="absolute bottom-8 right-8 w-1 h-1 bg-blue-300 rounded-full"></div>
             <div className="absolute top-16 left-12 text-gray-400 text-xs">✦</div>
             <div className="absolute bottom-12 right-4 text-gray-400 text-xs">✦</div>
           </div>

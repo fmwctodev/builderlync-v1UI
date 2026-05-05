@@ -1,12 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { X, Upload, AlertCircle, CheckCircle, File, Loader } from 'lucide-react';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 
 interface UploadFilesModalProps {
   isOpen: boolean;
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
+  organizationId: string;
   onSuccess: (files: File[]) => void;
+  agentId?: string;
 }
 
 interface UploadingFile {
@@ -20,7 +23,9 @@ export function UploadFilesModal({
   isOpen,
   onClose,
   collections,
+  organizationId,
   onSuccess,
+  agentId,
 }: UploadFilesModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -67,11 +72,6 @@ export function UploadFilesModal({
       return;
     }
 
-    if (!selectedCollection) {
-      setError('Please select a collection');
-      return;
-    }
-
     setIsUploading(true);
     setError('');
 
@@ -85,25 +85,57 @@ export function UploadFilesModal({
 
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
-        setUploadingFiles(prev =>
-          prev.map((uf, idx) =>
-            idx === i ? { ...uf, progress: 50, status: 'uploading' } : uf
-          )
-        );
+        const file = selectedFiles[i];
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 50, status: 'uploading' } : uf
+            )
+          );
 
-        setUploadingFiles(prev =>
-          prev.map((uf, idx) =>
-            idx === i ? { ...uf, progress: 100, status: 'completed' } : uf
-          )
-        );
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('organization_id', organizationId);
+          if (selectedCollection) {
+            formData.append('collection_id', selectedCollection);
+          }
+          formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+          if (agentId) {
+            formData.append('agent_id', agentId);
+          } // Remove extension from title
+
+          // The backend now handles Vapi sync automatically if agentId is provided in formData
+          await knowledgeBaseApi.uploadDocument(formData);
+
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 100, status: 'completed' } : uf
+            )
+          );
+        } catch (fileError) {
+          console.error(`Error uploading ${file.name}:`, fileError);
+          setUploadingFiles(prev =>
+            prev.map((uf, idx) =>
+              idx === i ? { ...uf, progress: 0, status: 'error', error: fileError instanceof Error ? fileError.message : 'Upload failed' } : uf
+            )
+          );
+        }
       }
 
-      setTimeout(() => {
-        onSuccess(selectedFiles);
-        handleClose();
-      }, 1500);
+      // Check if all files completed successfully
+      const allSuccessful = uploadingFiles.every(f => f.status === 'completed');
+
+      if (allSuccessful) {
+        setTimeout(() => {
+          onSuccess(selectedFiles);
+          handleClose();
+        }, 1500);
+      } else {
+        setIsUploading(false);
+        setError('Some files failed to upload. Please check the status above.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload files');
       setIsUploading(false);
@@ -166,11 +198,10 @@ export function UploadFilesModal({
               {selectedFiles.length === 0 && uploadingFiles.length === 0 ? (
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                    isDragActive
+                  className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
                       ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
                       : 'border-gray-300 dark:border-gray-600 hover:border-red-400 dark:hover:border-red-500'
-                  }`}
+                    }`}
                 >
                   <input {...getInputProps()} />
                   <div className="flex flex-col items-center">
@@ -201,7 +232,7 @@ export function UploadFilesModal({
                         ) : uploadFile.status === 'error' ? (
                           <AlertCircle className="w-5 h-5 text-red-600" />
                         ) : (
-                          <Loader className="w-5 h-5 text-primary-600 animate-spin" />
+                          <Loader className="w-5 h-5 text-blue-600 animate-spin" />
                         )}
                       </div>
 
@@ -272,7 +303,7 @@ export function UploadFilesModal({
                   <button
                     type="button"
                     {...getRootProps()}
-                    className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-red-400 dark:hover:border-red-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <input {...getInputProps()} />
                     + Add more files

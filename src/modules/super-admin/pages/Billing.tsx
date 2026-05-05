@@ -6,6 +6,8 @@ import { PlanEditorDrawer } from '../components/billing/PlanEditorDrawer';
 import { MetricsTab } from '../components/billing/MetricsTab';
 import { AccountsTab } from '../components/billing/AccountsTab';
 import { InvoicesTab } from '../components/billing/InvoicesTab';
+import { SubscriptionsTab } from '../components/billing/SubscriptionsTab';
+import { SubscriptionPlansTab } from '../components/billing/SubscriptionPlansTab';
 import { Plan } from '../types/billing';
 import { getPlans, createPlan, updatePlan, togglePlanActive } from '../services/plans-service';
 import { syncAllStripeData } from '../services/stripe/stripe-sync-service';
@@ -187,6 +189,10 @@ export const Billing: React.FC = () => {
           )}
         </div>
       )}
+
+      {activeTab === 'subscription-plans' && <SubscriptionPlansTab />}
+
+      {activeTab === 'subscriptions' && <SubscriptionsTab />}
 
       {activeTab === 'accounts' && <AccountsTab />}
 

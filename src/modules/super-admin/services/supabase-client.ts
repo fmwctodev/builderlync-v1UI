@@ -1,71 +1,118 @@
 /**
- * Super Admin Supabase Client
+ * Super Admin Supabase / API client.
  *
- * Re-exports the shared Supabase client to prevent multiple GoTrueClient instances.
- * Admin client is separate and configured to NOT manage auth state.
+ * Provides:
+ *  - `supabase`        — public Supabase client (anon key)
+ *  - `supabaseAdmin`   — privileged Supabase client (service-role if available,
+ *                        otherwise falls back to anon — RLS still applies)
+ *  - `apiClient`       — backend REST helper (kept for legacy code paths)
  */
-import { createClient } from '@supabase/supabase-js';
-import { supabase } from '../../../shared/lib/supabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-if (!supabaseUrl) {
-  throw new Error('Missing Supabase URL environment variable');
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_SERVICE_ROLE_KEY = import.meta.env
+  .VITE_SUPABASE_SERVICE_ROLE_KEY as string | undefined;
 
-// Re-export shared client (DO NOT create a new one)
-export { supabase };
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Check if service role key is configured
-export const isServiceRoleConfigured = (): boolean => {
-  return !!supabaseServiceRoleKey && supabaseServiceRoleKey !== supabaseAnonKey;
-};
-
-// Get helpful error message for missing service role key
-export const getServiceRoleErrorMessage = (): string => {
-  return `
-Service Role Key Required:
-
-The account provisioning system requires elevated permissions that only the
-Supabase service role key can provide. Without it, operations like creating
-auth users will fail with "User not allowed" errors.
-
-To fix this:
-1. Go to your Supabase Dashboard
-2. Navigate to Settings > API
-3. Copy the "service_role" key (NOT the anon key)
-4. Add it to your .env file:
-   VITE_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-5. Restart your development server
-
-Note: The service role key should be kept secret and only used server-side.
-For this admin panel, it's acceptable to use it in the authenticated context.
-  `.trim();
-};
-
-// Admin client for elevated permissions - configured to NOT interfere with auth
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseServiceRoleKey || supabaseAnonKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
+// Single null-safe stub used when env vars are missing in dev/preview builds.
+// All `.from(...)` etc. calls return errors via the Supabase client itself
+// rather than throwing on a null receiver.
+const buildStub = (): SupabaseClient => {
+  const reason =
+    'Supabase client not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
+  console.warn('[supabase-client]', reason);
+  // Cast to SupabaseClient — every method returns an error-shaped object.
+  // This avoids "Cannot read properties of null" runtime crashes.
+  const stub: any = new Proxy(
+    {},
+    {
+      get() {
+        return () => stub;
+      },
     }
-  }
-);
+  );
+  stub.from = () => stub;
+  stub.rpc = async () => ({ data: null, error: { message: reason } });
+  stub.select = () => stub;
+  stub.insert = () => stub;
+  stub.update = () => stub;
+  stub.delete = () => stub;
+  stub.upsert = () => stub;
+  stub.eq = () => stub;
+  stub.neq = () => stub;
+  stub.in = () => stub;
+  stub.is = () => stub;
+  stub.not = () => stub;
+  stub.or = () => stub;
+  stub.order = () => stub;
+  stub.limit = () => stub;
+  stub.range = () => stub;
+  stub.overlaps = () => stub;
+  stub.single = async () => ({ data: null, error: { message: reason } });
+  stub.maybeSingle = async () => ({ data: null, error: { message: reason } });
+  stub.then = (resolve: (v: any) => void) =>
+    Promise.resolve({ data: [], error: { message: reason } }).then(resolve);
+  return stub as SupabaseClient;
+};
+
+const buildClient = (key: string): SupabaseClient =>
+  createClient(SUPABASE_URL as string, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+export const supabase: SupabaseClient =
+  SUPABASE_URL && SUPABASE_ANON_KEY ? buildClient(SUPABASE_ANON_KEY) : buildStub();
+
+// Prefer service-role key when present (super-admin only — never bundled in
+// public-facing builds). Fall back to anon so the codebase doesn't crash.
+export const supabaseAdmin: SupabaseClient =
+  SUPABASE_URL && (SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY)
+    ? buildClient(SUPABASE_SERVICE_ROLE_KEY || (SUPABASE_ANON_KEY as string))
+    : buildStub();
+
+export const isServiceRoleConfigured = (): boolean =>
+  Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+
+export const getServiceRoleErrorMessage = (): string =>
+  isServiceRoleConfigured()
+    ? ''
+    : 'Service role key not configured. Set VITE_SUPABASE_SERVICE_ROLE_KEY for full super-admin access.';
+
+// Backend REST helper retained for legacy code paths.
+export const apiClient = {
+  get: async (endpoint: string) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    return response.json();
+  },
+  post: async (endpoint: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+  put: async (endpoint: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+  delete: async (endpoint: string) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.json();
+  },
+};
 
 export const handleSupabaseError = (error: any): string => {
-  if (error?.message) {
-    return error.message;
-  }
-  if (error?.code === 'PGRST301') {
-    return 'Permission denied. Please contact support.';
-  }
-  if (error?.code === '42501') {
-    return 'Insufficient permissions for this operation.';
-  }
+  if (error?.message) return error.message;
   return 'An unexpected error occurred';
 };

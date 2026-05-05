@@ -1,273 +1,138 @@
-import React, { useState, useEffect } from 'react';
-import { X, Coins, Check, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
-import { useCurrentOrganization } from '../../../../shared/context/OrgContext';
-import {
-  getCreditPackages,
-  createStripeCheckoutSession,
-  createCreditPurchase,
-  CreditPackage,
-} from '../../services/creditPurchaseApi';
+import React, { useState } from 'react';
+import { X, Check, Wallet, ArrowRight } from 'lucide-react';
+import { paymentService } from '../../services/paymentService';
 
 interface BuyCreditsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentBalance?: number;
-  requiredCredits?: number;
+    isOpen: boolean;
+    onClose: () => void;
+    currentBalance: number;
+    orgSlug: string;
 }
 
-export function BuyCreditsModal({
-  isOpen,
-  onClose,
-  currentBalance = 0,
-  requiredCredits,
-}: BuyCreditsModalProps) {
-  const { currentOrganizationId } = useCurrentOrganization();
-  const [packages, setPackages] = useState<CreditPackage[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const CREDIT_PACKS = [
+    { id: 'starter', name: 'Starter Pack', credits: 10, price: 49, desc: '10 credits for occasional use', perCredit: 4.90 },
+    { id: 'standard', name: 'Standard Pack', credits: 25, price: 99, desc: '25 credits - Best value for small teams', perCredit: 3.96, popular: true },
+    { id: 'pro', name: 'Pro Pack', credits: 50, price: 179, desc: '50 credits for growing businesses', perCredit: 3.58 },
+    { id: 'enterprise', name: 'Enterprise Pack', credits: 100, price: 299, desc: '100 credits for high-volume users', perCredit: 2.99 },
+];
 
-  useEffect(() => {
-    if (isOpen) {
-      loadPackages();
-    }
-  }, [isOpen]);
+export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, currentBalance, orgSlug }) => {
+    const [selectedPackId, setSelectedPackId] = useState<string>('standard');
 
-  const loadPackages = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await getCreditPackages();
-      setPackages(data);
-      const popular = data.find(p => p.is_popular);
-      if (popular) {
-        setSelectedPackage(popular);
-      } else if (data.length > 0) {
-        setSelectedPackage(data[0]);
-      }
-    } catch (err) {
-      console.error('Error loading packages:', err);
-      setError('Failed to load credit packages. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    if (!isOpen) return null;
 
-  const formatPrice = (cents: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(cents / 100);
-  };
+    const selectedPack = CREDIT_PACKS.find(p => p.id === selectedPackId);
+    const newBalance = currentBalance + (selectedPack?.credits || 0);
 
-  const handlePurchase = async () => {
-    if (!selectedPackage || !currentOrganizationId) return;
+    return (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
 
-    try {
-      setIsProcessing(true);
-      setError(null);
+                <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-      const currentUrl = window.location.href;
-      const successUrl = `${window.location.origin}${window.location.pathname}?credits_purchase=success`;
-      const cancelUrl = `${window.location.origin}${window.location.pathname}?credits_purchase=cancelled`;
+                <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+                    {/* Header */}
+                    <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-100 rounded-lg">
+                                    <Wallet className="w-6 h-6 text-red-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="modal-title">
+                                        Buy Credits
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Current balance: {currentBalance} credits
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                            >
+                                <span className="sr-only">Close</span>
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                    </div>
 
-      const { checkoutUrl, sessionId } = await createStripeCheckoutSession({
-        organizationId: currentOrganizationId,
-        packageId: selectedPackage.id,
-        successUrl,
-        cancelUrl,
-      });
+                    {/* Body */}
+                    <div className="px-6 py-6 bg-gray-50 dark:bg-gray-900/50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {CREDIT_PACKS.map((pack) => (
+                                <div
+                                    key={pack.id}
+                                    onClick={() => setSelectedPackId(pack.id)}
+                                    className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer bg-white dark:bg-gray-800 ${selectedPackId === pack.id
+                                        ? pack.popular ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-900 dark:border-white ring-1 ring-gray-900'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    {pack.popular && (
+                                        <div className="absolute -top-3 left-4 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                            Most Popular
+                                        </div>
+                                    )}
 
-      await createCreditPurchase(
-        currentOrganizationId,
-        selectedPackage.id,
-        selectedPackage.credits,
-        selectedPackage.price_cents,
-        sessionId
-      );
+                                    {selectedPackId === pack.id && (
+                                        <div className={`absolute top-4 right-4 w-5 h-5 rounded-full flex items-center justify-center ${pack.popular ? 'bg-red-600' : 'bg-gray-900 dark:bg-white'}`}>
+                                            <Check className={`w-3 h-3 ${pack.popular ? 'text-white' : 'text-white dark:text-gray-900'}`} />
+                                        </div>
+                                    )}
 
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      console.error('Error creating checkout:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start checkout. Please try again.');
-      setIsProcessing(false);
-    }
-  };
+                                    <h3 className={`font-bold text-lg mb-1 ${pack.popular ? 'text-red-700 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                                        {pack.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mb-3">{pack.desc}</p>
 
-  if (!isOpen) return null;
+                                    <div className="flex items-baseline gap-1 mb-1">
+                                        <span className="text-2xl font-bold text-gray-900 dark:text-white">${pack.price.toFixed(2)}</span>
+                                        <span className="text-sm text-gray-500">for {pack.credits} credits</span>
+                                    </div>
+                                    <p className="text-xs text-gray-400">${pack.perCredit.toFixed(2)} per credit</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-  const shortage = requiredCredits ? Math.max(0, requiredCredits - currentBalance) : 0;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-              <Coins className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Buy Credits
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Current balance: {currentBalance} credits
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6">
-          {shortage > 0 && (
-            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    You need {shortage} more {shortage === 1 ? 'credit' : 'credits'}
-                  </p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-0.5">
-                    Select a package below to continue with your order.
-                  </p>
+                    {/* Footer */}
+                    <div className="bg-white dark:bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse sm:items-center sm:justify-between border-t border-gray-100 dark:border-gray-700">
+                        <div className="flex flex-row-reverse gap-3">
+                            <button
+                                type="button"
+                                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm items-center gap-2"
+                                onClick={async () => {
+                                    try {
+                                        console.log('Initiating checkout with', selectedPack);
+                                        const session = await paymentService.createCheckoutSession(selectedPack, orgSlug);
+                                        if (session.url) {
+                                            window.location.href = session.url;
+                                        }
+                                    } catch (error) {
+                                        console.error('Checkout failed:', error);
+                                        alert('Failed to initiate checkout. Please try again.');
+                                    }
+                                }}
+                            >
+                                <ArrowRight className="w-4 h-4" />
+                                Continue to Checkout
+                            </button>
+                            <button
+                                type="button"
+                                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                onClick={onClose}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        <div className="mt-4 sm:mt-0 text-sm text-gray-600 dark:text-gray-400 font-medium">
+                            New balance after purchase: <span className="text-gray-900 dark:text-white font-bold">{newBalance} credits</span>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          )}
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
-            </div>
-          ) : packages.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                No credit packages available at this time.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {packages.map((pkg) => (
-                <button
-                  key={pkg.id}
-                  onClick={() => setSelectedPackage(pkg)}
-                  className={`relative p-5 rounded-xl border-2 text-left transition-all ${
-                    selectedPackage?.id === pkg.id
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  {pkg.is_popular && (
-                    <div className="absolute -top-3 left-4 px-2 py-0.5 bg-primary-600 text-white text-xs font-medium rounded-full">
-                      Most Popular
-                    </div>
-                  )}
-
-                  {selectedPackage?.id === pkg.id && (
-                    <div className="absolute top-4 right-4">
-                      <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mb-3">
-                    <h3 className={`font-semibold ${
-                      selectedPackage?.id === pkg.id
-                        ? 'text-primary-900 dark:text-primary-100'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {pkg.name}
-                    </h3>
-                    {pkg.description && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {pkg.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-2xl font-bold ${
-                      selectedPackage?.id === pkg.id
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {formatPrice(pkg.price_cents)}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      for {pkg.credits} credits
-                    </span>
-                  </div>
-
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {formatPrice(Math.round(pkg.price_cents / pkg.credits))} per credit
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
-
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
-          <div>
-            {selectedPackage && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                New balance after purchase:{' '}
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {currentBalance + selectedPackage.credits} credits
-                </span>
-              </p>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handlePurchase}
-              disabled={!selectedPackage || isProcessing}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="w-4 h-4" />
-                  Continue to Checkout
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default BuyCreditsModal;
+    );
+};

@@ -1,0 +1,147 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
+import {
+  BarChart3, FileText, Sparkles, TrendingUp, Phone, Calendar, ShieldCheck
+} from 'lucide-react';
+import { useFeatureFlag } from '../../../shared/hooks/useFeatureFlag';
+
+import { AIReportsTab } from '../components/AIReportsTab';
+import { UnifiedReportsTab } from '../../reporting/components/UnifiedReportsTab';
+import { GoogleAdsTab } from '../../reporting/components/GoogleAdsTab';
+import { MetaAdsTab } from '../../reporting/components/MetaAdsTab';
+import { CallReportTab } from '../../reporting/components/CallReportTab';
+import { AppointmentReportTab } from '../../reporting/components/AppointmentReportTab';
+import { AttributionReportTab } from '../../reporting/components/AttributionReportTab';
+
+const Reporting: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+
+  const isAiReportsEnabled = useFeatureFlag('ai-reports');
+
+  useEffect(() => {
+    if (isAiReportsEnabled === false) {
+      navigate(`/org/${orgSlug}/dashboard`);
+    }
+  }, [isAiReportsEnabled, navigate, orgSlug]);
+
+  const initialTab = searchParams.get('tab') || 'ai-reporting';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const tabs = [
+    // { id: 'custom-reports', label: 'Reports', icon: FileText },
+    { id: 'ai-reporting', label: 'AI Reporting', icon: BarChart3 },
+    { id: 'google-ads', label: 'Google Ads', icon: BarChart3 },
+    { id: 'facebook-ads', label: 'Meta Ads', icon: BarChart3 },
+    { id: 'attribution-report', label: 'Lead Sources', icon: TrendingUp },
+    { id: 'call-report', label: 'Calls', icon: Phone },
+    { id: 'appointment', label: 'Appointments', icon: Calendar },
+    { id: 'audit', label: 'Audit Report', icon: ShieldCheck }
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId });
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'audit':
+        return (
+          <div className="p-6">
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-12 text-center text-white shadow-xl">
+              <h1 className="text-4xl font-bold mb-4">Generate Marketing Audit</h1>
+              <h2 className="text-4xl font-bold mb-8">Report for <span className="text-emerald-300">Free!</span></h2>
+              <button className="bg-white text-primary-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-all shadow-lg hover:scale-105">
+                Generate Report Now
+              </button>
+              <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 flex items-center space-x-4 border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><span className="text-2xl">⭐</span></div>
+                  <span className="text-lg font-medium">View Reviews Information</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 flex items-center space-x-4 border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><span className="text-2xl">🚀</span></div>
+                  <span className="text-lg font-medium">View Website Performance Score</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-6 max-w-6xl mx-auto">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 flex items-center space-x-4 border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><span className="text-2xl">✅</span></div>
+                  <span className="text-lg font-medium">Check Your GBP Health</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 flex items-center space-x-4 border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><span className="text-2xl">🔍</span></div>
+                  <span className="text-lg font-medium">View SEO Score</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 flex items-center space-x-4 border border-white/20">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"><span className="text-2xl">📋</span></div>
+                  <span className="text-lg font-medium">View Listing Information</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'appointment':
+        return <AppointmentReportTab />;
+      case 'call-report':
+        return <CallReportTab />;
+      case 'attribution-report':
+        return <AttributionReportTab />;
+      case 'ai-reporting':
+        return <AIReportsTab />;
+      case 'google-ads':
+        return <GoogleAdsTab />;
+      case 'facebook-ads':
+        return <MetaAdsTab />;
+      case 'custom-reports':
+      default:
+        return <UnifiedReportsTab onSwitchTab={handleTabChange} />;
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Reporting</h1>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`px-6 py-3 font-medium transition-all relative ${activeTab === tab.id
+                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        {renderTabContent()}
+      </div>
+    </div>
+  );
+};
+
+export default Reporting;

@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, CheckCircle, Circle } from 'lucide-react';
-import { getJobTasks, deleteJobTask, updateJobTask, Task } from '../../../../shared/store/services/tasksApi';
+import { contactModulesApi, ContactTask } from '../../../../shared/store/services/contactModulesApi';
 import { getStaff, StaffMember } from '../../../../shared/store/services/staffApi';
 import { TaskModal } from './TaskModal';
 
 interface TasksTabProps {
-  contactId?: number;
+  contactId: number;
   onAddTask?: () => void;
 }
 
 const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<ContactTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<ContactTask | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const jobId = 1; // Default job ID
 
   const fetchTasks = async () => {
+    if (!contactId) return;
     setLoading(true);
     try {
-      const response = await getJobTasks(jobId);
-      setTasks(response.data || []);
+      const response = await contactModulesApi.getTasks(contactId);
+      setTasks(response.data?.data || []);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     } finally {
@@ -32,31 +32,32 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
   const fetchStaff = async () => {
     try {
       const response = await getStaff(1, 100);
-      setStaff(response.data.data || []);
+      setStaff(response.data || []);
     } catch (error) {
       console.error('Failed to fetch staff:', error);
     }
   };
 
-  const getAssigneeName = (assigneeId: string) => {
-    const member = staff.find(s => s.id.toString() === assigneeId);
-    return member ? `${member.first_name} ${member.last_name}` : assigneeId;
+  const getAssigneeName = (assigneeId: string | number) => {
+    if (!assigneeId) return 'Unassigned';
+    const member = staff.find(s => s.id.toString() === assigneeId.toString());
+    return member ? `${member.first_name} ${member.last_name}` : assigneeId.toString();
   };
 
   const handleDeleteTask = async (taskId: number) => {
     try {
-      await deleteJobTask(jobId, taskId);
+      await contactModulesApi.deleteTask(taskId);
       fetchTasks();
     } catch (error) {
       console.error('Failed to delete task:', error);
     }
   };
 
-  const handleToggleComplete = async (task: Task) => {
+  const handleToggleComplete = async (task: ContactTask) => {
     try {
-      await updateJobTask(jobId, task.id!, {
+      await contactModulesApi.updateTask(task.id!, {
         ...task,
-        completed: !task.completed
+        status: task.status === 'completed' ? 'pending' : 'completed'
       });
       fetchTasks();
     } catch (error) {
@@ -64,7 +65,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
     }
   };
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = (task: ContactTask) => {
     setEditingTask(task);
     setShowModal(true);
   };
@@ -85,7 +86,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
   useEffect(() => {
     fetchTasks();
     fetchStaff();
-  }, []);
+  }, [contactId]);
 
   return (
     <>
@@ -97,7 +98,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
         </div>
 
         <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 mb-4">
-          <button 
+          <button
             onClick={handleAddTask}
             className="flex items-center gap-2 text-primary-600 hover:text-primary-700 w-full justify-center"
           >
@@ -123,16 +124,15 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
                     onClick={() => handleToggleComplete(task)}
                     className="mt-1 text-gray-400 hover:text-primary-600"
                   >
-                    {task.completed ? <CheckCircle size={20} className="text-green-600" /> : <Circle size={20} />}
+                    {task.status === 'completed' ? <CheckCircle size={20} className="text-green-600" /> : <Circle size={20} />}
                   </button>
                   <div className="flex-1">
-                    <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                      {task.text}
+                    <p className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                      {task.title}
                     </p>
                     <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                      <span>Assigned to: {getAssigneeName(task.assignee)}</span>
+                      <span>Assigned to: {getAssigneeName(task.assignedTo)}</span>
                       <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                      {task.blocking && <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Blocking</span>}
                     </div>
                   </div>
                 </div>
@@ -161,15 +161,15 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          
+
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             No tasks found
           </h4>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             There are no tasks available
           </p>
-          
-          <button 
+
+          <button
             onClick={handleAddTask}
             className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md flex items-center gap-2 mx-auto"
           >
@@ -185,7 +185,7 @@ const TasksTab: React.FC<TasksTabProps> = ({ contactId, onAddTask }) => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onSuccess={handleModalSuccess}
-        jobId={jobId}
+        contactId={contactId}
         editingTask={editingTask}
       />
     </>

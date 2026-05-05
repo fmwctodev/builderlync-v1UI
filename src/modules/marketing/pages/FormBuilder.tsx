@@ -18,6 +18,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -34,9 +35,9 @@ import { getFieldTypeConfig } from '../constants/formFieldTypes';
 import type { FormField, FormFieldType } from '../types/forms';
 
 export const FormBuilderEnhanced: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, orgSlug } = useParams<{ id: string; orgSlug: string }>();
   const navigate = useNavigate();
-  const { currentOrganizationId: organizationId, currentOrganizationSlug: orgSlug } = useCurrentOrganization();
+  const { currentOrganizationId: organizationId } = useCurrentOrganization();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formName, setFormName] = useState('Untitled Form');
@@ -126,22 +127,22 @@ export const FormBuilderEnhanced: React.FC = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    const fieldType = active.data.current?.fieldType as FormFieldType;
 
-    if (!over) {
-      const fieldType = active.data.current?.fieldType as FormFieldType;
-      if (fieldType) {
-        handleAddField(fieldType);
-      }
+    // Dragging from sidebar to add new field
+    if (fieldType) {
+      handleAddField(fieldType);
       setActiveId(null);
       return;
     }
 
-    if (active.id !== over.id) {
+    // Reordering existing fields
+    if (over && active.id !== over.id) {
       setFields((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
-        if (oldIndex === -1) return items;
+        if (oldIndex === -1 || newIndex === -1) return items;
 
         return arrayMove(items, oldIndex, newIndex);
       });
@@ -172,10 +173,12 @@ export const FormBuilderEnhanced: React.FC = () => {
         await formsApi.createForm(formData, organizationId);
       }
 
-      navigate(`/org/${orgSlug}/marketing?tab=forms-funnels&refreshForms=true`);
+      const basePath = orgSlug ? `/org/${orgSlug}` : '';
+      navigate(`${basePath}/marketing?tab=forms&refreshForms=true`);
     } catch (error) {
       console.error('Error saving form:', error);
-      alert('Error saving form. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error saving form: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -198,12 +201,15 @@ export const FormBuilderEnhanced: React.FC = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="h-screen flex flex-col bg-paper dark:bg-canvas">
-        <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page py-4">
+      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate(`/org/${orgSlug}/marketing`)}
+                onClick={() => {
+                  const basePath = orgSlug ? `/org/${orgSlug}` : '';
+                  navigate(`${basePath}/marketing`);
+                }}
                 className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <ArrowLeft size={20} />
@@ -259,11 +265,7 @@ export const FormBuilderEnhanced: React.FC = () => {
               )}
 
               {fields.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Drag fields from the left sidebar or click to add them to your form
-                  </p>
-                </div>
+                <DropZone />
               ) : (
                 <SortableContext
                   items={fields.map((f) => f.id)}
@@ -538,6 +540,27 @@ const FieldSettingsPanel: React.FC<FieldSettingsPanelProps> = ({ field, onUpdate
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const DropZone: React.FC = () => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'form-drop-zone',
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`text-center py-12 border-2 border-dashed rounded-lg transition-colors ${
+        isOver
+          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+          : 'border-gray-300 dark:border-gray-600'
+      }`}
+    >
+      <p className="text-gray-500 dark:text-gray-400">
+        Drag fields from the left sidebar to add them to your form
+      </p>
     </div>
   );
 };

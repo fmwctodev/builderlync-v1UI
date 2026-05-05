@@ -1,12 +1,11 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, ChevronDown, CreditCard, MapPin } from 'lucide-react';
 import { eagleViewService } from '../../services/eagleViewService';
-import { validatePaymentInfo, isPaymentInfoComplete } from '../../utils/paymentValidation';
-import ReadinessSummary from './ReadinessSummary';
-import type { ReadinessStatus } from '../../types/readiness';
+import { getEncryptedStorage } from '../../../../shared/utils/encryption';
 
 interface OrderData {
   address: string;
+  addressComponents?: any;
   propertyType: string;
   isComplex: boolean;
   buildingId: string;
@@ -26,7 +25,6 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
   const [showClaimInfo, setShowClaimInfo] = useState(false);
   const [showEmailRecipients, setShowEmailRecipients] = useState(false);
   const [showSubstitutions, setShowSubstitutions] = useState(false);
-  const [showPaymentInfo, setShowPaymentInfo] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [emailRecipients, setEmailRecipients] = useState('');
   const [claimInfo, setClaimInfo] = useState({
@@ -42,41 +40,8 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
   const [includeXML, setIncludeXML] = useState(true);
   const [includePropertyOwner, setIncludePropertyOwner] = useState(false);
   const [includeCustomCover, setIncludeCustomCover] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState({
-    firstName: '',
-    lastName: '',
-    cardNumber: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvv: ''
-  });
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{message: string; type: 'success' | 'error'} | null>(null);
-
-  const paymentSectionRef = useRef<HTMLDivElement>(null);
-
-  const paymentReadiness = useMemo(() => {
-    const validation = validatePaymentInfo(paymentInfo);
-    const isComplete = isPaymentInfoComplete(paymentInfo);
-    let status: ReadinessStatus = 'PASS';
-    let blockingCount = 0;
-
-    if (!isComplete) {
-      status = 'FAIL';
-      blockingCount = 1;
-    } else if (!validation.isValid) {
-      status = 'FAIL';
-      blockingCount = Object.keys(validation.errors).length;
-    }
-
-    return { status, blockingCount, isComplete };
-  }, [paymentInfo]);
-
-  const scrollToPayment = () => {
-    setShowPaymentInfo(true);
-    paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   const processingFee = 5.00;
   const taxRate = 0.08;
@@ -84,58 +49,95 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
-  const formatCardNumber = (value: string): string => {
-    const digits = value.replace(/\D/g, '').slice(0, 16);
-    return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
-  };
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCardNumber(e.target.value);
-    setPaymentInfo({...paymentInfo, cardNumber: formatted});
-  };
-
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    const cardDigits = paymentInfo.cardNumber.replace(/\s/g, '');
-    
-    if (!paymentInfo.firstName.trim()) errors.firstName = 'First name is required';
-    if (!paymentInfo.lastName.trim()) errors.lastName = 'Last name is required';
-    if (!cardDigits) errors.cardNumber = 'Card number is required';
-    else if (cardDigits.length < 13 || cardDigits.length > 19) errors.cardNumber = 'Invalid card number';
-    if (!paymentInfo.expiryMonth) errors.expiryMonth = 'Expiry month is required';
-    if (!paymentInfo.expiryYear) errors.expiryYear = 'Expiry year is required';
-    if (!paymentInfo.cvv || paymentInfo.cvv.length < 3) errors.cvv = 'Valid CVV is required';
-    
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    const expYear = parseInt(paymentInfo.expiryYear);
-    const expMonth = parseInt(paymentInfo.expiryMonth);
-    
-    // if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
-    //   errors.expiryDate = 'Card has expired';
-    // }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
 
   const handleSubmitOrder = async () => {
-    if (!validateForm()) {
-      setShowPaymentInfo(true);
-      return;
-    }
-    
     setIsPlacingOrder(true);
     
     try {
+      // Extract address components from Google Places API
+      let street = '', city = '', state = '', zip = '', lat = 0, lng = 0;
+      
+      if (orderData.addressComponents) {
+        lat = orderData.addressComponents.lat || 0;
+        lng = orderData.addressComponents.lng || 0;
+        
+        console.log('Address components from Google:', orderData.addressComponents.components);
+        
+        orderData.addressComponents.components?.forEach((component: any) => {
+          const types = component.types;
+          console.log('Component:', component.long_name, 'Types:', types);
+          
+          if (types.includes('street_number')) {
+            street = component.long_name + ' ';
+          } else if (types.includes('route')) {
+            street += component.long_name;
+          } else if (types.includes('locality')) {
+            city = component.long_name;
+          } else if (types.includes('administrative_area_level_1')) {
+            state = component.short_name;
+          } else if (types.includes('postal_code') || types.includes('postal_code_prefix')) {
+            zip = component.long_name;
+          }
+        });
+      }
+      
+      // Fallback to parsing if components not available
+      if (!street || !city || !state || !zip) {
+        const addressParts = orderData.address.split(',').map(p => p.trim());
+        street = street || addressParts[0] || orderData.address;
+        city = city || addressParts[1] || '';
+        const stateZip = addressParts[2] || '';
+        const stateZipParts = stateZip.split(' ').filter(p => p);
+        state = state || stateZipParts[0] || '';
+        zip = zip || stateZipParts[1] || '';
+      }
+      
+      console.log('Parsed address:', { street, city, state, zip, lat, lng, original: orderData.address });
+      
+      // If still no zip, try to fetch it using Geocoding API
+      if (!zip && lat && lng) {
+        console.warn('No zip code found, fetching from Geocoding API');
+        try {
+          const geocodeResponse = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+          );
+          const geocodeData = await geocodeResponse.json();
+          if (geocodeData.results && geocodeData.results[0]) {
+            geocodeData.results[0].address_components.forEach((component: any) => {
+              if (component.types.includes('postal_code')) {
+                zip = component.long_name;
+                console.log('Found zip from Geocoding API:', zip);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch zip from Geocoding API:', error);
+        }
+      }
+      
+      // Get user info from encrypted storage
+      const authData = getEncryptedStorage('auth');
+      const user = authData?.user;
+      const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
+      
+      console.log('User name:', userName);
+      
       const orderRequest = eagleViewService.createOrderData({
-        address: orderData.address,
+        address: street,
+        city: city,
+        state: state,
+        zip: zip,
+        latitude: lat,
+        longitude: lng,
         buildingId: orderData.buildingId,
         productId: 1,
         claimInfo,
-        paymentInfo,
-        specialInstructions
+        specialInstructions,
+        userName
       });
+      
+      console.log('Order request created:', orderRequest);
       
       const result = await eagleViewService.submitOrder(orderRequest);
       
@@ -167,18 +169,18 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
         </div>
       )}
       {/* Header */}
-      <div className="bg-primary-600 dark:bg-red-700 rounded-lg p-6 text-white">
+      <div className="bg-primary-600 dark:bg-primary-700 rounded-lg p-6 text-white">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:text-white bg-red-700 hover:bg-red-800 rounded-md"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-100 hover:text-white bg-primary-700 hover:bg-primary-800 rounded-md"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
           <div>
             <h1 className="text-2xl font-bold">Finalize Order</h1>
-            <p className="text-white">Review and complete your measurement order</p>
+            <p className="text-primary-100">Review and complete your measurement order</p>
           </div>
         </div>
       </div>
@@ -440,134 +442,6 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
             )}
           </div>
 
-          {/* Payment Information */}
-          <div ref={paymentSectionRef} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <button
-              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700"
-              onClick={() => setShowPaymentInfo(!showPaymentInfo)}
-            >
-              <span className="font-medium text-gray-900 dark:text-white">Payment Information</span>
-              <ChevronDown className={`h-5 w-5 transform transition-transform ${showPaymentInfo ? 'rotate-180' : ''}`} />
-            </button>
-            {showPaymentInfo && (
-              <div className="px-6 pb-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                        validationErrors.firstName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                      value={paymentInfo.firstName}
-                      onChange={(e) => setPaymentInfo({...paymentInfo, firstName: e.target.value})}
-                    />
-                    {validationErrors.firstName && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.firstName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                        validationErrors.lastName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                      value={paymentInfo.lastName}
-                      onChange={(e) => setPaymentInfo({...paymentInfo, lastName: e.target.value})}
-                    />
-                    {validationErrors.lastName && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.lastName}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Card Number *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="1234 5678 9012 3456"
-                    className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                      validationErrors.cardNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                    value={paymentInfo.cardNumber}
-                    onChange={handleCardNumberChange}
-                  />
-                  {validationErrors.cardNumber && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.cardNumber}</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Month *
-                    </label>
-                    <select
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      value={paymentInfo.expiryMonth}
-                      onChange={(e) => setPaymentInfo({...paymentInfo, expiryMonth: e.target.value})}
-                    >
-                      <option value="">Month</option>
-                      {Array.from({length: 12}, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month.toString().padStart(2, '0')}>
-                          {month.toString().padStart(2, '0')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Year *
-                    </label>
-                    <select
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      value={paymentInfo.expiryYear}
-                      onChange={(e) => setPaymentInfo({...paymentInfo, expiryYear: e.target.value})}
-                    >
-                      <option value="">Year</option>
-                      {Array.from({length: 10}, (_, i) => new Date().getFullYear() + i).map(year => (
-                        <option key={year} value={year.toString().substring(2)}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      CVV *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="123"
-                      maxLength={4}
-                      className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                        validationErrors.cvv ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                      value={paymentInfo.cvv}
-                      onChange={(e) => setPaymentInfo({...paymentInfo, cvv: e.target.value.replace(/\D/g, '').slice(0, 4)})}
-                    />
-                    {validationErrors.cvv && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.cvv}</p>
-                    )}
-                    {validationErrors.expiryDate && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.expiryDate}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Order Summary Sidebar */}
@@ -597,20 +471,10 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
             </div>
 
             <div className="space-y-3">
-              {!paymentReadiness.isComplete && (
-                <ReadinessSummary
-                  overallStatus={paymentReadiness.status}
-                  blockingCount={paymentReadiness.blockingCount}
-                  warningCount={0}
-                  onTogglePanel={scrollToPayment}
-                  showToggle={true}
-                />
-              )}
-
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 By ordering a report you agree to our Terms of Use and Privacy Policy.
               </p>
-
+              
               <div className="flex gap-3">
                 <button
                   onClick={onBack}
@@ -620,10 +484,8 @@ const OrderSummaryPage: React.FC<OrderSummaryPageProps> = ({ orderData, onBack, 
                 </button>
                 <button
                   onClick={handleSubmitOrder}
-                  disabled={isPlacingOrder || !paymentReadiness.isComplete}
-                  className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                    Object.keys(validationErrors).length > 0 || !paymentReadiness.isComplete ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
-                  }`}
+                  disabled={isPlacingOrder}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700"
                 >
                   {isPlacingOrder ? (
                     <>

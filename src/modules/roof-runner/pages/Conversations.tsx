@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Paperclip, Smile, DollarSign, Archive, Trash2, ChevronDown, Edit } from 'lucide-react';
+import { Search, Filter, Star, MoreHorizontal, Phone, Mail, Plus, Send, Paperclip, Smile, DollarSign, Archive, Trash2, ChevronDown, Edit, Tag, ChevronRight } from 'lucide-react';
 import { getContacts } from '../../../shared/store/services/contactsApi';
 import { getStaff } from '../../../shared/store/services/staffApi';
 import { getTeamConversations, getConversationMessages, createTeamConversation, sendTeamMessage, markConversationAsRead, getTeamContacts, findConversationByParticipants } from '../../../shared/store/services/teamMessagingApi';
-import { supabase } from '../../../shared/lib/supabase';
+import { useAppSelector } from '../store/hooks';
 import ConversationList from '../components/team-messaging/ConversationList';
 import MessageThread from '../components/team-messaging/MessageThread';
 import NewMessageModal from '../components/team-messaging/NewMessageModal';
@@ -14,6 +14,7 @@ import { MessageInputSMS } from '../../../shared/components/MessageInputSMS';
 import { MessageInputEmail } from '../../../shared/components/MessageInputEmail';
 import { MessageInputInternalComment } from '../../../shared/components/MessageInputInternalComment';
 import ComingSoonOverlay from '../../../shared/components/ComingSoonOverlay';
+import { TagDropdown } from '../../../shared/components/TagDropdown';
 
 interface Contact {
   id: number;
@@ -37,6 +38,7 @@ interface Message {
 }
 
 const Conversations: React.FC = () => {
+  const { user } = useAppSelector((state) => state.auth);
   const [selectedContact, setSelectedContact] = useState(0);
   const [activeTab, setActiveTab] = useState('conversations');
   const [snippetView, setSnippetView] = useState('all-snippets');
@@ -77,6 +79,8 @@ const Conversations: React.FC = () => {
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
   const [contactsList, setContactsList] = useState<any[]>([]);
   const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [showTextTagDropdown, setShowTextTagDropdown] = useState(false);
+  const [showEmailTagDropdown, setShowEmailTagDropdown] = useState(false);
 
   // Team Messaging State
   const [teamConversations, setTeamConversations] = useState<TeamConversationListItem[]>([]);
@@ -96,7 +100,7 @@ const Conversations: React.FC = () => {
       lastMessage: "Let's do that, talk in the morning",
       time: '2:23 AM',
       unread: true,
-      avatar: '#DC2626'
+      avatar: '#3B82F6'
     },
     {
       id: 2,
@@ -219,12 +223,12 @@ const Conversations: React.FC = () => {
     const fetchStaff = async () => {
       try {
         const response = await getStaff();
-        setStaffMembers(response.data?.data || []);
+        setStaffMembers(response.data || []);
       } catch (error) {
         console.error('Failed to fetch staff:', error);
       }
     };
-    
+
     const fetchContacts = async () => {
       try {
         const response = await getContacts();
@@ -234,7 +238,7 @@ const Conversations: React.FC = () => {
         console.error('Failed to fetch contacts:', error);
       }
     };
-    
+
     fetchStaff();
     fetchContacts();
   }, []);
@@ -251,43 +255,62 @@ const Conversations: React.FC = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      '#DC2626', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-      '#EC4899', '#14B8A6', '#F97316', '#DC2626', '#84CC16'
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16'
     ];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   };
 
-  const loadTeamConversations = async () => {
+  const loadTeamConversations = async (sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count', sortOrder?: 'asc' | 'desc') => {
     try {
       setTeamMessagingLoading(true);
-      const conversations = await getTeamConversations();
-
+      const conversations = await getTeamConversations({ sortBy, sortOrder });
       const formattedConversations: TeamConversationListItem[] = conversations.map(conv => {
-        const participantNames = conv.participants
-          .map(p => p.contact?.full_name)
+        let participants: TeamContact[] = (conv.participants || []).map(p => ({
+          id: (p.contact?.id || p.contact_id || '').toString(),
+          full_name: p.contact?.full_name || p.contact?.email || 'Team Member',
+          first_name: p.contact?.first_name || '',
+          last_name: p.contact?.last_name || '',
+          email: p.contact?.email || '',
+          phone: p.contact?.phone || '',
+          type: (p.contact?.type as any) || 'staff',
+          initials: getInitials(p.contact?.full_name || p.contact?.email || 'TM'),
+          avatar_color: getAvatarColor(p.contact?.full_name || p.contact?.email || 'TM'),
+        }));
+
+        // If current user is the creator but not in participants, add them
+        const isCreator = conv.created_by?.toString() === user?.id?.toString();
+        const creatorInParticipants = participants.some(p => p.id === user?.id?.toString());
+
+        if (isCreator && !creatorInParticipants && user) {
+          participants.unshift({
+            id: user.id.toString(),
+            full_name: user?.firstName + ' ' + user?.lastName || user?.email || 'Me (Creator)',
+            first_name: user?.firstName || '',
+            last_name: user?.lastName || '',
+            email: user?.email || '',
+            phone: '',
+            type: 'staff',
+            initials: getInitials(user?.firstName + ' ' + user?.lastName || user?.email || 'ME'),
+            avatar_color: '#3B82F6',
+          });
+        }
+
+        const participantNames = participants
+          .map(p => p.full_name)
           .filter(Boolean)
           .join(', ');
 
         const displayName = conv.is_group
-          ? conv.name || `Group (${conv.participants.length})`
-          : participantNames;
+          ? conv.name || `Group (${participants.length})`
+          : (participantNames || 'New Conversation');
 
         return {
           id: conv.id,
           name: conv.name,
           is_group: conv.is_group,
-          participants: conv.participants.map(p => ({
-            id: p.contact?.id || '',
-            full_name: p.contact?.full_name || '',
-            first_name: p.contact?.first_name || '',
-            last_name: p.contact?.last_name || '',
-            email: p.contact?.email || '',
-            phone: p.contact?.phone || '',
-            type: p.contact?.type as 'staff' | 'sub-contractor',
-            initials: getInitials(p.contact?.full_name || ''),
-            avatar_color: getAvatarColor(p.contact?.full_name || ''),
-          })),
+          participants,
           last_message: conv.last_message?.content || '',
           last_message_time: conv.last_message?.created_at
             ? formatDistanceToNow(new Date(conv.last_message.created_at), { addSuffix: true })
@@ -299,6 +322,7 @@ const Conversations: React.FC = () => {
         };
       });
 
+
       setTeamConversations(formattedConversations);
     } catch (error) {
       console.error('Failed to load team conversations:', error);
@@ -307,11 +331,21 @@ const Conversations: React.FC = () => {
     }
   };
 
+  const clearConversationUnreadLocally = (conversationId: string) => {
+    setTeamConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, unread_count: 0 }
+          : conversation,
+      ),
+    );
+  };
+
   const loadConversationMessages = async (conversationId: string) => {
     try {
       setMessagesLoading(true);
       const messages = await getConversationMessages(conversationId);
-      const { data: { user } } = await supabase.auth.getUser();
+      // Removed direct supabase call - user is obtained from Redux state at component level
 
       const formattedMessages: TeamMessageItem[] = messages.map(msg => ({
         id: msg.id,
@@ -320,11 +354,12 @@ const Conversations: React.FC = () => {
         sender_name: msg.sender?.email || 'Unknown',
         content: msg.content,
         timestamp: msg.created_at,
-        is_own_message: msg.sender_id === user?.id,
+        is_own_message: msg.sender_id === user?.id?.toString(),
         is_read: msg.is_read || false,
       }));
 
       setConversationMessages(formattedMessages);
+      clearConversationUnreadLocally(conversationId);
 
       // Mark conversation as read
       await markConversationAsRead(conversationId);
@@ -404,13 +439,18 @@ const Conversations: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, messageType: 'sms' | 'email' | 'team' = 'team', subject?: string) => {
     if (!selectedConversationId) return;
+
+    // Convert 'team' to 'sms' for API compatibility
+    const apiMessageType: 'sms' | 'email' = messageType === 'team' ? 'sms' : messageType;
 
     try {
       await sendTeamMessage({
         conversation_id: selectedConversationId,
         content,
+        messageType: apiMessageType,
+        subject: subject || 'Team Message'
       });
       await loadConversationMessages(selectedConversationId);
       await loadTeamConversations();
@@ -422,6 +462,7 @@ const Conversations: React.FC = () => {
 
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedConversationId(conversationId);
+    clearConversationUnreadLocally(conversationId);
     await loadConversationMessages(conversationId);
   };
 
@@ -434,7 +475,7 @@ const Conversations: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Tabs */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="py-4">
@@ -443,31 +484,28 @@ const Conversations: React.FC = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setActiveTab('conversations')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'conversations'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-            }`}
+            className={`px-6 py-3 font-medium transition-all ${activeTab === 'conversations'
+              ? 'bg-primary-600 text-white rounded-t-lg'
+              : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+              }`}
           >
             Conversations
           </button>
           <button
             onClick={() => setActiveTab('team-messaging')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'team-messaging'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-            }`}
+            className={`px-6 py-3 font-medium transition-all ${activeTab === 'team-messaging'
+              ? 'bg-primary-600 text-white rounded-t-lg'
+              : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+              }`}
           >
             Team Messaging
           </button>
           <button
             onClick={() => setActiveTab('snippets')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'snippets'
-                ? 'bg-primary-600 text-white rounded-t-lg'
-                : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
-            }`}
+            className={`px-6 py-3 font-medium transition-all ${activeTab === 'snippets'
+              ? 'bg-primary-600 text-white rounded-t-lg'
+              : 'text-white hover:text-gray-200 bg-gray-700 dark:bg-gray-700 rounded-t-lg'
+              }`}
           >
             Snippets
           </button>
@@ -475,7 +513,7 @@ const Conversations: React.FC = () => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex bg-paper dark:bg-canvas">
+      <div className="flex-1 flex bg-gray-50 dark:bg-gray-900">
         {activeTab === 'conversations' && (
           <>
             {/* Left Sidebar - Contact List */}
@@ -497,7 +535,7 @@ const Conversations: React.FC = () => {
                     <button className="p-1 text-gray-400 hover:text-gray-600">
                       <MoreHorizontal size={16} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => setShowCreateMessageModal(true)}
                       className="p-1 text-gray-400 hover:text-gray-600"
                     >
@@ -512,11 +550,10 @@ const Conversations: React.FC = () => {
                     <button
                       key={tab}
                       onClick={() => setInboxTab(tab.toLowerCase())}
-                      className={`px-3 py-1 text-sm rounded transition-colors ${
-                        inboxTab === tab.toLowerCase()
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                          : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                      }`}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${inboxTab === tab.toLowerCase()
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                        }`}
                     >
                       {tab}
                     </button>
@@ -549,9 +586,8 @@ const Conversations: React.FC = () => {
                   <div
                     key={contact.id}
                     onClick={() => setSelectedContact(index)}
-                    className={`p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                      selectedContact === index ? 'bg-red-50 dark:bg-red-900/20' : ''
-                    }`}
+                    className={`p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedContact === index ? 'bg-red-50 dark:bg-red-900/20' : ''
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       <div
@@ -571,7 +607,7 @@ const Conversations: React.FC = () => {
                           {contact.lastMessage}
                         </p>
                       </div>
-                      {contact.unread && (
+                      {contact.unread && selectedContact !== index && (
                         <div className="w-2 h-2 bg-red-600 rounded-full dark:bg-red-500"></div>
                       )}
                     </div>
@@ -586,9 +622,9 @@ const Conversations: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
-                      style={{ backgroundColor: currentContact?.avatar || '#DC2626' }}
+                      style={{ backgroundColor: currentContact?.avatar || '#3B82F6' }}
                     >
                       {currentContact?.initials || 'U'}
                     </div>
@@ -597,11 +633,11 @@ const Conversations: React.FC = () => {
                         {currentContact?.name || 'Select a contact'}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {currentContact?.id === 1 ? 'ttran@caretrusteit.com' : 
-                         currentContact?.id === 2 ? 'info@mountainsolutions.com' :
-                         currentContact?.id === 3 ? '(512) 632-1109' :
-                         currentContact?.id === 4 ? 'barla.diane@email.com' :
-                         currentContact?.id === 5 ? 'kelsey.kearny@email.com' : ''}
+                        {currentContact?.id === 1 ? 'ttran@caretrusteit.com' :
+                          currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                            currentContact?.id === 3 ? '(512) 632-1109' :
+                              currentContact?.id === 4 ? 'barla.diane@email.com' :
+                                currentContact?.id === 5 ? 'kelsey.kearny@email.com' : ''}
                       </p>
                     </div>
                   </div>
@@ -646,12 +682,12 @@ const Conversations: React.FC = () => {
                         </button>
                       </div>
                     )}
-                    
+
                     {msg.type === 'received' && (
                       <div className="flex items-start space-x-3">
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                          style={{ backgroundColor: currentContact?.avatar || '#DC2626' }}
+                          style={{ backgroundColor: currentContact?.avatar || '#3B82F6' }}
                         >
                           {currentContact?.initials || 'U'}
                         </div>
@@ -691,11 +727,11 @@ const Conversations: React.FC = () => {
                 <div className="p-4">
                   {activeChannel === 'sms' && (
                     <MessageInputSMS
-                      onSend={(message, metadata) => {
-                        console.log('Sending SMS:', message, metadata);
+                      conversationId={currentContact?.id?.toString() || 'static_id'}
+                      onSendSuccess={() => {
+                        console.log('SMS sent successfully');
                         setMessage('');
                       }}
-                      fromNumber="+1 813-527-9352"
                       toNumber={currentContact?.id === 3 ? '(512) 632-1109' : '+1 815-479-4734'}
                       contactName={currentContact?.name}
                     />
@@ -703,16 +739,18 @@ const Conversations: React.FC = () => {
 
                   {activeChannel === 'email' && (
                     <MessageInputEmail
-                      onSend={(message, metadata) => {
-                        console.log('Sending Email:', message, metadata);
+                      conversationId={currentContact?.id?.toString() || 'static_id'}
+                      contactId={currentContact?.id?.toString() || 'static_id'}
+                      onSendSuccess={() => {
+                        console.log('Email sent successfully');
                         setMessage('');
                       }}
                       contactEmail={
                         currentContact?.id === 1 ? 'ttran@caretrusteit.com' :
-                        currentContact?.id === 2 ? 'info@mountainsolutions.com' :
-                        currentContact?.id === 4 ? 'barla.diane@email.com' :
-                        currentContact?.id === 5 ? 'kelsey.kearny@email.com' :
-                        'contact@email.com'
+                          currentContact?.id === 2 ? 'info@mountainsolutions.com' :
+                            currentContact?.id === 4 ? 'barla.diane@email.com' :
+                              currentContact?.id === 5 ? 'kelsey.kearny@email.com' :
+                                'contact@email.com'
                       }
                       contactName={currentContact?.name}
                     />
@@ -720,8 +758,9 @@ const Conversations: React.FC = () => {
 
                   {activeChannel === 'internal_comment' && (
                     <MessageInputInternalComment
-                      onSend={(message, metadata) => {
-                        console.log('Sending Internal Comment:', message, metadata);
+                      conversationId={currentContact?.id?.toString() || 'static_id'}
+                      onSendSuccess={() => {
+                        console.log('Internal Comment sent successfully');
                         setMessage('');
                       }}
                     />
@@ -734,11 +773,6 @@ const Conversations: React.FC = () => {
 
         {activeTab === 'snippets' && (
           <div className="flex-1 bg-white dark:bg-gray-800 relative">
-            <ComingSoonOverlay
-              message="Coming Soon"
-              subtitle="The Snippets feature is currently under development and will be available soon."
-              icon="rocket"
-            />
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Snippets</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -746,43 +780,41 @@ const Conversations: React.FC = () => {
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <button 
+                  <button
                     onClick={() => setSnippetView('all-snippets')}
-                    className={`px-4 py-2 rounded text-sm ${
-                      snippetView === 'all-snippets' ? 'text-white' : 'bg-gray-100 text-gray-700'
-                    }`}
-                    style={snippetView === 'all-snippets' ? {backgroundColor: '#dc2626'} : {}}
+                    className={`px-4 py-2 rounded text-sm ${snippetView === 'all-snippets' ? 'text-white' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    style={snippetView === 'all-snippets' ? { backgroundColor: '#dc2626' } : {}}
                   >
                     All Snippets
                   </button>
-                  <button 
+                  <button
                     onClick={() => setSnippetView('folders')}
-                    className={`px-4 py-2 rounded text-sm ${
-                      snippetView === 'folders' ? 'text-white' : 'bg-gray-100 text-gray-700'
-                    }`}
-                    style={snippetView === 'folders' ? {backgroundColor: '#dc2626'} : {}}
+                    className={`px-4 py-2 rounded text-sm ${snippetView === 'folders' ? 'text-white' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    style={snippetView === 'folders' ? { backgroundColor: '#dc2626' } : {}}
                   >
                     Folders
                   </button>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button 
+                  <button
                     onClick={() => setShowAddFolderModal(true)}
                     className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm"
                   >
                     Add Folder
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowSnippetOptions(true)}
-                    className="px-3 py-2 text-white rounded text-sm" 
-                    style={{backgroundColor: '#dc2626'}}
+                    className="px-3 py-2 text-white rounded text-sm"
+                    style={{ backgroundColor: '#dc2626' }}
                   >
                     Add Snippet
                   </button>
                 </div>
               </div>
             </div>
-            
+
             <div className="p-6">
               {snippetView === 'all-snippets' ? (
                 <>
@@ -799,7 +831,7 @@ const Conversations: React.FC = () => {
                       <span>Filters</span>
                     </button>
                   </div>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -833,7 +865,7 @@ const Conversations: React.FC = () => {
                             <td className="px-4 py-3 text-sm text-gray-600">{snippet.body}</td>
                             <td className="px-4 py-3 text-sm">
                               {snippet.folder && (
-                                <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-red-200">
+                                <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded text-xs dark:bg-primary-900 dark:text-blue-200">
                                   {snippet.folder}
                                 </span>
                               )}
@@ -849,12 +881,12 @@ const Conversations: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
                     <span>Page 1 of 5</span>
                     <div className="flex items-center space-x-2">
                       <button className="px-2 py-1 border rounded">Previous</button>
-                      <button className="px-2 py-1 text-white rounded" style={{backgroundColor: '#dc2626'}}>1</button>
+                      <button className="px-2 py-1 text-white rounded" style={{ backgroundColor: '#dc2626' }}>1</button>
                       <button className="px-2 py-1 border rounded">2</button>
                       <button className="px-2 py-1 border rounded">3</button>
                       <button className="px-2 py-1 border rounded">4</button>
@@ -873,7 +905,7 @@ const Conversations: React.FC = () => {
                       className="px-3 py-2 border border-gray-300 rounded text-sm w-64"
                     />
                   </div>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -911,12 +943,12 @@ const Conversations: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
                     <span>Page 1 of 1</span>
                     <div className="flex items-center space-x-2">
                       <button className="px-2 py-1 border rounded text-gray-400" disabled>Previous</button>
-                      <button className="px-2 py-1 text-white rounded" style={{backgroundColor: '#dc2626'}}>1</button>
+                      <button className="px-2 py-1 text-white rounded" style={{ backgroundColor: '#dc2626' }}>1</button>
                       <button className="px-2 py-1 border rounded text-gray-400" disabled>Next</button>
                       <span className="ml-4">10 / page</span>
                     </div>
@@ -933,10 +965,10 @@ const Conversations: React.FC = () => {
               <ConversationList
                 conversations={teamConversations}
                 selectedConversationId={selectedConversationId}
-                searchQuery={conversationSearchQuery}
-                onSearchChange={setConversationSearchQuery}
                 onConversationSelect={handleConversationSelect}
                 onNewMessage={() => setShowNewMessageModal(true)}
+                onSortChange={loadTeamConversations}
+                loading={teamMessagingLoading}
               />
             </div>
             <div className="flex-1">
@@ -1027,7 +1059,7 @@ const Conversations: React.FC = () => {
                 ✕
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
@@ -1042,20 +1074,31 @@ const Conversations: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Snippets Body <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="flex items-center space-x-2 mb-2">
-                      <button className="p-1 text-gray-400 hover:text-gray-600">
-                        😊
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600">
+                        <Smile size={16} />
                       </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">
-                        🔗
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">
+                      <div className="relative">
+                        <button type="button" className="p-1 text-gray-400 hover:text-gray-600" onClick={(e) => { e.preventDefault(); setShowTextTagDropdown(!showTextTagDropdown); }}>
+                          <Tag size={16} />
+                        </button>
+                        {showTextTagDropdown && (
+                          <TagDropdown
+                            onSelect={(val) => {
+                              setSnippetBody(prev => prev + val);
+                              setShowTextTagDropdown(false);
+                            }}
+                            onClose={() => setShowTextTagDropdown(false)}
+                          />
+                        )}
+                      </div>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600">
                         ⚡
                       </button>
                     </div>
@@ -1072,14 +1115,14 @@ const Conversations: React.FC = () => {
                     <span>0 characters | 1 words | 0 segs</span>
                   </div>
                 </div>
-                
+
                 <div>
                   <button className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white">
                     <span>📎</span>
                     <span>Add attachment</span>
                   </button>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Add file through URL
@@ -1092,12 +1135,12 @@ const Conversations: React.FC = () => {
                       placeholder="Enter URL"
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
-                    <button className="px-4 py-2 text-white rounded" style={{backgroundColor: '#dc2626'}}>
+                    <button className="px-4 py-2 text-white rounded" style={{ backgroundColor: '#dc2626' }}>
                       + Add
                     </button>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Test Snippet
@@ -1110,14 +1153,14 @@ const Conversations: React.FC = () => {
                       placeholder="Enter phone number"
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
-                    <button className="px-4 py-2 text-white rounded flex items-center space-x-1" style={{backgroundColor: '#dc2626'}}>
+                    <button className="px-4 py-2 text-white rounded flex items-center space-x-1" style={{ backgroundColor: '#dc2626' }}>
                       <span>📤</span>
                       <span>Send</span>
                     </button>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-center">
                 <div className="w-64 h-[500px] bg-black rounded-3xl p-2 relative">
                   <div className="w-full h-full bg-white rounded-2xl relative overflow-hidden">
@@ -1144,7 +1187,7 @@ const Conversations: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowTextSnippetModal(false)}
@@ -1161,7 +1204,7 @@ const Conversations: React.FC = () => {
                   setTestPhone('');
                 }}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Save
               </button>
@@ -1183,7 +1226,7 @@ const Conversations: React.FC = () => {
                 ✕
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
@@ -1198,7 +1241,7 @@ const Conversations: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Subject <span className="text-red-500">*</span>
@@ -1211,21 +1254,34 @@ const Conversations: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Snippets Body <span className="text-red-500">*</span>
                   </label>
                   <div className="border border-gray-300 rounded-md dark:border-gray-600">
                     <div className="flex items-center space-x-2 p-2 border-b border-gray-200 dark:border-gray-600">
-                      <button className="p-1 text-gray-400 hover:text-gray-600">😊</button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">🔗</button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">⚡</button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">↶</button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600">↷</button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600"><strong>B</strong></button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600"><em>I</em></button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600"><u>U</u></button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600"><Smile size={16} /></button>
+                      <div className="relative">
+                        <button type="button" className="p-1 text-gray-400 hover:text-gray-600" onClick={(e) => { e.preventDefault(); setShowEmailTagDropdown(!showEmailTagDropdown); }}>
+                          <Tag size={16} />
+                        </button>
+                        {showEmailTagDropdown && (
+                          <TagDropdown
+                            onSelect={(val) => {
+                              setEmailBody(prev => prev + val);
+                              setShowEmailTagDropdown(false);
+                            }}
+                            onClose={() => setShowEmailTagDropdown(false)}
+                          />
+                        )}
+                      </div>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600">⚡</button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600">↶</button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600">↷</button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600"><strong>B</strong></button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600"><em>I</em></button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600"><u>U</u></button>
                     </div>
                     <div className="flex items-center space-x-4 p-2 border-b border-gray-200 text-sm dark:border-gray-600">
                       <select className="border-none bg-transparent text-gray-600 dark:text-gray-400">
@@ -1256,14 +1312,14 @@ const Conversations: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <button className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white">
                     <span>📎</span>
                     <span>Add attachment</span>
                   </button>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                     Test Email Snippet
@@ -1285,13 +1341,13 @@ const Conversations: React.FC = () => {
                     />
                   </div>
                   <p className="text-red-500 text-sm mb-2">Please enter a valid from email address</p>
-                  <button className="px-4 py-2 text-white rounded flex items-center space-x-1" style={{backgroundColor: '#dc2626'}}>
+                  <button className="px-4 py-2 text-white rounded flex items-center space-x-1" style={{ backgroundColor: '#dc2626' }}>
                     <span>📤</span>
                     <span>Send Test</span>
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex justify-center">
                 <div className="w-64 h-[500px] bg-black rounded-3xl p-2 relative">
                   <div className="w-full h-full bg-white rounded-2xl relative overflow-hidden">
@@ -1344,7 +1400,7 @@ const Conversations: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowEmailSnippetModal(false)}
@@ -1362,7 +1418,7 @@ const Conversations: React.FC = () => {
                   setToEmail('');
                 }}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Save
               </button>
@@ -1420,7 +1476,7 @@ const Conversations: React.FC = () => {
                   setLinkUrl('');
                 }}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Save
               </button>
@@ -1447,7 +1503,7 @@ const Conversations: React.FC = () => {
               <button
                 onClick={() => setShowDeleteLinkModal(false)}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Delete
               </button>
@@ -1493,7 +1549,7 @@ const Conversations: React.FC = () => {
               <button
                 onClick={() => setShowEditLinkModal(false)}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Save
               </button>
@@ -1535,7 +1591,7 @@ const Conversations: React.FC = () => {
                   setFolderName('');
                 }}
                 className="px-4 py-2 text-white rounded hover:opacity-90"
-                style={{backgroundColor: '#dc2626'}}
+                style={{ backgroundColor: '#dc2626' }}
               >
                 Save
               </button>
@@ -1557,9 +1613,9 @@ const Conversations: React.FC = () => {
                 ✕
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <div 
+              <div
                 onClick={() => {
                   setShowCreateMessageModal(false);
                   setShowDirectMessageModal(true);
@@ -1576,8 +1632,8 @@ const Conversations: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">Send direct message to a contact</p>
                 </div>
               </div>
-              
-              <div 
+
+              <div
                 onClick={() => {
                   setShowCreateMessageModal(false);
                   setShowGroupMessageModal(true);
@@ -1595,7 +1651,7 @@ const Conversations: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-center">
               <button
                 onClick={() => setShowCreateMessageModal(false)}
@@ -1632,7 +1688,7 @@ const Conversations: React.FC = () => {
                 ✕
               </button>
             </div>
-            
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select Contact <span className="text-red-500">*</span>
@@ -1651,7 +1707,7 @@ const Conversations: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
-                
+
                 {/* Contact Dropdown */}
                 {showContactDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
@@ -1684,7 +1740,7 @@ const Conversations: React.FC = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
@@ -1735,11 +1791,11 @@ const Conversations: React.FC = () => {
                 ✕
               </button>
             </div>
-            
+
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Start a group chat with up to 10 participants, including yourself. Creating a group chat will allow all participants to see each other's phone numbers.
             </p>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1759,7 +1815,7 @@ const Conversations: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Phone Number Dropdown */}
                   {showPhoneDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
@@ -1791,7 +1847,7 @@ const Conversations: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select participants <span className="text-red-500">*</span>
@@ -1810,7 +1866,7 @@ const Conversations: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Contact Dropdown */}
                   {showContactDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
@@ -1843,7 +1899,7 @@ const Conversations: React.FC = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Selected Participants */}
                 {selectedParticipants.length > 0 && (
                   <div className="mt-3 space-y-2">
@@ -1876,7 +1932,7 @@ const Conversations: React.FC = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => {

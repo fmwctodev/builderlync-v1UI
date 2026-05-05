@@ -1,124 +1,38 @@
+console.log('[PublicEstimator] Module loaded');
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService } from '../store/services/api';
 import { ArrowLeft } from 'lucide-react';
-import { StagingBanner } from '../components/common';
-import { InstantEstimatorProvider, useInstantEstimator } from '../context/InstantEstimatorContext';
-import { RoofDataPreviewCard } from '../components/estimator/RoofDataPreviewCard';
-import { RoofImagerySection } from '../components/estimator/RoofImagerySection';
-import { EstimatorImageViewerModal } from '../components/estimator/EstimatorImageViewerModal';
-import { PitchRequiredModal } from '../components/estimator/PitchRequiredModal';
-import { QuickMaterialsCard } from '../components/estimator/QuickMaterialsCard';
-import { EscalateToReportSidebar } from '../components/estimator/EscalateToReportSidebar';
-import InstantEstimateConfirmModal from '../components/estimator/InstantEstimateConfirmModal';
-import { usePitchGuard } from '../hooks/usePitchGuard';
-import { useEscalateToReport } from '../hooks/useEscalateToReport';
-import { EstimatorReadinessSection } from '../components/estimator/EstimatorReadinessSection';
-import { useEnvironment } from '../hooks/useEnvironment';
+import EstimateReview from './EstimateReview';
 
-const PublicEstimatorContent: React.FC = () => {
+const PublicEstimator: React.FC = () => {
+  console.log('[PublicEstimator] Component hit');
   const { publicUrl } = useParams();
+  const [searchParams] = useSearchParams();
+  const estimateId = searchParams.get('estimateId');
   const navigate = useNavigate();
+
+  console.log('[PublicEstimator] Params:', { publicUrl, estimateId });
   const [estimatorData, setEstimatorData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [showEstimateReview, setShowEstimateReview] = useState(false);
+  const [estimateData, setEstimateData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [address, setAddress] = useState('');
+  const [leadId, setLeadId] = useState<string | null>(null);
   const [showRoofOutline, setShowRoofOutline] = useState(false);
+  const [propertyData, setPropertyData] = useState<any>(null);
+  const [propertyImage, setPropertyImage] = useState<string | null>(null);
+  const [fetchingPropertyData, setFetchingPropertyData] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
+  const drawingManagerRef = useRef<any>(null);
+  const polygonRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const {
-    propertyData,
-    propertyDataStatus,
-    propertyDataError,
-    setSelectedAddress,
-    clearSelectedAddress,
-    refreshPropertyData,
-    imageryEnabled,
-    imageryStatus,
-    imageryError,
-    imageryUrls,
-    setImageryEnabled,
-    retryImagery,
-    pitchOverride,
-    effectivePitch,
-    setPitchOverride,
-    isPitchRequiredModalOpen,
-    closePitchRequiredModal,
-    submitPitchFromModal,
-    roofAreaOverride,
-    materialsConfig,
-    effectiveRoofArea,
-    materialsSummary,
-    setRoofAreaOverride,
-    updateMaterialsConfig,
-    resetMaterialsConfig,
-    selectedAddressText,
-    selectedPropertyId,
-    orgPlanTier,
-    orgCreditBalance,
-    isLoadingOrgContext,
-    estimateChargeStatus,
-    currentPropertyChargeRecord,
-    isInstantEstimateFree,
-    instantEstimateCreditCost,
-    canGenerateEstimate,
-    generateInstantEstimate,
-    confirmAndChargeEstimate,
-  } = useInstantEstimator();
-
-  const { ensurePitchIfRequired } = usePitchGuard();
-  const {
-    navigateToOrderReport,
-    navigateToOrderHistory,
-    isSaving: isSavingDraft,
-    draftSaved,
-  } = useEscalateToReport();
-  const { isNonProduction } = useEnvironment();
-
-  const [showImageViewer, setShowImageViewer] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [isChargingEstimate, setIsChargingEstimate] = useState(false);
-
-  const openImageViewer = (index: number) => {
-    setSelectedImageIndex(index);
-    setShowImageViewer(true);
-  };
-
-  const closeImageViewer = () => {
-    setShowImageViewer(false);
-  };
-
-  const handleGenerateEstimate = async () => {
-    const result = await generateInstantEstimate();
-    if (result.needsConfirmation) {
-      setShowConfirmModal(true);
-    }
-  };
-
-  const handleConfirmCharge = async () => {
-    setIsChargingEstimate(true);
-    try {
-      const success = await confirmAndChargeEstimate();
-      if (success) {
-        setShowConfirmModal(false);
-      }
-    } finally {
-      setIsChargingEstimate(false);
-    }
-  };
-
-  const handleCancelCharge = () => {
-    setShowConfirmModal(false);
-  };
-
-  const handleBuyCredits = () => {
-    navigate('/org/default/settings/billing');
-  };
 
   // Form data
   const [formData, setFormData] = useState({
@@ -126,6 +40,7 @@ const PublicEstimatorContent: React.FC = () => {
     buildingType: '',
     currentRoof: '',
     desiredRoof: '',
+    selectedMaterialId: '',
     timeline: '',
     financing: '',
     projectDetails: '',
@@ -137,8 +52,57 @@ const PublicEstimatorContent: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchEstimatorData();
-  }, [publicUrl]);
+    if (estimateId) {
+      loadSavedEstimate(estimateId);
+    } else {
+      fetchEstimatorData();
+    }
+  }, [publicUrl, estimateId]);
+
+  const loadSavedEstimate = async (id: string) => {
+    try {
+      console.log('[PublicEstimator] Loading saved estimate:', id);
+      setLoading(true);
+      const response = await apiService.getGeneratedEstimate(id);
+      console.log('[PublicEstimator] API Response raw:', response);
+
+      // The backend returns { success: true, data: { estimate, business, estimator } }
+      // apiService returns response.data (the backend response body)
+      const data = response.data || response;
+      console.log('[PublicEstimator] Extracted data:', data);
+
+      if (!data || !data.estimate) {
+        console.error('[PublicEstimator] Estimate data is missing in response:', data);
+        throw new Error('Estimate data is missing');
+      }
+
+      setEstimateData(data);
+      setLeadId(id);
+
+      // Restore property image if available
+      if (data.estimate?.calculations?.screenshotUrl) {
+        setPropertyImage(data.estimate.calculations.screenshotUrl);
+      }
+
+      // Also set estimatorData for consistent branding if needed
+      if (data.estimator) {
+        console.log('[PublicEstimator] Setting estimator data for branding:', data.estimator);
+        setEstimatorData({
+          ...data.estimator,
+          business_logo: data.business?.logo,
+          friendly_business_name: data.business?.name
+        });
+      }
+
+      console.log('[PublicEstimator] Showing estimate review');
+      setShowEstimateReview(true);
+      setLoading(false);
+    } catch (err) {
+      console.error('[PublicEstimator] Failed to load estimate:', err);
+      // Fallback: fetch estimator data to at least show the landing page
+      fetchEstimatorData();
+    }
+  };
 
   useEffect(() => {
     if (currentStep === 2) {
@@ -147,7 +111,10 @@ const PublicEstimatorContent: React.FC = () => {
   }, [currentStep]);
 
   const fetchEstimatorData = async () => {
-    if (!publicUrl) return;
+    if (!publicUrl) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const response = await apiService.getInstantEstimatorByPublicUrl(publicUrl);
@@ -164,8 +131,94 @@ const PublicEstimatorContent: React.FC = () => {
     }
   };
 
+
+  const fetchSolarDataByCoords = async (lat: number, lng: number) => {
+    if (!publicUrl) return;
+
+    setFetchingPropertyData(true);
+    try {
+      const response = await apiService.getGoogleSolarDataByCoords(publicUrl, lat, lng);
+      console.log('Coordinate-based Solar Data received:', response);
+      const data = response.data || response;
+      setPropertyData(data);
+
+      if (data?.property_images?.[0]) {
+        setPropertyImage(data.property_images[0]);
+      }
+
+
+      setShowRoofOutline(true);
+
+      // Reverse geocode to update address
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+        if (status === 'OK' && results[0]) {
+          setAddress(results[0].formatted_address);
+        } else {
+          setAddress(`Selected Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+        }
+      });
+
+      console.log('Fetching data for location:', { lat, lng });
+    } catch (err) {
+      console.error('Failed to fetch coordinate-based solar data', err);
+    } finally {
+      setFetchingPropertyData(false);
+    }
+  };
+
+  const updateAreaFromPolygon = (polygon: any) => {
+    if (!polygon || !window.google?.maps?.geometry) return;
+    const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+    const areaSqFt = area * 10.7639;
+
+    // Update propertyData with the manual calculation for consistency
+    setPropertyData((prev: any) => ({
+      ...prev,
+      structures: [{
+        ...prev?.structures?.[0],
+        structure_footprint_sqft: { value: areaSqFt.toFixed(2), unit: 'sqft' }
+      }]
+    }));
+  };
+
+  const generateStaticMapUrl = () => {
+    if (!mapInstanceRef.current || !window.google?.maps) return;
+
+    // Get current map center and zoom level
+    const center = mapInstanceRef.current.getCenter();
+    const zoom = mapInstanceRef.current.getZoom();
+
+    // Base static map URL
+    let url = `https://maps.googleapis.com/maps/api/staticmap?center=${center.lat()},${center.lng()}&zoom=${zoom}&size=600x400&maptype=satellite&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+
+    // Add polygon path if it exists
+    if (polygonRef.current) {
+      const path = polygonRef.current.getPath();
+      let pathStr = '&path=color:0x3B82F6|weight:2|fillcolor:0x3B82F680';
+
+      const points: string[] = [];
+      path.forEach((latLng: any) => {
+        points.push(`${latLng.lat()},${latLng.lng()}`);
+      });
+
+      if (points.length > 0) {
+        // Close the path
+        points.push(points[0]);
+        url += pathStr + '|' + points.join('|');
+      }
+    } else if (markerRef.current) {
+      // Add marker if no polygon exists
+      const pos = markerRef.current.getPosition();
+      url += `&markers=color:0x3B82F6|${pos.lat()},${pos.lng()}`;
+    }
+
+    console.log('Generated Static Map URL:', url);
+    setPropertyImage(url);
+  };
+
   const initMap = () => {
-    if (mapRef.current && window.google) {
+    if (mapRef.current && window.google?.maps) {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center: { lat: 39.8283, lng: -98.5795 },
         zoom: 4,
@@ -176,13 +229,72 @@ const PublicEstimatorContent: React.FC = () => {
           position: window.google.maps.ControlPosition.LEFT_CENTER
         }
       });
-      
-      // Initialize autocomplete
+
+      mapInstanceRef.current.addListener('click', (e: any) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+
+        if (markerRef.current) {
+          markerRef.current.setPosition(e.latLng);
+        } else {
+          markerRef.current = new window.google.maps.Marker({
+            position: e.latLng,
+            map: mapInstanceRef.current,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: "#3B82F6",
+              fillOpacity: 0.8,
+              strokeWeight: 2,
+              strokeColor: "#FFFFFF",
+            }
+          });
+        }
+
+        fetchSolarDataByCoords(lat, lng);
+      });
+
+      // Initialize Drawing Manager
+      drawingManagerRef.current = new window.google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: window.google.maps.ControlPosition.TOP_CENTER,
+          drawingModes: ['polygon']
+        },
+        polygonOptions: {
+          fillColor: '#3B82F6',
+          fillOpacity: 0.3,
+          strokeWeight: 2,
+          strokeColor: '#3B82F6',
+          clickable: true,
+          editable: true,
+          zIndex: 1
+        }
+      });
+
+      drawingManagerRef.current.setMap(mapInstanceRef.current);
+
+      window.google.maps.event.addListener(drawingManagerRef.current, 'polygoncomplete', (polygon: any) => {
+        // Remove existing polygon if any
+        if (polygonRef.current) polygonRef.current.setMap(null);
+        polygonRef.current = polygon;
+
+        // Reset drawing mode after completion
+        drawingManagerRef.current.setDrawingMode(null);
+
+        updateAreaFromPolygon(polygon);
+
+        // Listen for edits
+        window.google.maps.event.addListener(polygon.getPath(), 'set_at', () => updateAreaFromPolygon(polygon));
+        window.google.maps.event.addListener(polygon.getPath(), 'insert_at', () => updateAreaFromPolygon(polygon));
+      });
+
       if (inputRef.current) {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['address']
         });
-        
+
         autocompleteRef.current.addListener('place_changed', () => {
           const place = autocompleteRef.current?.getPlace();
           if (place?.geometry?.location && mapInstanceRef.current) {
@@ -191,9 +303,41 @@ const PublicEstimatorContent: React.FC = () => {
             const formattedAddress = place.formatted_address || '';
             setAddress(formattedAddress);
 
-            const propertyId = place.place_id ||
-              formattedAddress.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0).toString();
-            setSelectedAddress(propertyId, formattedAddress);
+            if (markerRef.current) {
+              markerRef.current.setPosition(place.geometry.location);
+            } else {
+              markerRef.current = new window.google.maps.Marker({
+                position: place.geometry.location,
+                map: mapInstanceRef.current,
+                icon: {
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: "#3B82F6",
+                  fillOpacity: 0.8,
+                  strokeWeight: 2,
+                  strokeColor: "#FFFFFF",
+                }
+              });
+            }
+
+            if (publicUrl) {
+              setFetchingPropertyData(true);
+
+              apiService.getGoogleSolarData(publicUrl, formattedAddress)
+                .then((response: any) => {
+                  console.log('Synchronous Google Solar Data received:', response);
+                  const data = response.data || response;
+                  setPropertyData(data);
+
+                  if (data?.property_images?.[0]) {
+                    setPropertyImage(data.property_images[0]);
+                  }
+
+                  // No longer need to set requestId for polling since flow is synchronous
+                })
+                .catch((err: any) => console.error('Failed to fetch synchronous Google Solar data', err))
+                .finally(() => setFetchingPropertyData(false));
+            }
 
             setTimeout(() => {
               setShowRoofOutline(true);
@@ -201,23 +345,25 @@ const PublicEstimatorContent: React.FC = () => {
           }
         });
       }
-    } else if (!window.google) {
+    } else if (!window.google?.maps && !document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry`;
       script.async = true;
       script.onload = initMap;
       document.head.appendChild(script);
     }
   };
 
-
-
   const handleGetStarted = () => {
     setCurrentStep(2);
   };
 
   const handleContinue = () => {
-    setCurrentStep(3);
+    if (currentStep === 2) {
+      generateStaticMapUrl();
+    }
+    setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {
@@ -225,6 +371,96 @@ const PublicEstimatorContent: React.FC = () => {
       setCurrentStep(currentStep - 1);
     }
   };
+
+  const handleSubmitEstimate = async () => {
+    if (!publicUrl) return;
+
+    try {
+      setSubmitting(true);
+
+      let currentPropertyData = propertyData;
+
+      console.log('Submitting Estimate. Property Data Context:', {
+        hasData: !!currentPropertyData,
+        hasStructures: !!currentPropertyData?.structures?.length,
+        status: currentPropertyData?.request?.status || currentPropertyData?.status
+      });
+
+      let calculatedRoofArea = 0;
+      const structure = currentPropertyData?.structures?.[0];
+
+      const footprintValue = structure?.structure_footprint_sqft?.value;
+      const roofSquares = structure?.roof?.structure_roof_area_squares?.value || structure?.structure_roof_area_squares?.value;
+
+      console.log('Final Area Extraction Check:', { footprintValue, roofSquares });
+
+      if (footprintValue !== undefined && footprintValue !== null) {
+        const val = typeof footprintValue === 'string' ? parseFloat(footprintValue) : Number(footprintValue);
+        if (!isNaN(val) && val > 0) {
+          calculatedRoofArea = val;
+          console.log('Using Footprint Value (SqFt):', calculatedRoofArea);
+        }
+      }
+
+      if (calculatedRoofArea <= 0 && roofSquares !== undefined && roofSquares !== null) {
+        const squaresValue = typeof roofSquares === 'string' ? parseFloat(roofSquares) : Number(roofSquares);
+        if (!isNaN(squaresValue) && squaresValue > 0) {
+          calculatedRoofArea = squaresValue * 100;
+          console.log('Using Roof Squares (Converted to SqFt):', calculatedRoofArea);
+        }
+      }
+
+      console.log('Calculated Final Roof Area (SqFt):', calculatedRoofArea);
+
+      const submitData = {
+        ...formData,
+        address,
+        roofArea: calculatedRoofArea > 0 ? calculatedRoofArea : 2500,
+        screenshotUrl: propertyImage
+      };
+
+      console.log('Sending Submit Data:', submitData);
+
+      const response = await apiService.generateEstimate(publicUrl!, submitData);
+      const data = response.data || response;
+      const newLeadId = response.leadId || data?.leadId;
+
+      console.log('Estimate generated. Lead ID:', newLeadId);
+
+      setEstimateData(data);
+      setLeadId(newLeadId);
+      setShowEstimateReview(true);
+      setSubmitting(false);
+
+      // Update the URL to include the estimateId so refreshing works and share link is correct
+      if (newLeadId && publicUrl) {
+        navigate(`/estimator/${publicUrl}?estimateId=${newLeadId}`, { replace: true });
+      }
+    } catch (error) {
+      console.error('Failed to generate estimate:', error);
+      alert('Failed to generate estimate. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (showEstimateReview && estimateData) {
+    return (
+      <EstimateReview
+        estimateData={estimateData}
+        propertyImage={propertyImage}
+        leadId={leadId}
+        financingUrl={estimateData?.estimator?.pricing_settings?.financing_link}
+        onBack={() => {
+          if (estimateId) {
+            navigate(`/estimator/${publicUrl}`);
+          }
+          setShowEstimateReview(false);
+          setEstimateData(null);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -248,192 +484,94 @@ const PublicEstimatorContent: React.FC = () => {
     );
   }
 
-
-
   if (currentStep === 2) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto p-6">
-          {/* Header */}
+        <div className="max-w-6xl mx-auto p-6">
           <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500 mb-2">Step 2 of 10</div>
-                <h1 className="text-3xl font-bold text-gray-900">What's your address?</h1>
-              </div>
-              {(address || isNonProduction) && (
-                <EstimatorReadinessSection
-                  onFocusAddressSearch={() => inputRef.current?.focus()}
-                />
-              )}
-            </div>
+            <div className="text-sm text-gray-500 mb-2">Step 2 of 10</div>
+            <h1 className="text-3xl font-bold text-gray-900">What's your address?</h1>
           </div>
 
-          <div className="flex gap-6">
-            {/* Main Content */}
-            <div className="flex-1 min-w-0">
-              {/* Map Container */}
-              <div className="relative bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: '500px' }}>
-                {/* Address Input Overlay */}
-                <div className="absolute top-4 left-4 right-4 z-10">
-                  <div className="bg-white rounded-lg shadow-lg p-4">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Enter your street address"
-                        className="flex-1 text-lg border-none outline-none bg-transparent"
-                      />
-                    </div>
-                  </div>
+          <div className="relative bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: '500px' }}>
+            <div className="absolute top-4 left-4 right-4 z-10">
+              <div className="bg-white rounded-lg shadow-lg p-4">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Enter your street address"
+                    className="flex-1 text-lg border-none outline-none bg-transparent"
+                  />
                 </div>
-
-                {/* Map */}
-                <div ref={mapRef} className="w-full h-full" />
-
-                {/* Continue Button */}
-                {showRoofOutline && (
-                  <div className="absolute bottom-4 right-4 z-10">
-                    <button
-                      onClick={handleContinue}
-                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium shadow-lg transition-colors"
-                    >
-                      Continue
-                    </button>
-                  </div>
-                )}
-
-                {/* Address Display */}
-                {showRoofOutline && address && (
-                  <div className="absolute top-20 left-4 z-10">
-                    <div className="bg-white rounded-lg shadow-lg p-3 flex items-center gap-2">
-                      <span className="text-gray-700">{address}</span>
-                      <button
-                        onClick={() => {
-                          setShowRoofOutline(false);
-                          setAddress('');
-                          clearSelectedAddress();
-                        }}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="mt-2 text-xs text-gray-500 border-t pt-2 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  Pro-tip: Search for your address, then click your house on the satellite map to select it or use the tool below to draw the outline.
+                </div>
               </div>
-
-              {/* Roof Data Preview Card - only visible after address is selected */}
-              {address && (
-                <div className="mt-6 space-y-4">
-                  <RoofDataPreviewCard
-                    data={propertyData}
-                    status={propertyDataStatus}
-                    error={propertyDataError}
-                    onRefresh={refreshPropertyData}
-                    pitchOverride={pitchOverride}
-                    effectivePitch={effectivePitch}
-                    onPitchOverride={setPitchOverride}
-                    chargeStatus={estimateChargeStatus}
-                    chargeRecord={currentPropertyChargeRecord}
-                    planTier={orgPlanTier}
-                    creditBalance={orgCreditBalance}
-                    isLoadingOrgContext={isLoadingOrgContext}
-                    onGenerateEstimate={handleGenerateEstimate}
-                    canGenerate={canGenerateEstimate}
-                    isInstantEstimateFree={isInstantEstimateFree}
-                    instantEstimateCreditCost={instantEstimateCreditCost}
-                    onBuyCredits={handleBuyCredits}
-                    hasPropertySelected={!!selectedPropertyId}
-                  />
-
-                  {propertyDataStatus === 'success' && (
-                    <RoofImagerySection
-                      imageryEnabled={imageryEnabled}
-                      imageryStatus={imageryStatus}
-                      imageryError={imageryError}
-                      images={imageryUrls}
-                      onToggle={setImageryEnabled}
-                      onRetry={retryImagery}
-                      onImageClick={openImageViewer}
-                    />
-                  )}
-
-                  <QuickMaterialsCard
-                    propertyDataRoofArea={propertyData?.roofAreaSqFt ?? null}
-                    propertyDataStatus={propertyDataStatus}
-                    roofAreaOverride={roofAreaOverride}
-                    materialsConfig={materialsConfig}
-                    effectiveRoofArea={effectiveRoofArea}
-                    materialsSummary={materialsSummary}
-                    addressText={selectedAddressText}
-                    onRoofAreaOverride={setRoofAreaOverride}
-                    onUpdateConfig={updateMaterialsConfig}
-                    onResetConfig={resetMaterialsConfig}
-                  />
-
-                  {import.meta.env.DEV && (
-                    <button
-                      onClick={() => {
-                        ensurePitchIfRequired({
-                          requiresPitch: true,
-                          actionId: 'dev-test',
-                          onContinue: () => {
-                            console.log('Pitch available, proceeding with effectivePitch:', effectivePitch);
-                          },
-                        });
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline"
-                    >
-                      Test pitch-required flow
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
-            {/* Escalate to Report Sidebar */}
-            <EscalateToReportSidebar
-              propertyId={selectedPropertyId}
-              addressText={selectedAddressText}
-              roofAreaSqFt={effectiveRoofArea}
-              effectivePitch={effectivePitch}
-              onOrderReport={navigateToOrderReport}
-              onViewHistory={navigateToOrderHistory}
-              draftSaved={draftSaved}
-              isSaving={isSavingDraft}
-            />
+            <div ref={mapRef} className="w-full h-full" />
+
+
+            {fetchingPropertyData && (
+              <div className="absolute inset-0 z-20 bg-black bg-opacity-30 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                  <span className="font-medium">Calculating roof area...</span>
+                </div>
+              </div>
+            )}
+
+            {showRoofOutline && !fetchingPropertyData && (
+              <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+                <button
+                  onClick={() => drawingManagerRef.current?.setDrawingMode(window.google.maps.drawing.OverlayType.POLYGON)}
+                  className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-3 rounded-full font-medium shadow-lg transition-colors flex items-center gap-2 border border-gray-200"
+                >
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Draw Manual Outline
+                </button>
+                <button
+                  onClick={handleContinue}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium shadow-lg transition-colors"
+                >
+                  Continue
+                </button>
+              </div>
+            )}
+
+            {showRoofOutline && address && (
+              <div className="absolute top-20 left-4 z-10">
+                <div className="bg-white rounded-lg shadow-lg p-3 flex items-center gap-2">
+                  <span className="text-gray-700">{address}</span>
+                  {propertyData?.structures?.[0]?.structure_footprint_sqft?.value && (
+                    <div className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-bold">
+                      {Math.round(Number(propertyData.structures[0].structure_footprint_sqft.value)).toLocaleString()} SqFt
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowRoofOutline(false);
+                      setAddress('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
-          <EstimatorImageViewerModal
-            images={imageryUrls}
-            initialIndex={selectedImageIndex}
-            isOpen={showImageViewer}
-            onClose={closeImageViewer}
-          />
-
-          <PitchRequiredModal
-            isOpen={isPitchRequiredModalOpen}
-            onClose={closePitchRequiredModal}
-            onSubmit={submitPitchFromModal}
-          />
-
-          <InstantEstimateConfirmModal
-            isOpen={showConfirmModal}
-            onConfirm={handleConfirmCharge}
-            onCancel={handleCancelCharge}
-            isCharging={isChargingEstimate}
-            creditCost={instantEstimateCreditCost}
-            currentBalance={orgCreditBalance || 0}
-            addressText={selectedAddressText || address}
-          />
         </div>
       </div>
     );
@@ -444,26 +582,24 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(2)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 3 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">How steep is your roof?</h1>
-          <p className="text-gray-600 mb-8">Note: We do not currently offer flat roofing services</p>
-          
+
           <div className="grid grid-cols-4 gap-4">
             {[
-              { id: 'flat', title: 'Flat', desc: 'Not offered', disabled: true },
+              { id: 'flat', title: 'Flat', desc: 'Flat roof surface' },
               { id: 'low', title: 'Low', desc: 'Easily walked on' },
               { id: 'moderate', title: 'Moderate', desc: 'Not easily walked on' },
               { id: 'steep', title: 'Steep', desc: "Can't be walked on" }
-            ].map((option) => (
+            ].map((option: { id: string; title: string; desc: string; disabled?: boolean }) => (
               <div
                 key={option.id}
-                onClick={() => !option.disabled && (setFormData({...formData, roofSteepness: option.id}), setCurrentStep(4))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  option.disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50' :
-                  formData.roofSteepness === option.id ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                onClick={() => !option.disabled && (setFormData({ ...formData, roofSteepness: option.id }), setCurrentStep(4))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${option.disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-50' :
+                  formData.roofSteepness === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded flex items-center justify-center">
                   <div className="w-8 h-8 bg-gray-400 transform rotate-12"></div>
@@ -483,11 +619,11 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(3)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 4 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of building do you have?</h1>
-          
+
           <div className="grid grid-cols-2 gap-6">
             {[
               { id: 'residential', title: 'Residential', image: 'house' },
@@ -495,14 +631,12 @@ const PublicEstimatorContent: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, buildingType: option.id}), setCurrentStep(5))}
-                className={`relative h-80 rounded-lg overflow-hidden cursor-pointer transition-all ${
-                  formData.buildingType === option.id ? 'ring-4 ring-red-600' : 'hover:ring-2 hover:ring-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, buildingType: option.id }), setCurrentStep(5))}
+                className={`relative h-80 rounded-lg overflow-hidden cursor-pointer transition-all ${formData.buildingType === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
               >
-                <div className={`w-full h-full ${
-                  option.id === 'residential' ? 'bg-gradient-to-br from-blue-200 to-blue-400' : 'bg-gradient-to-br from-gray-300 to-gray-500'
-                }`}></div>
+                <div className={`w-full h-full ${option.id === 'residential' ? 'bg-gradient-to-br from-blue-200 to-blue-400' : 'bg-gradient-to-br from-gray-300 to-gray-500'
+                  }`}></div>
                 <div className="absolute bottom-6 left-6">
                   <h3 className="text-2xl font-bold text-white">{option.title}</h3>
                 </div>
@@ -519,28 +653,29 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(4)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 5 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What is currently on your roof?</h1>
-          
+
           <div className="grid grid-cols-4 gap-4">
             {[
-              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800' },
-              { id: 'metal', title: 'Metal', color: 'bg-red-400' },
-              { id: 'tile', title: 'Tile', color: 'bg-red-600' },
-              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700' }
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.webp' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp' },
+              { id: 'tile', title: 'Tile', color: 'bg-red-600', image: '../rooftypes/residential/clay-tile.webp' },
+              { id: 'cedar', title: 'Cedar', color: 'bg-amber-700', image: '../rooftypes/residential/cedar-shake.webp' }
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, currentRoof: option.id}), setCurrentStep(6))}
-                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
-                  formData.currentRoof === option.id ? 'ring-4 ring-red-600' : 'hover:ring-2 hover:ring-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, currentRoof: option.id }), setCurrentStep(6))}
+                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.currentRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
               >
-                <div className={`w-full h-full ${option.color}`}></div>
+                <div className={`w-full h-full`}>
+                  <img src={option.image} alt="" />
+                </div>
                 <div className="absolute bottom-6 left-6">
-                  <h3 className="text-xl font-bold text-white">{option.title}</h3>
+                  <h3 className="text-xl font-bold text-black">{option.title}</h3>
                 </div>
               </div>
             ))}
@@ -555,23 +690,30 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <button onClick={() => setCurrentStep(5)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 6 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">What type of roof would you like?</h1>
-          
-          <div className="grid grid-cols-1 gap-4 max-w-md">
-            <div
-              onClick={() => (setFormData({...formData, desiredRoof: 'metal'}), setCurrentStep(7))}
-              className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${
-                formData.desiredRoof === 'metal' ? 'ring-4 ring-red-600' : 'hover:ring-2 hover:ring-gray-300'
-              }`}
-            >
-              <div className="w-full h-full bg-red-400"></div>
-              <div className="absolute bottom-6 left-6">
-                <h3 className="text-xl font-bold text-white">Metal</h3>
+
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { id: 'asphalt', title: 'Asphalt', color: 'bg-gray-800', image: '../rooftypes/residential/asphalt-shingle.webp' },
+              { id: 'metal', title: 'Metal', color: 'bg-blue-400', image: '../rooftypes/residential/metal-2.webp' }
+            ].map((option) => (
+              <div
+                key={option.id}
+                onClick={() => (setFormData({ ...formData, desiredRoof: option.id }), setCurrentStep(7))}
+                className={`h-64 rounded-lg overflow-hidden cursor-pointer transition-all relative ${formData.desiredRoof === option.id ? 'ring-4 ring-blue-500' : 'hover:ring-2 hover:ring-gray-300'
+                  }`}
+              >
+                <div className={`w-full h-full`}>
+                  <img src={option.image} alt="" />
+                </div>
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="text-xl font-bold text-black">{option.title}</h3>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -583,11 +725,11 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(6)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 7 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">When would you like to start your project?</h1>
-          
+
           <div className="grid grid-cols-3 gap-6">
             {[
               { id: 'no-timeline', title: 'No timeline', desc: 'I do not have a timeline in mind yet' },
@@ -596,10 +738,9 @@ const PublicEstimatorContent: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, timeline: option.id}), setCurrentStep(8))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.timeline === option.id ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, timeline: option.id }), setCurrentStep(8))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${formData.timeline === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
                 <p className="text-gray-600">{option.desc}</p>
@@ -616,11 +757,11 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(7)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 8 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Are you interested in financing?</h1>
-          
+
           <div className="grid grid-cols-3 gap-6">
             {[
               { id: 'yes', title: 'Yes', desc: 'I am interested in financing' },
@@ -629,10 +770,9 @@ const PublicEstimatorContent: React.FC = () => {
             ].map((option) => (
               <div
                 key={option.id}
-                onClick={() => (setFormData({...formData, financing: option.id}), setCurrentStep(9))}
-                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  formData.financing === option.id ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
+                onClick={() => (setFormData({ ...formData, financing: option.id }), setCurrentStep(9))}
+                className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${formData.financing === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{option.title}</h3>
                 <p className="text-gray-600">{option.desc}</p>
@@ -649,19 +789,19 @@ const PublicEstimatorContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentStep(8)} className="flex items-center gap-2 text-gray-600 mb-6">
+          <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 mb-6">
             <ArrowLeft className="w-4 h-4" /> Step 9 of 10
           </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Tell us about your project (optional)</h1>
-          
+
           <div className="bg-white rounded-lg p-6">
             <textarea
               value={formData.projectDetails}
-              onChange={(e) => setFormData({...formData, projectDetails: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, projectDetails: e.target.value })}
               placeholder="Provide any additional details which will help us prepare your roofing estimate"
-              className="w-full h-40 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full h-40 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            
+
             <div className="mt-6 flex justify-center">
               <button
                 onClick={() => setCurrentStep(10)}
@@ -682,7 +822,7 @@ const PublicEstimatorContent: React.FC = () => {
       <div className="min-h-screen bg-gray-900 bg-opacity-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-lg p-8 max-w-lg w-full">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Where should we send your estimates?</h1>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -691,12 +831,12 @@ const PublicEstimatorContent: React.FC = () => {
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter your full name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -705,9 +845,9 @@ const PublicEstimatorContent: React.FC = () => {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="Enter your email"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -717,45 +857,45 @@ const PublicEstimatorContent: React.FC = () => {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Enter your phone number"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={formData.agreeToTerms}
-                  onChange={(e) => setFormData({...formData, agreeToTerms: e.target.checked})}
-                  className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-600"
+                  onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
-                  I agree to <a href="#" className="text-red-600 hover:underline">Terms of Service</a> and <a href="#" className="text-red-600 hover:underline">Privacy Policy</a><span className="text-red-500">*</span>
+                  I agree to <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a><span className="text-red-500">*</span>
                 </span>
               </label>
-              
+
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={formData.agreeToContact}
-                  onChange={(e) => setFormData({...formData, agreeToContact: e.target.checked})}
-                  className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-600"
+                  onChange={(e) => setFormData({ ...formData, agreeToContact: e.target.checked })}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">
-                  To ensure you're getting the best offers and pricing, Tarrytown Roofing LLC may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
+                  To ensure you're getting the best offers and pricing, {estimatorData?.friendly_business_name} may need to contact you by text/call. By checking this box, you agree to these communications. Message and data rates may apply. You can reply STOP to opt-out of future messaging; reply HELP for messaging help. Message frequency may vary.
                 </span>
               </label>
             </div>
-            
+
             <button
-              onClick={() => alert('Estimate submitted!')}
-              disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms}
-              className="w-full bg-gray-400 text-white py-3 rounded-full font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmitEstimate}
+              disabled={!formData.name || !formData.email || !formData.phone || !formData.agreeToTerms || submitting}
+              className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-full font-medium mt-6 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Get my estimate
+              {submitting ? 'Generating estimate...' : 'Get my estimate'}
             </button>
           </div>
         </div>
@@ -765,7 +905,6 @@ const PublicEstimatorContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 relative overflow-hidden">
-      <StagingBanner variant="estimator" />
       {/* Background decorative elements */}
       <div className="absolute top-10 left-10 opacity-10">
         <div className="w-32 h-32 border-2 border-gray-300 transform rotate-12">
@@ -774,11 +913,11 @@ const PublicEstimatorContent: React.FC = () => {
           <div className="w-4 h-4 bg-gray-300"></div>
         </div>
       </div>
-      
+
       <div className="absolute top-20 right-20 opacity-10">
         <div className="w-8 h-8 rounded-full bg-gray-300 mb-4"></div>
       </div>
-      
+
       <div className="absolute bottom-20 right-32 opacity-10">
         <div className="w-24 h-24 border-2 border-gray-300 transform -rotate-12">
           <div className="w-full h-6 bg-gray-300 mb-2"></div>
@@ -786,15 +925,15 @@ const PublicEstimatorContent: React.FC = () => {
           <div className="w-3 h-3 bg-gray-300"></div>
         </div>
       </div>
-      
+
       <div className="absolute bottom-32 left-20 opacity-10">
         <div className="w-20 h-20 rounded-full bg-gray-300"></div>
       </div>
-      
+
       <div className="absolute bottom-10 right-10 opacity-10">
         <div className="w-6 h-8 bg-gray-300"></div>
       </div>
-      
+
       <div className="absolute bottom-20 left-32 opacity-10">
         <div className="w-6 h-8 bg-gray-300"></div>
       </div>
@@ -804,14 +943,17 @@ const PublicEstimatorContent: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto">
           {/* Logo */}
           <div className="mb-8">
-            <div className="w-32 h-20 mx-auto mb-4 bg-black rounded-lg flex items-center justify-center">
-              <div className="text-white font-bold text-lg">
-                {/* <div className="text-xs">TARRYTOWN</div> */}
-                <div className="text-sm font-black">ROOFING</div>
-                {/* <div className="text-xs font-normal">WE'VE GOT YOU COVERED</div> */}
-              </div>
+            <div className="w-32 h-20 mx-auto mb-4 rounded-lg flex items-center justify-center">
+              {estimatorData?.business_logo && (
+                <img
+                  src={estimatorData.business_logo}
+                  alt="Business Logo"
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
           </div>
+
 
           {/* Main heading */}
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -824,7 +966,7 @@ const PublicEstimatorContent: React.FC = () => {
           </p>
 
           {/* Get started button */}
-          <button 
+          <button
             onClick={handleGetStarted}
             className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-4 rounded-full text-lg font-medium transition-colors inline-flex items-center gap-2"
           >
@@ -842,14 +984,6 @@ const PublicEstimatorContent: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
-
-const PublicEstimator: React.FC = () => {
-  return (
-    <InstantEstimatorProvider defaultAccountMode="internal">
-      <PublicEstimatorContent />
-    </InstantEstimatorProvider>
   );
 };
 

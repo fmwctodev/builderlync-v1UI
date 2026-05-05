@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, Upload, Download, Trash2, X } from "lucide-react";
-import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, deleteContacts, uploadContactsCsv } from "../../../shared/store/services/contactsApi";
+import { useNavigate, useParams } from 'react-router-dom';
+import { Search, Filter, Plus, Upload, Download, X, Trash2, RefreshCw } from "lucide-react";
+import { CreateContactRequest, createContact, getContacts, updateContact, deleteContact, deleteContacts, uploadContactsCsv, exportContactsCsv, syncQuickBooksContacts } from "../../../shared/store/services/contactsApi";
 import Toast from "../../../shared/components/Toast";
 import ContactModal from "../components/ContactModal";
 import ContactsTable from "../components/ContactsTable";
 import Pagination from "../components/Pagination";
 import CsvUploadModal from "../components/CsvUploadModal";
-import { Button, Input, Modal } from "../../../shared/components/ui";
+import { hasPermission } from "../../../shared/utils/permissions";
+import { getErrorMessage } from "../../../shared/utils/errorHandler";
 
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const [showContactModal, setShowContactModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
@@ -38,7 +40,7 @@ const Contacts: React.FC = () => {
     secondaryPhoneType: 'mobile'
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -51,14 +53,50 @@ const Contacts: React.FC = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [secondaryEmail, setSecondaryEmail] = useState('');
   const [showSecondaryEmail, setShowSecondaryEmail] = useState(false);
-  const [secondaryPhone, setSecondaryPhone] = useState({phone: '', extension: ''});
+  const [secondaryPhone, setSecondaryPhone] = useState({ phone: '', extension: '' });
   const [showSecondaryPhone, setShowSecondaryPhone] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalContacts, setTotalContacts] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<any>(null);
+  const [exportLoading, setExportLoading] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  const handleSyncContacts = async () => {
+    try {
+      setSyncing(true);
+      await syncQuickBooksContacts();
+      setToast({ message: 'Contacts synced successfully!', type: 'success' });
+      fetchContacts();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Failed to sync contacts');
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { getQuickBooksStatus } = await import('../../../shared/store/services/quickbooksApi');
+        const response = await getQuickBooksStatus();
+        setIsQuickBooksConnected(response.data.connected);
+      } catch (error) {
+        console.error('Error checking QuickBooks status:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
+    fetchContacts();
+  }, []);
 
   const addSecondaryEmail = () => {
     setShowSecondaryEmail(true);
@@ -75,7 +113,7 @@ const Contacts: React.FC = () => {
 
   const removeSecondaryPhone = () => {
     setShowSecondaryPhone(false);
-    setSecondaryPhone({phone: '', extension: ''});
+    setSecondaryPhone({ phone: '', extension: '' });
   };
 
   const formatPhoneNumber = (value: string) => {
@@ -89,21 +127,21 @@ const Contacts: React.FC = () => {
   };
 
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setFormData({...formData, phone: formatted});
+    // const formatted = formatPhoneNumber(value);
+    setFormData({ ...formData, phone: value });
   };
 
   const handleSecondaryPhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value);
-    setSecondaryPhone({...secondaryPhone, phone: formatted});
+    // const formatted = formatPhoneNumber(value);
+    setSecondaryPhone({ ...secondaryPhone, phone: value });
   };
 
-  const handleAddressChange = (address: string, lat: number, lng: number) => {
+  const handleAddressChange = (address: string, isFromAutocomplete: boolean, lat?: number, lng?: number) => {
     setFormData(prev => ({
       ...prev,
       address,
-      latitude: lat,
-      longitude: lng
+      latitude: lat || 0,
+      longitude: lng || 0
     }));
   };
 
@@ -121,8 +159,11 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
-      latitude: formData.latitude,
-      longitude: formData.longitude
+      timezone: formData.timezone,
+      ...(formData.latitude !== 0 && formData.longitude !== 0 && {
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      })
     };
 
     try {
@@ -152,12 +193,11 @@ const Contacts: React.FC = () => {
         secondaryPhoneType: 'mobile'
       });
       setShowContactModal(false);
-      setToast({message: 'Contact created successfully!', type: 'success'});
+      setToast({ message: 'Contact created successfully!', type: 'success' });
       fetchContacts();
     } catch (error: any) {
-      console.log("error:", JSON.stringify(error.response.data));
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create contact';
-      setToast({message: errorMessage, type: 'error'});
+      const errorMessage = getErrorMessage(error, 'Failed to create contact');
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -179,8 +219,11 @@ const Contacts: React.FC = () => {
       phone: formData.phone,
       company: formData.company,
       address: formData.address,
-      latitude: formData.latitude,
-      longitude: formData.longitude
+      timezone: formData.timezone,
+      ...(formData.latitude !== 0 && formData.longitude !== 0 && {
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      })
     };
 
     try {
@@ -211,12 +254,11 @@ const Contacts: React.FC = () => {
       });
       setShowEditModal(false);
       setEditingContact(null);
-      setToast({message: 'Contact updated successfully!', type: 'success'});
+      setToast({ message: 'Contact updated successfully!', type: 'success' });
       fetchContacts();
     } catch (error: any) {
-      console.log("error:", JSON.stringify(error.response.data));
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to create contact';
-      setToast({message: errorMessage, type: 'error'});
+      const errorMessage = getErrorMessage(error, 'Failed to update contact');
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -230,8 +272,8 @@ const Contacts: React.FC = () => {
       setTotalPages(response.data.pagination.totalPages);
       setTotalContacts(response.data.pagination.total);
     } catch (error: any) {
-      console.error('Error fetching contacts:', error);
-      setToast({message: 'Failed to load contacts', type: 'error'});
+      const errorMessage = getErrorMessage(error, 'Failed to load contacts');
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoadingContacts(false);
     }
@@ -242,7 +284,6 @@ const Contacts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setSelectedContacts([]);
     const timeoutId = setTimeout(() => {
       setCurrentPage(1);
       fetchContacts(1);
@@ -267,8 +308,6 @@ const Contacts: React.FC = () => {
     }
   }, [activeDropdown, showTypeFilter]);
 
-
-
   const handleSelectContact = (contactId: string) => {
     setSelectedContacts(prev =>
       prev.includes(contactId)
@@ -288,12 +327,21 @@ const Contacts: React.FC = () => {
   };
 
   const handleViewProfile = (contact: any) => {
-    navigate(`/contacts/${contact.id}`);
+    navigate(`/org/${orgSlug}/contacts/${contact.id}`);
     setActiveDropdown(null);
   };
 
   const handleViewJob = (contact: any) => {
-    console.log('View job:', contact);
+    navigate(`/org/${orgSlug}/jobs`, {
+      state: {
+        createFromContact: true,
+        contactData: {
+          id: contact.id,
+          fullName: contact.fullName,
+          address: contact.address
+        }
+      }
+    });
     setActiveDropdown(null);
   };
 
@@ -319,13 +367,13 @@ const Contacts: React.FC = () => {
     if (file && file.type === 'text/csv') {
       setSelectedFile(file);
     } else {
-      setToast({message: 'Please select a valid CSV file', type: 'error'});
+      setToast({ message: 'Please select a valid CSV file', type: 'error' });
     }
   };
 
   const handleCsvUpload = async () => {
     if (!selectedFile) {
-      setToast({message: 'Please select a file', type: 'error'});
+      setToast({ message: 'Please select a file', type: 'error' });
       return;
     }
 
@@ -333,13 +381,13 @@ const Contacts: React.FC = () => {
 
     try {
       await uploadContactsCsv(selectedFile);
-      setToast({message: 'CSV uploaded successfully!', type: 'success'});
+      setToast({ message: 'CSV uploaded successfully!', type: 'success' });
       setShowCsvModal(false);
       setSelectedFile(null);
       fetchContacts();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Upload failed. Please try again.';
-      setToast({message: errorMessage, type: 'error'});
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setUploadLoading(false);
     }
@@ -355,7 +403,7 @@ const Contacts: React.FC = () => {
       firstName: firstName,
       lastName: lastName,
       type: contact.type || 'customer',
-      labelRole: contact.label_or_role || '',
+      labelRole: contact.labelOrRole || '',
       email: contact.email || '',
       phone: contact.phone || '',
       phoneType: contact.phoneType || 'mobile',
@@ -386,7 +434,7 @@ const Contacts: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!contactToDelete) return;
-    
+
     setIsLoading(true);
     try {
       await deleteContact(contactToDelete.id);
@@ -420,73 +468,166 @@ const Contacts: React.FC = () => {
     }
   };
 
-  const TYPE_OPTIONS = [
-    { value: '',                label: 'All types' },
-    { value: 'lead',            label: 'Lead' },
-    { value: 'customer',        label: 'Customer' },
-    { value: 'partner',         label: 'Partner' },
-    { value: 'vendor',          label: 'Vendor' },
-    { value: 'sub-contractor',  label: 'Sub-Contractor' },
-    { value: 'adjuster',        label: 'Adjuster' },
-    { value: 'staff',           label: 'Staff' },
-  ];
+  const handleExportCsv = async () => {
+    setExportLoading(true);
+    try {
+      const response = await exportContactsCsv(searchTerm, typeFilter);
+      const message = response?.data?.message || 'Export request submitted successfully!';
+      setToast({ message, type: 'success' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to export contacts';
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   return (
-    <div className="h-full flex flex-col bg-paper dark:bg-canvas">
-      <div className="bg-surface-1 dark:bg-surface-d-1 border-b border-edge-soft dark:border-edge-d-soft px-studio-page py-5">
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <div className="studio-text-label mb-1">Workspace</div>
-            <h1 className="studio-text-title-1">Contacts</h1>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" leadingIcon={<Download />}>
-              Export CSV
-            </Button>
-            <Button variant="secondary" leadingIcon={<Upload />} onClick={() => setShowCsvModal(true)}>
-              Import CSV
-            </Button>
-            <Button variant="primary" leadingIcon={<Plus />} onClick={() => setShowContactModal(true)}>
-              New contact
-            </Button>
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Contacts</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExportCsv}
+              disabled={exportLoading}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              {exportLoading ? 'Exporting...' : 'Export CSV'}
+            </button>
+            <button
+              onClick={handleSyncContacts}
+              disabled={syncing || checkingStatus || !isQuickBooksConnected}
+              className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              title={!isQuickBooksConnected ? 'Connect QuickBooks in Settings to sync' : 'Sync contacts with QuickBooks'}
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync QuickBooks'}
+            </button>
+            {hasPermission('contacts', 'create') && (
+              <button
+                onClick={() => setShowCsvModal(true)}
+                className="text-gray-700 dark:text-gray-300 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Upload className="w-4 h-4" />
+                Import CSV
+              </button>
+            )}
+            {hasPermission('contacts', 'create') && (
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors hover:opacity-90"
+                style={{ backgroundColor: '#dc2626' }}
+              >
+                <Plus className="w-4 h-4" />
+                New contact
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 max-w-md">
-            <Input
-              leadingIcon={<Search />}
+        {/* Search and Filter */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
               placeholder="Search by name, email, phone"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white"
+              style={{ '--tw-ring-color': '#dc2626' } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = '#dc2626'}
+              onBlur={(e) => e.target.style.borderColor = 'rgb(209 213 219)'}
             />
           </div>
           <div className="relative type-filter-container">
-            <Button
-              variant="secondary"
-              leadingIcon={<Filter />}
+            <button
               onClick={() => setShowTypeFilter(!showTypeFilter)}
-              className={typeFilter ? 'border-signal-500 bg-signal-50 dark:bg-signal-500/10' : ''}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${typeFilter ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
+                }`}
             >
+              <Filter className="w-4 h-4" />
               {typeFilter ? typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1) : 'Type'}
-            </Button>
+            </button>
 
             {showTypeFilter && (
-              <div className="absolute right-0 mt-1 w-48 z-10 rounded-studio-3 bg-surface-1 dark:bg-surface-d-1 border border-edge-soft dark:border-edge-d-soft shadow-s2 overflow-hidden">
+              <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 z-10">
                 <div className="py-1">
-                  {TYPE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value || 'all'}
-                      type="button"
-                      onClick={() => {
-                        setTypeFilter(opt.value);
-                        setShowTypeFilter(false);
-                      }}
-                      className="flex items-center w-full px-3 h-9 studio-text-body hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors duration-fast"
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => {
+                      setTypeFilter('');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    All Types
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('lead');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Lead
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('customer');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Customer
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('partner');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Partner
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('vendor');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Vendor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('sub-contractor');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Sub-Contractor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('adjuster');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Adjuster
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTypeFilter('staff');
+                      setShowTypeFilter(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    Staff
+                  </button>
                 </div>
               </div>
             )}
@@ -494,28 +635,27 @@ const Contacts: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
       {selectedContacts.length > 0 && (
-        <div className="bg-signal-50 dark:bg-signal-500/10 border-b border-signal-100 dark:border-signal-500/20 px-studio-page py-3 flex items-center justify-between">
-          <span className="studio-text-body-strong text-signal-ink dark:text-signal-100">
+        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-red-800 dark:text-red-300">
             {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''} selected
           </span>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              leadingIcon={<X />}
+            <button
               onClick={() => setSelectedContacts([])}
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-1.5 transition-colors"
             >
+              <X className="w-3.5 h-3.5" />
               Clear
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              leadingIcon={<Trash2 />}
+            </button>
+            <button
               onClick={() => setShowBulkDeleteConfirm(true)}
+              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-1.5 transition-colors"
             >
+              <Trash2 className="w-3.5 h-3.5" />
               Delete selected
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -583,58 +723,66 @@ const Contacts: React.FC = () => {
         onUpload={handleCsvUpload}
       />
 
-      <Modal
-        open={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setContactToDelete(null);
-        }}
-        title="Delete contact"
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                setContactToDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={confirmDelete} loading={isLoading}>
-              {isLoading ? 'Deleting…' : 'Delete'}
-            </Button>
-          </>
-        }
-      >
-        <p className="studio-text-body text-ink-2 dark:text-ink-d-2">
-          Are you sure you want to delete &ldquo;{contactToDelete?.fullName}&rdquo;? This action cannot be undone.
-        </p>
-      </Modal>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contact</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{contactToDelete?.fullName}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setContactToDelete(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Modal
-        open={showBulkDeleteConfirm}
-        onClose={() => setShowBulkDeleteConfirm(false)}
-        title="Delete contacts"
-        size="md"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowBulkDeleteConfirm(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={confirmBulkDelete} loading={isLoading}>
-              {isLoading
-                ? 'Deleting…'
-                : `Delete ${selectedContacts.length} contact${selectedContacts.length !== 1 ? 's' : ''}`}
-            </Button>
-          </>
-        }
-      >
-        <p className="studio-text-body text-ink-2 dark:text-ink-d-2">
-          Are you sure you want to delete {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}? This action cannot be undone.
-        </p>
-      </Modal>
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Contacts</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to delete {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowBulkDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBulkDelete}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Deleting...' : `Delete ${selectedContacts.length} contact${selectedContacts.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

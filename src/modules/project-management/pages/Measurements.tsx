@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Ruler, Plus, History, FileText } from 'lucide-react';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
-import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
+import OrderSummary from '../components/measurements/OrderSummary';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
 
 type ViewType = 'dashboard' | 'place-order' | 'order-summary' | 'order-history';
@@ -49,11 +49,21 @@ const Measurements = () => {
         );
       case 'order-summary':
         return (
-          <OrderSummaryPage 
-            orderData={orderData!}
-            onBack={() => setCurrentView('place-order')}
-            onComplete={handleBackToDashboard}
-          />
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => setCurrentView('place-order')}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                ← Back to Order
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Summary</h1>
+            </div>
+            <OrderSummary 
+              totalCost={orderData!.totalCost}
+              onNext={handleBackToDashboard}
+            />
+          </div>
         );
       case 'order-history':
         return (
@@ -106,8 +116,8 @@ const Measurements = () => {
 
               {/* Manual Measurements Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-red-900/20 rounded-lg mb-4">
-                  <Ruler className="w-6 h-6 text-primary-600 dark:text-red-400" />
+                <div className="flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-purple-900/20 rounded-lg mb-4">
+                  <Ruler className="w-6 h-6 text-primary-600 dark:text-purple-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Manual Measurements</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Record and manage manual measurements</p>

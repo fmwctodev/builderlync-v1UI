@@ -166,7 +166,7 @@ const DialerModal: React.FC<DialerModalProps> = ({ isOpen, onClose }) => {
                               </div>
                             </div>
                             {num.id === selectedNumber?.id && (
-                              <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
                             )}
                           </button>
                         ))}
@@ -207,7 +207,7 @@ const DialerModal: React.FC<DialerModalProps> = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleCall}
                     disabled={phoneNumber.length === 0}
-                    className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center shadow-lg"
+                    className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center justify-center shadow-lg"
                   >
                     <Phone size={24} className="text-white" />
                   </button>

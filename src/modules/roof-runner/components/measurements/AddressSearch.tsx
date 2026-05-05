@@ -8,15 +8,21 @@ declare global {
 }
 
 interface AddressSearchProps {
-  onAddressSelect: (address: string) => void;
+  onAddressSelect: (address: string, addressComponents?: any) => void;
   buildingId: string;
   setBuildingId: React.Dispatch<React.SetStateAction<string>>;
+  initialAddress?: string;
 }
 
-const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, buildingId, setBuildingId }) => {
+const AddressSearch: React.FC<AddressSearchProps> = ({
+  onAddressSelect,
+  buildingId,
+  setBuildingId,
+  initialAddress
+}) => {
   const [country, setCountry] = useState('United States');
-  const [address, setAddress] = useState('');
-  const [isAddressSelected, setIsAddressSelected] = useState(false);
+  const [address, setAddress] = useState(initialAddress || '');
+  const [isAddressSelected, setIsAddressSelected] = useState(!!initialAddress);
   const [showAlert, setShowAlert] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [map, setMap] = useState<any>(null);
@@ -26,11 +32,11 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
 
   useEffect(() => {
     const loadGoogleMaps = () => {
-      if (window.google) {
+      if (window.google?.maps) {
         initializeMap();
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
@@ -39,7 +45,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
     };
 
     const initializeMap = () => {
-      if (mapRef.current && window.google && !map) {
+      if (mapRef.current && window.google?.maps && !map) {
         const newMap = new window.google.maps.Map(mapRef.current, {
           center: { lat: 37.0902, lng: -95.7129 },
           zoom: 4,
@@ -50,20 +56,26 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
           zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_TOP }
         });
         setMap(newMap);
-        
+
         if (autocompleteInputRef.current) {
           const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
             types: ['address'],
             componentRestrictions: { country: country === 'United States' ? 'us' : 'ca' }
           });
-          
+
           autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
             if (!place.geometry?.location) return;
 
             const selectedAddress = place.formatted_address || '';
+            const addressComponents = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+              components: place.address_components
+            };
+
             setAddress(selectedAddress);
-            onAddressSelect(selectedAddress);
+            onAddressSelect(selectedAddress, addressComponents);
             setBuildingId(selectedAddress);
             setIsAddressSelected(true);
             setShowAlert(true);
@@ -89,7 +101,42 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
     };
 
     loadGoogleMaps();
-  }, [country, onAddressSelect, map, marker]);
+  }, [country, onAddressSelect]);
+
+  useEffect(() => {
+    if (map && initialAddress && !marker) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: initialAddress }, (results: any, status: any) => {
+        if (status === 'OK' && results[0]) {
+          const place = results[0];
+          const selectedAddress = place.formatted_address || initialAddress;
+          const addressComponents = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            components: place.address_components
+          };
+
+          setAddress(selectedAddress);
+          onAddressSelect(selectedAddress, addressComponents);
+          setBuildingId(selectedAddress);
+          setIsAddressSelected(true);
+          setShowAlert(true);
+
+          map.setCenter(place.geometry.location);
+          map.setZoom(21);
+          map.setMapTypeId('satellite');
+
+          const newMarker = new window.google.maps.Marker({
+            map: map,
+            position: place.geometry.location,
+            draggable: true,
+            animation: window.google.maps.Animation.DROP
+          });
+          setMarker(newMarker);
+        }
+      });
+    }
+  }, [map, initialAddress]);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -138,13 +185,13 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
       </div>
 
       {isAddressSelected && showAlert && (
-        <div className="bg-primary-50 dark:bg-primary-900/20 border-l-4 border-red-400 p-4 relative">
+        <div className="bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary-400 p-4 relative">
           <div className="flex">
             <div className="flex-shrink-0">
-              <MapPin className="h-5 w-5 text-red-400" />
+              <MapPin className="h-5 w-5 text-primary-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-primary-300">
+              <p className="text-sm text-primary-700 dark:text-primary-300">
                 Check that the address is accurate, then drag the marker over the correct structure.
               </p>
             </div>
@@ -152,7 +199,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, building
               className="absolute top-2 right-2"
               onClick={() => setShowAlert(false)}
             >
-              <X className="h-4 w-4 text-red-400" />
+              <X className="h-4 w-4 text-primary-400" />
             </button>
           </div>
         </div>

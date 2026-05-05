@@ -18,11 +18,11 @@ export interface CompaniesResponse {
   data: Company[];
 }
 
-export const getCompanies = async (): Promise<CompaniesResponse> => {
+export const getCompanies = async (contact_id?: number): Promise<CompaniesResponse> => {
   const token = localStorage.getItem('token');
 
   const response = await axios.get<CompaniesResponse>(
-    `${API_BASE_URL}/companies`,
+    contact_id ? `${API_BASE_URL}/companies?contact_id=${contact_id}` : `${API_BASE_URL}/companies`,
     {
       headers: {
         'accept': 'application/json',

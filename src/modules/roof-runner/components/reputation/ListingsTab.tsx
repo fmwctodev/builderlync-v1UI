@@ -67,7 +67,7 @@ const ListingsTab: React.FC = () => {
           </p>
           <button
             onClick={() => setShowScanPage(true)}
-            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
           >
             Scan my business for free
           </button>
@@ -94,7 +94,7 @@ const ListingsTab: React.FC = () => {
             </div>
 
             <div className="text-center p-4">
-              <div className="w-16 h-16 bg-primary-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-16 h-16 bg-primary-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
                 <RefreshCw size={32} className="text-primary-600" />
               </div>
               <h4 className="font-medium text-gray-900 dark:text-white">Sync Functionality</h4>

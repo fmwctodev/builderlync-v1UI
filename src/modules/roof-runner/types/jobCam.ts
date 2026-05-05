@@ -1,4 +1,4 @@
-export type PhotoCategory = 'before' | 'during' | 'after' | 'damage' | 'inspection' | 'completion' | 'claim';
+export type PhotoCategory = 'before' | 'during' | 'after' | 'damage' | 'inspection' | 'completion' | 'claim' | 'material' | 'receipt' | 'other';
 export type PhotoPhase = 'pre_install' | 'during_install' | 'post_install' | 'damage_assessment' | 'claim';
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 export type ProcessingStatus = 'uploading' | 'uploaded' | 'processing' | 'ready' | 'failed';
@@ -76,6 +76,7 @@ export interface JobPhoto {
   checklist_item_id: string | null;
   is_hidden_from_timeline: boolean;
   processing_status: ProcessingStatus;
+  media_type?: 'photo' | 'video' | 'document';
   created_at: string;
   updated_at: string;
   job_name?: string;
@@ -185,6 +186,7 @@ export interface JobMediaAuditLog {
   job_photo_id: string;
   action: AuditAction;
   changed_by_user_id: string | null;
+  user_email?: string;
   old_value: Record<string, unknown> | null;
   new_value: Record<string, unknown> | null;
   notes: string | null;

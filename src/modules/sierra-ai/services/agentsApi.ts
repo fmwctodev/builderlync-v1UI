@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+
 
 export interface VoiceConfig {
   id: string;
@@ -66,7 +66,7 @@ export const DEFAULT_WEBHOOK_CONFIG: WebhookConfig = {
 };
 
 export interface AIAgent {
-  id: string;
+  agent_id: string;
   organization_id: string;
   name: string;
   description: string;
@@ -109,6 +109,7 @@ export interface AIAgent {
   daily_call_limit?: number;
   concurrent_call_limit?: number;
   bursting_enabled?: boolean;
+  recording_enabled?: boolean;
   stats: {
     callsHandled?: number;
     messagesHandled?: number;
@@ -118,10 +119,13 @@ export interface AIAgent {
     successRate?: number;
     avgDuration?: number;
   };
+  id: string;
+  Vapi_data?: any;
   created_at: string;
   updated_at: string;
   created_by?: string;
   updated_by?: string;
+  data?: any;
 }
 
 export interface CreateAgentInput {
@@ -161,56 +165,42 @@ export interface CreateAgentInput {
   daily_call_limit?: number;
   concurrent_call_limit?: number;
   bursting_enabled?: boolean;
+  recording_enabled?: boolean;
 }
 
 export interface UpdateAgentInput extends Partial<CreateAgentInput> {
   id: string;
+  stats?: {
+    callsHandled?: number;
+    messagesHandled?: number;
+    appointmentsBooked?: number;
+    calls?: number;
+    messages?: number;
+    successRate?: number;
+    avgDuration?: number;
+  };
 }
 
-/**
- * Fetch all agents for the current organization
- */
+import { vapiApi } from './vapiApi';
+
 export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching agents:', error);
-    throw error;
-  }
-
-  return data || [];
+  const response = await vapiApi.getAgents(organizationId);
+  return response.data || [];
 }
 
-/**
- * Fetch a single agent by ID
- */
 export async function fetchAgentById(id: string): Promise<AIAgent | null> {
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching agent:', error);
-    throw error;
-  }
-
-  return data;
+  console.log('fetchAgentById called with id:', id);
+  const response = await vapiApi.getAgent(id);
+  console.log('fetchAgentById response:', response);
+  return response.data || response;
 }
 
-/**
- * Create a new agent
- */
 export async function createAgent(
   organizationId: string,
   input: CreateAgentInput,
   userId?: string
 ): Promise<AIAgent> {
+  // ... (keeping the same logic for defaultChannels and defaultStats)
   const defaultChannels = {
     voice: { enabled: false, configured: false },
     sms: { enabled: false, configured: false },
@@ -263,59 +253,21 @@ export async function createAgent(
     updated_by: userId,
   };
 
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .insert(agentData)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating agent:', error);
-    throw error;
-  }
-
-  return data;
+  const response = await vapiApi.createAgent(agentData as any);
+  return response.data || response;
 }
 
-/**
- * Update an existing agent
- */
 export async function updateAgent(
-  input: UpdateAgentInput,
-  userId?: string
+  input: UpdateAgentInput
 ): Promise<AIAgent> {
   const { id, ...updates } = input;
-
-  const updateData = {
-    ...updates,
-    updated_by: userId,
-  };
-
-  const { data, error } = await supabase
-    .from('ai_agents')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating agent:', error);
-    throw error;
-  }
-
-  return data;
+  console.log("input", input);
+  const response = await vapiApi.updateAgent(id, updates);
+  return response.data || response;
 }
 
-/**
- * Delete an agent
- */
 export async function deleteAgent(id: string): Promise<void> {
-  const { error } = await supabase.from('ai_agents').delete().eq('id', id);
-
-  if (error) {
-    console.error('Error deleting agent:', error);
-    throw error;
-  }
+  await vapiApi.deleteAgent(id);
 }
 
 /**
@@ -363,10 +315,9 @@ export async function duplicateAgent(
  */
 export async function updateAgentStatus(
   id: string,
-  status: 'active' | 'paused' | 'draft',
-  userId?: string
+  status: 'active' | 'paused' | 'draft'
 ): Promise<AIAgent> {
-  return updateAgent({ id, status }, userId);
+  return updateAgent({ id, status });
 }
 
 /**

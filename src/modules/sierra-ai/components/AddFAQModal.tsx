@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { X, HelpCircle, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { knowledgeBaseService } from '../services';
+import { knowledgeBaseApi } from '../services/knowledgeBaseApi';
 
 interface AddFAQModalProps {
   isOpen: boolean;
   onClose: () => void;
   collections: Array<{ id: string; name: string }>;
   onSuccess: () => void;
+  organizationId: string;
+  agentId?: string;
 }
 
 export function AddFAQModal({
@@ -14,6 +16,8 @@ export function AddFAQModal({
   onClose,
   collections,
   onSuccess,
+  // organizationId,
+  agentId,
 }: AddFAQModalProps) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -53,8 +57,12 @@ export function AddFAQModal({
 
     setLoading(true);
 
+    const user = localStorage.getItem('user');
+    const organizationId = user ? JSON.parse(user).companySlug : '';
+
     try {
-      await knowledgeBaseService.createQAPair({
+      await knowledgeBaseApi.createQAPair({
+        organization_id: organizationId,
         question_pattern: question.trim(),
         answer: answer.trim(),
         intent: 'general',
@@ -63,6 +71,7 @@ export function AddFAQModal({
         offer_to_book: false,
         allow_ranges: false,
         collection_id: selectedCollection || undefined,
+        agent_id: agentId,
       });
 
       setSuccess(true);
@@ -177,7 +186,7 @@ export function AddFAQModal({
                 <select
                   value={selectedCollection}
                   onChange={(e) => setSelectedCollection(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                   disabled={loading}
                 >
                   <option value="">None (General FAQs)</option>

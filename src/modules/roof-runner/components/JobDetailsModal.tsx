@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAppSelector } from '../../../shared/store/hooks';
 import { CreateJobRequest, Job } from '../../../shared/store/services/jobsApi';
 import { StaffMember } from '../../../shared/store/services/staffApi';
 import ContactSearchDropdown from './ContactSearchDropdown';
@@ -16,6 +18,10 @@ import InvoicesTab from './InvoicesTab';
 import JobCostingTab from './JobCostingTab';
 import AttachmentsTab from './AttachmentsTab';
 import InstantEstimateTab from './InstantEstimateTab';
+import { useGetPipelinesQuery } from '../../../shared/store/services/pipelinesApi';
+import { useGetJobPipelinesQuery } from '../../../shared/store/services/jobPipelinesApi';
+
+import Toast from './Toast';
 
 interface JobDetailsModalProps {
   isOpen: boolean;
@@ -27,7 +33,10 @@ interface JobDetailsModalProps {
   staff: StaffMember[];
   loading: boolean;
   viewingJob?: Job | null;
-  editingJob?: Job | null;
+  readOnly?: boolean;
+  modalMessage?: { message: string, type: 'success' | 'error' } | null;
+  setModalMessage?: (message: { message: string, type: 'success' | 'error' } | null) => void;
+  onCreateOpportunity?: (job: Job) => void;
 }
 
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
@@ -40,8 +49,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   staff,
   loading,
   viewingJob,
-  editingJob
+  readOnly = false,
+  modalMessage,
+  setModalMessage,
+  onCreateOpportunity
 }) => {
+  const { data: pipelines } = useGetJobPipelinesQuery();
+  const { orgSlug } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Job details');
   const [showProposalEditor, setShowProposalEditor] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
@@ -49,10 +64,139 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const [showViewContactModal, setShowViewContactModal] = useState(false);
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [contactError, setContactError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [initialContactName, setInitialContactName] = useState('');
+
+  const getDisplayContactName = () => {
+    if (formData.contactName) return formData.contactName;
+
+    // Fallbacks from viewingJob
+    if (viewingJob) {
+      if (viewingJob.contactName) return viewingJob.contactName;
+      if (viewingJob.customer) {
+        return viewingJob.customer.full_name ||
+          viewingJob.customer.fullName ||
+          viewingJob.customer.name ||
+          viewingJob.customer.company ||
+          'Contact';
+      }
+      if ((viewingJob as any).contact_name) return (viewingJob as any).contact_name;
+    }
+
+    return 'Select Customer';
+  };
+
+  const getDisplayContactId = () => {
+    return formData.contactId ||
+      viewingJob?.customer?.id ||
+      viewingJob?.customerId ||
+      viewingJob?.contact_id ||
+      viewingJob?.contactId ||
+      null;
+  };
+  const { user } = useAppSelector((state) => state.auth);
+
+  const currentUserAsStaff = staff.find(member =>
+    (member.user_id && member.user_id === user?.id?.toString()) ||
+    (member.email && user?.email && member.email.toLowerCase() === user.email.toLowerCase())
+  );
+
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.contactId) {
+      errors.contactId = 'Customer/Lead is required';
+      setContactError(true);
+    }
+
+    if (!formData.jobType) {
+      errors.jobType = 'Job Type is required';
+    }
+
+    if (!formData.workflowStages) {
+      errors.workflowStages = 'Job Stage is required';
+    }
+
+    if (!formData.closeDate) {
+      errors.closeDate = 'Date is required';
+    }
+
+    if (formData.insuranceEnabled) {
+      if (!formData.insuranceCompany?.trim()) {
+        errors.insuranceCompany = 'Insurance Company is required';
+      }
+      if (!formData.claimNumber?.trim()) {
+        errors.claimNumber = 'Claim Number is required';
+      }
+      if (!formData.dateOfLoss) {
+        errors.dateOfLoss = 'Date of Loss is required';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      // Ensure we only send the NEW job workflow IDs to the backend
+      const finalData = { ...formData };
+      (finalData as any).jobPipelineId = formData.pipelineId;
+      (finalData as any).jobStageId = formData.stageId;
+      
+      // Explicitly delete the legacy keys so the backend doesn't get confused
+      delete (finalData as any).pipelineId;
+      delete (finalData as any).stageId;
+      
+      onSubmit(e, finalData);
+    }
+
+  };
+
+  // Automatically resolve pipeline and stage if they're missing or carry legacy CRM IDs
+  React.useEffect(() => {
+    if (isOpen && pipelines && pipelines.length > 0 && formData.workflowStages) {
+      // Check if the current pipelineId is missing.
+      // We previously checked for 'isLegacy' (ID not in current pipelines list), but that was too aggressive
+      // and would overwrite valid IDs that were not yet loaded or belonged to a different organization context.
+      const isMissing = !formData.pipelineId;
+
+      if (isMissing) {
+        console.log(`Attempting to resolve workflow for stage "${formData.workflowStages}". Pipeline ID is missing.`);
+        
+        for (const pipeline of pipelines) {
+          const stage = pipeline.stages.find(s => 
+            s.name.trim().toLowerCase() === formData.workflowStages.trim().toLowerCase()
+          );
+          
+          if (stage) {
+            console.log(`Matched stage "${formData.workflowStages}" to pipeline "${pipeline.name}" (${pipeline.id})`);
+            setFormData({
+              ...formData,
+              pipelineId: pipeline.id,
+              stageId: stage.id,
+              workflowStages: stage.name 
+            });
+            return;
+          }
+        }
+        console.log('No matching Job Workflow found for stage:', formData.workflowStages);
+      }
+    }
+  }, [isOpen, pipelines, formData.workflowStages, formData.pipelineId]);
+
+
 
   if (!isOpen) return null;
 
   console.log('Staff data in modal:', staff);
+
+  const activePipeline = pipelines?.find(p => String(p.id) === String(formData.pipelineId)) || pipelines?.find(p => p.is_default);
+
+
+
+  const activeStages = activePipeline?.stages || [];
 
   const stages = [
     'Inspection/Estimate Booked',
@@ -71,12 +215,47 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     'Job Complete'
   ];
 
+  // If we have dynamic stages from a pipeline, use them; otherwise fallback to the hardcoded list
+  const displayStages = activeStages.length > 0 
+    ? activeStages.map(s => ({ id: s.id, name: s.name }))
+    : stages.map(s => ({ id: '', name: s }));
+
+  const handlePipelineChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const pipelineId = e.target.value;
+    const selectedPipeline = pipelines?.find(p => String(p.id) === String(pipelineId));
+    
+    setFormData({
+      ...formData,
+      pipelineId: pipelineId || null,
+      stageId: selectedPipeline?.stages?.[0]?.id || null,
+      workflowStages: selectedPipeline?.stages?.[0]?.name || ''
+    });
+  };
+
+
+  const handleStageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    
+    if (activeStages.length > 0) {
+      const selectedStage = activeStages.find(s => s.name === selectedValue);
+      setFormData({ 
+        ...formData, 
+        workflowStages: selectedValue,
+        stageId: selectedStage?.id || null,
+        pipelineId: activePipeline?.id || null
+      });
+    } else {
+      setFormData({ ...formData, workflowStages: selectedValue });
+    }
+  };
+
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-6xl mx-4 h-[95vh] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col">
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar */}
-          <div className="w-80 bg-paper dark:bg-canvas border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -97,19 +276,19 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
             <div className="p-4 space-y-2 overflow-y-auto flex-1">
               {[
                 'Job details', 'Tasks', 'Calendar', 'Measurements', 'Proposals',
-                'Material orders', 'Invoices', 'Job Cost',
+                'Material orders', 'Invoices',
+                // 'Job Cost',
                 'Attachments', 'Instant Estimate'
               ].map((item) => (
                 <button
                   key={item}
                   onClick={() => setActiveTab(item)}
-                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors relative ${
-                    activeTab === item
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                      : item === 'Instant Estimate'
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors relative ${activeTab === item
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                    : item === 'Instant Estimate'
                       ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border border-primary-200 dark:border-primary-700'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{item}</span>
@@ -121,6 +300,17 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   </div>
                 </button>
               ))}
+
+              {viewingJob && onCreateOpportunity && (
+                <button
+                  onClick={() => onCreateOpportunity(viewingJob)}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 mt-4 border border-dashed border-blue-200 dark:border-blue-800"
+                >
+                  <div className="flex items-center">
+                    <span>Create Opportunity</span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -133,6 +323,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                         {viewingJob ? `Job #${viewingJob.id}` : 'New Job'}
+                        {getDisplayContactId() && ` - ${getDisplayContactName()}`}
                       </h2>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
                         <span>0/1</span>
@@ -146,324 +337,545 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     </div>
                   </div>
 
-                  <form onSubmit={onSubmit} className="space-y-6 pb-20">
-                {/* Job Type Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="residential"
-                        checked={formData.jobType === 'residential'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="commercial"
-                        checked={formData.jobType === 'commercial'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="jobType"
-                        value="insurance"
-                        checked={formData.jobType === 'insurance'}
-                        onChange={(e) => setFormData({...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance'})}
-                        className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Customer/Lead Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Customer/Lead <span className="text-red-500">*</span>
-                  </label>
-                  <ContactSearchDropdown
-                    selectedContact={formData.contactId && formData.contactName ? {
-                      id: formData.contactId.toString(),
-                      name: formData.contactName
-                    } : null}
-                    onSelectContact={(contact) => {
-                      setFormData({
-                        ...formData,
-                        contactId: contact ? Number(contact.id) : null,
-                        contactName: contact ? contact.name : null
-                      });
-                      setContactError(false);
-                    }}
-                    required
-                    hasError={contactError}
-                    onCreateNew={() => setShowCreateContactModal(true)}
-                    onViewProfile={(contactId) => setShowViewContactModal(true)}
-                    onEditContact={(contactId) => setShowEditContactModal(true)}
-                  />
-                  {contactError && (
-                    <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
-                    <select
-                      value={formData.assignees[0] || ''}
-                      onChange={(e) => setFormData({...formData, assignees: e.target.value ? [e.target.value] : []})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option value="">Unassigned</option>
-                      {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
-                          {member.first_name} {member.last_name}
-                        </option>
-                      )) : (
-                        <option disabled>Loading staff...</option>
+                  <form onSubmit={handleFormSubmit} className="space-y-6 pb-20">
+                    {/* Modal Message */}
+                    {modalMessage && (
+                      <div className={`p-4 rounded-lg border ${modalMessage.type === 'success'
+                        ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                        : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
+                        }`}>
+                        <div className="flex justify-between items-center">
+                          <span>{modalMessage.message}</span>
+                          <button
+                            type="button"
+                            onClick={() => setModalMessage?.(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Job Type Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Job Type <span className="text-red-500">*</span>
+                      </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="residential"
+                            checked={formData.jobType === 'residential'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Residential</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="commercial"
+                            checked={formData.jobType === 'commercial'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Commercial</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="multifamily"
+                            checked={formData.jobType === 'multifamily'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Multifamily</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="jobType"
+                            value="insurance"
+                            checked={formData.jobType === 'insurance'}
+                            onChange={(e) => setFormData({ ...formData, jobType: e.target.value as 'residential' | 'commercial' | 'insurance' | 'multifamily' })}
+                            className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Insurance</span>
+                        </label>
+                      {validationErrors.jobType && (
+                        <p className="mt-1 text-xs text-red-500">{validationErrors.jobType}</p>
                       )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
-                    <select
-                      value={formData.jobOwner}
-                      onChange={(e) => setFormData({...formData, jobOwner: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option value="">Select Job Owner</option>
-                      {staff && staff.length > 0 ? staff.map(member => (
-                        <option key={member.id} value={`${member.first_name} ${member.last_name}`}>
-                          {member.first_name} {member.last_name}
-                        </option>
-                      )) : (
-                        <option disabled>Loading staff...</option>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Stage</label>
-                    <div className="space-y-2">
-                      <select
-                        value={formData.workflowStages}
-                        onChange={(e) => setFormData({...formData, workflowStages: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        {stages.map(stage => (
-                          <option key={stage} value={stage}>{stage}</option>
-                        ))}
-                      </select>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
-                    <input
-                      type="date"
-                      value={formData.closeDate}
-                      onChange={(e) => setFormData({...formData, closeDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Select"
-                    />
-                  </div>
-                </div>
+                    {/* Customer/Lead Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Customer/Lead <span className="text-red-500">*</span>
+                      </label>
+                      <ContactSearchDropdown
+                        selectedContact={getDisplayContactId() ? {
+                          id: getDisplayContactId()?.toString() || '',
+                          name: getDisplayContactName()
+                        } : null}
+                        onSelectContact={(contact) => {
+                          setFormData({
+                            ...formData,
+                            contactId: contact ? Number(contact.id) : null,
+                            contactName: contact ? contact.name : null
+                          });
+                          setContactError(false);
+                        }}
+                        required
+                        hasError={contactError}
+                        onCreateNew={(name) => {
+                          setInitialContactName(name);
+                          setShowCreateContactModal(true);
+                        }}
+                        onViewProfile={() => {
+                          const contactId = formData.contactId || viewingJob?.customer?.id || viewingJob?.customerId;
+                          if (contactId) {
+                            setShowViewContactModal(true);
+                          }
+                        }}
+                        onEditContact={() => {
+                          const contactId = formData.contactId || viewingJob?.customer?.id || viewingJob?.customerId;
+                          if (contactId) {
+                            setShowEditContactModal(true);
+                          }
+                        }}
+                      />
+                      {contactError && (
+                        <p className="mt-1 text-xs text-red-500">Please select a customer or lead</p>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job value</label>
-                    <input
-                      type="number"
-                      value={formData.jobValue}
-                      onChange={(e) => setFormData({...formData, jobValue: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source</label>
-                    <input
-                      type="text"
-                      value={formData.source}
-                      onChange={(e) => setFormData({...formData, source: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Start typing to add new or select..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
-                  <textarea
-                    value={formData.details}
-                    onChange={(e) => setFormData({...formData, details: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      checked={formData.insuranceEnabled}
-                      onChange={(e) => setFormData({...formData, insuranceEnabled: e.target.checked})}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Insurance</span>
-                  </label>
-
-                  {formData.insuranceEnabled && (
-                    <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance Company</label>
-                          <input
-                            type="text"
-                            value={formData.insuranceCompany}
-                            onChange={(e) => setFormData({...formData, insuranceCompany: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
-                          <input
-                            type="text"
-                            value={formData.policyAccountNumber}
-                            onChange={(e) => setFormData({...formData, policyAccountNumber: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Number</label>
-                          <input
-                            type="text"
-                            value={formData.claimNumber}
-                            onChange={(e) => setFormData({...formData, claimNumber: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Loss</label>
-                          <input
-                            type="date"
-                            value={formData.dateOfLoss}
-                            onChange={(e) => setFormData({...formData, dateOfLoss: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type of Damage</label>
-                          <input
-                            type="text"
-                            value={formData.typeOfDamage}
-                            onChange={(e) => setFormData({...formData, typeOfDamage: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Amount</label>
-                          <input
-                            type="number"
-                            value={formData.claimAmount}
-                            onChange={(e) => setFormData({...formData, claimAmount: Number(e.target.value)})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deductible</label>
-                          <input
-                            type="number"
-                            value={formData.deductible}
-                            onChange={(e) => setFormData({...formData, deductible: Number(e.target.value)})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignee(s)</label>
+                        <select
+                          value={formData.assignees[0] || ''}
+                          onChange={(e) => setFormData({ ...formData, assignees: e.target.value ? [Number(e.target.value)] : [] })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value="">Unassigned</option>
+                          {currentUserAsStaff && (
+                            <option value={currentUserAsStaff.id}>
+                              Me ({currentUserAsStaff.first_name} {currentUserAsStaff.last_name})
+                            </option>
+                          )}
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            // Skip if this is the "Me" user we already added
+                            (member.id === currentUserAsStaff?.id) ? null : (
+                              <option key={member.id} value={member.id}>
+                                {member.first_name} {member.last_name}
+                              </option>
+                            )
+                          )) : (
+                            <option disabled>Loading staff...</option>
+                          )}
+                        </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Details</label>
-                        <textarea
-                          value={formData.claimDetails}
-                          onChange={(e) => setFormData({...formData, claimDetails: e.target.value})}
-                          rows={3}
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job owner</label>
+                        <select
+                          value={formData.jobOwner || ''}
+                          onChange={(e) => setFormData({ ...formData, jobOwner: e.target.value ? Number(e.target.value) : null })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          placeholder="Additional claim information..."
+                        >
+                          <option value="">Select Job Owner</option>
+                          {currentUserAsStaff && (
+                            <option value={currentUserAsStaff.id}>
+                              Me ({currentUserAsStaff.first_name} {currentUserAsStaff.last_name})
+                            </option>
+                          )}
+                          {staff && staff.length > 0 ? staff.map(member => (
+                            // Skip if this is the "Me" user we already added
+                            (member.id === currentUserAsStaff?.id) ? null : (
+                              <option key={member.id} value={member.id}>
+                                {member.first_name} {member.last_name}
+                              </option>
+                            )
+                          )) : (
+                            <option disabled>Loading staff...</option>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Workflow <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={formData.pipelineId || ''}
+                          onChange={handlePipelineChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value="">Select Workflow</option>
+                          {pipelines?.map(pipeline => (
+                            <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Job Stage <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                          <select
+                            value={formData.workflowStages}
+                            onChange={handleStageChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            disabled={!formData.pipelineId}
+                          >
+                            {!formData.pipelineId && <option value="">Select Workflow first</option>}
+                            {displayStages.map(stage => (
+                              <option key={stage.id || stage.name} value={stage.name}>{stage.name}</option>
+                            ))}
+                          </select>
+                          {validationErrors.workflowStages && (
+                            <p className="mt-1 text-xs text-red-500">{validationErrors.workflowStages}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.closeDate}
+                          onChange={(e) => setFormData({ ...formData, closeDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Select"
+                        />
+                        {validationErrors.closeDate && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.closeDate}</p>
+                        )}
+                      </div>
+                    </div>
+
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job value</label>
+                        <input
+                          type="number"
+                          value={formData.jobValue}
+                          onChange={(e) => setFormData({ ...formData, jobValue: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Source</label>
+                        <input
+                          type="text"
+                          value={formData.source}
+                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Start typing to add new or select..."
                         />
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Details</label>
+                      <textarea
+                        value={formData.details}
+                        onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        placeholder="Frequently referenced info (gate codes, material selection, parking, etc.)"
+                      />
+                    </div>
+
+                    {/* Job Tags */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags</label>
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="Type tag and press Enter... (e.g. Roofing, Gutters, Siding, Repairs)"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const input = e.target as HTMLInputElement;
+                              const val = input.value.trim();
+                              if (val && !formData.tags?.includes(val)) {
+                                setFormData({
+                                  ...formData,
+                                  tags: [...(formData.tags || []), val]
+                                });
+                                input.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {formData.tags && formData.tags.length > 0 ? (
+                            formData.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300 border border-primary-200 dark:border-primary-800"
+                              >
+                                {tag}
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData({
+                                    ...formData,
+                                    tags: formData.tags?.filter(t => t !== tag)
+                                  })}
+                                  className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-200 dark:hover:bg-primary-800 focus:outline-none"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {['Roofing', 'Gutters', 'Siding', 'Repairs'].map((suggestedTag) => (
+                                <button
+                                  key={suggestedTag}
+                                  type="button"
+                                  onClick={() => setFormData({
+                                    ...formData,
+                                    tags: [...(formData.tags || []), suggestedTag]
+                                  })}
+                                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 border border-dashed border-gray-300 dark:border-gray-700 px-2 py-0.5 rounded-full"
+                                >
+                                  + {suggestedTag}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center mb-4">
+                        <input
+                          type="checkbox"
+                          checked={formData.insuranceEnabled}
+                          onChange={(e) => setFormData({ ...formData, insuranceEnabled: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Insurance</span>
+                      </label>
+
+                      {formData.insuranceEnabled && (
+                        <div className="space-y-4 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Insurance Company <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.insuranceCompany}
+                                onChange={(e) => setFormData({ ...formData, insuranceCompany: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.insuranceCompany ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.insuranceCompany && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.insuranceCompany}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Policy Account Number</label>
+                              <input
+                                type="text"
+                                value={formData.policyAccountNumber}
+                                onChange={(e) => setFormData({ ...formData, policyAccountNumber: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Claim Number <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.claimNumber}
+                                onChange={(e) => setFormData({ ...formData, claimNumber: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.claimNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.claimNumber && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.claimNumber}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Date of Loss <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="date"
+                                value={formData.dateOfLoss}
+                                onChange={(e) => setFormData({ ...formData, dateOfLoss: e.target.value })}
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${validationErrors.dateOfLoss ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                  }`}
+                              />
+                              {validationErrors.dateOfLoss && (
+                                <p className="mt-1 text-xs text-red-500">{validationErrors.dateOfLoss}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type of Damage</label>
+                              <input
+                                type="text"
+                                value={formData.typeOfDamage}
+                                onChange={(e) => setFormData({ ...formData, typeOfDamage: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Amount</label>
+                              <input
+                                type="number"
+                                value={formData.claimAmount}
+                                onChange={(e) => setFormData({ ...formData, claimAmount: Number(e.target.value) })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deductible</label>
+                              <input
+                                type="number"
+                                value={formData.deductible}
+                                onChange={(e) => setFormData({ ...formData, deductible: Number(e.target.value) })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Claim Details</label>
+                            <textarea
+                              value={formData.claimDetails}
+                              onChange={(e) => setFormData({ ...formData, claimDetails: e.target.value })}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              placeholder="Additional claim information..."
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
 
                   </form>
                 </div>
               )}
 
-              {activeTab === 'Tasks' && viewingJob && (
+              {activeTab === 'Tasks' && viewingJob && viewingJob.id ? (
                 <TasksTab
-                  jobId={viewingJob.id!}
+                  jobId={viewingJob.id}
                   currentStage={formData.workflowStages}
                 />
-              )}
+              ) : activeTab === 'Tasks' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Tasks</p>
+                </div>
+              ) : null}
 
-              {activeTab === 'Calendar' && (
+              {activeTab === 'Calendar' && viewingJob && viewingJob.id ? (
                 <CalendarTab
-                  jobId={viewingJob?.id}
-                  jobData={viewingJob || undefined}
+                  jobId={viewingJob.id}
+                  jobData={viewingJob}
                   staff={staff}
                 />
-              )}
+              ) : activeTab === 'Calendar' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Calendar</p>
+                </div>
+              ) : null}
 
-              {activeTab === 'Measurements' && <MeasurementsTab />}
-
-              {activeTab === 'Proposals' && (
-                <ProposalsTab
-                  jobId={viewingJob?.id}
-                  onOpenProposalEditor={(templateId) => {
-                    setSelectedTemplateId(templateId);
-                    setShowProposalEditor(true);
-                  }}
-                />
-              )}
-
-              {activeTab === 'Material orders' && <MaterialOrdersTab />}
-
-              {activeTab === 'Invoices' && <InvoicesTab />}
-
-              {activeTab === 'Job Cost' && <JobCostingTab />}
-
-              {activeTab === 'Attachments' && <AttachmentsTab />}
-
-              {activeTab === 'Instant Estimate' && (
-                <InstantEstimateTab
+              {activeTab === 'Measurements' && (
+                <MeasurementsTab
                   jobId={viewingJob?.id}
                   jobAddress={viewingJob?.location}
                 />
               )}
+
+              {activeTab === 'Proposals' && (
+                <div>
+                  {viewingJob?.id && (
+                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-end">
+                      <button
+                        onClick={() => navigate(`/org/${orgSlug}/proposals?JobId=${viewingJob.id}`)}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                      >
+                        Create Proposal
+                      </button>
+                    </div>
+                  )}
+                  <ProposalsTab
+                    jobId={viewingJob?.id}
+                    onOpenProposalEditor={(templateId) => {
+                      setSelectedTemplateId(templateId);
+                      setShowProposalEditor(true);
+                    }}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'Material orders' && viewingJob && viewingJob.id ? (
+                <MaterialOrdersTab jobId={viewingJob.id} />
+              ) : activeTab === 'Material orders' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Material Orders</p>
+                </div>
+              ) : null}
+
+              {activeTab === 'Invoices' && viewingJob && viewingJob.id ? (
+                <InvoicesTab jobId={viewingJob.id} />
+              ) : activeTab === 'Invoices' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Invoices</p>
+                </div>
+              ) : null}
+
+              {activeTab === 'Job Cost' && <JobCostingTab />}
+
+              {activeTab === 'Attachments' && viewingJob && viewingJob.id ? (
+                <AttachmentsTab jobId={viewingJob.id} />
+              ) : activeTab === 'Attachments' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Attachments</p>
+                </div>
+              ) : null}
+
+              {activeTab === 'Instant Estimate' && viewingJob && viewingJob.id ? (
+                <InstantEstimateTab
+                  jobId={viewingJob.id}
+                  jobAddress={viewingJob.location}
+                />
+              ) : activeTab === 'Instant Estimate' && !viewingJob ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Save the job first to access Instant Estimate</p>
+                </div>
+              ) : null}
 
               {activeTab !== 'Job details' && activeTab !== 'Tasks' && activeTab !== 'Calendar' && activeTab !== 'Measurements' && activeTab !== 'Proposals' && activeTab !== 'Material orders' && activeTab !== 'Invoices' && activeTab !== 'Job Cost' && activeTab !== 'Attachments' && activeTab !== 'Instant Estimate' && (
                 <div className="p-6">
@@ -473,8 +885,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               )}
             </div>
 
-            {/* Fixed Footer - Only show for Job details tab */}
-            {activeTab === 'Job details' && (
+            {/* Fixed Footer - Only show for Job details tab and not in read-only mode */}
+            {activeTab === 'Job details' && !readOnly && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-white dark:bg-gray-800">
                 <div className="flex justify-between items-center">
                   {viewingJob && onDelete ? (
@@ -499,7 +911,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     </button>
                     <button
                       type="submit"
-                      onClick={onSubmit}
+                      onClick={handleFormSubmit}
                       disabled={loading}
                       className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
                     >
@@ -524,7 +936,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
       <QuickCreateContactModal
         isOpen={showCreateContactModal}
-        onClose={() => setShowCreateContactModal(false)}
+        onClose={() => {
+          setShowCreateContactModal(false);
+          setInitialContactName('');
+        }}
         onContactCreated={(contact) => {
           setFormData({
             ...formData,
@@ -533,7 +948,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           });
           setContactError(false);
           setShowCreateContactModal(false);
+          setInitialContactName('');
         }}
+        initialName={initialContactName}
       />
 
       <ViewContactModal

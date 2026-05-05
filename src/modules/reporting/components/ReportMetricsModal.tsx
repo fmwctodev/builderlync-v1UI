@@ -158,7 +158,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                       selectionState === 'all'
                         ? 'bg-red-50 dark:bg-red-900/20'
                         : selectionState === 'partial'
-                        ? 'bg-red-50 dark:bg-red-900/20'
+                        ? 'bg-blue-50 dark:bg-blue-900/20'
                         : 'bg-white dark:bg-gray-800'
                     }`}
                   >
@@ -183,7 +183,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                           selectionState === 'all'
                             ? 'bg-red-600 border-red-600'
                             : selectionState === 'partial'
-                            ? 'bg-red-600 border-red-600'
+                            ? 'bg-blue-600 border-blue-600'
                             : 'border-gray-300 dark:border-gray-600 hover:border-red-500'
                         }`}
                       >
@@ -201,7 +201,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                     </div>
                     <div className="flex items-center space-x-2">
                       {selectedCount > 0 && (
-                        <span className="flex items-center justify-center px-2 h-8 bg-red-600 text-white rounded-full text-sm font-medium">
+                        <span className="flex items-center justify-center px-2 h-8 bg-blue-500 text-white rounded-full text-sm font-medium">
                           {selectedCount}
                         </span>
                       )}
@@ -213,7 +213,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
 
                   {/* Expanded Widgets */}
                   {isExpanded && (
-                    <div className="bg-paper dark:bg-canvas border-t border-gray-200 dark:border-gray-700">
+                    <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                       {category.widgets.map((widget, widgetIndex) => (
                         <div
                           key={widget.id}
@@ -259,13 +259,13 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
 
           {/* Selection Summary */}
           {totalSelectedWidgets > 0 && (
-            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-red-900 dark:text-red-200">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
                     {totalSelectedWidgets} widget{totalSelectedWidgets !== 1 ? 's' : ''} selected
                   </p>
-                  <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                     {METRICS_CATEGORIES.filter(
                       (cat) => getSelectedCountForCategory(cat) > 0
                     ).length}{' '}
@@ -274,7 +274,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
                 </div>
                 <button
                   onClick={handleClearAll}
-                  className="text-sm font-medium text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 underline"
+                  className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-200 underline"
                 >
                   Clear All
                 </button>
@@ -284,7 +284,7 @@ const ReportMetricsModal: React.FC<ReportMetricsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

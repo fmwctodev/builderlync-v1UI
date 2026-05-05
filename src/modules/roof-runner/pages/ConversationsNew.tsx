@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../shared/lib/supabase';
 import { ConversationsList } from '../../../modules/crm/components/conversations/ConversationsList';
 import { ChatArea } from '../../../shared/components/ChatArea';
 import ConversationList from '../components/team-messaging/ConversationList';
 import MessageThread from '../components/team-messaging/MessageThread';
-import NewMessageModal from '../components/team-messaging/NewMessageModal';
+import { CreateTeamModal } from '../../../shared/components/CreateTeamModal';
+import { AddMemberModal } from '../../../shared/components/AddMemberModal';
+import { SnippetsPanel } from '../../../modules/crm/components/conversations/SnippetsPanel';
 import {
   getTeamConversations,
   getConversationMessages,
-  createTeamConversation,
   sendTeamMessage,
   markConversationAsRead,
-  getTeamContacts,
-  findConversationByParticipants,
 } from '../../../shared/store/services/teamMessagingApi';
-import { TeamConversationListItem, TeamMessageItem, TeamContact, MessageType } from '../types/teamMessaging';
+import { TeamConversationListItem, TeamMessageItem } from '../types/teamMessaging';
 import { formatDistanceToNow } from 'date-fns';
 
 const ConversationsNew: React.FC = () => {
@@ -27,8 +25,10 @@ const ConversationsNew: React.FC = () => {
   const [teamConversations, setTeamConversations] = useState<TeamConversationListItem[]>([]);
   const [selectedTeamConversationId, setSelectedTeamConversationId] = useState<string | null>(null);
   const [conversationMessages, setConversationMessages] = useState<TeamMessageItem[]>([]);
-  const [teamContacts, setTeamContacts] = useState<TeamContact[]>([]);
-  const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedTeamForMember, setSelectedTeamForMember] = useState<{ id: string; name: string; existingMembers?: string[] } | null>(null);
   const [teamMessagingLoading, setTeamMessagingLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
 
@@ -47,7 +47,7 @@ const ConversationsNew: React.FC = () => {
 
   const getAvatarColor = (name: string) => {
     const colors = [
-      '#DC2626',
+      '#3B82F6',
       '#EF4444',
       '#10B981',
       '#F59E0B',
@@ -55,7 +55,7 @@ const ConversationsNew: React.FC = () => {
       '#EC4899',
       '#14B8A6',
       '#F97316',
-      '#DC2626',
+      '#6366F1',
       '#84CC16',
     ];
     if (!name || name.trim() === '') return colors[0];
@@ -64,10 +64,10 @@ const ConversationsNew: React.FC = () => {
   };
 
   // Team Messaging Functions
-  const loadTeamConversations = async () => {
+  const loadTeamConversations = async (sortBy?: 'name' | 'last_message' | 'created_at' | 'unread_count', sortOrder?: 'asc' | 'desc') => {
     try {
       setTeamMessagingLoading(true);
-      const conversations = await getTeamConversations();
+      const conversations = await getTeamConversations({ sortBy, sortOrder });
 
       const formattedConversations: TeamConversationListItem[] = conversations.map((conv) => {
         try {
@@ -120,7 +120,7 @@ const ConversationsNew: React.FC = () => {
             unread_count: 0,
             display_name: 'Unknown Conversation',
             initials: '??',
-            avatar_color: '#DC2626',
+            avatar_color: '#3B82F6',
           };
         }
       });
@@ -138,26 +138,31 @@ const ConversationsNew: React.FC = () => {
     try {
       setMessagesLoading(true);
       const messages = await getConversationMessages(conversationId);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
       const formattedMessages: TeamMessageItem[] = messages.map((msg) => ({
         id: msg.id,
         conversation_id: msg.conversation_id,
         sender_id: msg.sender_id,
-        sender_name: msg.sender?.email || 'Unknown',
+        sender_name: 'User',
         content: msg.content,
         timestamp: msg.created_at,
-        is_own_message: msg.sender_id === user?.id,
+        is_own_message: true,
         is_read: msg.is_read || false,
+        message_type: msg.message_type || 'sms',
+        subject: msg.subject
       }));
 
       setConversationMessages(formattedMessages);
 
-      // Mark conversation as read
+      setTeamConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, unread_count: 0 }
+            : conversation,
+        ),
+      );
+
       await markConversationAsRead(conversationId);
-      await loadTeamConversations();
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -167,85 +172,43 @@ const ConversationsNew: React.FC = () => {
 
   const loadTeamContacts = async () => {
     try {
-      const contacts = await getTeamContacts();
-
-      const formattedContacts: TeamContact[] = contacts.map((contact) => {
-        const fullName = contact.full_name || 'Unknown Contact';
-        return {
-          id: contact.id,
-          full_name: fullName,
-          first_name: contact.first_name || '',
-          last_name: contact.last_name || '',
-          email: contact.email || '',
-          phone: contact.phone || '',
-          type: contact.type as 'staff' | 'sub-contractor',
-          initials: getInitials(fullName),
-          avatar_color: getAvatarColor(fullName),
-        };
-      });
-
-      setTeamContacts(formattedContacts);
+      // Team contacts loading is handled by CreateTeamModal
     } catch (error) {
       console.error('Failed to load team contacts:', error);
-      setTeamContacts([]);
     }
   };
 
-  const handleNewMessage = async (
-    messageType: MessageType,
-    contactIds: string[],
-    groupName: string,
-    message: string
-  ) => {
-    try {
-      setTeamMessagingLoading(true);
 
-      // For individual messages, check if conversation already exists
-      if (messageType === 'individual') {
-        const existingConvId = await findConversationByParticipants(contactIds);
-        if (existingConvId) {
-          // Send message to existing conversation
-          await sendTeamMessage({
-            conversation_id: existingConvId,
-            content: message,
-          });
-          setSelectedTeamConversationId(existingConvId);
-          await loadTeamConversations();
-          await loadConversationMessages(existingConvId);
-          setShowNewMessageModal(false);
-          return;
-        }
-      }
 
-      // Create new conversation
-      const conversation = await createTeamConversation({
-        name: messageType === 'group' ? groupName : undefined,
-        is_group: messageType === 'group',
-        participant_ids: contactIds,
-        initial_message: message,
-      });
-
-      setSelectedTeamConversationId(conversation.id);
-      await loadTeamConversations();
-      await loadConversationMessages(conversation.id);
-      setShowNewMessageModal(false);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setTeamMessagingLoading(false);
-    }
-  };
-
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, messageType: 'sms' | 'email' | 'team' = 'team', subject?: string) => {
     if (!selectedTeamConversationId) return;
+
+    // Convert 'team' to 'sms' for API compatibility
+    const apiMessageType: 'sms' | 'email' = messageType === 'team' ? 'sms' : messageType;
+
+    // Add message instantly to UI
+    const newMessage: TeamMessageItem = {
+      id: Date.now().toString(),
+      conversation_id: selectedTeamConversationId,
+      sender_id: 'current_user',
+      sender_name: 'You',
+      content,
+      timestamp: new Date().toISOString(),
+      is_own_message: true,
+      is_read: true,
+      message_type: messageType,
+      subject
+    };
+    
+    setConversationMessages(prev => [...prev, newMessage]);
 
     try {
       await sendTeamMessage({
         conversation_id: selectedTeamConversationId,
         content,
+        messageType: apiMessageType,
+        subject
       });
-      await loadConversationMessages(selectedTeamConversationId);
       await loadTeamConversations();
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -253,44 +216,70 @@ const ConversationsNew: React.FC = () => {
     }
   };
 
+  const handleCloseNormalConversation = () => {
+    setSelectedConversation(null);
+  };
+
+  const handleCloseConversation = () => {
+    setSelectedTeamConversationId(null);
+    setConversationMessages([]);
+  };
+
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedTeamConversationId(conversationId);
+    setTeamConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, unread_count: 0 }
+          : conversation,
+      ),
+    );
     await loadConversationMessages(conversationId);
+  };
+
+  const handleAddMember = (teamId: string) => {
+    const team = teamConversations.find(t => t.id === `team_${teamId}`);
+    if (team) {
+      setSelectedTeamForMember({ 
+        id: teamId, 
+        name: team.name || 'Team',
+        existingMembers: team.participants.map(p => p.id)
+      });
+      setShowAddMemberModal(true);
+    }
+  };
+
+  const handleMemberAdded = async () => {
+    await loadTeamConversations();
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!confirm('Are you sure you want to delete this team?')) return;
+    
+    try {
+      const { smtpApi } = await import('../../../shared/services/smtpApi');
+      await smtpApi.deleteTeam(teamId);
+      await loadTeamConversations();
+      
+      // Clear selection if deleted team was selected
+      if (selectedTeamConversationId === `team_${teamId}`) {
+        setSelectedTeamConversationId(null);
+        setConversationMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to delete team:', error);
+      alert('Failed to delete team. Please try again.');
+    }
   };
 
   // Load team messaging data when tab is active
   useEffect(() => {
     if (activeTab === 'team-messaging') {
       loadTeamConversations();
-      loadTeamContacts();
     }
   }, [activeTab]);
 
-  // Set up real-time subscription for team messages
-  useEffect(() => {
-    if (activeTab === 'team-messaging' && selectedTeamConversationId) {
-      const subscription = supabase
-        .channel(`team_messages:${selectedTeamConversationId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'team_messages',
-            filter: `conversation_id=eq.${selectedTeamConversationId}`,
-          },
-          () => {
-            loadConversationMessages(selectedTeamConversationId);
-            loadTeamConversations();
-          }
-        )
-        .subscribe();
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [activeTab, selectedTeamConversationId]);
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800">
@@ -301,7 +290,7 @@ const ConversationsNew: React.FC = () => {
             onClick={() => setActiveTab('conversations')}
             className={`px-6 py-4 font-medium text-sm transition-all border-b-2 ${
               activeTab === 'conversations'
-                ? 'border-red-600 text-red-600 dark:text-red-400'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
@@ -311,7 +300,7 @@ const ConversationsNew: React.FC = () => {
             onClick={() => setActiveTab('team-messaging')}
             className={`px-6 py-4 font-medium text-sm transition-all border-b-2 ${
               activeTab === 'team-messaging'
-                ? 'border-red-600 text-red-600 dark:text-red-400'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
@@ -321,7 +310,7 @@ const ConversationsNew: React.FC = () => {
             onClick={() => setActiveTab('snippets')}
             className={`px-6 py-4 font-medium text-sm transition-all border-b-2 ${
               activeTab === 'snippets'
-                ? 'border-red-600 text-red-600 dark:text-red-400'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
@@ -331,7 +320,7 @@ const ConversationsNew: React.FC = () => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 flex bg-paper dark:bg-canvas overflow-hidden">
+      <div className="flex-1 flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
         {/* Customer Conversations Tab */}
         {activeTab === 'conversations' && (
           <div className="flex-1 flex">
@@ -339,7 +328,10 @@ const ConversationsNew: React.FC = () => {
               selectedConversation={selectedConversation}
               onSelectConversation={setSelectedConversation}
             />
-            <ChatArea conversationId={selectedConversation} />
+            <ChatArea 
+              conversationId={selectedConversation} 
+              onCloseConversation={handleCloseNormalConversation}
+            />
           </div>
         )}
 
@@ -350,20 +342,39 @@ const ConversationsNew: React.FC = () => {
               conversations={teamConversations}
               selectedConversationId={selectedTeamConversationId}
               onConversationSelect={handleConversationSelect}
-              onNewMessage={() => setShowNewMessageModal(true)}
+              onNewMessage={() => setShowCreateTeamModal(true)}
+              onDeleteTeam={handleDeleteTeam}
+              onAddMember={handleAddMember}
+              onSortChange={loadTeamConversations}
               loading={teamMessagingLoading}
             />
             <MessageThread
               conversationId={selectedTeamConversationId}
               messages={conversationMessages}
               onSendMessage={handleSendMessage}
+              onCloseConversation={handleCloseConversation}
               loading={messagesLoading}
             />
-            {showNewMessageModal && (
-              <NewMessageModal
-                contacts={teamContacts}
-                onClose={() => setShowNewMessageModal(false)}
-                onSend={handleNewMessage}
+            <CreateTeamModal
+              isOpen={showCreateTeamModal}
+              onClose={() => setShowCreateTeamModal(false)}
+              onTeamCreated={() => {
+                setShowCreateTeamModal(false);
+                loadTeamConversations();
+              }}
+            />
+            
+            {selectedTeamForMember && (
+              <AddMemberModal
+                isOpen={showAddMemberModal}
+                onClose={() => {
+                  setShowAddMemberModal(false);
+                  setSelectedTeamForMember(null);
+                }}
+                teamId={selectedTeamForMember.id}
+                teamName={selectedTeamForMember.name}
+                existingMembers={selectedTeamForMember.existingMembers || []}
+                onMemberAdded={handleMemberAdded}
               />
             )}
           </div>
@@ -371,15 +382,14 @@ const ConversationsNew: React.FC = () => {
 
         {/* Snippets Tab */}
         {activeTab === 'snippets' && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                Snippets Coming Soon
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400">
-                Save and reuse common message templates
-              </p>
-            </div>
+          <div className="flex-1">
+            <SnippetsPanel
+              isOpen={true}
+              onClose={() => {}}
+              onSelectSnippet={(snippet) => {
+                console.log('Selected snippet:', snippet);
+              }}
+            />
           </div>
         )}
       </div>

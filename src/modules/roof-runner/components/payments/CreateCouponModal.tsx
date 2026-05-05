@@ -1,351 +1,281 @@
-import React, { useState } from 'react';
-import { X, Tag, AlertCircle, Copy, Check } from 'lucide-react';
-import { createCoupon, Coupon } from '../../../../shared/store/services/paymentsApi';
+import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
+import { createCoupon, Coupon, updateCoupon } from '../../../../shared/store/services/couponsApi';
 
 interface CreateCouponModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (coupon: Coupon) => void;
+  editCoupon?: Coupon | null;
 }
 
-interface FormData {
-  name: string;
-  code: string;
-  discount_type: 'percentage' | 'fixed_amount';
-  discount_value: number;
-  status: 'active' | 'scheduled' | 'expired';
-  start_date: string;
-  end_date: string;
-  max_redemptions: number | null;
-  description: string;
-}
+const getInitialFormData = () => ({
+  coupon_name: '',
+  coupon_code: '',
+  discount_type: 'percentage' as 'percentage' | 'fixed',
+  discount_value: 0,
+  start_date: new Date().toISOString().split('T')[0],
+  end_date: '',
+  maximum_redemptions: '',
+  status: 'active' as 'active' | 'inactive'
+});
 
-const CreateCouponModal: React.FC<CreateCouponModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess
-}) => {
+const toDateInput = (value?: string) => {
+  if (!value) return '';
+  return value.split('T')[0];
+};
+
+const CreateCouponModal: React.FC<CreateCouponModalProps> = ({ isOpen, onClose, onSuccess, editCoupon }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [codeGenerated, setCodeGenerated] = useState(false);
+  const [formData, setFormData] = useState(getInitialFormData);
+  const isEditMode = Boolean(editCoupon);
 
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    code: '',
-    discount_type: 'percentage',
-    discount_value: 0,
-    status: 'active',
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
-    max_redemptions: null,
-    description: ''
-  });
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const generateCouponCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    if (editCoupon) {
+      setFormData({
+        coupon_name: editCoupon.coupon_name || '',
+        coupon_code: editCoupon.coupon_code || '',
+        discount_type: editCoupon.discount_type || 'percentage',
+        discount_value: Number(editCoupon.discount_value || 0),
+        start_date: toDateInput(editCoupon.start_date) || new Date().toISOString().split('T')[0],
+        end_date: toDateInput(editCoupon.end_date),
+        maximum_redemptions:
+          editCoupon.maximum_redemptions !== undefined && editCoupon.maximum_redemptions !== null
+            ? String(editCoupon.maximum_redemptions)
+            : '',
+        status: editCoupon.status || 'active',
+      });
+    } else {
+      setFormData(getInitialFormData());
     }
-    setFormData(prev => ({ ...prev, code }));
-    setCodeGenerated(true);
-    setTimeout(() => setCodeGenerated(false), 2000);
+    setError(null);
+  }, [isOpen, editCoupon]);
+
+  const generateCode = () => {
+    const code = 'SUMMER' + Math.floor(Math.random() * 100);
+    setFormData({ ...formData, coupon_code: code });
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.name.trim()) return 'Coupon name is required';
-    if (!formData.code.trim()) return 'Coupon code is required';
-    if (formData.code.length < 4) return 'Coupon code must be at least 4 characters';
-    if (formData.discount_value <= 0) return 'Discount value must be greater than 0';
-    if (formData.discount_type === 'percentage' && formData.discount_value > 100) {
-      return 'Percentage discount cannot exceed 100%';
-    }
-    if (!formData.start_date) return 'Start date is required';
-    if (formData.end_date && new Date(formData.end_date) < new Date(formData.start_date)) {
-      return 'End date must be after start date';
-    }
-    if (formData.max_redemptions !== null && formData.max_redemptions < 1) {
-      return 'Maximum redemptions must be at least 1';
-    }
-    return null;
-  };
-
-  const handleSubmit = async () => {
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const couponData: Partial<Coupon> = {
-        name: formData.name.trim(),
-        code: formData.code.trim().toUpperCase(),
-        discount_type: formData.discount_type,
-        discount_value: formData.discount_value,
-        status: formData.status,
-        start_date: formData.start_date,
-        end_date: formData.end_date || undefined,
-        max_redemptions: formData.max_redemptions || undefined,
-        redemption_count: 0
+      const couponData = {
+        ...formData,
+        maximum_redemptions: formData.maximum_redemptions ? parseInt(formData.maximum_redemptions) : undefined,
+        end_date: formData.end_date || undefined
       };
-
-      const createdCoupon = await createCoupon(couponData);
-      onSuccess(createdCoupon);
+      const response = isEditMode && editCoupon
+        ? await updateCoupon(editCoupon.id, couponData)
+        : await createCoupon(couponData);
+      onSuccess(response);
       onClose();
-      resetForm();
     } catch (err: any) {
-      if (err.message?.includes('unique')) {
-        setError('A coupon with this code already exists. Please use a different code.');
-      } else {
-        setError(err.message || 'Failed to create coupon');
-      }
+      setError(err.response?.data?.message || (isEditMode ? 'Failed to update coupon' : 'Failed to create coupon'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      code: '',
-      discount_type: 'percentage',
-      discount_value: 0,
-      status: 'active',
-      start_date: new Date().toISOString().split('T')[0],
-      end_date: '',
-      max_redemptions: null,
-      description: ''
-    });
-    setError(null);
-  };
-
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg flex items-center justify-center">
-              <Tag className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Create Coupon
-            </h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl relative">
+        <div className="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700">
+          <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
           </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <X size={24} />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex-1">
+            {isEditMode ? 'Edit Coupon' : 'Create Coupon'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="flex items-center space-x-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <AlertCircle size={20} className="text-red-600 dark:text-red-400" />
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-600 dark:text-red-400 text-sm">
+              {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Coupon Name <span className="text-red-500">*</span>
-              </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Coupon Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g., Summer Sale 2024"
+              value={formData.coupon_name}
+              onChange={(e) => setFormData({ ...formData, coupon_name: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Coupon Code <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Summer Sale 2024"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
+                placeholder="SUMMER20"
+                value={formData.coupon_code}
+                onChange={(e) => setFormData({ ...formData, coupon_code: e.target.value.toUpperCase() })}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Coupon Code <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder="SUMMER20"
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={generateCouponCode}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center space-x-2"
-                >
-                  {codeGenerated ? (
-                    <>
-                      <Check size={16} />
-                      <span>Generated</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={16} />
-                      <span>Generate</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Use uppercase letters and numbers (min 4 characters)
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Discount Type <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={formData.discount_type === 'percentage'}
-                    onChange={() => setFormData({ ...formData, discount_type: 'percentage', discount_value: 0 })}
-                    className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Percentage (%)</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={formData.discount_type === 'fixed_amount'}
-                    onChange={() => setFormData({ ...formData, discount_type: 'fixed_amount', discount_value: 0 })}
-                    className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Fixed Amount ($)</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Discount Value <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">
-                  {formData.discount_type === 'percentage' ? '%' : '$'}
-                </span>
-                <input
-                  type="number"
-                  value={formData.discount_value || ''}
-                  onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
-                  min="0"
-                  max={formData.discount_type === 'percentage' ? 100 : undefined}
-                  step={formData.discount_type === 'percentage' ? 1 : 0.01}
-                  placeholder="0"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formData.discount_type === 'percentage'
-                  ? 'Enter percentage off (0-100)'
-                  : 'Enter dollar amount off'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  End Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  min={formData.start_date}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Maximum Redemptions (Optional)
-              </label>
-              <input
-                type="number"
-                value={formData.max_redemptions || ''}
-                onChange={(e) => setFormData({ ...formData, max_redemptions: e.target.value ? parseInt(e.target.value) : null })}
-                min="1"
-                placeholder="Unlimited"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Leave blank for unlimited uses
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'scheduled' | 'expired' })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              <button
+                type="button"
+                onClick={generateCode}
+                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1"
               >
-                <option value="active">Active</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="expired">Expired</option>
-              </select>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Generate
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use uppercase letters and numbers (min 4 characters)</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Discount Type <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="discount_type"
+                  value="percentage"
+                  checked={formData.discount_type === 'percentage'}
+                  onChange={(e) => setFormData({ ...formData, discount_type: 'percentage' })}
+                  className="text-red-600"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Percentage (%)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="discount_type"
+                  value="fixed"
+                  checked={formData.discount_type === 'fixed'}
+                  onChange={(e) => setFormData({ ...formData, discount_type: 'fixed' })}
+                  className="text-red-600"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Fixed Amount ($)</span>
+              </label>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-end items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-paper dark:bg-canvas">
-          <button
-            onClick={handleClose}
-            className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md"
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-md hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                <span>Creating...</span>
-              </>
-            ) : (
-              <>
-                <Tag size={18} />
-                <span>Create Coupon</span>
-              </>
-            )}
-          </button>
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Discount Value <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400 text-sm">
+                {formData.discount_type === 'percentage' ? '%' : '$'}
+              </span>
+              <input
+                type="number"
+                required
+                min="0"
+                max={formData.discount_type === 'percentage' ? 100 : undefined}
+                step="0.01"
+                value={formData.discount_value}
+                onChange={(e) => setFormData({ ...formData, discount_value: parseFloat(e.target.value) || 0 })}
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {formData.discount_type === 'percentage' ? 'Enter percentage (0-100)' : 'Enter dollar amount'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Start Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                End Date (Optional)
+              </label>
+              <input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Maximum Redemptions (Optional)
+            </label>
+            <input
+              type="number"
+              min="1"
+              placeholder="Unlimited"
+              value={formData.maximum_redemptions}
+              onChange={(e) => setFormData({ ...formData, maximum_redemptions: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank for unlimited uses</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+              </svg>
+              {isLoading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create Coupon')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
