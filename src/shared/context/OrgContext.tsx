@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { isStagingMode, STAGING_MOCK_ORG } from '../utils/stagingAuth';
 
 interface Organization {
   id: string;
@@ -35,6 +36,18 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Staging bypass: skip supabase calls and serve a mock org so QA /
+      // design review can navigate without real backend access.
+      if (isStagingMode()) {
+        setCurrentOrganization({
+          ...STAGING_MOCK_ORG,
+          slug: orgSlug || STAGING_MOCK_ORG.slug,
+          name: STAGING_MOCK_ORG.name,
+        });
+        setIsLoading(false);
+        return;
+      }
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();

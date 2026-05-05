@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { ThemeProvider } from './shared/context/ThemeContext';
 import { WidgetProvider } from './shared/context/WidgetContext';
 import IncomingCallNotification from './shared/components/IncomingCallNotification';
+import { StagingBanner } from './shared/components/StagingBanner';
 import { useAppSelector } from './shared/store/hooks';
 import { oneSignalService } from './shared/services/oneSignalService';
 
@@ -59,6 +60,7 @@ function AppContent() {
     <ThemeProvider forcedTheme={forceLightTheme ? 'light' : undefined}>
       <WidgetProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+          <StagingBanner />
           <IncomingCallNotification />
           <Routes>
             <Route path="/billing" element={<PublicBilling />} />

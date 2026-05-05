@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useAppSelector } from './store/hooks';
+import { useAppSelector, useAppDispatch } from './store/hooks';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { bootstrapStagingAuth } from '../../shared/utils/stagingAuth';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import JobCam from './pages/JobCam';
@@ -83,6 +84,26 @@ const RootRedirect = () => {
   return <Navigate to={orgSlug ? `/org/${orgSlug}` : "/auth/login"} replace />;
 };
 
+/**
+ * Runs once inside the RoofRunner Redux Provider. On staging hostnames
+ * (or with VITE_BYPASS_AUTH=1), auto-logs in a mock user so QA / design
+ * review can navigate the app without real credentials. No-op on prod.
+ */
+const StagingAuthBootstrapper = () => {
+  const dispatch = useAppDispatch();
+  const { user, token } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    bootstrapStagingAuth(
+      dispatch as (action: { type: string; payload: { user: any; token: string } }) => void,
+      user,
+      token,
+    );
+  }, [dispatch, user, token]);
+
+  return null;
+};
+
 const OrgSettingsRedirect = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
@@ -104,6 +125,7 @@ const OrgSettingsRedirect = () => {
 export function RoofRunnerModule() {
   return (
     <Provider store={store}>
+      <StagingAuthBootstrapper />
       <Routes>
         <Route path="/" element={<ProtectedRoute><OrgProvider><RootRedirect /></OrgProvider></ProtectedRoute>} />
         <Route path="outlook-callback" element={<OutlookCallback />} />
