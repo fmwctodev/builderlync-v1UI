@@ -51,6 +51,9 @@ import SocialAdsCallback from './components/settings/SocialAdsCallback';
 import Catalog from './pages/Catalog';
 import Settings from './pages/Settings';
 import Support from './pages/Support';
+import KnowledgeBaseHome from './pages/knowledge-base/KnowledgeBaseHome';
+import KnowledgeBaseCategory from './pages/knowledge-base/KnowledgeBaseCategory';
+import KnowledgeBaseArticle from './pages/knowledge-base/KnowledgeBaseArticle';
 import QuickBooksCallback from './pages/QuickBooksCallback';
 import OAuthCallback from './components/file-manager/OAuthCallback';
 import Login from './pages/auth/Login';
@@ -178,6 +181,9 @@ export function RoofRunnerModule() {
           <Route path="reporting/ai" element={<AIReporting />} />
           <Route path="reporting/:id" element={<ReportView />} />
           <Route path="support" element={<Support />} />
+          <Route path="support/knowledge-base" element={<KnowledgeBaseHome />} />
+          <Route path="support/knowledge-base/:categorySlug" element={<KnowledgeBaseCategory />} />
+          <Route path="support/knowledge-base/:categorySlug/:articleSlug" element={<KnowledgeBaseArticle />} />
           <Route path="settings/*" element={<Settings />} />
 
           <Route path="integrations/eagleview/success" element={<EagleViewCallback />} />

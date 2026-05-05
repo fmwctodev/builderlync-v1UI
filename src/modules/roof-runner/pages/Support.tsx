@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { HelpCircle, Mail, MessageCircle } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { HelpCircle, Mail, MessageCircle, BookOpen, ArrowRight, Search } from 'lucide-react';
 import { SupportTicketModal } from '../components/SupportTicketModal';
 import { supportApi, SupportTicketListItem } from '../services/supportApi';
+import { getAllCategories, getArticleCount, getFeaturedArticles } from '../data/knowledgeBase';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
@@ -19,6 +21,8 @@ const priorityStyles: Record<string, string> = {
 };
 
 const Support: React.FC = () => {
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [tickets, setTickets] = useState<SupportTicketListItem[]>([]);
@@ -27,6 +31,11 @@ const Support: React.FC = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 5, total: 0, totalPages: 1 });
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketListItem | null>(null);
   const [openingTicket, setOpeningTicket] = useState(false);
+
+  // Knowledge base teasers (read from local data — no network call)
+  const kbCategories = getAllCategories().slice(0, 8);
+  const kbFeatured = getFeaturedArticles(3);
+  const kbTotal = getArticleCount();
 
   useEffect(() => {
     (window as any).chattermateId = 'f638c1bb-753c-476d-bee1-1ded1ee2e39d';
@@ -120,6 +129,98 @@ const Support: React.FC = () => {
       </div>
 
       <div className="p-6">
+        {/* Knowledge Base — hero card + category teasers */}
+        <div className="mb-8 rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-red-50 to-white dark:from-red-900/10 dark:to-gray-800 overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center shrink-0 shadow-md">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Knowledge Base
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                  {kbTotal} articles, video walkthroughs, and step-by-step guides for every BuilderLync module.
+                </p>
+              </div>
+              <Link
+                to={`${orgPrefix}/support/knowledge-base`}
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 shrink-0 mt-1"
+              >
+                Browse all
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Mini search → routes to KB home */}
+            <Link
+              to={`${orgPrefix}/support/knowledge-base`}
+              className="flex items-center gap-3 px-4 py-3 mb-5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-red-300 dark:hover:border-red-600 transition-colors"
+            >
+              <Search className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Search guides, videos, module overviews…
+              </span>
+            </Link>
+
+            {/* Featured articles */}
+            {kbFeatured.length > 0 && (
+              <div className="mb-5">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  Featured guides
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {kbFeatured.map((a) => (
+                    <Link
+                      key={a.slug}
+                      to={`${orgPrefix}/support/knowledge-base/${a.categorySlug}/${a.slug}`}
+                      className="group block p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-600 transition-all"
+                    >
+                      <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-2">
+                        {a.title}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {a.readMinutes ? `${a.readMinutes} min read` : 'Guide'}
+                        {a.primaryVideoUrl && ' · Video'}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Category strip */}
+            <div>
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                Browse by module
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {kbCategories.map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <Link
+                      key={c.slug}
+                      to={`${orgPrefix}/support/knowledge-base/${c.slug}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300 hover:border-red-300 dark:hover:border-red-600 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {c.name}
+                    </Link>
+                  );
+                })}
+                <Link
+                  to={`${orgPrefix}/support/knowledge-base`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                >
+                  See all categories
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
