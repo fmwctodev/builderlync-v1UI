@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { HelpCircle, Mail, MessageCircle, BookOpen, ArrowRight, Search } from 'lucide-react';
 import { SupportTicketModal } from '../components/SupportTicketModal';
 import { supportApi, SupportTicketListItem } from '../services/supportApi';
-import { getAllCategories, getArticleCount, getFeaturedArticles } from '../data/knowledgeBase';
+import { getAllCategories, getArticleCount, getFeaturedArticles } from '../../knowledge-base/data';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',

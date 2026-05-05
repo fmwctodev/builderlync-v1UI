@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Calendar, Home, ChevronRight, Mail } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Mail } from 'lucide-react';
 import {
   getArticleBySlug,
   getCategoryBySlug,
   getRelatedArticles,
-} from '../../data/knowledgeBase';
-import { ArticleBody } from './components/ArticleBody';
-import { ArticleCard } from './components/ArticleCard';
+} from '../data';
+import { ArticleBody } from '../components/ArticleBody';
+import { ArticleCard } from '../components/ArticleCard';
+import { Breadcrumbs } from '../components/Breadcrumbs';
+import { VideoPlaceholder } from '../components/VideoPlaceholder';
 
-const KnowledgeBaseArticle: React.FC = () => {
+const Article: React.FC = () => {
   const { orgSlug, categorySlug, articleSlug } = useParams<{
     orgSlug: string;
     categorySlug: string;
@@ -17,7 +19,6 @@ const KnowledgeBaseArticle: React.FC = () => {
   }>();
   const orgPrefix = orgSlug ? `/org/${orgSlug}` : '';
 
-  // Scroll to top whenever the article changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [categorySlug, articleSlug]);
@@ -56,36 +57,27 @@ const KnowledgeBaseArticle: React.FC = () => {
   });
 
   return (
-    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-3xl mx-auto px-6 py-10">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm mb-5">
-          <Link
-            to={`${orgPrefix}/support/knowledge-base`}
-            className="inline-flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-          >
-            <Home className="w-3.5 h-3.5" />
-            Knowledge Base
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-          <Link
-            to={`${orgPrefix}/support/knowledge-base/${category.slug}`}
-            className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-          >
-            {category.name}
-          </Link>
-        </nav>
+    <div>
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <Breadcrumbs
+          crumbs={[
+            {
+              label: category.name,
+              to: `${orgPrefix}/support/knowledge-base/${category.slug}`,
+            },
+          ]}
+        />
 
         <Link
           to={`${orgPrefix}/support/knowledge-base/${category.slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 mb-6"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
         >
           <ArrowLeft className="w-4 h-4" />
           All articles in {category.name}
         </Link>
 
-        {/* Title block */}
-        <article className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 md:p-10">
+        {/* Article body */}
+        <article className="mt-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 md:p-10">
           <header className="mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
               {article.title}
@@ -118,18 +110,13 @@ const KnowledgeBaseArticle: React.FC = () => {
             )}
           </header>
 
-          {/* Primary video at top of article */}
-          {article.primaryVideoUrl && (
-            <div className="mb-8 rounded-lg overflow-hidden bg-black aspect-video border border-gray-200 dark:border-gray-700 shadow-sm">
-              <iframe
-                src={article.primaryVideoUrl}
-                title={article.title}
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
+          {/* Primary video at top */}
+          {article.primaryVideo && (
+            <VideoPlaceholder
+              description={article.primaryVideo.placeholder?.description ?? article.title}
+              src={article.primaryVideo.src}
+              caption={article.primaryVideo.placeholder?.description ?? article.title}
+            />
           )}
 
           {/* Body */}
@@ -150,11 +137,9 @@ const KnowledgeBaseArticle: React.FC = () => {
           </section>
         )}
 
-        {/* Was this helpful + contact */}
+        {/* Contact support */}
         <section className="mt-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-1">
-            Still need help?
-          </h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Still need help?</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             We respond to support tickets within 24 hours.
           </p>
@@ -171,4 +156,4 @@ const KnowledgeBaseArticle: React.FC = () => {
   );
 };
 
-export default KnowledgeBaseArticle;
+export default Article;

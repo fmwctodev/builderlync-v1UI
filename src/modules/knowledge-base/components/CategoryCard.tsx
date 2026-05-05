@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { type KbCategory, getArticlesByCategory } from '../../../data/knowledgeBase';
+import type { KbCategory } from '../data/types';
+import { getArticlesByCategory } from '../data';
 
 interface CategoryCardProps {
   category: KbCategory;

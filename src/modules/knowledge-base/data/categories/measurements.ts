@@ -1,0 +1,126 @@
+import { Ruler } from 'lucide-react';
+import { walkthrough } from '../authoring';
+import type { CategoryModule } from '../types';
+
+const cm: CategoryModule = {
+  category: {
+    slug: 'measurements',
+    name: 'Measurements',
+    description: 'EagleView aerial measurements and DIY measurement capture.',
+    icon: Ruler,
+    accent: 'bg-violet-100',
+    section: 'workspace',
+    order: 9,
+  },
+  articles: [
+    walkthrough({
+      slug: 'order-an-eagleview-report',
+      title: 'Order an EagleView aerial measurement',
+      summary: 'Property measurements without a ladder — pricing, turnaround, attaching to a job.',
+      categorySlug: 'measurements',
+      tags: ['measurements', 'eagleview', 'aerial'],
+      featured: true,
+      readMinutes: 5,
+      intro: 'EagleView aerial measurements give you square footage, pitch, ridge length, valleys, and other roof metrics without climbing onto the property.',
+      videoDesc: 'Order EagleView (3 min)',
+      prereqs: ['EagleView account connected (Settings → Integrations)'],
+      steps: [
+        { title: 'Open Measurements', text: 'Sidebar → Measurements.', screenshot: 'measurements sidebar' },
+        { title: 'Click "Order"', text: 'In the top tabs.', screenshot: 'order tab' },
+        { title: 'Enter address', text: 'Use autocomplete for exact match.', screenshot: 'address field' },
+        { title: 'Pick products', text: 'Standard, Premium, Commercial, Wall.', screenshot: 'product picker' },
+        { title: 'Place order', text: 'Order goes to EagleView; tracked in Order History.', screenshot: 'place order button' },
+        { title: 'Receive report', text: 'Email when ready; auto-attaches to any new proposal for that address.', screenshot: 'report received' },
+      ],
+      related: [
+        { categorySlug: 'measurements', articleSlug: 'eagleview-account-credits' },
+        { categorySlug: 'measurements', articleSlug: 'attach-measurement-to-proposal' },
+      ],
+    }),
+    walkthrough({
+      slug: 'diy-measurements-on-mobile',
+      title: 'DIY measurements on mobile',
+      summary: 'Capture pitch, square footage, and ridge length manually on a tablet.',
+      categorySlug: 'measurements',
+      tags: ['measurements', 'diy', 'mobile'],
+      readMinutes: 4,
+      intro: 'Use the DIY tool when EagleView coverage is missing or you need a same-day measurement.',
+      videoDesc: 'DIY measurements (2 min)',
+      steps: [
+        { title: 'Open Measurements → DIY', text: 'On a tablet for best UX.', screenshot: 'diy tab' },
+        { title: 'Capture pitch', text: 'Use device camera to align with roof slope.', screenshot: 'pitch capture' },
+        { title: 'Trace facets', text: 'Sketch each roof face on the on-screen aerial.', screenshot: 'facet tracing' },
+        { title: 'Save', text: 'Measurement attaches to the contact and the next proposal.', screenshot: 'save measurement' },
+      ],
+      tips: ['Best on a tablet — the touch interface needs the screen real estate.'],
+    }),
+    walkthrough({
+      slug: 'attach-measurement-to-proposal',
+      title: 'Attach a measurement to a proposal',
+      summary: 'Use existing measurements to populate proposal line items.',
+      categorySlug: 'measurements',
+      tags: ['measurements', 'proposals', 'attach'],
+      readMinutes: 3,
+      intro: 'When generating a proposal, attach an existing measurement so line items pre-fill with accurate quantities.',
+      videoDesc: 'Attach measurement (60 sec)',
+      steps: [
+        { title: 'Open the proposal', text: 'Or start a new one.', screenshot: 'proposal editor' },
+        { title: 'Click Attach Measurement', text: 'In the line items section.', screenshot: 'attach measurement modal' },
+        { title: 'Pick from list', text: 'Recent measurements for this address shown first.', screenshot: 'measurement picker' },
+        { title: 'Apply', text: 'Quantities populate; tweak per-template multipliers.', screenshot: 'applied measurement' },
+      ],
+      related: [
+        { categorySlug: 'proposals', articleSlug: 'proposal-line-items' },
+      ],
+    }),
+    walkthrough({
+      slug: 'eagleview-account-credits',
+      title: 'EagleView account and credits',
+      summary: 'Connect your EagleView account, view credit balance, and add credits.',
+      categorySlug: 'measurements',
+      tags: ['eagleview', 'credits', 'account'],
+      readMinutes: 4,
+      intro: 'EagleView reports are paid via your EagleView credit balance — BuilderLync does not mark up reports.',
+      videoDesc: 'EagleView credits (90 sec)',
+      steps: [
+        { title: 'Settings → Integrations → EagleView', text: 'Connect or view status.', screenshot: 'eagleview integration' },
+        { title: 'View balance', text: 'Current credit balance visible on Measurements page.', screenshot: 'balance display' },
+        { title: 'Add credits', text: 'One-click in the Measurements header.', screenshot: 'add credits modal' },
+      ],
+      warnings: ['Reports cannot be ordered with zero balance — top up first.'],
+    }),
+    walkthrough({
+      slug: 'measurement-order-history',
+      title: 'Measurement order history',
+      summary: 'View past orders, download reports, and re-order at the same address.',
+      categorySlug: 'measurements',
+      tags: ['measurements', 'history', 'orders'],
+      readMinutes: 3,
+      intro: 'Every measurement order lives in Order History — never lose access to a past report.',
+      videoDesc: 'Order history (60 sec)',
+      steps: [
+        { title: 'Measurements → Order History', text: 'Top nav.', screenshot: 'order history tab' },
+        { title: 'Filter', text: 'By status, date, address.', screenshot: 'history filters' },
+        { title: 'Download report', text: 'PDF or DXF.', screenshot: 'download buttons' },
+        { title: 'Re-order', text: 'For the same address — uses cached pricing.', screenshot: 're-order button' },
+      ],
+    }),
+    walkthrough({
+      slug: 'payment-success-and-cancel',
+      title: 'Payment success and cancel pages',
+      summary: 'What happens after the EagleView credit purchase flow.',
+      categorySlug: 'measurements',
+      tags: ['measurements', 'payment'],
+      readMinutes: 2,
+      intro: 'After a credit top-up, the success or cancel page tells you the result and links back to Measurements.',
+      videoDesc: 'Payment flow (45 sec)',
+      steps: [
+        { title: 'Initiate top-up', text: 'Add credits → Stripe checkout opens.', screenshot: 'stripe checkout' },
+        { title: 'Success', text: 'Credits applied immediately; receipt by email.', screenshot: 'success page' },
+        { title: 'Cancel', text: 'No charge; return to Measurements with a "no credits added" toast.', screenshot: 'cancel page' },
+      ],
+    }),
+  ],
+};
+
+export default cm;
