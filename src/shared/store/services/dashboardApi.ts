@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery, BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { getAuthToken, logoutAndRedirect } from '../../utils/auth';
+import { isStagingMode } from '../../utils/stagingAuth';
+import { getStagingDashboardWidgets, getStagingDashboardPreferences } from '../../utils/stagingMocks';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3100/api';
 
@@ -20,6 +22,24 @@ const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
+  // Staging short-circuit: serve mock data without hitting the API.
+  // Keeps the Dashboard, Sierra, Storm Canvassing, and Reporting modules
+  // demonstrable on bl-v2.netlify.app without a populated backend.
+  if (isStagingMode()) {
+    const url = typeof args === 'string' ? args : args.url;
+    if (url === '/dashboard/widgets') {
+      return { data: { data: getStagingDashboardWidgets() } } as any;
+    }
+    if (url.startsWith('/dashboard/preferences/')) {
+      const isPost = typeof args !== 'string' && (args.method === 'POST' || args.method === 'PUT');
+      if (isPost) {
+        // No-op save: pretend it worked so the UI flips correctly.
+        return { data: { data: [] } } as any;
+      }
+      return { data: { data: getStagingDashboardPreferences() } } as any;
+    }
+  }
+
   let result = await baseQuery(args, api, extraOptions);
   if (result.error && (result.error.status === 403)) {
     logoutAndRedirect();

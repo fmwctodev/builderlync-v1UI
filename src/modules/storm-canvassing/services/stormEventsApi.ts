@@ -5,6 +5,8 @@ import {
   mapStormEventResultToEntity,
   mapStormLayerResultToEntity,
 } from '../providers/stormProvider';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { getStagingStormEvents } from '../../../shared/utils/stagingMocks';
 
 export interface StormEventFilters {
   isActive?: boolean;
@@ -17,6 +19,18 @@ export async function getStormEvents(
   organizationId: string,
   filters?: StormEventFilters
 ): Promise<StormEvent[]> {
+  // Staging short-circuit: serve mock storm events so the page isn't empty.
+  if (isStagingMode()) {
+    let mocks = getStagingStormEvents(organizationId) as unknown as StormEvent[];
+    if (filters?.isActive !== undefined) {
+      mocks = mocks.filter((m) => m.is_active === filters.isActive);
+    }
+    if (filters?.provider) {
+      mocks = mocks.filter((m) => m.provider === filters.provider);
+    }
+    return mocks;
+  }
+
   let query = supabase
     .from('storm_events')
     .select('*, storm_layers(*)')

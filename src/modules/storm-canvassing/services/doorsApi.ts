@@ -1,5 +1,7 @@
 import { supabase } from '../../../shared/lib/supabase';
 import type { Door, CanvassOutcome } from '../types';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { getStagingStormDoors } from '../../../shared/utils/stagingMocks';
 
 export interface DoorFilters {
   turfId?: string;
@@ -22,6 +24,26 @@ export async function getDoors(
   limit: number = 500,
   offset: number = 0
 ): Promise<{ doors: Door[]; total: number }> {
+  // Staging short-circuit
+  if (isStagingMode()) {
+    let mocks = getStagingStormDoors(organizationId, filters?.turfId) as unknown as Door[];
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      mocks = mocks.filter(
+        (d) =>
+          d.address1.toLowerCase().includes(q) ||
+          (d.city && d.city.toLowerCase().includes(q)),
+      );
+    }
+    if (filters?.lastOutcome) {
+      mocks = mocks.filter((d) => d.last_outcome === filters.lastOutcome);
+    }
+    if (filters?.hasBeenVisited === true) mocks = mocks.filter((d) => d.visit_count > 0);
+    else if (filters?.hasBeenVisited === false) mocks = mocks.filter((d) => d.visit_count === 0);
+    const sliced = mocks.slice(offset, offset + limit);
+    return { doors: sliced, total: mocks.length };
+  }
+
   let query = supabase
     .from('doors')
     .select('*', { count: 'exact' })
@@ -70,6 +92,20 @@ export async function getDoorsByBbox(
   bbox: BoundingBox,
   limit: number = 1000
 ): Promise<Door[]> {
+  // Staging short-circuit — return all mock doors that fall inside the bbox.
+  if (isStagingMode()) {
+    const all = getStagingStormDoors(organizationId) as unknown as Door[];
+    return all
+      .filter(
+        (d) =>
+          d.lng >= bbox.minLng &&
+          d.lng <= bbox.maxLng &&
+          d.lat >= bbox.minLat &&
+          d.lat <= bbox.maxLat,
+      )
+      .slice(0, limit);
+  }
+
   const { data, error } = await supabase.rpc('get_doors_in_bbox', {
     p_org_id: organizationId,
     p_min_lng: bbox.minLng,
@@ -89,6 +125,11 @@ export async function getDoorsInTurf(
   organizationId: string,
   turfId: string
 ): Promise<Door[]> {
+  // Staging short-circuit
+  if (isStagingMode()) {
+    return getStagingStormDoors(organizationId, turfId) as unknown as Door[];
+  }
+
   const { data, error } = await supabase.rpc('get_doors_in_turf', {
     p_turf_id: turfId,
   });

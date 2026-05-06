@@ -3,6 +3,7 @@ import { NavLink, useLocation, useParams } from "react-router-dom";
 import {
   BarChart,
   Calendar,
+  CloudLightning,
   CreditCard,
   FileText,
   HardHat,
@@ -31,6 +32,7 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
 import Logo from "../../../../shared/components/Logo";
 import { canAccessModule } from "../../../../shared/utils/permissions";
@@ -108,6 +110,12 @@ const navItems = {
       path: "work-orders",
       permission: "field_operations",
     },
+    {
+      name: "Storm Intelligence",
+      icon: CloudLightning,
+      path: "storm-canvassing",
+      permission: "field_operations",
+    },
   ],
   marketing: [
     {
@@ -129,12 +137,18 @@ const navItems = {
       permission: "marketing",
     },
     {
+      name: "Marketing Suite",
+      icon: Sparkles,
+      path: "marketing-suite",
+      permission: "marketing",
+    },
+    {
       name: "File Manager",
       icon: FolderOpen,
       path: "file-manager",
       permission: null,
     },
-    // { name: 'Reputation', icon: Star, path: 'reputation', permission: 'marketing' },
+    { name: 'Reputation', icon: Star, path: 'reputation', permission: 'marketing' },
     {
       name: "Reporting",
       icon: BarChart2,

@@ -41,6 +41,7 @@ import WorkOrders from './pages/WorkOrders';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
 import Marketing from './pages/Marketing';
+import Reputation from './pages/Reputation';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import { GoogleAnalyticsPage } from './pages/GoogleAnalyticsPage';
 import { GoogleAnalyticsCallback } from './pages/GoogleAnalyticsCallback';
@@ -66,6 +67,8 @@ import { FeatureFlag } from '../../shared/components/FeatureFlag';
 import { OrgProvider } from '../../shared/context/OrgContext';
 import { FormBuilder } from '../marketing/pages/FormBuilder';
 import { FormSubmissions } from '../marketing/pages/FormSubmissions';
+import { MarketingModule } from '../marketing/MarketingModule';
+import { StormCanvassingModule } from '../storm-canvassing/StormCanvassingModule';
 import { SierraAiModule } from '../sierra-ai/SierraAiModule';
 import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
 import { useEffect } from 'react';
@@ -194,8 +197,17 @@ export function RoofRunnerModule() {
           <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
           <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
           <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
+          {/* Marketing Suite — separate module with its own MainLayout
+              (Analytics, Campaigns, Ads Manager, Social Planner, Reputation,
+              GBP Optimization, Integrations). Mounted at a distinct path so
+              it doesn't collide with /marketing/analytics/* above. */}
+          <Route path="marketing-suite/*" element={<MarketingModule />} />
+          {/* Storm Intelligence / Storm Canvassing — separate module with
+              its own routing (map, turfs, events, doors, leads, manager,
+              settings, intelligence). */}
+          <Route path="storm-canvassing/*" element={<StormCanvassingModule />} />
           <Route path="file-manager" element={<FileManager />} />
-          {/* <Route path="reputation" element={<Reputation />} /> */}
+          <Route path="reputation" element={<Reputation />} />
           <Route path="catalog" element={<Catalog />} />
           <Route path="reporting" element={<Reporting />} />
           <Route path="reporting/ai" element={<AIReporting />} />

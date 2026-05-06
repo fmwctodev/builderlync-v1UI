@@ -1,5 +1,7 @@
 import { supabase } from '../../../shared/lib/supabase';
 import type { Turf, TurfAssignment, TurfProgress, TurfStatus } from '../types';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { getStagingStormTurfs } from '../../../shared/utils/stagingMocks';
 
 export interface TurfFilters {
   status?: TurfStatus;
@@ -12,6 +14,18 @@ export async function getTurfs(
   organizationId: string,
   filters?: TurfFilters
 ): Promise<Turf[]> {
+  // Staging short-circuit
+  if (isStagingMode()) {
+    let mocks = getStagingStormTurfs(organizationId) as unknown as Turf[];
+    if (filters?.status) mocks = mocks.filter((t) => t.status === filters.status);
+    if (filters?.stormEventId) mocks = mocks.filter((t) => t.storm_event_id === filters.stormEventId);
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      mocks = mocks.filter((t) => t.name.toLowerCase().includes(q));
+    }
+    return mocks;
+  }
+
   let query = supabase
     .from('turfs')
     .select(`

@@ -182,8 +182,15 @@ export interface UpdateAgentInput extends Partial<CreateAgentInput> {
 }
 
 import { vapiApi } from './vapiApi';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { getStagingSierraAgents } from '../../../shared/utils/stagingMocks';
 
 export async function fetchAgents(organizationId: string): Promise<AIAgent[]> {
+  // Staging short-circuit: avoid hitting the Vapi backend so the agents
+  // list isn't empty during design review / sales demos.
+  if (isStagingMode()) {
+    return getStagingSierraAgents(organizationId) as unknown as AIAgent[];
+  }
   const response = await vapiApi.getAgents(organizationId);
   return response.data || [];
 }

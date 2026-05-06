@@ -202,35 +202,175 @@ export const deleteAppointment = async (id: string): Promise<void> => {
   });
 };
 
-export const getServiceMenuItems = async (): Promise<ServiceMenuItem[]> => [];
-export const createServiceMenuItem = async (_item: Omit<ServiceMenuItem, 'id' | 'created_at' | 'updated_at'>): Promise<ServiceMenuItem> => {
-  throw new Error('Service menu API is not implemented');
-};
-export const updateServiceMenuItem = async (_id: string, _updates: Partial<ServiceMenuItem>): Promise<ServiceMenuItem> => {
-  throw new Error('Service menu API is not implemented');
-};
-export const deleteServiceMenuItem = async (_id: string): Promise<void> => {
-  throw new Error('Service menu API is not implemented');
+// ============================================================================
+// Service Menu / Rooms / Equipment — sophisticated localStorage-backed CRUD
+//
+// The real backend endpoints don't exist yet. Until they do, we persist
+// these settings to localStorage so the UI works end-to-end on a
+// per-device basis. When real endpoints land, swap each function back to
+// an axios call — the UI bindings won't change.
+//
+// Storage keys are namespaced so multiple orgs don't collide on the same
+// device (key = `<base>::<orgIdOrAnonymous>`).
+// ============================================================================
+
+const SERVICE_MENU_KEY = 'builderlync.calendars.serviceMenu';
+const ROOMS_KEY = 'builderlync.calendars.rooms';
+const EQUIPMENT_KEY = 'builderlync.calendars.equipment';
+
+const orgScope = (): string => {
+  if (typeof window === 'undefined') return 'anonymous';
+  return window.localStorage.getItem('currentOrganizationId') || 'anonymous';
 };
 
-export const getRooms = async (): Promise<Room[]> => [];
-export const createRoom = async (_room: Omit<Room, 'id' | 'created_at' | 'updated_at'>): Promise<Room> => {
-  throw new Error('Rooms API is not implemented');
-};
-export const updateRoom = async (_id: string, _updates: Partial<Room>): Promise<Room> => {
-  throw new Error('Rooms API is not implemented');
-};
-export const deleteRoom = async (_id: string): Promise<void> => {
-  throw new Error('Rooms API is not implemented');
+const storageKey = (base: string) => `${base}::${orgScope()}`;
+
+const readStorage = <T>(base: string): T[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey(base));
+    return raw ? (JSON.parse(raw) as T[]) : [];
+  } catch {
+    return [];
+  }
 };
 
-export const getEquipment = async (): Promise<Equipment[]> => [];
-export const createEquipment = async (_equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment> => {
-  throw new Error('Equipment API is not implemented');
+const writeStorage = <T>(base: string, items: T[]): void => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(storageKey(base), JSON.stringify(items));
 };
-export const updateEquipment = async (_id: string, _updates: Partial<Equipment>): Promise<Equipment> => {
-  throw new Error('Equipment API is not implemented');
+
+// Generate a sortable id (timestamp-prefix + random suffix) so rows
+// returned to React lists have stable keys and visual order matches
+// insertion order.
+const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const nowIso = () => new Date().toISOString();
+
+// ---- Service Menu ----------------------------------------------------------
+
+export const getServiceMenuItems = async (): Promise<ServiceMenuItem[]> =>
+  readStorage<ServiceMenuItem>(SERVICE_MENU_KEY);
+
+export const createServiceMenuItem = async (
+  item: Omit<ServiceMenuItem, 'id' | 'created_at' | 'updated_at'>
+): Promise<ServiceMenuItem> => {
+  const created: ServiceMenuItem = {
+    ...item,
+    id: newId(),
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  const items = readStorage<ServiceMenuItem>(SERVICE_MENU_KEY);
+  items.push(created);
+  writeStorage(SERVICE_MENU_KEY, items);
+  return created;
 };
-export const deleteEquipment = async (_id: string): Promise<void> => {
-  throw new Error('Equipment API is not implemented');
+
+export const updateServiceMenuItem = async (
+  id: string,
+  updates: Partial<ServiceMenuItem>
+): Promise<ServiceMenuItem> => {
+  const items = readStorage<ServiceMenuItem>(SERVICE_MENU_KEY);
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx === -1) throw new Error('Service menu item not found');
+  const merged: ServiceMenuItem = {
+    ...items[idx],
+    ...updates,
+    id: items[idx].id, // never overwrite id
+    created_at: items[idx].created_at, // preserve creation timestamp
+    updated_at: nowIso(),
+  };
+  items[idx] = merged;
+  writeStorage(SERVICE_MENU_KEY, items);
+  return merged;
+};
+
+export const deleteServiceMenuItem = async (id: string): Promise<void> => {
+  const items = readStorage<ServiceMenuItem>(SERVICE_MENU_KEY);
+  writeStorage(SERVICE_MENU_KEY, items.filter((i) => i.id !== id));
+};
+
+// ---- Rooms -----------------------------------------------------------------
+
+export const getRooms = async (): Promise<Room[]> => readStorage<Room>(ROOMS_KEY);
+
+export const createRoom = async (
+  room: Omit<Room, 'id' | 'created_at' | 'updated_at'>
+): Promise<Room> => {
+  const created: Room = {
+    ...room,
+    id: newId(),
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  const items = readStorage<Room>(ROOMS_KEY);
+  items.push(created);
+  writeStorage(ROOMS_KEY, items);
+  return created;
+};
+
+export const updateRoom = async (id: string, updates: Partial<Room>): Promise<Room> => {
+  const items = readStorage<Room>(ROOMS_KEY);
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx === -1) throw new Error('Room not found');
+  const merged: Room = {
+    ...items[idx],
+    ...updates,
+    id: items[idx].id,
+    created_at: items[idx].created_at,
+    updated_at: nowIso(),
+  };
+  items[idx] = merged;
+  writeStorage(ROOMS_KEY, items);
+  return merged;
+};
+
+export const deleteRoom = async (id: string): Promise<void> => {
+  const items = readStorage<Room>(ROOMS_KEY);
+  writeStorage(ROOMS_KEY, items.filter((i) => i.id !== id));
+};
+
+// ---- Equipment -------------------------------------------------------------
+
+export const getEquipment = async (): Promise<Equipment[]> =>
+  readStorage<Equipment>(EQUIPMENT_KEY);
+
+export const createEquipment = async (
+  equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>
+): Promise<Equipment> => {
+  const created: Equipment = {
+    ...equipment,
+    id: newId(),
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  const items = readStorage<Equipment>(EQUIPMENT_KEY);
+  items.push(created);
+  writeStorage(EQUIPMENT_KEY, items);
+  return created;
+};
+
+export const updateEquipment = async (
+  id: string,
+  updates: Partial<Equipment>
+): Promise<Equipment> => {
+  const items = readStorage<Equipment>(EQUIPMENT_KEY);
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx === -1) throw new Error('Equipment not found');
+  const merged: Equipment = {
+    ...items[idx],
+    ...updates,
+    id: items[idx].id,
+    created_at: items[idx].created_at,
+    updated_at: nowIso(),
+  };
+  items[idx] = merged;
+  writeStorage(EQUIPMENT_KEY, items);
+  return merged;
+};
+
+export const deleteEquipment = async (id: string): Promise<void> => {
+  const items = readStorage<Equipment>(EQUIPMENT_KEY);
+  writeStorage(EQUIPMENT_KEY, items.filter((i) => i.id !== id));
 };
