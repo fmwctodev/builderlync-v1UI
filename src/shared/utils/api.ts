@@ -1,14 +1,31 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { logoutAndRedirect } from './auth';
+import { isStagingMode } from './stagingAuth';
+import { demoAxiosAdapter } from './demoBackend';
 
 /**
  * API Utility - Replaces Supabase client for frontend
- * 
+ *
  * This utility provides a centralized way to make API calls to the backend,
  * replacing direct Supabase calls from the frontend.
+ *
+ * Demo mode: when `isStagingMode()` is true, the axios adapter is replaced
+ * with `demoAxiosAdapter` which serves mocked responses from a localStorage-
+ * backed store (see `demoBackend.ts`). This makes the entire app work as a
+ * stand-alone product demo without any backend, while real users on real
+ * hosts hit the real backend exactly as before.
  */
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+// In demo mode, replace BOTH the default axios adapter AND the per-instance
+// adapter so calls that bypass the central `api` instance (e.g. raw
+// `axios.get('https://server/...')` calls in legacy service files) also
+// hit the demo backend instead of the network. Real production hosts use
+// the default xhr/http adapter unchanged.
+if (isStagingMode()) {
+  axios.defaults.adapter = demoAxiosAdapter;
+}
 
 // Create axios instance with default config
 export const api: AxiosInstance = axios.create({
@@ -16,7 +33,8 @@ export const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 30000 // 30 seconds
+  timeout: 30000, // 30 seconds
+  ...(isStagingMode() ? { adapter: demoAxiosAdapter } : {}),
 });
 
 // Request interceptor - Add auth headers
