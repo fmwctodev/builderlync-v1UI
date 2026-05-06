@@ -314,7 +314,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-023 — SettingsPanel in Proposals tab structure may be a stub
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 4) — false positive. `src/modules/roof-runner/components/proposals/SettingsPanel.tsx` is fully built (162 lines): loads `getProposalSettings`, renders signature toggle + signature full-name input + signature preview + save button calling `updateProposalSettings`. Includes loading state, saving state, error/success toasts. Not a stub.
 - **Location:** `src/modules/roof-runner/components/proposals/SettingsPanel.tsx`
 - **User action:** Click Settings tab in Proposals.
 - **Current behavior:** Likely empty or placeholder.
@@ -430,7 +430,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-034 — Settings tab shows "coming soon" placeholder
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 4) — replaced placeholder with `OpportunitiesSettingsPanel` (defined inline in Opportunities.tsx). Three sections: (1) Default pipeline picker driven by the live `pipelinesApi.getPipelines()`, (2) Workflow defaults (auto-archive after N days, require value on create) persisted to `localStorage` under `builderlync.opportunities.settings` as a graceful fallback while there's no settings endpoint, (3) Quick-link to the full pipeline manager (existing `PipelinesList` component) for stage editing. Save button shows Saving… / Saved / Save Changes states based on dirty tracking.
 - **Location:** `src/modules/roof-runner/pages/Opportunities.tsx`, when `internalView === 'settings'`
 - **User action:** Click Settings in Opportunities header.
 - **Current behavior:** "Settings panel coming soon..." placeholder.
@@ -509,7 +509,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-042 — GBP Optimization tab is just a placeholder
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 4) — replaced "Nothing to see here!" with `GbpOptimizationTab` (defined inline in Reputation.tsx). Real structured optimization checklist covering 6 high-leverage GBP signals: posting cadence, photo coverage, review velocity, NAP consistency, service area & categories, attributes & hours. Each row shows status badge (Healthy/Needs attention/Action required/Connect to scan), current metric, narrative explanation, and a specific recommendation. Header shows pass/warn/fail summary cards once GBP is connected. Until the real GBP integration ships, the tab shows the unconnected state with a clear "Connect Google Business Profile" CTA pointing at marketing/integrations and explanatory copy on what each check measures. A `localStorage` flag (`builderlync.gbp.connected = 'true'`) flips into a connected-state preview for design review and sales demos.
 - **Location:** `src/modules/roof-runner/pages/Reputation.tsx` lines 62-99
 - **User action:** Click GBP Optimization tab.
 - **Current behavior:** "Nothing to see here!" placeholder with a link to `/marketing/integrations`.
