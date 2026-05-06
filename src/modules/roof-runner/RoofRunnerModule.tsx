@@ -67,9 +67,9 @@ import { FeatureFlag } from '../../shared/components/FeatureFlag';
 import { OrgProvider } from '../../shared/context/OrgContext';
 import { FormBuilder } from '../marketing/pages/FormBuilder';
 import { FormSubmissions } from '../marketing/pages/FormSubmissions';
-import { MarketingModule } from '../marketing/MarketingModule';
 import { StormCanvassingModule } from '../storm-canvassing/StormCanvassingModule';
 import { SierraAiModule } from '../sierra-ai/SierraAiModule';
+import { RouteErrorBoundary } from '../../shared/components/RouteErrorBoundary';
 import { CreateAgentWizard } from '../sierra-ai/pages/CreateAgentWizard';
 import { useEffect } from 'react';
 import OutlookCallback from './pages/OutlookCallback';
@@ -160,7 +160,7 @@ export function RoofRunnerModule() {
           <Route path="contacts/:id" element={<ContactProfile />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="payments" element={<Payments />} />
-          <Route path="ai-agents/*" element={<SierraAiModule />} />
+          <Route path="ai-agents/*" element={<RouteErrorBoundary moduleName="Sierra AI"><SierraAiModule /></RouteErrorBoundary>} />
           <Route path="create-agent" element={<CreateAgentWizard />} />
           <Route path="job-cam" element={<JobCam />} />
           <Route path="job-cam/jobs/:jobId" element={<JobDetailWorkspace />} />
@@ -197,15 +197,10 @@ export function RoofRunnerModule() {
           <Route path="marketing/analytics/:platform" element={<PlatformAnalyticsDetail />} />
           <Route path="marketing/forms/builder/:id" element={<FormBuilder />} />
           <Route path="marketing/forms/submissions/:formId" element={<FormSubmissions />} />
-          {/* Marketing Suite — separate module with its own MainLayout
-              (Analytics, Campaigns, Ads Manager, Social Planner, Reputation,
-              GBP Optimization, Integrations). Mounted at a distinct path so
-              it doesn't collide with /marketing/analytics/* above. */}
-          <Route path="marketing-suite/*" element={<MarketingModule />} />
           {/* Storm Intelligence / Storm Canvassing — separate module with
               its own routing (map, turfs, events, doors, leads, manager,
               settings, intelligence). */}
-          <Route path="storm-canvassing/*" element={<StormCanvassingModule />} />
+          <Route path="storm-canvassing/*" element={<RouteErrorBoundary moduleName="Storm Intelligence"><StormCanvassingModule /></RouteErrorBoundary>} />
           <Route path="file-manager" element={<FileManager />} />
           <Route path="reputation" element={<Reputation />} />
           <Route path="catalog" element={<Catalog />} />
@@ -213,8 +208,8 @@ export function RoofRunnerModule() {
           <Route path="reporting/ai" element={<AIReporting />} />
           <Route path="reporting/:id" element={<ReportView />} />
           <Route path="support" element={<Support />} />
-          <Route path="support/knowledge-base/*" element={<KnowledgeBaseModule />} />
-          <Route path="settings/*" element={<Settings />} />
+          <Route path="support/knowledge-base/*" element={<RouteErrorBoundary moduleName="Knowledge Base"><KnowledgeBaseModule /></RouteErrorBoundary>} />
+          <Route path="settings/*" element={<RouteErrorBoundary moduleName="Settings"><Settings /></RouteErrorBoundary>} />
 
           <Route path="integrations/eagleview/success" element={<EagleViewCallback />} />
           <Route path="integrations/eagleview/error" element={<EagleViewCallback />} />

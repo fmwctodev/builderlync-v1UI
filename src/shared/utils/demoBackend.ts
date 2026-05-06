@@ -179,6 +179,45 @@ export const resetDemoData = () => {
 };
 
 // ============================================================================
+// Polymorphic empty response — used as the fallback for unmatched routes.
+//
+// Returns an empty array that ALSO answers .data, .items, .results, .total
+// etc. so callers reaching for any common shape get a safe empty value:
+//
+//   - callers doing `result.filter(...)` get [].filter → works (returns [])
+//   - callers doing `result.map(...)` get [].map → works
+//   - callers doing `result.length` get 0
+//   - callers doing `result.data` get []
+//   - callers doing `result.data.filter(...)` get [].filter → works
+//   - callers doing `result.items`, `.results`, `.records`, `.rows` → []
+//   - callers doing `result.total`, `.totalPages`, `.page`, `.limit` → numbers
+//   - callers doing `result.success` → true
+//
+// Without this, uncovered endpoints would crash any page that does
+// `<list>.filter(...)` or `<list>.map(...)` on the response body.
+// ============================================================================
+const polymorphicEmpty = (): any => {
+  const arr: any = [];
+  arr.data = [];
+  arr.items = [];
+  arr.results = [];
+  arr.records = [];
+  arr.rows = [];
+  arr.total = 0;
+  arr.totalPages = 1;
+  arr.totalItems = 0;
+  arr.page = 1;
+  arr.limit = 50;
+  arr.itemsPerPage = 50;
+  arr.pageNumber = 1;
+  arr.success = true;
+  arr.connected = false;
+  arr.message = 'demo-no-route';
+  arr.pagination = { page: 1, limit: 50, total: 0, totalPages: 1, itemsPerPage: 50, pageNumber: 1, totalItems: 0 };
+  return arr;
+};
+
+// ============================================================================
 // URL pattern matching
 // ============================================================================
 
@@ -454,6 +493,227 @@ register('GET', '/agents/:id', ({ params }) => ({ data: SIERRA_AGENTS.find((a) =
 register('GET', '/vapi/agents', () => ({ data: SIERRA_AGENTS }));
 register('GET', '/vapi/agents/:id', ({ params }) => ({ data: SIERRA_AGENTS.find((a) => a.id === params.id) }));
 
+// ---- Sierra AI primary URL prefix (vapiApi uses /ai-agents/*) -----------
+register('GET', '/ai-agents', () => ({ data: SIERRA_AGENTS, success: true }));
+register('GET', '/ai-agents/:id', ({ params }) => ({ data: SIERRA_AGENTS.find((a) => a.id === params.id) || SIERRA_AGENTS[0], success: true }));
+register('POST', '/ai-agents', ({ body }) => ({
+  data: { ...body, id: newId('agent'), agent_id: newId('agent'), organization_id: DEMO_ORG.id, status: 'draft', created_at: nowIso(), updated_at: nowIso(), stats: {} },
+  success: true,
+}));
+register('PATCH', '/ai-agents/:id', ({ params, body }) => {
+  const existing = SIERRA_AGENTS.find((a) => a.id === params.id) || SIERRA_AGENTS[0];
+  return { data: { ...existing, ...body, id: params.id, updated_at: nowIso() }, success: true };
+});
+register('PUT', '/ai-agents/:id', ({ params, body }) => {
+  const existing = SIERRA_AGENTS.find((a) => a.id === params.id) || SIERRA_AGENTS[0];
+  return { data: { ...existing, ...body, id: params.id, updated_at: nowIso() }, success: true };
+});
+register('DELETE', '/ai-agents/:id', () => ({ data: { success: true }, success: true }));
+
+// Phone numbers (Twilio numbers attached to agents)
+const SIERRA_PHONE_NUMBERS = [
+  { id: 'pn_demo_1', sid: 'PN_DEMO_1', friendlyName: 'Main Line', phoneNumber: '+1 (555) 010-2031', phone_number: '+1 (555) 010-2031', agent_id: 'agent_demo_inbound', is_assigned: true, capabilities: { voice: true, SMS: true, MMS: true } },
+  { id: 'pn_demo_2', sid: 'PN_DEMO_2', friendlyName: 'Lead Qualifier', phoneNumber: '+1 (555) 010-3199', phone_number: '+1 (555) 010-3199', agent_id: 'agent_demo_qualifier', is_assigned: true, capabilities: { voice: true, SMS: true, MMS: false } },
+  { id: 'pn_demo_3', sid: 'PN_DEMO_3', friendlyName: 'Review Requestor', phoneNumber: '+1 (555) 010-4422', phone_number: '+1 (555) 010-4422', agent_id: 'agent_demo_review', is_assigned: true, capabilities: { voice: false, SMS: true, MMS: true } },
+  { id: 'pn_demo_4', sid: 'PN_DEMO_4', friendlyName: 'Available', phoneNumber: '+1 (555) 010-7720', phone_number: '+1 (555) 010-7720', agent_id: null, is_assigned: false, capabilities: { voice: true, SMS: true, MMS: true } },
+];
+register('GET', '/ai-agents/phone-numbers', () => ({ data: SIERRA_PHONE_NUMBERS, success: true }));
+register('POST', '/ai-agents/phone-numbers', ({ body }) => ({ data: { ...body, id: newId('pn'), sid: `PN_${newId('demo').toUpperCase()}`, is_assigned: false, agent_id: null }, success: true }));
+register('POST', '/ai-agents/phone-numbers/assign', ({ body }) => ({ data: { ...body, success: true }, success: true }));
+register('POST', '/ai-agents/phone-numbers/unassign', ({ body }) => ({ data: { ...body, success: true }, success: true }));
+register('DELETE', '/ai-agents/phone-numbers/:id', () => ({ data: { success: true }, success: true }));
+
+// Voices (ElevenLabs / Vapi voice catalog)
+const VAPI_VOICES = [
+  { id: 'voice_wavenet_f', voice_id: 'en-US-Wavenet-F', name: 'Aria', gender: 'female', accent: 'US English', language: 'en-US', description: 'Warm, professional. Best for inbound customer-service flows.', sample_url: 'https://example.com/voice-aria.mp3', preview_url: 'https://example.com/voice-aria.mp3' },
+  { id: 'voice_wavenet_d', voice_id: 'en-US-Wavenet-D', name: 'Marcus', gender: 'male', accent: 'US English', language: 'en-US', description: 'Confident, sales-tone. Best for lead qualification.', sample_url: 'https://example.com/voice-marcus.mp3', preview_url: 'https://example.com/voice-marcus.mp3' },
+  { id: 'voice_wavenet_b', voice_id: 'en-US-Wavenet-B', name: 'Cooper', gender: 'male', accent: 'US English', language: 'en-US', description: 'Friendly, conversational. Good general-purpose voice.', sample_url: 'https://example.com/voice-cooper.mp3', preview_url: 'https://example.com/voice-cooper.mp3' },
+  { id: 'voice_wavenet_h', voice_id: 'en-US-Wavenet-H', name: 'Sienna', gender: 'female', accent: 'US English', language: 'en-US', description: 'Energetic, youthful. Best for outbound campaigns.', sample_url: 'https://example.com/voice-sienna.mp3', preview_url: 'https://example.com/voice-sienna.mp3' },
+  { id: 'voice_wavenet_a', voice_id: 'en-GB-Wavenet-A', name: 'Olivia', gender: 'female', accent: 'British English', language: 'en-GB', description: 'Polished, British accent. High-end customer-service tone.', sample_url: 'https://example.com/voice-olivia.mp3', preview_url: 'https://example.com/voice-olivia.mp3' },
+  { id: 'voice_wavenet_c', voice_id: 'es-US-Wavenet-A', name: 'Sofia', gender: 'female', accent: 'US Spanish', language: 'es-US', description: 'Bilingual Spanish/English. For Hispanic-market customers.', sample_url: 'https://example.com/voice-sofia.mp3', preview_url: 'https://example.com/voice-sofia.mp3' },
+];
+register('GET', '/vapi/voices', () => ({ data: VAPI_VOICES, success: true }));
+register('GET', '/voices', () => ({ data: VAPI_VOICES, success: true }));
+register('GET', '/ai-agents/:id/voice', () => ({ data: { voice_id: 'en-US-Wavenet-F', settings: { stability: 0.65, similarity_boost: 0.75, speed: 1.0, pitch: 0 } }, success: true }));
+
+// Knowledge base entries
+const SIERRA_KB_ENTRIES = [
+  { id: 'kb_demo_1', name: 'BuilderLync — Service Areas', type: 'url', source: 'https://builderlync-demo.com/service-areas', status: 'indexed', tokens: 412, last_synced_at: daysFromNowDate(-2) },
+  { id: 'kb_demo_2', name: 'Insurance Claim FAQ', type: 'url', source: 'https://builderlync-demo.com/insurance-faq', status: 'indexed', tokens: 1842, last_synced_at: daysFromNowDate(-3) },
+  { id: 'kb_demo_3', name: 'Roofing-Materials-Datasheet.pdf', type: 'file', source: 'roofing-materials-datasheet.pdf', status: 'indexed', tokens: 2104, last_synced_at: daysFromNowDate(-7) },
+  { id: 'kb_demo_4', name: 'Pricing-2026.pdf', type: 'file', source: 'pricing-2026.pdf', status: 'indexed', tokens: 884, last_synced_at: daysFromNowDate(-1) },
+  { id: 'kb_demo_5', name: 'Crew Schedule API', type: 'url', source: 'https://builderlync-demo.com/api/schedule', status: 'syncing', tokens: 0, last_synced_at: null },
+];
+register('GET', '/ai-agents/:id/knowledge-base', () => ({ data: SIERRA_KB_ENTRIES, success: true }));
+register('GET', '/knowledge-base', () => ({ data: SIERRA_KB_ENTRIES, success: true }));
+register('POST', '/ai-agents/:id/knowledge-base/url', ({ body }) => ({ data: { ...body, id: newId('kb'), type: 'url', status: 'syncing', tokens: 0, last_synced_at: null }, success: true }));
+register('POST', '/ai-agents/:id/knowledge-base/file', ({ body }) => ({ data: { ...body, id: newId('kb'), type: 'file', status: 'syncing', tokens: 0, last_synced_at: null }, success: true }));
+register('DELETE', '/ai-agents/:id/knowledge-base/:kbId', () => ({ data: { success: true }, success: true }));
+
+// Conversations / call history (Sierra AI conversation log)
+const SIERRA_CONVERSATIONS = [
+  { id: 'conv_demo_1', agent_id: 'agent_demo_inbound', contact_name: 'Maria Davis', contact_phone: '+1 (555) 010-3001', direction: 'inbound', duration: 218, status: 'completed', outcome: 'appointment_booked', started_at: hoursFromNowDate(-2), ended_at: hoursFromNowDate(-1.94), transcript_url: 'https://example.com/transcript-1.txt', recording_url: 'https://example.com/recording-1.mp3', summary: 'Caller asking about hailstorm inspection. Booked Tuesday 10am inspection.' },
+  { id: 'conv_demo_2', agent_id: 'agent_demo_qualifier', contact_name: 'Tom Henderson', contact_phone: '+1 (555) 010-3002', direction: 'inbound', duration: 134, status: 'completed', outcome: 'qualified_handoff', started_at: hoursFromNowDate(-3), ended_at: hoursFromNowDate(-2.96), transcript_url: 'https://example.com/transcript-2.txt', recording_url: null, summary: 'Commercial property owner. Qualified — routed to Maria Lopez.' },
+  { id: 'conv_demo_3', agent_id: 'agent_demo_inbound', contact_name: 'Unknown', contact_phone: '+1 (555) 010-9912', direction: 'inbound', duration: 0, status: 'missed', outcome: 'no_answer', started_at: hoursFromNowDate(-5), ended_at: hoursFromNowDate(-5), transcript_url: null, recording_url: null, summary: 'No answer — voicemail dropped.' },
+  { id: 'conv_demo_4', agent_id: 'agent_demo_chat', contact_name: 'Web Visitor', contact_phone: null, direction: 'inbound', duration: 412, status: 'completed', outcome: 'appointment_booked', started_at: hoursFromNowDate(-26), ended_at: hoursFromNowDate(-25.93), transcript_url: 'https://example.com/transcript-4.txt', recording_url: null, summary: 'Web visitor asking about pricing. Walked through options, booked estimate.' },
+  { id: 'conv_demo_5', agent_id: 'agent_demo_qualifier', contact_name: 'Jess Walker', contact_phone: '+1 (555) 010-3005', direction: 'inbound', duration: 305, status: 'completed', outcome: 'appointment_booked', started_at: hoursFromNowDate(-50), ended_at: hoursFromNowDate(-49.92), transcript_url: 'https://example.com/transcript-5.txt', recording_url: 'https://example.com/recording-5.mp3', summary: 'Repeat customer asking about new project. Booked.' },
+];
+register('GET', '/ai-agents/conversations', ({ query }) => {
+  let list = SIERRA_CONVERSATIONS;
+  if (query.agent_id) list = list.filter((c) => c.agent_id === query.agent_id);
+  if (query.status) list = list.filter((c) => c.status === query.status);
+  return { data: list, success: true };
+});
+register('GET', '/ai-agents/:id/conversations', ({ params }) => ({ data: SIERRA_CONVERSATIONS.filter((c) => c.agent_id === params.id), success: true }));
+
+// Call logs (per-agent call log endpoint)
+register('GET', '/ai-agents/call-logs', ({ query }) => {
+  const enriched = SIERRA_CONVERSATIONS.map((c) => ({
+    id: c.id,
+    sid: c.id,
+    agent_id: c.agent_id,
+    received_at: c.started_at,
+    startTime: c.started_at,
+    endTime: c.ended_at,
+    contact_name: c.contact_name,
+    from_number: c.contact_phone,
+    direction: c.direction,
+    status: c.status === 'missed' ? 'no-answer' : c.status,
+    duration: c.duration,
+    recording_url: c.recording_url,
+  }));
+  return { data: query.agent_id ? enriched.filter((c) => c.agent_id === query.agent_id) : enriched, success: true };
+});
+
+// Twilio integration check (called by Sierra AI before showing voice flows)
+register('GET', '/ai-agents/twilio/check', () => ({ data: { connected: true, accountSid: 'AC_DEMO_TWILIO', friendlyName: 'BuilderLync Demo', balance: '$42.50', balance_currency: 'USD', status: 'active' }, success: true }));
+
+// Client tools (custom function-calling tools for an agent)
+register('GET', '/ai-agents/:id/client-tools', () => ({ data: [], success: true }));
+register('POST', '/ai-agents/:id/client-tools', ({ body }) => ({ data: { ...body, id: newId('tool'), created_at: nowIso() }, success: true }));
+register('PATCH', '/ai-agents/client-tools/:id', ({ params, body }) => ({ data: { id: params.id, ...body, updated_at: nowIso() }, success: true }));
+register('DELETE', '/ai-agents/client-tools/:id', () => ({ data: { success: true }, success: true }));
+
+// Recording status toggle
+register('PATCH', '/ai-agents/:id/recording-status', ({ params, body }) => ({ data: { id: params.id, recording_enabled: body.recording_enabled ?? true }, success: true }));
+
+// Webchat / widget configuration
+register('GET', '/ai-agents/:id/widget', ({ params }) => ({ data: { agent_id: params.id, embed_token: 'demo-embed-token', primary_color: '#E11D2A', greeting: 'Hi there! Need help with your roof?', enabled: true }, success: true }));
+register('PUT', '/ai-agents/:id/widget', ({ params, body }) => ({ data: { agent_id: params.id, ...body }, success: true }));
+
+// Scraped websites (for KB ingestion)
+register('GET', '/scraped-websites', () => ({ data: [{ id: 'site_1', url: 'https://builderlync-demo.com', title: 'BuilderLync Demo', last_crawled_at: daysFromNowDate(-1), pages_indexed: 24, status: 'indexed' }], success: true }));
+register('POST', '/scraped-websites', ({ body }) => ({ data: { ...body, id: newId('site'), status: 'crawling', last_crawled_at: null, pages_indexed: 0 }, success: true }));
+
+// ---- Job Cam --------------------------------------------------------------
+const DEMO_JOBCAM_MEDIA = [
+  { id: 'media_1', url: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=800', thumbnail: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'davis-front-elevation.jpg', size_bytes: 2_140_000, job_id: 107, contact_id: 1, uploaded_by_user_id: 4, uploaded_by_name: 'Jess Walker', tag: 'before', notes: 'Front elevation showing hail damage to ridge cap', latitude: 33.0185, longitude: -96.6960, captured_at: daysFromNowDate(-3), created_at: daysFromNowDate(-3) },
+  { id: 'media_2', url: 'https://images.unsplash.com/photo-1605283176495-2a08a37b4d44?w=800', thumbnail: 'https://images.unsplash.com/photo-1605283176495-2a08a37b4d44?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'davis-rear-slope.jpg', size_bytes: 1_980_000, job_id: 107, contact_id: 1, uploaded_by_user_id: 4, uploaded_by_name: 'Jess Walker', tag: 'before', notes: 'Rear slope — visible granule loss', latitude: 33.0185, longitude: -96.6960, captured_at: daysFromNowDate(-3), created_at: daysFromNowDate(-3) },
+  { id: 'media_3', url: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800', thumbnail: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'henderson-flat-roof-overview.jpg', size_bytes: 3_240_000, job_id: 115, contact_id: 2, uploaded_by_user_id: 3, uploaded_by_name: 'Sam Chen', tag: 'before', notes: 'Commercial flat roof overview — TPO replacement candidate', latitude: 33.1480, longitude: -96.8210, captured_at: daysFromNowDate(-12), created_at: daysFromNowDate(-12) },
+  { id: 'media_4', url: 'https://images.unsplash.com/photo-1593114604024-12ee9293f5cd?w=800', thumbnail: 'https://images.unsplash.com/photo-1593114604024-12ee9293f5cd?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'tran-completed-install.jpg', size_bytes: 2_890_000, job_id: 117, contact_id: 16, uploaded_by_user_id: 4, uploaded_by_name: 'Jess Walker', tag: 'after', notes: 'Completed install — 30-yr architectural shingle', latitude: 33.0148, longitude: -96.6128, captured_at: daysFromNowDate(-2), created_at: daysFromNowDate(-2) },
+  { id: 'media_5', url: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800', thumbnail: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'bell-flashing-detail.jpg', size_bytes: 1_640_000, job_id: 119, contact_id: 19, uploaded_by_user_id: 3, uploaded_by_name: 'Sam Chen', tag: 'progress', notes: 'Step flashing at chimney — properly woven', latitude: 32.7944, longitude: -96.8290, captured_at: daysFromNowDate(-30), created_at: daysFromNowDate(-30) },
+  { id: 'media_6', url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800', thumbnail: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'patel-drone-overview.jpg', size_bytes: 4_120_000, job_id: 110, contact_id: 3, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', tag: 'before', notes: 'Drone overview — multi-layer tear-off needed', latitude: 33.1972, longitude: -96.6398, captured_at: daysFromNowDate(-7), created_at: daysFromNowDate(-7) },
+  { id: 'media_7', url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800', thumbnail: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'walker-final-walkthrough.jpg', size_bytes: 2_410_000, job_id: 121, contact_id: 5, uploaded_by_user_id: 3, uploaded_by_name: 'Sam Chen', tag: 'after', notes: 'Final walkthrough — punch list complete', latitude: 33.0522, longitude: -96.7461, captured_at: daysFromNowDate(-150), created_at: daysFromNowDate(-150) },
+  { id: 'media_8', url: 'https://images.unsplash.com/photo-1572931089-09a36b748f63?w=800', thumbnail: 'https://images.unsplash.com/photo-1572931089-09a36b748f63?w=200', type: 'image', mime_type: 'image/jpeg', filename: 'cohen-hailstone-evidence.jpg', size_bytes: 1_280_000, job_id: 113, contact_id: 12, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', tag: 'evidence', notes: '1.75" hailstone — for insurance claim documentation', latitude: 33.0146, longitude: -97.0972, captured_at: daysFromNowDate(-2), created_at: daysFromNowDate(-2) },
+];
+register('GET', '/job-cam/stats', () => ({ data: { total_photos: 482, total_videos: 28, total_jobs_with_media: 24, storage_used_mb: 1284, storage_limit_mb: 5120, recent_uploads_7d: 67 }, success: true }));
+register('GET', '/job-cam/media', ({ query }) => {
+  let list = DEMO_JOBCAM_MEDIA;
+  if (query.job_id) list = list.filter((m) => String(m.job_id) === query.job_id);
+  if (query.tag) list = list.filter((m) => m.tag === query.tag);
+  return { data: list, success: true, total: list.length };
+});
+register('GET', '/job-cam/media/:id', ({ params }) => ({ data: DEMO_JOBCAM_MEDIA.find((m) => m.id === params.id) || DEMO_JOBCAM_MEDIA[0], success: true }));
+register('POST', '/job-cam/media', ({ body }) => ({ data: { ...body, id: newId('media'), created_at: nowIso() }, success: true }));
+register('POST', '/job-cam/media/:id/approve', () => ({ data: { success: true }, success: true }));
+register('DELETE', '/job-cam/media/:id', () => ({ data: { success: true }, success: true }));
+register('GET', '/job-cam/templates', () => ({
+  data: [
+    { id: 'jct_1', name: 'Pre-Production Inspection', sections: ['Front elevation', 'Rear slope', 'Left slope', 'Right slope', 'Flashing detail', 'Vents'], required_photos: 8 },
+    { id: 'jct_2', name: 'Post-Install Documentation', sections: ['Final overview', 'Ridge cap', 'Flashing detail', 'Punch list items'], required_photos: 6 },
+    { id: 'jct_3', name: 'Insurance Claim Evidence', sections: ['Hailstone scale shot', 'Damaged shingle close-up', 'Wide-angle damage', 'Address marker'], required_photos: 12 },
+  ],
+  success: true,
+}));
+register('GET', '/job-cam/reports', () => ({
+  data: [
+    { id: 'jcr_1', name: 'Davis — Pre-Production Photos', job_id: 107, template_id: 'jct_1', status: 'complete', photo_count: 8, created_at: daysFromNowDate(-3) },
+    { id: 'jcr_2', name: 'Henderson — Pre-Production Photos', job_id: 115, template_id: 'jct_1', status: 'complete', photo_count: 11, created_at: daysFromNowDate(-12) },
+    { id: 'jcr_3', name: 'Tran — Post-Install Documentation', job_id: 117, template_id: 'jct_2', status: 'complete', photo_count: 7, created_at: daysFromNowDate(-2) },
+    { id: 'jcr_4', name: 'Cohen — Insurance Claim Evidence', job_id: 113, template_id: 'jct_3', status: 'in_progress', photo_count: 5, created_at: daysFromNowDate(-2) },
+  ],
+  success: true,
+}));
+register('GET', '/job-cam/checklists', () => ({ data: [], success: true }));
+register('GET', '/job-cam/share-links', () => ({ data: [], success: true }));
+
+// ---- ABC Supply (extended product catalog) --------------------------------
+const ABC_SUPPLY_ITEMS = [
+  { id: 'abc_001', sku: 'GAF-TIM-CHA', name: 'GAF Timberline HDZ — Charcoal', category: 'shingles', brand: 'GAF', unit: 'bundle', price: 41.20, in_stock: true, branch: '152' },
+  { id: 'abc_002', sku: 'GAF-TIM-WTH', name: 'GAF Timberline HDZ — Weathered Wood', category: 'shingles', brand: 'GAF', unit: 'bundle', price: 41.20, in_stock: true, branch: '152' },
+  { id: 'abc_003', sku: 'GAF-TIM-PEW', name: 'GAF Timberline HDZ — Pewter Gray', category: 'shingles', brand: 'GAF', unit: 'bundle', price: 41.20, in_stock: true, branch: '152' },
+  { id: 'abc_004', sku: 'OC-DUR-BLK', name: 'Owens Corning Duration — Onyx Black', category: 'shingles', brand: 'Owens Corning', unit: 'bundle', price: 39.85, in_stock: true, branch: '152' },
+  { id: 'abc_005', sku: 'OC-DUR-DRI', name: 'Owens Corning Duration — Driftwood', category: 'shingles', brand: 'Owens Corning', unit: 'bundle', price: 39.85, in_stock: true, branch: '152' },
+  { id: 'abc_006', sku: 'CER-LAN-WTH', name: 'CertainTeed Landmark — Weathered Wood', category: 'shingles', brand: 'CertainTeed', unit: 'bundle', price: 38.50, in_stock: true, branch: '152' },
+  { id: 'abc_007', sku: 'GAF-TIG-ROO', name: 'GAF Tiger Paw Roofing Underlayment', category: 'underlayment', brand: 'GAF', unit: 'roll', price: 105.00, in_stock: true, branch: '152' },
+  { id: 'abc_008', sku: 'GR-D-15', name: 'Grace Ice & Water Shield 36" x 75\'', category: 'underlayment', brand: 'Grace', unit: 'roll', price: 98.50, in_stock: true, branch: '152' },
+  { id: 'abc_009', sku: 'GAF-RID-CHA', name: 'GAF Seal-A-Ridge — Charcoal', category: 'ridge_cap', brand: 'GAF', unit: 'bundle', price: 56.30, in_stock: true, branch: '152' },
+  { id: 'abc_010', sku: 'GAF-RID-WTH', name: 'GAF Seal-A-Ridge — Weathered Wood', category: 'ridge_cap', brand: 'GAF', unit: 'bundle', price: 56.30, in_stock: true, branch: '152' },
+  { id: 'abc_011', sku: 'AML-DRI-BRN', name: 'Amerimax Drip Edge 5" — Brown', category: 'flashing', brand: 'Amerimax', unit: 'piece', price: 11.40, in_stock: true, branch: '152' },
+  { id: 'abc_012', sku: 'AML-DRI-WHT', name: 'Amerimax Drip Edge 5" — White', category: 'flashing', brand: 'Amerimax', unit: 'piece', price: 11.40, in_stock: true, branch: '152' },
+  { id: 'abc_013', sku: 'GAF-COB-12', name: 'GAF Cobra Ridge Vent (12 ft roll)', category: 'ventilation', brand: 'GAF', unit: 'roll', price: 64.20, in_stock: true, branch: '152' },
+  { id: 'abc_014', sku: 'AIRH-BX', name: 'AirHawk Box Vent — Aluminum', category: 'ventilation', brand: 'AirHawk', unit: 'piece', price: 18.75, in_stock: true, branch: '152' },
+  { id: 'abc_015', sku: 'GR-NAILS-114', name: 'Roofing Nails 1-1/4" Galvanized (50 lb)', category: 'fasteners', brand: 'Grip-Rite', unit: 'box', price: 72.00, in_stock: true, branch: '152' },
+  { id: 'abc_016', sku: 'GR-CAPS-1', name: 'Plastic Cap Nails 1" (3000 ct)', category: 'fasteners', brand: 'Grip-Rite', unit: 'box', price: 38.50, in_stock: true, branch: '152' },
+  { id: 'abc_017', sku: 'BST-PIPE-3', name: 'Boot Pipe Flashing 3" — Lead', category: 'flashing', brand: 'Best', unit: 'piece', price: 24.90, in_stock: true, branch: '152' },
+  { id: 'abc_018', sku: 'BST-PIPE-4', name: 'Boot Pipe Flashing 4" — Lead', category: 'flashing', brand: 'Best', unit: 'piece', price: 28.40, in_stock: true, branch: '152' },
+  { id: 'abc_019', sku: 'STA-STT-WHT', name: 'Starter Strip — White (per bundle)', category: 'shingles', brand: 'GAF', unit: 'bundle', price: 41.50, in_stock: true, branch: '152' },
+  { id: 'abc_020', sku: 'GAF-WSC-BLK', name: 'GAF WeatherBlocker Hip & Ridge — Black', category: 'ridge_cap', brand: 'GAF', unit: 'bundle', price: 58.90, in_stock: false, branch: '152' },
+];
+register('GET', '/abc-supply/items', ({ query }) => {
+  let list = ABC_SUPPLY_ITEMS;
+  if (query.category) list = list.filter((i) => i.category === query.category);
+  if (query.brand) list = list.filter((i) => i.brand === query.brand);
+  return { data: list, success: true, total: list.length };
+});
+register('GET', '/abc-supply/search', ({ query }) => {
+  const q = (query.q || query.search || '').toLowerCase();
+  const list = q ? ABC_SUPPLY_ITEMS.filter((i) => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q) || i.brand.toLowerCase().includes(q)) : ABC_SUPPLY_ITEMS;
+  return { data: list, success: true, total: list.length };
+});
+register('GET', '/abc-supply/branches', () => ({
+  data: [
+    { id: '152', name: 'ABC Supply — Plano #152', address: '1500 N Central Expy, Plano, TX 75074', phone: '+1 (972) 555-0152', distance_mi: 2.4, hours: 'Mon-Fri 6a-5p · Sat 7a-12p' },
+    { id: '147', name: 'ABC Supply — Frisco #147', address: '8200 Preston Rd, Frisco, TX 75034', phone: '+1 (972) 555-0147', distance_mi: 8.1, hours: 'Mon-Fri 6a-5p · Sat 7a-12p' },
+    { id: '188', name: 'ABC Supply — Garland #188', address: '4400 W Walnut St, Garland, TX 75042', phone: '+1 (972) 555-0188', distance_mi: 14.7, hours: 'Mon-Fri 6a-5p · Sat 7a-12p' },
+    { id: '203', name: 'ABC Supply — Carrollton #203', address: '2300 Kelly Blvd, Carrollton, TX 75006', phone: '+1 (972) 555-0203', distance_mi: 11.2, hours: 'Mon-Fri 6a-5p · Sat 7a-12p' },
+  ],
+  success: true,
+}));
+register('GET', '/abc-supply/cart', () => ({ data: { items: [], total: 0, item_count: 0 }, success: true }));
+register('POST', '/abc-supply/cart/add', ({ body }) => ({ data: { ...body, success: true }, success: true }));
+
+// SRS / QXO product catalogs (mirror ABC structure)
+register('GET', '/srs/items', () => ({ data: ABC_SUPPLY_ITEMS, success: true }));
+register('GET', '/srs/search', ({ query }) => {
+  const q = (query.q || query.search || '').toLowerCase();
+  return { data: q ? ABC_SUPPLY_ITEMS.filter((i) => i.name.toLowerCase().includes(q)) : ABC_SUPPLY_ITEMS, success: true };
+});
+register('GET', '/qxo/items', () => ({ data: ABC_SUPPLY_ITEMS, success: true }));
+register('GET', '/qxo/search', ({ query }) => {
+  const q = (query.q || query.search || '').toLowerCase();
+  return { data: q ? ABC_SUPPLY_ITEMS.filter((i) => i.name.toLowerCase().includes(q)) : ABC_SUPPLY_ITEMS, success: true };
+});
+register('GET', '/qxo/orders/history', () => ({ success: true, data: { items: [], pagination: { itemsPerPage: 20, pageNumber: 1, totalPages: 1, totalItems: 0 } } }));
+register('GET', '/srs/orders/history', () => ({ success: true, data: { items: [], pagination: { itemsPerPage: 20, pageNumber: 1, totalPages: 1, totalItems: 0 } } }));
+
+// Helper for handlers above (computed offset relative to now)
+function daysFromNowDate(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString();
+}
+
 // ---- Twilio (call logs for Reporting) -------------------------------------
 const DEMO_TWILIO_CALLS = [
   { id: 'call_demo_1', sid: 'call_demo_1', received_at: hoursFromNowDate(-2), startTime: hoursFromNowDate(-2), contact_name: 'Maria Davis', from_number: '+1 (555) 010-3001', to_number: '+1 (555) 010-2031', direction: 'inbound', status: 'completed', duration: 218, recording_url: 'https://example.com/recording-demo-1.mp3' },
@@ -579,11 +839,12 @@ export const demoAxiosAdapter: AxiosAdapter = (config: InternalAxiosRequestConfi
 
     const match = matchRoute(method, url);
     if (!match) {
-      // Unmatched route — return a noop empty success so unrelated pages
-      // don't crash when calling endpoints we haven't mocked yet. This is
-      // the demo-mode equivalent of "show empty state, don't throw".
+      // Unmatched route — return a polymorphic empty response so callers
+      // can safely do `.filter`/`.map`/`.data`/`.items`/`.total` etc.
+      // without crashing. This is the demo-mode equivalent of "show
+      // empty state, don't throw".
       const fallback: AxiosResponse = {
-        data: { data: Array.isArray(config.data) ? [] : { data: [] }, success: true, message: 'demo-no-route' },
+        data: polymorphicEmpty(),
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -591,7 +852,6 @@ export const demoAxiosAdapter: AxiosAdapter = (config: InternalAxiosRequestConfi
       };
       // eslint-disable-next-line no-console
       console.debug('[demo] unmatched route, returning empty success:', method, url);
-      // Add a tiny artificial latency so loading states are visible.
       setTimeout(() => resolve(fallback), 80);
       return;
     }
@@ -657,9 +917,13 @@ export const installDemoFetch = () => {
         : input.url;
     const method = (init?.method || (typeof input === 'object' && 'method' in input ? input.method : 'GET') || 'GET').toUpperCase();
 
-    const match = matchRoute(method, url);
-    if (!match) return originalFetch(input, init);
+    // Skip interception for non-API URLs (analytics scripts, fonts, images, CDNs).
+    // We only want to intercept calls to the app backend. Heuristic: URL
+    // includes `/api/` or matches a registered route after path normalization.
+    const looksLikeApiCall = /\/api\//.test(url) || url.startsWith('/') || matchRoute(method, url) !== null;
+    if (!looksLikeApiCall) return originalFetch(input, init);
 
+    const match = matchRoute(method, url);
     const body = (() => {
       const raw = init?.body;
       if (!raw) return {};
@@ -668,6 +932,19 @@ export const installDemoFetch = () => {
       }
       return raw as any;
     })();
+
+    if (!match) {
+      // Unmatched API call — return polymorphic empty rather than letting
+      // the original fetch hit a real backend (which would 404 or CORS-fail
+      // from the iframe). Same shape contract as the axios adapter fallback.
+      // eslint-disable-next-line no-console
+      console.debug('[demo fetch] unmatched route, returning empty success:', method, url);
+      await new Promise((r) => setTimeout(r, 80));
+      return new Response(JSON.stringify(polymorphicEmpty()), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const ctx: HandlerContext = { params: match.params, body, query: match.query, url, method };
 

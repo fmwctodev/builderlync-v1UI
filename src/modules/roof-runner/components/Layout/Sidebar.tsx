@@ -32,7 +32,6 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
-  Sparkles,
 } from "lucide-react";
 import Logo from "../../../../shared/components/Logo";
 import { canAccessModule } from "../../../../shared/utils/permissions";
@@ -134,12 +133,6 @@ const navItems = {
       name: "Marketing",
       icon: Megaphone,
       path: "marketing",
-      permission: "marketing",
-    },
-    {
-      name: "Marketing Suite",
-      icon: Sparkles,
-      path: "marketing-suite",
       permission: "marketing",
     },
     {
