@@ -181,24 +181,65 @@ export const resetDemoData = () => {
 // ============================================================================
 // Polymorphic empty response — used as the fallback for unmatched routes.
 //
-// Returns an empty array that ALSO answers .data, .items, .results, .total
-// etc. so callers reaching for any common shape get a safe empty value:
+// Two-level structure: the outer value is an array (so .filter/.map work)
+// AND has all common pagination/wrapper fields. The inner `.data` is also
+// an array-with-fields so that callers doing `result.data.items` or
+// `result.data.pagination.currentPage` ALSO get safe values.
 //
-//   - callers doing `result.filter(...)` get [].filter → works (returns [])
-//   - callers doing `result.map(...)` get [].map → works
-//   - callers doing `result.length` get 0
-//   - callers doing `result.data` get []
-//   - callers doing `result.data.filter(...)` get [].filter → works
-//   - callers doing `result.items`, `.results`, `.records`, `.rows` → []
-//   - callers doing `result.total`, `.totalPages`, `.page`, `.limit` → numbers
-//   - callers doing `result.success` → true
+//   - `result.filter(...)` / `result.map(...)` → works (empty array)
+//   - `result.length` → 0
+//   - `result.data` → array (also works for .filter/.map)
+//   - `result.data.items` / `.records` / `.rows` / `.results` → []
+//   - `result.data.pagination.currentPage` etc. → 1 / 0
+//   - `result.items`, `.records`, etc. → []
+//   - `result.success` / `.connected` → true / false
+//   - `result.total`, `.totalPages`, `.page`, `.limit` → numbers
 //
-// Without this, uncovered endpoints would crash any page that does
-// `<list>.filter(...)` or `<list>.map(...)` on the response body.
+// Why this matters: my own handlers return varied shapes (some `{ data: [] }`,
+// some `{ data: { items: [], pagination: {} } }`, some `{ success, data }`).
+// Callers across 270+ service files unwrap the response in different ways.
+// A polymorphic empty makes uncovered routes safe regardless of how the
+// caller reaches into the result.
 // ============================================================================
+const buildPagination = () => ({
+  page: 1,
+  limit: 50,
+  total: 0,
+  totalPages: 1,
+  itemsPerPage: 50,
+  pageNumber: 1,
+  totalItems: 0,
+  currentPage: 1, // some callers (e.g. Catalog) use this name specifically
+});
+
+const buildInnerEmpty = (): any => {
+  const inner: any = [];
+  inner.items = [];
+  inner.results = [];
+  inner.records = [];
+  inner.rows = [];
+  inner.jobs = [];
+  inner.contacts = [];
+  inner.calendars = [];
+  inner.appointments = [];
+  inner.proposals = [];
+  inner.invoices = [];
+  inner.events = [];
+  inner.total = 0;
+  inner.totalPages = 1;
+  inner.totalItems = 0;
+  inner.page = 1;
+  inner.currentPage = 1;
+  inner.limit = 50;
+  inner.itemsPerPage = 50;
+  inner.pageNumber = 1;
+  inner.pagination = buildPagination();
+  return inner;
+};
+
 const polymorphicEmpty = (): any => {
   const arr: any = [];
-  arr.data = [];
+  arr.data = buildInnerEmpty();
   arr.items = [];
   arr.results = [];
   arr.records = [];
@@ -207,13 +248,14 @@ const polymorphicEmpty = (): any => {
   arr.totalPages = 1;
   arr.totalItems = 0;
   arr.page = 1;
+  arr.currentPage = 1;
   arr.limit = 50;
   arr.itemsPerPage = 50;
   arr.pageNumber = 1;
   arr.success = true;
   arr.connected = false;
   arr.message = 'demo-no-route';
-  arr.pagination = { page: 1, limit: 50, total: 0, totalPages: 1, itemsPerPage: 50, pageNumber: 1, totalItems: 0 };
+  arr.pagination = buildPagination();
   return arr;
 };
 
@@ -357,7 +399,13 @@ register('GET', '/jobs', ({ query }) => {
   const page = Number(query.page || 1);
   const limit = Number(query.limit || 25);
   const start = (page - 1) * limit;
-  return { data: { jobs: list.slice(start, start + limit), pagination: { page, limit, total: list.length, totalPages: Math.ceil(list.length / limit) } } };
+  const slice = list.slice(start, start + limit);
+  const pagination = { page, limit, total: list.length, totalPages: Math.ceil(list.length / limit) || 1, currentPage: page, totalItems: list.length, itemsPerPage: limit };
+  // Provide BOTH `data.data` (what jobsApi.makeRequest passes through →
+  // `response.data.data` in Calendars.tsx) AND `data.jobs` (what
+  // pages/Jobs.tsx expects). Pagination at both levels so callers reaching
+  // for either shape see consistent values.
+  return { success: true, data: { data: slice, jobs: slice, items: slice, pagination }, pagination };
 });
 register('GET', '/jobs/:id', ({ params }) => ({ data: demoStore.get('jobs', params.id) }));
 register('POST', '/jobs', ({ body }) => ({ data: demoStore.create('jobs', body, 'numeric') }));
@@ -419,18 +467,37 @@ register('GET', '/measurements/:id', ({ params }) => ({ data: demoStore.get('mea
 register('POST', '/measurements', ({ body }) => ({ data: demoStore.create('measurements', body) }));
 
 // ---- Material orders (ABC Supply) ----------------------------------------
-register('GET', '/abc-supply/orders/history', ({ query }) => {
+// ABC Supply order history — registered under both URL shapes (the actual
+// abc-supply service hits camelCase /ordersHistory; some other pages
+// might use kebab-case /orders/history).
+const handleAbcOrdersHistory = ({ query }: HandlerContext) => {
   let list = demoStore.list<any>('materialOrders');
-  if (query.status) list = list.filter((o) => o.orderStatus.toLowerCase() === query.status.toLowerCase());
+  if (query.status) list = list.filter((o) => o.orderStatus?.toLowerCase() === query.status.toLowerCase());
   if (query.search) {
     const q = query.search.toLowerCase();
-    list = list.filter((o) => o.orderNumber.toLowerCase().includes(q) || o.customer_name?.toLowerCase().includes(q));
+    list = list.filter((o) => o.orderNumber?.toLowerCase().includes(q) || o.customer_name?.toLowerCase().includes(q));
   }
+  const itemsPerPage = Number(query.itemsPerPage || 20);
+  const pageNumber = Number(query.pageNumber || 1);
+  const start = (pageNumber - 1) * itemsPerPage;
+  const slice = list.slice(start, start + itemsPerPage);
   return {
     success: true,
-    data: { items: list, pagination: { itemsPerPage: 20, pageNumber: 1, totalPages: 1, totalItems: list.length } },
+    data: {
+      items: slice,
+      pagination: {
+        itemsPerPage,
+        pageNumber,
+        totalPages: Math.max(1, Math.ceil(list.length / itemsPerPage)),
+        totalItems: list.length,
+      },
+    },
   };
-});
+};
+register('GET', '/abc-supply/orders/history', handleAbcOrdersHistory);
+register('GET', '/abc-supply/ordersHistory', handleAbcOrdersHistory);
+register('GET', '/abc-supply/orderDetails', () => ({ success: true, data: demoStore.list('materialOrders')[0] || {} }));
+register('GET', '/abc-supply/orders', () => ({ data: demoStore.list('materialOrders'), orders: demoStore.list('materialOrders') }));
 register('GET', '/abc-supply/status', () => ({ data: { connected: true, account: 'BuilderLync Demo - Plano #152' }, connected: true }));
 register('GET', '/srs/status', () => ({ data: { connected: true } }));
 register('GET', '/qxo/status', () => ({ data: { connected: true, profileData: { accountBranch: { branchNumber: '152', branchName: 'QXO Plano', address: { city: 'Plano', state: 'TX' }, branchPhone: '+1 (972) 555-0152' } } } }));
@@ -782,6 +849,119 @@ register('POST', '/notifications/read-all', () => {
   writeStore('notifications', list);
   return { data: { success: true } };
 });
+
+// ---- Catalog (line items for Proposals + InstantEstimator) ---------------
+//
+// CatalogResponse expected by callers:
+//   { success, message?, data?: { items: CatalogItem[], pagination: {
+//     currentPage, totalPages, totalItems, itemsPerPage } } }
+//
+// Provide a realistic 25-item catalog covering shingles, underlayment,
+// flashing, ridge cap, ventilation, fasteners, and labor line items so
+// the demo Catalog page is genuinely browsable.
+const DEMO_CATALOG_ITEMS = [
+  { id: 'cat_1',  itemType: 'Material', name: 'GAF Timberline HDZ — Charcoal',         description: 'Architectural shingle, 30-yr warranty', measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 41.20,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(180), updatedAt: daysAgoIso(15) },
+  { id: 'cat_2',  itemType: 'Material', name: 'GAF Timberline HDZ — Weathered Wood',   description: 'Architectural shingle, 30-yr warranty', measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 41.20,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(180), updatedAt: daysAgoIso(15) },
+  { id: 'cat_3',  itemType: 'Material', name: 'GAF Timberline HDZ — Pewter Gray',      description: 'Architectural shingle, 30-yr warranty', measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 41.20,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(180), updatedAt: daysAgoIso(15) },
+  { id: 'cat_4',  itemType: 'Material', name: 'Owens Corning Duration — Onyx Black',   description: 'SureNail technology, lifetime warranty', measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'SRS', supplierType: 'srs', preTaxCost: 39.85,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(170), updatedAt: daysAgoIso(20) },
+  { id: 'cat_5',  itemType: 'Material', name: 'Owens Corning Duration — Driftwood',    description: 'SureNail technology, lifetime warranty', measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'SRS', supplierType: 'srs', preTaxCost: 39.85,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(170), updatedAt: daysAgoIso(20) },
+  { id: 'cat_6',  itemType: 'Material', name: 'CertainTeed Landmark — Weathered Wood', description: 'Class A fire rating',                    measurements: '13.25" x 39.375"', coverage: 33.3, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 38.50,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(160), updatedAt: daysAgoIso(25) },
+  { id: 'cat_7',  itemType: 'Material', name: 'GAF Tiger Paw Underlayment',            description: 'Synthetic, slip-resistant',              measurements: '48" x 250\'',       coverage: 1000, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 105.00, waste: 5,  unit: 'roll',     salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(150), updatedAt: daysAgoIso(30) },
+  { id: 'cat_8',  itemType: 'Material', name: 'Grace Ice & Water Shield 36" x 75\'',    description: 'Self-adhered eaves & valley protection', measurements: '36" x 75\'',         coverage: 225,  supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 98.50,  waste: 5,  unit: 'roll',     salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(140), updatedAt: daysAgoIso(35) },
+  { id: 'cat_9',  itemType: 'Material', name: 'GAF Seal-A-Ridge — Charcoal',           description: 'Hip & ridge cap shingle',                measurements: '12" x 39.5"',       coverage: 20,   supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 56.30,  waste: 10, unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(130), updatedAt: daysAgoIso(40) },
+  { id: 'cat_10', itemType: 'Material', name: 'Amerimax Drip Edge 5" — Brown',         description: 'Pre-painted aluminum, 10\' length',       measurements: '5" face x 10\' L',    coverage: 10,   supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 11.40,  waste: 5,  unit: 'piece',    salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(120), updatedAt: daysAgoIso(45) },
+  { id: 'cat_11', itemType: 'Material', name: 'GAF Cobra Ridge Vent (12 ft roll)',     description: 'Continuous ridge ventilation',           measurements: '12\' rolls',         coverage: 12,   supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 64.20,  waste: 5,  unit: 'roll',     salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(110), updatedAt: daysAgoIso(50) },
+  { id: 'cat_12', itemType: 'Material', name: 'AirHawk Box Vent — Aluminum',           description: 'Static ventilation box',                 measurements: '12" x 12"',         coverage: 1,    supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 18.75,  waste: 0,  unit: 'piece',    salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(100), updatedAt: daysAgoIso(55) },
+  { id: 'cat_13', itemType: 'Material', name: 'Roofing Nails 1-1/4" Galvanized (50 lb)', description: 'Galvanized cap nails',                 measurements: '50 lb box',         coverage: 7000, supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 72.00,  waste: 5,  unit: 'box',      salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(90),  updatedAt: daysAgoIso(60) },
+  { id: 'cat_14', itemType: 'Material', name: 'Boot Pipe Flashing 3" — Lead',           description: 'Lead boot for plumbing vent',           measurements: '3" pipe',            coverage: 1,    supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 24.90,  waste: 0,  unit: 'piece',    salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(80),  updatedAt: daysAgoIso(65) },
+  { id: 'cat_15', itemType: 'Material', name: 'Boot Pipe Flashing 4" — Lead',           description: 'Lead boot for plumbing vent',           measurements: '4" pipe',            coverage: 1,    supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 28.40,  waste: 0,  unit: 'piece',    salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(80),  updatedAt: daysAgoIso(65) },
+  { id: 'cat_16', itemType: 'Material', name: 'Step Flashing — Aluminum (10 ct)',       description: 'Sidewall step flashing',                measurements: '5" x 7"',            coverage: 10,   supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 14.20,  waste: 5,  unit: 'box',      salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(70),  updatedAt: daysAgoIso(70) },
+  { id: 'cat_17', itemType: 'Material', name: 'Starter Strip — Charcoal',               description: 'Pre-cut starter shingle',               measurements: '13.25" x 39.375"', coverage: 105,  supplier: 'ABC Supply', supplierType: 'abc', preTaxCost: 41.50,  waste: 5,  unit: 'bundle',   salesTax: 8.25, materialPurchaseTax: 0, createdAt: daysAgoIso(60),  updatedAt: daysAgoIso(75) },
+  { id: 'cat_18', itemType: 'Labor',    name: 'Tear-Off — Single Layer',                description: 'Remove existing single-layer roof',     coverage: 100,                                                                                                          preTaxCost: 95.00,  waste: 0,  unit: 'square',   salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(200), updatedAt: daysAgoIso(80) },
+  { id: 'cat_19', itemType: 'Labor',    name: 'Install — Architectural Shingle',         description: 'Install 30-yr architectural shingle',  coverage: 100,                                                                                                          preTaxCost: 165.00, waste: 0,  unit: 'square',   salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(200), updatedAt: daysAgoIso(85) },
+  { id: 'cat_20', itemType: 'Labor',    name: 'Install — Metal Standing-Seam',           description: 'Metal standing-seam panel install',    coverage: 100,                                                                                                          preTaxCost: 425.00, waste: 0,  unit: 'square',   salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(200), updatedAt: daysAgoIso(90) },
+  { id: 'cat_21', itemType: 'Labor',    name: 'Flashing Replacement — Chimney',          description: 'Step + counter flashing at chimney',   coverage: 1,                                                                                                            preTaxCost: 285.00, waste: 0,  unit: 'each',     salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(150), updatedAt: daysAgoIso(95) },
+  { id: 'cat_22', itemType: 'Labor',    name: 'Skylight — Replace Flashing Kit',          description: 'Install new flashing kit on skylight', coverage: 1,                                                                                                            preTaxCost: 195.00, waste: 0,  unit: 'each',     salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(140), updatedAt: daysAgoIso(100) },
+  { id: 'cat_23', itemType: 'Other',    name: 'Permit Fee',                              description: 'Municipal roofing permit',              coverage: 1,                                                                                                            preTaxCost: 245.00, waste: 0,  unit: 'each',     salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(120), updatedAt: daysAgoIso(105) },
+  { id: 'cat_24', itemType: 'Other',    name: 'Dumpster Rental — 20 yard',                description: '7-day rental, debris hauling included', coverage: 1,                                                                                                            preTaxCost: 425.00, waste: 0,  unit: 'each',     salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(110), updatedAt: daysAgoIso(110) },
+  { id: 'cat_25', itemType: 'Other',    name: 'Crew Travel + Mobilization',               description: 'Per-job mobilization charge',           coverage: 1,                                                                                                            preTaxCost: 350.00, waste: 0,  unit: 'each',     salesTax: 0,    materialPurchaseTax: 0, createdAt: daysAgoIso(90),  updatedAt: daysAgoIso(115) },
+];
+
+function daysAgoIso(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString();
+}
+
+const handleCatalogItems = ({ query }: HandlerContext) => {
+  // Allow visitor edits to layer on top of seed via demoStore
+  const stored = demoStore.list<any>('tags').length === 0 ? null : null; // (no-op: tags reuse keep)
+  let list: any[] = (typeof window !== 'undefined' && window.localStorage.getItem('builderlync.demo.catalogItems'))
+    ? (JSON.parse(window.localStorage.getItem('builderlync.demo.catalogItems') as string) as any[])
+    : DEMO_CATALOG_ITEMS;
+  if (query.search) {
+    const q = query.search.toLowerCase();
+    list = list.filter((c) => c.name?.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q));
+  }
+  if (query.itemTypes) {
+    const types = query.itemTypes.split(',').map((t) => t.trim()).filter(Boolean);
+    if (types.length) list = list.filter((c) => types.includes(c.itemType));
+  }
+  switch (query.sortBy) {
+    case 'name-asc':  list = [...list].sort((a, b) => a.name.localeCompare(b.name)); break;
+    case 'name-desc': list = [...list].sort((a, b) => b.name.localeCompare(a.name)); break;
+    case 'date-new':  list = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
+    case 'date-old':  list = [...list].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break;
+  }
+  const page = Number(query.page || 1);
+  const limit = Number(query.limit || 50);
+  const start = (page - 1) * limit;
+  const slice = list.slice(start, start + limit);
+  return {
+    success: true,
+    data: {
+      items: slice,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.max(1, Math.ceil(list.length / limit)),
+        totalItems: list.length,
+        itemsPerPage: limit,
+      },
+    },
+  };
+};
+register('GET', '/catalog/items', handleCatalogItems);
+register('GET', '/catalog/items/:id', ({ params }) => ({
+  success: true,
+  data: DEMO_CATALOG_ITEMS.find((c) => c.id === params.id) || DEMO_CATALOG_ITEMS[0],
+}));
+register('POST', '/catalog/items', ({ body }) => ({
+  success: true,
+  data: { ...body, id: newId('cat'), createdAt: nowIso(), updatedAt: nowIso() },
+}));
+register('PUT', '/catalog/items/:id', ({ params, body }) => ({
+  success: true,
+  data: { ...body, id: params.id, updatedAt: nowIso() },
+}));
+register('PATCH', '/catalog/items/:id/type', ({ params, body }) => ({
+  success: true,
+  data: { id: params.id, itemType: body.itemType },
+}));
+register('POST', '/catalog/items/:id/duplicate', ({ params }) => {
+  const orig = DEMO_CATALOG_ITEMS.find((c) => c.id === params.id);
+  return { success: true, data: orig ? { ...orig, id: newId('cat'), name: `${orig.name} (copy)`, createdAt: nowIso(), updatedAt: nowIso() } : DEMO_CATALOG_ITEMS[0] };
+});
+register('DELETE', '/catalog/items/:id', () => ({ success: true }));
+register('POST', '/catalog/items/bulk-delete', ({ body }) => ({
+  success: true,
+  data: { deletedCount: (body.itemIds || []).length },
+}));
+register('GET', '/catalog/settings', () => ({
+  success: true,
+  data: { salesTax: 8.25, materialPurchaseTax: 0, wasteFactor: 10 },
+}));
+register('PUT', '/catalog/settings', ({ body }) => ({ success: true, data: body }));
+register('POST', '/catalog/settings', ({ body }) => ({ success: true, data: body }));
 
 // ---- Tasks ----------------------------------------------------------------
 register('GET', '/tasks', () => ({ data: demoStore.list('tasks') }));

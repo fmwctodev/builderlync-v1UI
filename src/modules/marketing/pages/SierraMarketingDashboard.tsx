@@ -1,18 +1,22 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Zap, BarChart2, Users, Megaphone, Settings, Radio } from 'lucide-react';
+import { Zap, BarChart2, Users, Megaphone, Settings, Radio, Layout, Image } from 'lucide-react';
 import { OverviewTab } from './tabs/OverviewTab';
 import { LeadsAttributionTab } from './tabs/LeadsAttributionTab';
 import { CampaignStudioTab } from './tabs/CampaignStudioTab';
 import { SierraActionsTab } from './tabs/SierraActionsTab';
 import { ChannelsTrackingTab } from './tabs/ChannelsTrackingTab';
 import { SettingsTab } from './tabs/SettingsTab';
+import { FormsFunnelsTab } from './tabs/FormsFunnelsTab';
+import { ContentSocialTab } from './tabs/ContentSocialTab';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart2 },
   { id: 'attribution', label: 'Leads & Attribution', icon: Users },
   { id: 'campaigns', label: 'Campaign Studio', icon: Megaphone },
   { id: 'actions', label: 'Sierra Actions', icon: Zap },
+  { id: 'forms', label: 'Forms & Funnels', icon: Layout },
+  { id: 'content', label: 'Content & Social', icon: Image },
   { id: 'channels', label: 'Channels & Tracking', icon: Radio },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -76,6 +80,8 @@ const SierraMarketingDashboard: React.FC = () => {
           {activeTab === 'attribution' && <LeadsAttributionTab />}
           {activeTab === 'campaigns' && <CampaignStudioTab />}
           {activeTab === 'actions' && <SierraActionsTab />}
+          {activeTab === 'forms' && <FormsFunnelsTab />}
+          {activeTab === 'content' && <ContentSocialTab />}
           {activeTab === 'channels' && <ChannelsTrackingTab />}
           {activeTab === 'settings' && <SettingsTab />}
         </div>
