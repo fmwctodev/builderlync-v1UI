@@ -1,0 +1,677 @@
+# BuilderLync v1UI — Behavioral UX Audit
+
+**Last updated:** 2026-05-05
+**Scope:** Every module, sub-page, tab, modal, button, form, and search interaction in v1UI
+**Methodology:** Static analysis of every render path in 17 modules across ~80 page files, looking for "user does X → expected Y but Y doesn't happen" patterns.
+
+This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a fix sketch. As fixes ship, status flips from `Open` → `Fixed (commit <sha>)`. Re-verify items marked `Verify` against the actual file before fixing — they were inferred from agent scans and may have edge cases.
+
+---
+
+## Severity legend
+
+| Level | Meaning |
+| --- | --- |
+| **P0** | Blocks a core user-journey flow (Lead → Quote → Job → Invoice). User cannot complete the task. |
+| **P1** | Visible broken interaction. User clicks, nothing happens. Doesn't block the journey but degrades trust. |
+| **P2** | Minor / cosmetic / stub-only. Empty state, placeholder text, low-traffic edge case. |
+
+## Status legend
+
+| Status | Meaning |
+| --- | --- |
+| **Open** | Confirmed gap, not yet fixed |
+| **Verify** | Reported by agent scan, needs file-level confirmation before fixing |
+| **In progress** | Being worked on |
+| **Fixed** | Shipped (commit SHA referenced) |
+| **Won't fix** | Intentional / out of scope / requires backend |
+
+---
+
+## Summary
+
+| Module | P0 | P1 | P2 | Total |
+| --- | --- | --- | --- | --- |
+| Calendar | 1 | 4 | 0 | 5 |
+| Conversations | 0 | 3 | 0 | 3 |
+| Contacts | 1 | 1 | 0 | 2 |
+| Jobs | 1 | 3 | 0 | 4 |
+| Payments | 1 | 1 | 0 | 2 |
+| Job Cam | 0 | 0 | 0 | 0 |
+| Instant Estimator | 0 | 2 | 0 | 2 |
+| Measurements | 0 | 0 | 1 | 1 |
+| Proposals | 1 | 3 | 0 | 4 |
+| Material Orders | 1 | 2 | 0 | 3 |
+| Work Orders | 0 | 3 | 0 | 3 |
+| Automations | 1 | 3 | 0 | 4 |
+| Opportunities | 0 | 1 | 0 | 1 |
+| Marketing | 0 | 4 | 0 | 4 |
+| File Manager | 0 | 1 | 0 | 1 |
+| Reporting | 2 | 0 | 0 | 2 |
+| Reputation | 0 | 1 | 0 | 1 |
+| Support | 0 | 1 | 0 | 1 |
+| Settings | 2 | 6 | 4 | 12 |
+| Sierra AI | 0 | 0 | 0 | 0 |
+| Storm Canvassing | 0 | 0 | 0 | 0 |
+| **Total** | **11** | **39** | **5** | **55** |
+
+---
+
+# Findings
+
+## Calendar
+
+### UXA-001 — Service Menu / Rooms / Equipment tabs render nothing
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/components/calendar/CalendarSettingsView.tsx`, around line 195+
+- **User action:** Open Calendar → Calendar Settings → click "Service Menu", "Rooms", or "Equipment" tab.
+- **Current behavior:** Tab button highlights, but the content area continues to show the Calendars table.
+- **Expected behavior:** Each tab should switch to its own panel (Service Menu list, Rooms list, Equipment list).
+- **Root cause:** `activeTab` state accepts `'calendars' | 'service-menu' | 'rooms' | 'equipment'` but the render block only has `{activeTab === 'calendars' && ...}` — no branches for the other three.
+- **Fix:** Add three `<ServiceMenuPanel>`, `<RoomsPanel>`, `<EquipmentPanel>` components (build new) plus matching `{activeTab === ... && ...}` render blocks.
+- **Complexity:** Medium (need to scaffold 3 new panels)
+
+### UXA-002 — "New Group" button does nothing
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/components/calendar/CalendarSettingsView.tsx`, line ~175
+- **User action:** Click "New Group" button in Calendar Settings sidebar.
+- **Current behavior:** No effect.
+- **Expected behavior:** Open a small modal asking for the group name, then create.
+- **Fix:** Add `showNewGroupModal` state, wire onClick, build a minimal `<NewGroupModal>` that calls `createCalendarGroup` API on save.
+- **Complexity:** Small
+
+### UXA-003 — "Advanced Filters" button on Appointments list does nothing
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~85
+- **User action:** Click "Advanced Filters" button.
+- **Current behavior:** No effect.
+- **Expected behavior:** Open a filter modal (date range, status, assignee).
+- **Fix:** Add state, modal, wire onClick.
+- **Complexity:** Medium
+
+### UXA-004 — "Sort by" button does nothing
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~92
+- **User action:** Click "Sort by" button.
+- **Current behavior:** No effect.
+- **Expected behavior:** Open a small dropdown with sort options (newest, oldest, alphabetical).
+- **Fix:** Add state, dropdown, sort the appointments array based on selection.
+- **Complexity:** Small
+
+### UXA-005 — "Manage Columns" button does nothing
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~112
+- **User action:** Click "Manage Columns".
+- **Current behavior:** No effect.
+- **Expected behavior:** Open a panel listing visible columns with toggles to show/hide each.
+- **Fix:** Add `visibleColumns` state, modal, persist selection to localStorage.
+- **Complexity:** Medium
+
+---
+
+## Conversations
+
+### UXA-006 — Search in Team Messaging doesn't filter messages [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/team-messaging/MessageThread.tsx`
+- **User action:** Type into the search input in a team message thread.
+- **Current behavior:** No filtering occurs.
+- **Expected behavior:** List filters by message body / sender / subject.
+- **Fix:** Add `filteredMessages = messages.filter(m => m.body.toLowerCase().includes(query))`.
+- **Complexity:** Small
+
+### UXA-007 — "Add Member" modal renders empty content [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/team-messaging/` (AddMemberModal.tsx)
+- **User action:** Open Add Member modal in a Team Messaging conversation.
+- **Current behavior:** Modal opens with empty body.
+- **Expected behavior:** Searchable list of teammates with Add buttons.
+- **Fix:** Build out the modal body — staff list + search filter + "Add" handler that calls `addTeamMember` API.
+- **Complexity:** Medium
+
+### UXA-008 — "Create Team" modal has no validation
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/team-messaging/` (CreateTeamModal.tsx)
+- **User action:** Click Save with empty team name.
+- **Current behavior:** Submits anyway → backend may accept or reject silently.
+- **Expected behavior:** Inline validation message "Team name is required".
+- **Fix:** Add client-side check before API call.
+- **Complexity:** Trivial
+
+---
+
+## Contacts
+
+### UXA-009 — Edit Contact modal Save doesn't persist [Verify]
+- **Severity:** P0
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/ContactProfile/Modals/` and `ContactProfile.tsx`
+- **User action:** Open contact, click Edit, change a field, click Save.
+- **Current behavior:** Modal closes, but reopening shows old values.
+- **Expected behavior:** API call to `updateContact`, then refresh.
+- **Fix:** Verify `handleSave` awaits `updateContact(id, data)` before closing, and parent refetches.
+- **Complexity:** Small
+
+### UXA-010 — Delete contact confirmation doesn't actually delete [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/Contacts.tsx`
+- **User action:** Delete a contact, confirm.
+- **Current behavior:** Confirmation closes, contact still appears.
+- **Expected behavior:** API call to `deleteContact`, list refreshes, success toast.
+- **Fix:** Add the API call in the confirm handler.
+- **Complexity:** Small
+
+---
+
+## Jobs
+
+### UXA-011 — Add Opportunity modal opens empty [Verify]
+- **Severity:** P0
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/opportunities/AddOpportunityModal.tsx`
+- **User action:** Click Add Opportunity in Jobs.
+- **Current behavior:** Modal opens with no form fields visible.
+- **Expected behavior:** Full form (name, value, stage, assigned to, etc.) with Save action.
+- **Fix:** Build out the form body and submission.
+- **Complexity:** Medium
+
+### UXA-012 — Drag-drop on Board view doesn't persist stage change [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/JobsBoardView.tsx`
+- **User action:** Drag a job card to a new column, refresh.
+- **Current behavior:** Card returns to original column.
+- **Expected behavior:** Stage change persists.
+- **Fix:** In drop handler, call `updateJob(jobId, { workflowStages: newStage })` before/after local state update.
+- **Complexity:** Small
+
+### UXA-013 — Pagination Next button disabled when more pages exist [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/Jobs.tsx`
+- **User action:** Click Next at page 1.
+- **Current behavior:** Button disabled or no-op.
+- **Expected behavior:** Page 2 loads.
+- **Fix:** Verify `disabled` is `currentPage >= totalPages` (not `>`), and `totalPages` is being set correctly.
+- **Complexity:** Trivial
+
+### UXA-014 — Jobs Settings toggles don't persist [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/JobsSettings.tsx`
+- **User action:** Toggle a setting, refresh.
+- **Current behavior:** Reverts to default.
+- **Expected behavior:** Persisted via `updateJobSettings` API.
+- **Fix:** Add API call on toggle change or on a Save button.
+- **Complexity:** Small
+
+---
+
+## Payments
+
+### UXA-015 — QuickBooks-required actions not gated when QB not connected
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Payments.tsx` lines 16-31, downstream tabs
+- **User action:** Click "Create Invoice" or "Sync Transactions" without QuickBooks connected.
+- **Current behavior:** Action proceeds, fails silently or with confusing backend error.
+- **Expected behavior:** Button disabled with a tooltip, or open the QuickBooks connection flow first.
+- **Fix:** In `InvoicesEstimatesTab` / `TransactionsTab`, gate the create/sync buttons behind `isQuickBooksConnected`.
+- **Complexity:** Small
+
+### UXA-016 — Documents/Settings/Integrations tabs commented out
+- **Severity:** P2
+- **Status:** Won't fix (intentional)
+- **Location:** `src/modules/roof-runner/pages/Payments.tsx` lines 43-72
+- **Notes:** Same code is commented out in unified/prod. Components exist but the unified team intentionally disabled the tabs. Out of scope unless a separate decision is made to enable them.
+
+---
+
+## Job Cam
+
+No gaps found. All buttons, modals, navigations, and search/filter interactions are wired correctly.
+
+---
+
+## Instant Estimator
+
+### UXA-017 — "Save All Settings" button does nothing
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/InstantEstimator.tsx` line ~495
+- **User action:** Modify estimator settings, click Save All Settings.
+- **Current behavior:** Click does nothing.
+- **Expected behavior:** Settings persist via `updateEstimatorSettings` API, success toast.
+- **Fix:** Wire onClick handler, add API call.
+- **Complexity:** Small
+
+### UXA-018 — "Connect Google Reviews" button does nothing
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/InstantEstimator.tsx` line ~361
+- **User action:** Click Connect Google Reviews.
+- **Current behavior:** No effect.
+- **Expected behavior:** Open Google OAuth flow, or at minimum show "Coming soon" toast and link to Google Business Profile setup.
+- **Fix:** Either wire to OAuth or remove the button.
+- **Complexity:** Small (stub) / Medium (full OAuth)
+
+---
+
+## Measurements
+
+### UXA-019 — EagleView tab unreachable from UI but render branch exists
+- **Severity:** P2
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Measurements.tsx` lines 455-464 (commented), 494 (handled in switch)
+- **User action:** N/A — no way to reach.
+- **Current behavior:** Switch in render still has `case 'EagleView'` but tab button is commented out.
+- **Expected behavior:** Either uncomment the tab button or remove the case.
+- **Fix:** Decide — uncomment + verify component works, or remove the case.
+- **Complexity:** Trivial
+
+---
+
+## Proposals
+
+### UXA-020 — Measurement search input doesn't filter
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 421-426
+- **User action:** Type into "Search measurement reports" input.
+- **Current behavior:** No filtering occurs.
+- **Expected behavior:** Measurement list filters by name/date.
+- **Fix:** Add controlled value + onChange + filter logic.
+- **Complexity:** Trivial
+
+### UXA-021 — Template search input doesn't filter
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 705-710
+- **User action:** Type into "Search templates" input.
+- **Current behavior:** No filtering.
+- **Expected behavior:** Template list filters by name.
+- **Fix:** Same pattern as UXA-020.
+- **Complexity:** Trivial
+
+### UXA-022 — "Create Without Measurement" path may skip address validation
+- **Severity:** P0
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 510-520
+- **User action:** Click Create Without Measurement when no `selectedJobId`.
+- **Current behavior:** Conditional logic may proceed without address.
+- **Expected behavior:** Always require address before proceeding to template selection.
+- **Fix:** Add address validation checkpoint regardless of `selectedJobId`.
+- **Complexity:** Small
+
+### UXA-023 — SettingsPanel in Proposals tab structure may be a stub
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/proposals/SettingsPanel.tsx`
+- **User action:** Click Settings tab in Proposals.
+- **Current behavior:** Likely empty or placeholder.
+- **Expected behavior:** Proposal-wide settings (default templates, default sender, signature defaults).
+- **Fix:** Build out or document as out-of-scope.
+- **Complexity:** Medium-Large
+
+---
+
+## Material Orders
+
+### UXA-024 — "Create Material Order" button commented out
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx` (block at ~line 80)
+- **User action:** Want to create a new order.
+- **Current behavior:** Button is in code but commented out.
+- **Expected behavior:** Button visible, opens the supplier flow.
+- **Fix:** Uncomment + verify `handleCreateOrder` opens product selection.
+- **Complexity:** Trivial
+
+### UXA-025 — `navigateToProducts` CustomEvent has no listener
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx`
+- **User action:** Click Create Material Order (after UXA-024 fixed).
+- **Current behavior:** Dispatches a `CustomEvent('navigateToProducts')` but no component listens for it.
+- **Expected behavior:** Navigate to product selection view for the chosen supplier.
+- **Fix:** Replace CustomEvent dispatch with `useNavigate()` to a registered route, or register a listener in the supplier view components.
+- **Complexity:** Small
+
+### UXA-026 — Supplier dropdown URL sync (verify works)
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx`
+- **Notes:** State syncs URL params correctly per agent — re-verify before marking fixed.
+
+---
+
+## Work Orders
+
+### UXA-027 — Date filters hardcoded to 2024-2026 range
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx` ~line 112
+- **User action:** Open Work Orders.
+- **Current behavior:** Default date filter is 2024-03-15 to 2026-06-15.
+- **Expected behavior:** Default to a sensible recent window like last 90 days.
+- **Fix:** Replace hardcoded strings with `new Date(Date.now() - 90*24*60*60*1000)`.
+- **Complexity:** Trivial
+
+### UXA-028 — Order row action menu (Download / Edit / Delete) commented out
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx` (OrderRow / row actions)
+- **User action:** Want to act on an individual order.
+- **Current behavior:** No action menu visible.
+- **Expected behavior:** 3-dot menu with Download, Edit, Delete.
+- **Fix:** Uncomment + wire handlers.
+- **Complexity:** Small
+
+### UXA-029 — Status filter may not refetch after selection [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx`
+- **Fix:** Verify `handleStatusSelect` triggers `fetchOrders()`.
+- **Complexity:** Trivial
+
+---
+
+## Automations
+
+### UXA-030 — Global Settings "Save Changes" button does nothing
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Automations.tsx`
+- **User action:** Toggle settings, click Save Changes.
+- **Current behavior:** No effect.
+- **Expected behavior:** Settings persist via `updateAutomationSettings` API, success toast.
+- **Fix:** Wire onClick + API call + toast.
+- **Complexity:** Small
+
+### UXA-031 — Toggle switches are styled divs, not real toggles
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Automations.tsx` (Global Settings section)
+- **User action:** Click "Allow Multiple Enrollment" or "Stop on Response" toggle.
+- **Current behavior:** Toggles are display-only divs (`w-10 h-5`) with no controlled state.
+- **Expected behavior:** Real toggles bound to state, value reflects current setting.
+- **Fix:** Replace with controlled `<input type="checkbox">` or a Switch component.
+- **Complexity:** Small
+
+### UXA-032 — Advanced Filters apply unclear if persisted [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/Automations.tsx`
+- **Fix:** Verify `validateAndApply()` actually applies filters to displayed list and persists.
+- **Complexity:** Small
+
+### UXA-033 — "Create Folder" modal local-only — no backend persistence [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/pages/Automations.tsx`
+- **User action:** Create folder, refresh.
+- **Current behavior:** Folder vanishes (no API call).
+- **Expected behavior:** Folder persists via `createFolder` API.
+- **Fix:** Wire API.
+- **Complexity:** Small
+
+---
+
+## Opportunities
+
+### UXA-034 — Settings tab shows "coming soon" placeholder
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Opportunities.tsx`, when `internalView === 'settings'`
+- **User action:** Click Settings in Opportunities header.
+- **Current behavior:** "Settings panel coming soon..." placeholder.
+- **Expected behavior:** Pipeline configuration UI (stages, default pipeline, archive rules).
+- **Fix:** Build a settings panel.
+- **Complexity:** Large
+
+---
+
+## Marketing
+
+### UXA-035 — Conversion Funnel hardcoded to zeros
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Campaigns tab) — `// TODO: Connect to real data`
+- **User action:** View funnel.
+- **Current behavior:** All metrics show 0.
+- **Expected behavior:** Real conversion metrics from campaigns.
+- **Fix:** Replace `[0, 0, 0, 0, 0]` with calculated metrics from `campaignData`.
+- **Complexity:** Small
+
+### UXA-036 — Campaign filters don't reset pagination
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Campaigns tab)
+- **User action:** On page 2, change filter.
+- **Current behavior:** Stays at page 2 even though filtered list may be shorter.
+- **Expected behavior:** Reset to page 1 on filter change.
+- **Fix:** Call `setCurrentPage(1)` in `loadCampaigns`.
+- **Complexity:** Trivial
+
+### UXA-037 — Analytics platform errors silently disappear
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Analytics tab)
+- **User action:** Open Marketing → Analytics when one platform's API fails.
+- **Current behavior:** That platform's data silently missing, no error indicator.
+- **Expected behavior:** Show inline alert "Google Ads connection issue" with link to Settings → Integrations.
+- **Fix:** Track failed platforms in state, render alert badges.
+- **Complexity:** Small
+
+### UXA-038 — Analytics platform navigation has no error boundary
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Analytics tab)
+- **Fix:** Wrap navigation target in error boundary or add explicit error UI.
+- **Complexity:** Small
+
+---
+
+## File Manager
+
+### UXA-039 — LocalFilesTab imported but never rendered
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/FileManager.tsx`
+- **User action:** Click "Local Files" tab.
+- **Current behavior:** Tab switches state but no content appears.
+- **Expected behavior:** Local files content renders.
+- **Fix:** Add `{activeTab === 'local-files' && <LocalFilesTab />}` after the my-cloud branch.
+- **Complexity:** Trivial
+
+---
+
+## Reporting
+
+### UXA-040 — "Generate Report Now" button on Audit tab does nothing
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Reporting.tsx` line ~63
+- **User action:** Click "Generate Report Now" on the marketing audit hero.
+- **Current behavior:** No effect (no onClick).
+- **Expected behavior:** Trigger audit generation and show progress / results.
+- **Fix:** Add `handleGenerateAudit` that calls the audit API and shows results, or stub with "Audit feature coming soon" toast.
+- **Complexity:** Medium
+
+### UXA-041 — Custom Reports tab commented out but render case still exists
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Reporting.tsx` lines 40-41 and 105-107
+- **User action:** N/A — tab not visible.
+- **Current behavior:** `// { id: 'custom-reports', ...}` commented in tabs array; case in switch defaults to `<UnifiedReportsTab>`.
+- **Expected behavior:** Either uncomment + verify or remove the dead case.
+- **Fix:** Uncomment the tab definition; verify `UnifiedReportsTab` works.
+- **Complexity:** Trivial (uncomment) / Medium (if `UnifiedReportsTab` is itself a stub)
+
+---
+
+## Reputation
+
+### UXA-042 — GBP Optimization tab is just a placeholder
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Reputation.tsx` lines 62-99
+- **User action:** Click GBP Optimization tab.
+- **Current behavior:** "Nothing to see here!" placeholder with a link to `/marketing/integrations`.
+- **Expected behavior:** GBP optimization checklist (post frequency, photo count, review velocity, NAP consistency).
+- **Fix:** Build the tab content.
+- **Complexity:** Large
+
+---
+
+## Support
+
+### UXA-043 — ChatterMate widget fails silently
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/Support.tsx` lines 49-59
+- **User action:** Visit Support, expect chat widget.
+- **Current behavior:** If CDN unreachable, the script `onerror` logs to console and disappears. No fallback UI.
+- **Expected behavior:** Either a visible "Chat is unavailable — submit a ticket" message, or fall back gracefully to the existing Send Email card (which is already on screen).
+- **Fix:** Already has email fallback elsewhere on page; minimal change. Could add a small inline notice if `script.onerror` fires.
+- **Complexity:** Trivial
+
+---
+
+## Settings
+
+### UXA-044 — Billing route + tab commented out
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` line ~21, `src/modules/roof-runner/components/settings/SettingsLayout.tsx` line ~21
+- **User action:** Want to manage billing / subscription.
+- **Current behavior:** No Billing tab visible; manual `/settings/billing` 404s.
+- **Expected behavior:** Billing tab visible, renders `Billing` component (which exists).
+- **Fix:** Uncomment route in SettingsRouter and tab in SettingsLayout.
+- **Complexity:** Trivial
+
+### UXA-045 — Audit Logs route + tab commented out
+- **Severity:** P0
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` line ~31, `SettingsLayout.tsx` line ~23
+- **User action:** Want to view audit log.
+- **Current behavior:** Tab hidden, route returns nothing.
+- **Expected behavior:** Audit Logs tab visible.
+- **Fix:** Uncomment route + tab.
+- **Complexity:** Trivial
+
+### UXA-046 — Permissions and Staff/Roles routes both render same component
+- **Severity:** P1
+- **Status:** Open
+- **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` lines 26 and 30
+- **User action:** Click Permissions OR Staff → Roles.
+- **Current behavior:** Both render `<StaffManagement initialTab="roles" />`.
+- **Expected behavior:** They should be the same destination; remove the duplicate route OR redirect one to the other.
+- **Fix:** Remove `path="permissions"` route, or keep it as a `<Navigate to="staff/roles" replace />` for backwards compat.
+- **Complexity:** Trivial
+
+### UXA-047 — Business Info form persistence unclear [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/BusinessInfo.tsx`
+- **Fix:** Verify `handleSave` calls `updateBusinessInfo`, awaits, refetches.
+
+### UXA-048 — Profile photo upload incomplete [Verify]
+- **Severity:** P2
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/Profile.tsx`
+- **Fix:** Verify file input wires to upload + preview.
+
+### UXA-049 — Custom Fields cross-module rendering unverified [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/CustomFields.tsx`
+- **Fix:** Verify created custom field appears on Contacts/Jobs forms.
+
+### UXA-050 — Brand Board upload/versioning unverified [Verify]
+- **Severity:** P2
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/BrandBoard.tsx`
+- **Fix:** Verify logo upload persists, color picker writes back.
+
+### UXA-051 — Email Service test send unverified [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/EmailService.tsx`
+- **Fix:** Verify there's a "Send test email" button that works.
+
+### UXA-052 — Notifications preferences persistence unverified [Verify]
+- **Severity:** P2
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/Notifications.tsx`
+- **Fix:** Verify toggles persist.
+
+### UXA-053 — Communications template send/preview unverified [Verify]
+- **Severity:** P2
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/Communications.tsx`
+- **Fix:** Verify template editor has working preview/send-test.
+
+### UXA-054 — Roles management — created role appears in staff dropdown [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/CreateRoleModal.tsx`
+- **Fix:** Verify created role flows into staff role-picker without page refresh.
+
+### UXA-055 — Integrations OAuth callbacks completion path unverified [Verify]
+- **Severity:** P1
+- **Status:** Verify
+- **Location:** `src/modules/roof-runner/components/settings/Integrations.tsx`, `TwilioCallback.tsx`, `SocialAdsCallback.tsx`
+- **Fix:** Verify each OAuth flow's callback completes correctly and updates Integrations state.
+
+---
+
+## Sierra AI
+
+No critical gaps found. Both legacy (8 tabs) and new (3 tabs) layouts have all sub-pages registered and rendered.
+
+---
+
+## Storm Canvassing
+
+No critical gaps found. All 9 sub-routes registered and reachable. Module is heavily data-driven (Mapbox + Supabase events/turfs/doors); empty states on staging without data are correct, not gaps.
+
+---
+
+# Implementation roadmap
+
+## Wave 1 — Trivial fixes (under 30 min total)
+UXA-002, UXA-008, UXA-013, UXA-019, UXA-020, UXA-021, UXA-024, UXA-027, UXA-036, UXA-039, UXA-041, UXA-044, UXA-045, UXA-046, UXA-043
+
+## Wave 2 — Small fixes (30 min – 1 hr each)
+UXA-009, UXA-010, UXA-012, UXA-014, UXA-015, UXA-017, UXA-018, UXA-022, UXA-025, UXA-028, UXA-029, UXA-030, UXA-031, UXA-032, UXA-033, UXA-035, UXA-037, UXA-038, UXA-040 (stub variant)
+
+## Wave 3 — Medium fixes (1 – 3 hrs each)
+UXA-001 (Calendar service-menu/rooms/equipment panels), UXA-003 (Advanced Filters), UXA-005 (Manage Columns), UXA-007 (Add Member modal), UXA-011 (Add Opportunity modal), UXA-040 (full audit generator)
+
+## Wave 4 — Large fixes (3+ hrs each, scope separately)
+UXA-023 (Proposal SettingsPanel), UXA-034 (Opportunities SettingsPanel), UXA-042 (GBP Optimization tab)
+
+## Verify-first batch (do before fixing)
+UXA-006, UXA-007, UXA-008, UXA-009, UXA-010, UXA-011, UXA-012, UXA-013, UXA-014, UXA-022, UXA-023, UXA-026, UXA-029, UXA-032, UXA-033, UXA-047 through UXA-055
+
+---
+
+# Note on staging-only gaps (data-driven)
+
+Several modules render correctly but appear empty on staging because there's no real Supabase data:
+- **Dashboard** — widgets pull from `useGetWidgetsQuery`; nothing to show without backend
+- **Sierra AI** — agent retrieval needs real records
+- **Storm Canvassing** — events/turfs/doors all backend-driven
+- **Reporting** — most tabs need real call/appointment/ad data
+
+These are **not UX gaps** — the code is correct. They're staging-environment data limitations. Track separately as "staging fixtures" if visible empty states cause concern during demos.
