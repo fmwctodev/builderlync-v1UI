@@ -109,7 +109,7 @@ const AppointmentListView: React.FC<AppointmentListViewProps> = ({ onNewAppointm
 
   const filteredAppointments = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let result = appointments.filter((apt) => apt.title.toLowerCase().includes(q));
+    let result = appointments.filter((apt) => (apt.title || '').toLowerCase().includes(q));
 
     // Advanced filters (UXA-003)
     if (advancedFilters.startDate) {

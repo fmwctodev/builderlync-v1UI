@@ -271,7 +271,7 @@ const WorkflowStages: React.FC = () => {
                   <div key={wf.id} className="p-4 flex flex-col items-center justify-center space-y-1">
                     <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                     <span className="text-[10px] text-center font-bold uppercase text-gray-500 leading-tight">
-                      {wf.name.split(' ').map(arg => arg[0]).join('')}
+                      {(wf.name || '').split(' ').map(arg => arg[0]).join('')}
                     </span>
                     <span className="text-[10px] text-center font-medium text-gray-400 leading-tight truncate w-full">
                       {wf.name}

@@ -518,6 +518,7 @@ const Calendars: React.FC = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEvents = events.filter((event) => {
         const dateStr = (event as any).start_date || event.startDate;
+        if (!dateStr || typeof dateStr !== 'string') return false;
         const [year, month, dayNum] = dateStr.split("-").map(Number);
         return (
           dayNum === day &&
@@ -585,6 +586,7 @@ const Calendars: React.FC = () => {
     const hours = Array.from({ length: 13 }, (_, i) => i + 8);
     const dayEvents = events.filter((event) => {
       const dateStr = (event as any).start_date || event.startDate;
+      if (!dateStr || typeof dateStr !== 'string') return false;
       const [year, month, day] = dateStr.split("-").map(Number);
       return (
         day === currentDate.getDate() &&
@@ -728,6 +730,7 @@ const Calendars: React.FC = () => {
                   const dayEvents = events.filter((event) => {
                     const dateStr =
                       (event as any).start_date || event.startDate;
+                    if (!dateStr || typeof dateStr !== 'string') return false;
                     const [year, month, dayNum] = dateStr
                       .split("-")
                       .map(Number);
