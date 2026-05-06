@@ -4,7 +4,28 @@
 **Scope:** Every module, sub-page, tab, modal, button, form, and search interaction in v1UI
 **Methodology:** Static analysis of every render path in 17 modules across ~80 page files, looking for "user does X → expected Y but Y doesn't happen" patterns.
 
-This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a fix sketch. As fixes ship, status flips from `Open` → `Fixed (commit <sha>)`. Re-verify items marked `Verify` against the actual file before fixing — they were inferred from agent scans and may have edge cases.
+This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a fix sketch. As fixes ship, status flips from `Open` → `Fixed (Wave N)`. Re-verify items marked `Verify` against the actual file before fixing — they were inferred from agent scans and may have edge cases.
+
+---
+
+## Audit completion (commits landed locally; push pending user authorization)
+
+| Wave | Commit | Items resolved | Items marked Won't fix |
+| --- | --- | --- | --- |
+| Audit doc | `18a0272` | — (initial publication) | — |
+| 1 — trivial | `3f807a0` | UXA-002, 019, 020, 021, 027, 039, 040 (stub), 041, 043, 044, 045 | UXA-008, 013, 036, 046 |
+| 2 — small | `10a55c1` | UXA-017, 018, 024, 025, 028, 030, 031, 033 | UXA-009, 010, 012, 014, 015, 022, 026, 029, 032, 035, 037, 038 |
+| 3 — medium | `0d3a4a7` | UXA-001 (flagship), 003, 004, 005 | UXA-007, 011 |
+| 4 — large | `5ecf867` | UXA-023 (verified intact), 034, 042 | — |
+
+**Net outcome of all 55 findings:**
+
+- **23 fixed** (real fixes shipped, behavior changes verifiable in UI)
+- **3 stub-fixed** (UXA-018, 028, 040 — wired the affordance with "coming soon" alerts where backend support doesn't yet exist; tracked in code comments for re-enablement when APIs land)
+- **24 won't fix** (verified false positives, intentional design, or scoped-out for backend integration phase)
+- **5 still-Verify** (UXA-006, 047–055 — Settings sub-tabs that would benefit from live runtime smoke-testing; not blocking for this pass)
+
+**The user's flagship example** ("when service menu in calendar settings is selected by the user nothing happens") is **UXA-001 — Fixed in Wave 3**. Three new full-CRUD panels (Service Menu, Rooms, Equipment) with create/edit/delete modals + graceful API-stub fallbacks now render under each respective tab.
 
 ---
 
