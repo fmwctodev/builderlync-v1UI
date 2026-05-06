@@ -1,106 +1,461 @@
+/**
+ * BuilderLync global stylesheet — Studio reskin layer
+ *
+ * Single source of truth for the premium 2026 Studio look applied app-wide.
+ * Built so existing legacy pages pick up the reskin without per-page edits:
+ *   1. CSS variables expose Studio tokens to any rule
+ *   2. Body styles use Studio paper/canvas + Inter font
+ *   3. Existing component classes (.card, .btn-*, .input, .badge, etc.)
+ *      are remapped to use Studio tokens
+ *   4. Cross-cutting tweaks (focus rings, scrollbars, selection) follow Studio
+ *   5. Studio typography/utility classes (studio-text-*, px-studio-page, etc.)
+ *      back the new primitives in shared/components/ui/*
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+ * Studio tokens — CSS variables (light theme defaults)
+ * ============================================================================ */
+:root {
+  --paper: #FAFAF7;
+  --canvas: #0B0B0F;
+
+  --surface-1: #FFFFFF;
+  --surface-2: #F5F5F0;
+  --surface-3: #EDEDE7;
+
+  --ink-1: #0F0F12;
+  --ink-2: #3F3F46;
+  --ink-3: #6B6B73;
+  --ink-4: #A0A0A8;
+
+  --edge-soft:   rgba(15, 15, 18, 0.06);
+  --edge-base:   rgba(15, 15, 18, 0.10);
+  --edge-strong: rgba(15, 15, 18, 0.16);
+
+  --signal-50:  #FFF1F2;
+  --signal-100: #FFE0E2;
+  --signal-500: #E11D2A;
+  --signal-600: #C7141F;
+  --signal-700: #A30F18;
+  --signal-ink: #3F0A0F;
+
+  --ok:   #0E8A5F;
+  --warn: #B8791D;
+  --info: #2563A6;
+
+  --shadow-s1: 0 1px 0 rgba(15,15,18,0.04), 0 1px 2px rgba(15,15,18,0.06);
+  --shadow-s2: 0 4px 24px -8px rgba(15,15,18,0.10), 0 1px 0 rgba(15,15,18,0.04);
+  --shadow-s3: 0 24px 48px -16px rgba(15,15,18,0.18), 0 2px 0 rgba(15,15,18,0.04);
+  --ring-soft:   0 0 0 1px rgba(15,15,18,0.08);
+  --signal-ring: 0 0 0 4px rgba(225,29,42,0.16);
+
+  --page-pad:    32px;
+  --section-gap: 24px;
+  --topbar-h:    40px;
+  --rail-w:      64px;
+
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark {
+  --paper: var(--canvas);
+  --surface-1: #131318;
+  --surface-2: #1A1A21;
+  --surface-3: #22222B;
+
+  --ink-1: #FAFAFA;
+  --ink-2: #D4D4D8;
+  --ink-3: #A0A0A8;
+  --ink-4: #71717A;
+
+  --edge-soft:   rgba(255, 255, 255, 0.06);
+  --edge-base:   rgba(255, 255, 255, 0.10);
+  --edge-strong: rgba(255, 255, 255, 0.16);
+
+  --shadow-s1: 0 1px 0 rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-s2: 0 4px 24px -8px rgba(0,0,0,0.6), 0 1px 0 rgba(0,0,0,0.3);
+  --shadow-s3: 0 24px 48px -16px rgba(0,0,0,0.8), 0 2px 0 rgba(0,0,0,0.3);
+  --ring-soft:   0 0 0 1px rgba(255,255,255,0.10);
+}
+
+/* ============================================================================
+ * Base — fonts, body, scrollbars, selection, focus
+ * ============================================================================ */
 @layer base {
   html {
     @apply antialiased;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply text-gray-900 bg-gray-50 dark:text-gray-100 dark:bg-gray-900 transition-colors duration-200;
+    @apply transition-colors duration-200;
+    background-color: var(--paper);
+    color: var(--ink-1);
+  }
+
+  .dark body {
+    background-color: var(--canvas);
+    color: var(--ink-1);
   }
 
   h1 {
-    @apply text-3xl font-bold leading-tight;
+    @apply text-3xl font-bold leading-tight tracking-tight;
+    color: var(--ink-1);
   }
 
   h2 {
-    @apply text-2xl font-semibold leading-tight;
+    @apply text-2xl font-semibold leading-tight tracking-tight;
+    color: var(--ink-1);
   }
 
   h3 {
     @apply text-xl font-semibold leading-snug;
+    color: var(--ink-1);
   }
 
   h4 {
     @apply text-lg font-medium leading-snug;
+    color: var(--ink-1);
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: var(--signal-100);
+    color: var(--signal-ink);
+  }
+
+  /* Default focus ring — replaces browser default with the Studio signal ring */
+  *:focus-visible {
+    outline: none;
+    box-shadow: var(--signal-ring);
+    border-radius: 6px;
+  }
+
+  /* Default scrollbar (when not using Tailwind scrollbar utilities) */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--edge-strong);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 15, 18, 0.28);
+    background-clip: padding-box;
+  }
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.24);
+    background-clip: padding-box;
   }
 }
 
+/* ============================================================================
+ * Components — legacy class names remapped onto Studio tokens
+ *
+ * The intent: existing pages use `.card`, `.btn`, `.btn-primary`, `.input`,
+ * `.badge`, `.nav-link`, etc. These now resolve to Studio-token-driven styles
+ * so every page gets the new look without touching its className strings.
+ * ============================================================================ */
 @layer components {
+  /* ---- Cards ---- */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200;
+    background-color: var(--surface-1);
+    border: 1px solid var(--edge-soft);
+    border-radius: 12px;
+    box-shadow: var(--shadow-s1);
+    transition: box-shadow var(--motion-base) var(--motion-ease),
+                border-color var(--motion-base) var(--motion-ease),
+                transform var(--motion-base) var(--motion-ease);
+  }
+  .card:hover {
+    box-shadow: var(--shadow-s2);
+    border-color: var(--edge-base);
+  }
+  .dark .card {
+    background-color: var(--surface-1);
+    border-color: var(--edge-soft);
   }
 
+  /* ---- Buttons ---- */
   .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease);
+    letter-spacing: -0.005em;
+  }
+  .btn:focus {
+    outline: none;
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm;
+    background-color: var(--signal-500);
+    color: #FFFFFF;
+    box-shadow: var(--shadow-s1);
+  }
+  .btn-primary:hover {
+    background-color: var(--signal-600);
+    box-shadow: var(--shadow-s2);
+  }
+  .btn-primary:active {
+    background-color: var(--signal-700);
+    transform: translateY(1px);
+  }
+  .btn-primary:disabled {
+    background-color: var(--ink-4);
+    color: rgba(255,255,255,0.7);
+    box-shadow: none;
   }
 
   .btn-secondary {
-    @apply bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-gray-500 shadow-sm;
+    background-color: var(--surface-1);
+    color: var(--ink-1);
+    border: 1px solid var(--edge-base);
+    box-shadow: var(--shadow-s1);
+  }
+  .btn-secondary:hover {
+    background-color: var(--surface-2);
+    border-color: var(--edge-strong);
+  }
+  .btn-secondary:active {
+    transform: translateY(1px);
+  }
+  .dark .btn-secondary {
+    background-color: var(--surface-2);
+    color: var(--ink-1);
+    border-color: var(--edge-base);
+  }
+  .dark .btn-secondary:hover {
+    background-color: var(--surface-3);
   }
 
   .btn-ghost {
-    @apply text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500;
+    color: var(--ink-2);
+    background-color: transparent;
+  }
+  .btn-ghost:hover {
+    background-color: var(--surface-2);
+    color: var(--ink-1);
+  }
+  .dark .btn-ghost {
+    color: var(--ink-2);
+  }
+  .dark .btn-ghost:hover {
+    background-color: var(--surface-2);
+    color: var(--ink-1);
   }
 
+  /* ---- Input ---- */
   .input {
-    @apply block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200;
+    @apply block w-full px-3 py-2 text-sm transition-all;
+    background-color: var(--surface-1);
+    color: var(--ink-1);
+    border: 1px solid var(--edge-base);
+    border-radius: 8px;
+    box-shadow: var(--shadow-s1);
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
+  }
+  .input::placeholder {
+    color: var(--ink-4);
+  }
+  .input:hover {
+    border-color: var(--edge-strong);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--signal-500);
+    box-shadow: var(--signal-ring);
   }
 
+  /* ---- Badges ---- */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium;
+    border-radius: 9999px;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
   }
-
   .badge-primary {
-    @apply bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200;
+    background-color: var(--signal-50);
+    color: var(--signal-700);
   }
-
   .badge-secondary {
-    @apply bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200;
+    background-color: var(--surface-2);
+    color: var(--ink-2);
   }
 
+  /* ---- Nav links ---- */
   .nav-link {
-    @apply flex items-center px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200;
+    @apply flex items-center px-4 py-2 text-sm font-medium transition-colors;
+    color: var(--ink-2);
+    border-radius: 8px;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease);
   }
-
+  .nav-link:hover {
+    background-color: var(--surface-2);
+    color: var(--ink-1);
+  }
   .nav-link.active {
-    @apply bg-primary-600 text-white font-medium;
+    background-color: var(--signal-500);
+    color: #FFFFFF;
+    font-weight: 600;
   }
-
   .nav-link-icon {
-    @apply mr-3 text-xl;
+    @apply mr-3;
   }
 
+  /* ---- Sidebar / Topbar shells ---- */
   .sidebar {
-    @apply bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-colors duration-200;
+    background-color: var(--surface-1);
+    border-right: 1px solid var(--edge-soft);
+    transition: background-color var(--motion-base) var(--motion-ease);
   }
-
   .topbar {
-    @apply bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 transition-colors duration-200;
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--edge-soft);
+    transition: background-color var(--motion-base) var(--motion-ease);
   }
 }
 
+/* ============================================================================
+ * Studio utility classes — referenced by shared/components/ui/Surface.tsx
+ * (PageHeader, PageContainer, Section, SectionHeader)
+ * ============================================================================ */
 @layer utilities {
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+  .studio-text-display {
+    font-size: 32px;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink-1);
   }
 
+  .studio-text-title-1 {
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink-1);
+  }
+
+  .studio-text-title-2 {
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--ink-1);
+  }
+
+  .studio-text-body {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .studio-text-muted {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-3);
+  }
+
+  .studio-text-label {
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .px-studio-page { padding-left: var(--page-pad); padding-right: var(--page-pad); }
+  .py-studio-page { padding-top: var(--page-pad); padding-bottom: var(--page-pad); }
+  .mt-studio-section { margin-top: var(--section-gap); }
+  .gap-studio-section { gap: var(--section-gap); }
+
+  /* Stage chips referenced by STAGE_CHIP_CLASS */
+  .studio-stage-lead        { background: rgba(107,107,115,0.10); color: #6B6B73; }
+  .studio-stage-booked      { background: rgba(37,99,166,0.12);   color: #2563A6; }
+  .studio-stage-measurement { background: rgba(122,79,181,0.12);  color: #7A4FB5; }
+  .studio-stage-proposal    { background: rgba(184,121,29,0.14);  color: #B8791D; }
+  .studio-stage-job         { background: rgba(14,138,95,0.14);   color: #0E8A5F; }
+  .studio-stage-production  { background: rgba(199,84,31,0.14);   color: #C7541F; }
+  .studio-stage-invoice     { background: rgba(31,138,138,0.14);  color: #1F8A8A; }
+  .studio-stage-closed      { background: rgba(160,160,168,0.14); color: #6B6B73; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-in-out;
   }
 }
 
+/* ============================================================================
+ * Compatibility — sweep `bg-gray-*` / `bg-white` / `dark:*` style classes
+ * onto Studio tokens so existing pages get the reskin without edits.
+ *
+ * This is intentionally a soft override (no `!important`); per-element styles
+ * still win when needed. Order matters — list from most-common to most-specific.
+ * ============================================================================ */
+@layer base {
+  /* Light surfaces → paper / surface-1 / surface-2 */
+  .bg-white { background-color: var(--surface-1); }
+  .bg-gray-50  { background-color: var(--paper); }
+  .bg-gray-100 { background-color: var(--surface-2); }
+  .bg-gray-200 { background-color: var(--surface-3); }
+
+  /* Dark surfaces (when .dark is on the html element) */
+  .dark .bg-gray-700 { background-color: var(--surface-2); }
+  .dark .bg-gray-750 { background-color: var(--surface-2); }
+  .dark .bg-gray-800 { background-color: var(--surface-1); }
+  .dark .bg-gray-900 { background-color: var(--canvas); }
+  .dark .dark\:bg-gray-700 { background-color: var(--surface-2); }
+  .dark .dark\:bg-gray-750 { background-color: var(--surface-2); }
+  .dark .dark\:bg-gray-800 { background-color: var(--surface-1); }
+  .dark .dark\:bg-gray-900 { background-color: var(--canvas); }
+
+  /* Borders */
+  .border-gray-100 { border-color: var(--edge-soft); }
+  .border-gray-200 { border-color: var(--edge-base); }
+  .border-gray-300 { border-color: var(--edge-strong); }
+  .dark .border-gray-600 { border-color: var(--edge-base); }
+  .dark .border-gray-700 { border-color: var(--edge-soft); }
+  .dark .dark\:border-gray-600 { border-color: var(--edge-base); }
+  .dark .dark\:border-gray-700 { border-color: var(--edge-soft); }
+
+  /* Ink (text colors) */
+  .text-gray-400 { color: var(--ink-4); }
+  .text-gray-500 { color: var(--ink-3); }
+  .text-gray-600 { color: var(--ink-2); }
+  .text-gray-700 { color: var(--ink-2); }
+  .text-gray-800 { color: var(--ink-1); }
+  .text-gray-900 { color: var(--ink-1); }
+  .dark .dark\:text-gray-200 { color: var(--ink-2); }
+  .dark .dark\:text-gray-300 { color: var(--ink-2); }
+  .dark .dark\:text-gray-400 { color: var(--ink-3); }
+  .dark .dark\:text-white { color: var(--ink-1); }
+}
+
+/* ============================================================================
+ * PDF — preserved verbatim (must stay pixel-stable for proposal exports)
+ * ============================================================================ */
 .pdf-page {
   width: 8.5in !important;
   height: 11in !important;
@@ -115,5 +470,3 @@
 .pdf-page:last-child {
   page-break-after: avoid !important;
 }
-
-

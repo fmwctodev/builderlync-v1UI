@@ -190,11 +190,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     return (
       <div className="mb-6">
         {!collapsed && label && (
-          <h3 className="px-4 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <h3 className="px-4 mb-2 studio-text-label">
             {label}
           </h3>
         )}
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {visibleItems.map((item) => {
             const Icon = item.icon;
 
@@ -203,21 +203,19 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
                 <NavLink
                   to={item.path ? `${orgPrefix}/${item.path}` : orgPrefix}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    `relative flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-studio-base ease-studio-out ${
                       isActive
-                        ? "bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 border-r-2 border-primary-500"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        ? "bg-signal-500 text-white shadow-s1"
+                        : "text-ink-2 hover:bg-surface-2 hover:text-ink-1 dark:text-ink-d-2 dark:hover:bg-surface-d-2 dark:hover:text-ink-d-1"
                     } ${collapsed ? "justify-center px-2" : ""}`
                   }
                   title={collapsed ? item.name : undefined}
                 >
-                  <div>
-                    <Icon
-                      size={collapsed ? 22 : 20}
-                      className={collapsed ? "" : "mr-3"}
-                    />
-                  </div>
-                  {!collapsed && <span>{item.name}</span>}
+                  <Icon
+                    size={collapsed ? 22 : 18}
+                    className={collapsed ? "" : "mr-3 shrink-0"}
+                  />
+                  {!collapsed && <span className="truncate tracking-tight">{item.name}</span>}
                 </NavLink>
               </li>
             );

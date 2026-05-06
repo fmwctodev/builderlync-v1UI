@@ -59,6 +59,56 @@ export default function Automations() {
     globalSettings.allowMultipleEnrollment !== savedGlobalSettings.allowMultipleEnrollment ||
     globalSettings.stopOnResponse !== savedGlobalSettings.stopOnResponse;
 
+  // Custom folders — persisted to localStorage so user-created folders
+  // survive page reloads. Renders alongside the hardcoded workflow folders.
+  // When a real backend folder endpoint exists, swap loadCustomFolders /
+  // persistCustomFolders without changing any UI bindings.
+  const FOLDERS_KEY = 'builderlync.automations.customFolders';
+  type CustomFolder = {
+    id: string;
+    name: string;
+    createdAt: string;
+  };
+  const loadCustomFolders = (): CustomFolder[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(FOLDERS_KEY);
+      return raw ? (JSON.parse(raw) as CustomFolder[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  const [customFolders, setCustomFolders] = useState<CustomFolder[]>(() => loadCustomFolders());
+  const persistCustomFolders = (next: CustomFolder[]) => {
+    setCustomFolders(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FOLDERS_KEY, JSON.stringify(next));
+    }
+  };
+
+  // Applied filters (after validateAndApply) — separate from the modal's
+  // working `filters` so we can show "X filters applied" badges in the UI
+  // and clear them with a single click. Persisted so filters survive
+  // page reload, matching how saved-view UX works in similar SaaS tools.
+  const APPLIED_FILTERS_KEY = 'builderlync.automations.appliedFilters';
+  type AppliedFilter = { field: string; condition: string; value: string };
+  const loadAppliedFilters = (): AppliedFilter[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(APPLIED_FILTERS_KEY);
+      return raw ? (JSON.parse(raw) as AppliedFilter[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  const [appliedFilters, setAppliedFilters] = useState<AppliedFilter[]>(() => loadAppliedFilters());
+  const persistAppliedFilters = (next: AppliedFilter[]) => {
+    setAppliedFilters(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(APPLIED_FILTERS_KEY, JSON.stringify(next));
+    }
+  };
+
   const handleSaveGlobalSettings = async () => {
     setSavingSettings(true);
     try {
@@ -102,8 +152,19 @@ export default function Automations() {
     });
     setFilters(updated);
     if (valid) {
+      // Persist applied filters so they survive reload and can be
+      // displayed as badges with a Clear-all affordance.
+      const cleaned: AppliedFilter[] = updated
+        .filter((f) => f.field && f.value && f.value !== 'Please Select')
+        .map((f) => ({ field: f.field, condition: f.condition, value: f.value }));
+      persistAppliedFilters(cleaned);
       setIsFilterModalOpen(false);
     }
+  };
+
+  const clearAppliedFilters = () => {
+    persistAppliedFilters([]);
+    setFilters([{ field: '', condition: 'Is', value: '', error: false }]);
   };
 
   useEffect(() => {
@@ -200,6 +261,53 @@ export default function Automations() {
   const handleSelectTemplate = (template: WorkflowTemplate) => {
     setShowTemplateModal(false);
     navigate(`builder?templateId=${template.id}`);
+  };
+
+  // Merge custom folders into the displayed list. User-created folders
+  // appear first so newly-created entries are immediately discoverable.
+  // Apply text-based filters (name contains) when the user has Applied
+  // filters via the Advanced Filters modal.
+  const customFolderRows = customFolders.map((cf) => ({
+    id: `custom-${cf.id}`,
+    name: cf.name,
+    status: null as null,
+    totalEnrolled: null as null,
+    activeEnrolled: null as null,
+    lastUpdated: new Date(cf.createdAt).toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    createdOn: new Date(cf.createdAt).toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    isFolder: true as const,
+    isCustomFolder: true as const,
+  }));
+
+  const allWorkflows: any[] = [...customFolderRows, ...workflows];
+
+  // Apply text filters: each filter has field + condition + value. We
+  // support `name` contains/equals, `status` equals, and `lastUpdated`
+  // contains here — best-effort given the static data shape.
+  const displayedWorkflows = appliedFilters.length === 0
+    ? allWorkflows
+    : allWorkflows.filter((w) => {
+        return appliedFilters.every((f) => {
+          const fieldKey = f.field.toLowerCase().replace(/\s+/g, '');
+          const lookup: Record<string, string> = {
+            name: String(w.name ?? ''),
+            status: String(w.status ?? ''),
+            lastupdated: String(w.lastUpdated ?? ''),
+            createdon: String(w.createdOn ?? ''),
+          };
+          const candidate = (lookup[fieldKey] ?? '').toLowerCase();
+          const target = f.value.toLowerCase();
+          if (f.condition === 'Is' || f.condition === 'Equals') {
+            return candidate === target;
+          }
+          // Default to "contains"
+          return candidate.includes(target);
+        });
+      });
+
+  const handleDeleteCustomFolder = (id: string) => {
+    if (!window.confirm('Delete this folder? Workflows assigned to it will move to the root level.')) return;
+    persistCustomFolders(customFolders.filter((cf) => cf.id !== id));
   };
 
   return (
@@ -363,6 +471,34 @@ export default function Automations() {
               </div>
             </div>
 
+            {/* Applied filter badges (UXA-032) */}
+            {appliedFilters.length > 0 && (
+              <div className="mb-4 flex items-center flex-wrap gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Applied filters:
+                </span>
+                {appliedFilters.map((f, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-md text-xs"
+                  >
+                    <span className="font-medium">{f.field}</span>
+                    <span className="opacity-70">{f.condition}</span>
+                    <span>{f.value}</span>
+                  </span>
+                ))}
+                <button
+                  onClick={clearAppliedFilters}
+                  className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline"
+                >
+                  Clear all
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                  ({displayedWorkflows.length} of {allWorkflows.length})
+                </span>
+              </div>
+            )}
+
             {/* Breadcrumb */}
             <div className="mb-4">
               <span className="text-gray-500 dark:text-gray-400 text-sm">Home</span>
@@ -383,7 +519,17 @@ export default function Automations() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {workflows.map((workflow) => (
+                  {displayedWorkflows.length === 0 && appliedFilters.length > 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No workflows match your applied filters.{' '}
+                        <button onClick={clearAppliedFilters} className="text-primary-600 hover:underline">
+                          Clear filters
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {displayedWorkflows.map((workflow) => (
                     <tr key={workflow.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                       <td className="px-6 py-4">
                         <input type="checkbox" className="rounded" />
@@ -423,7 +569,21 @@ export default function Automations() {
                             <div className="py-1">
                               <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Rename</button>
                               <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Move</button>
-                              <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Delete</button>
+                              <button
+                                onClick={() => {
+                                  if ((workflow as any).isCustomFolder) {
+                                    // Strip the "custom-" prefix we added when building customFolderRows
+                                    const realId = String(workflow.id).replace(/^custom-/, '');
+                                    handleDeleteCustomFolder(realId);
+                                    setActiveMenuId(null);
+                                  } else {
+                                    alert('Deleting built-in workflows is not supported yet.');
+                                  }
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
                         )}
@@ -710,10 +870,16 @@ export default function Automations() {
               </button>
               <button
                 onClick={() => {
-                  // TODO: backend folder creation endpoint not yet wired.
-                  // For now, surface an honest "coming soon" message instead
-                  // of silently swallowing the input.
-                  alert(`Folder creation is coming soon — your folder name "${folderName}" wasn’t saved yet because backend support isn’t wired up. Track UXA-033 in docs/UX_AUDIT.md.`);
+                  const trimmed = folderName.trim();
+                  if (!trimmed) return;
+                  // localStorage-backed persistence; survives page reload.
+                  // Swap to backend endpoint when one is wired (UXA-033).
+                  const next: CustomFolder = {
+                    id: `folder_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+                    name: trimmed,
+                    createdAt: new Date().toISOString(),
+                  };
+                  persistCustomFolders([next, ...customFolders]);
                   setShowFolderModal(false);
                   setFolderName('');
                 }}

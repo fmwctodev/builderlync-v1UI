@@ -40,15 +40,15 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar }) => {
   };
 
   return (
-    <header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+    <header className="h-14 border-b border-edge-soft dark:border-edge-d-soft bg-surface-1 dark:bg-surface-d-1 backdrop-blur-sm">
       <div className="flex items-center justify-between px-4 h-full">
         <div className="flex items-center">
           <button
             onClick={toggleSidebar}
-            className="p-2 mr-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
+            className="p-2 mr-3 rounded-lg hover:bg-surface-2 dark:hover:bg-surface-d-2 transition-colors text-ink-2 dark:text-ink-d-2"
             aria-label="Toggle sidebar"
           >
-            <Menu size={24} />
+            <Menu size={20} />
           </button>
 
           {/* <div className="relative">
