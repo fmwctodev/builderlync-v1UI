@@ -109,8 +109,14 @@ export default function WorkOrders() {
     totalPages: 1,
     totalItems: 0
   });
-  const [startDate, setStartDate] = useState('2024-03-15');
-  const [endDate, setEndDate] = useState('2026-06-15');
+  // Default to a sensible recent window (last 90 days) so users see relevant
+  // orders on first load without having to manually pick a range.
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');

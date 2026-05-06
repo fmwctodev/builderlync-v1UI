@@ -286,7 +286,7 @@ export default function FileManager() {
     );
   }
 
-  if (!connection && (activeTab === 'my-cloud' || activeTab === 'local-files')) {
+  if (!connection && activeTab === 'my-cloud') {
     return (
       <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
@@ -321,14 +321,22 @@ export default function FileManager() {
               Connect Your Cloud Drive
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              To start managing your files, please connect a cloud storage provider like Google Drive or OneDrive.
+              To start managing your cloud files, please connect a cloud storage provider like Google Drive or OneDrive. You can still use the Local Files tab without connecting a cloud drive.
             </p>
-            <button
-              onClick={() => setIsCloudDriveModalOpen(true)}
-              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Connect Cloud Drive
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setIsCloudDriveModalOpen(true)}
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Connect Cloud Drive
+              </button>
+              <button
+                onClick={() => setActiveTab('local-files')}
+                className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Use Local Files Instead
+              </button>
+            </div>
           </div>
         </main>
 

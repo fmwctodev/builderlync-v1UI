@@ -5,7 +5,8 @@ import { measurementsApi } from '../services/measurementsApi';
 import PlaceOrderPage from '../components/measurements/PlaceOrderPage';
 import OrderSummaryPage from '../components/measurements/OrderSummaryPage';
 import OrderHistoryPage from '../components/measurements/OrderHistoryPage';
-import EagleViewMeasurement from '../components/measurements/EagleViewMeasurement';
+// EagleViewMeasurement: feature pending re-enablement; tab button is commented in render
+// import EagleViewMeasurement from '../components/measurements/EagleViewMeasurement';
 import { eagleViewService } from '../services/eagleViewService';
 import { profileService } from '../../../shared/services/profileService';
 
@@ -490,9 +491,6 @@ export default function Measurements() {
           initialJobId={initialJobId || undefined}
           initialAddress={initialAddress || undefined}
         />
-      )}
-      {activeTab === 'EagleView' && (
-        <EagleViewMeasurement />
       )}
       {activeTab === 'Order Summary' && orderData && (
         <OrderSummaryPage

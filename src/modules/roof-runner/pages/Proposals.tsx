@@ -50,6 +50,8 @@ export default function Proposals() {
   const [deletingProposalId, setDeletingProposalId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [loadingMeasurements, setLoadingMeasurements] = useState(false);
+  const [measurementSearch, setMeasurementSearch] = useState('');
+  const [templateSearch, setTemplateSearch] = useState('');
 
   const fetchProposals = async (status?: string) => {
     try {
@@ -421,6 +423,8 @@ export default function Proposals() {
                   <input
                     type="text"
                     placeholder="Search measurement reports"
+                    value={measurementSearch}
+                    onChange={(e) => setMeasurementSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -435,8 +439,23 @@ export default function Proposals() {
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">No measurement reports found</div>
                   </div>
-                ) : (
-                  measurements.map((measurement, index) => (
+                ) : (() => {
+                  const q = measurementSearch.trim().toLowerCase();
+                  const filtered = q
+                    ? measurements.filter((m) => {
+                        const address = (m.address || '').toLowerCase();
+                        const ref = (m.reference_id || '').toLowerCase();
+                        return address.includes(q) || ref.includes(q);
+                      })
+                    : measurements;
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="text-gray-500 dark:text-gray-400">No measurements match "{measurementSearch}"</div>
+                      </div>
+                    );
+                  }
+                  return filtered.map((measurement, index) => (
                     <div
                       key={measurement.id || index}
                       className={`flex items-center justify-between p-3 border rounded-md ${selectedMeasurement?.id === measurement.id
@@ -497,8 +516,8 @@ export default function Proposals() {
                         <Download size={16} />
                       </button>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
             </div>
 
@@ -705,6 +724,8 @@ export default function Proposals() {
                   <input
                     type="text"
                     placeholder="Search templates"
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -724,8 +745,19 @@ export default function Proposals() {
                   <div className="flex items-center justify-center p-8">
                     <div className="text-gray-500 dark:text-gray-400">No templates found</div>
                   </div>
-                ) : (
-                  templates.map((template) => {
+                ) : (() => {
+                  const q = templateSearch.trim().toLowerCase();
+                  const filtered = q
+                    ? templates.filter((t) => (t.name || '').toLowerCase().includes(q))
+                    : templates;
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="text-gray-500 dark:text-gray-400">No templates match "{templateSearch}"</div>
+                      </div>
+                    );
+                  }
+                  return filtered.map((template) => {
                     const coverImage = template.content?.settings?.coverImage || template.summary?.coverImage;
                     return (
                     <div
@@ -757,8 +789,8 @@ export default function Proposals() {
                       </div>
                     </div>
                     );
-                  })
-                )}
+                  });
+                })()}
               </div>
             </div>
 

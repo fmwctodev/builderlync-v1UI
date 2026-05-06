@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Code, X } from 'lucide-react';
-import { getCalendars, getCalendarGroups, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
+import { getCalendars, getCalendarGroups, createCalendarGroup, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
 import { format } from 'date-fns';
 
 interface CalendarSettingsViewProps {
@@ -19,6 +19,10 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showEmbedModal, setShowEmbedModal] = useState(false);
   const [selectedEmbedUrl, setSelectedEmbedUrl] = useState('');
+  const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -90,6 +94,38 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
 
     setSelectedEmbedUrl(calendar.cal_url);
     setShowEmbedModal(true);
+  };
+
+  const handleCreateGroup = async () => {
+    const name = newGroupName.trim();
+    if (!name) {
+      alert('Group name is required');
+      return;
+    }
+
+    setCreatingGroup(true);
+    try {
+      await createCalendarGroup({
+        name,
+        description: newGroupDescription.trim() || undefined,
+      });
+      setNewGroupName('');
+      setNewGroupDescription('');
+      setShowNewGroupModal(false);
+      await fetchData();
+    } catch (error) {
+      console.error('Failed to create calendar group:', error);
+      alert('Failed to create calendar group. Please try again.');
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
+  const handleCloseNewGroupModal = () => {
+    if (creatingGroup) return;
+    setShowNewGroupModal(false);
+    setNewGroupName('');
+    setNewGroupDescription('');
   };
 
   const handleCopyEmbedCode = async () => {
@@ -173,7 +209,10 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
             })}
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 mt-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg w-full transition-colors">
+          <button
+            onClick={() => setShowNewGroupModal(true)}
+            className="flex items-center gap-2 px-3 py-2 mt-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg w-full transition-colors"
+          >
             <Plus className="w-4 h-4" />
             New Group
           </button>
@@ -398,6 +437,73 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
           )}
         </div>
       </div>
+
+      {showNewGroupModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">New Calendar Group</h3>
+                <button
+                  onClick={handleCloseNewGroupModal}
+                  disabled={creatingGroup}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label htmlFor="new-group-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Group name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="new-group-name"
+                    type="text"
+                    autoFocus
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !creatingGroup) handleCreateGroup();
+                    }}
+                    placeholder="e.g. Sales Team"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="new-group-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description <span className="text-gray-400">(optional)</span>
+                  </label>
+                  <textarea
+                    id="new-group-description"
+                    value={newGroupDescription}
+                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                    placeholder="What is this group used for?"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={handleCloseNewGroupModal}
+                  disabled={creatingGroup}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateGroup}
+                  disabled={creatingGroup || !newGroupName.trim()}
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingGroup ? 'Creating…' : 'Create Group'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showEmbedModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -31,6 +31,7 @@ const Support: React.FC = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 5, total: 0, totalPages: 1 });
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketListItem | null>(null);
   const [openingTicket, setOpeningTicket] = useState(false);
+  const [chattermateLoadFailed, setChattermateLoadFailed] = useState(false);
 
   // Knowledge base teasers (read from local data — no network call)
   const kbCategories = getAllCategories().slice(0, 8);
@@ -46,6 +47,7 @@ const Support: React.FC = () => {
     script.id = 'chattermate-script';
     script.onerror = () => {
       console.log('ChatterMate widget failed to load - using proxy fallback');
+      setChattermateLoadFailed(true);
     };
     document.body.appendChild(script);
 
@@ -230,11 +232,19 @@ const Support: React.FC = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Get instant help from ChatterMate AI assistant with access to our complete knowledge base
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">To enable ChatterMate widget:</p>
-            <ol className="text-xs text-gray-500 dark:text-gray-500 text-left space-y-1">
-              <li>1. Add localhost:5173 to allowed domains in ChatterMate dashboard</li>
-              <li>2. Widget will appear in bottom right corner</li>
-            </ol>
+            {chattermateLoadFailed ? (
+              <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-left">
+                <strong className="font-medium">Chat is unavailable right now.</strong> The ChatterMate widget couldn't load. In the meantime, please use Email Support or browse the Knowledge Base above for instant answers.
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">To enable ChatterMate widget:</p>
+                <ol className="text-xs text-gray-500 dark:text-gray-500 text-left space-y-1">
+                  <li>1. Add localhost:5173 to allowed domains in ChatterMate dashboard</li>
+                  <li>2. Widget will appear in bottom right corner</li>
+                </ol>
+              </>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">

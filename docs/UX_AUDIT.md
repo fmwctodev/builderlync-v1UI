@@ -74,7 +74,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-002 — "New Group" button does nothing
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — wired onClick + minimal NewGroupModal that calls `createCalendarGroup`
 - **Location:** `src/modules/roof-runner/components/calendar/CalendarSettingsView.tsx`, line ~175
 - **User action:** Click "New Group" button in Calendar Settings sidebar.
 - **Current behavior:** No effect.
@@ -128,7 +128,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-007 — "Add Member" modal renders empty content [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Verify (Wave 2) — initial scan looked in the wrong directory. Real file is at `src/shared/components/AddMemberModal.tsx` (187 lines, not empty). Re-audit in Wave 2 to confirm whether the modal actually shows a teammate list at runtime or whether the body is conditional on data that isn't loaded.
 - **Location:** `src/modules/roof-runner/components/team-messaging/` (AddMemberModal.tsx)
 - **User action:** Open Add Member modal in a Team Messaging conversation.
 - **Current behavior:** Modal opens with empty body.
@@ -138,7 +138,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-008 — "Create Team" modal has no validation
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 1) — verified actual file at `src/shared/components/CreateTeamModal.tsx`. The submit button is already `disabled={!teamName.trim() || selectedContacts.length === 0 || creating}` (line 221), so the user physically cannot submit with an empty name. The disabled-button affordance communicates the requirement. Inline error text would be nice-to-have but not a real UX gap.
 - **Location:** `src/modules/roof-runner/components/team-messaging/` (CreateTeamModal.tsx)
 - **User action:** Click Save with empty team name.
 - **Current behavior:** Submits anyway → backend may accept or reject silently.
@@ -196,7 +196,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-013 — Pagination Next button disabled when more pages exist [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 1) — false positive. `JobsTable.tsx:239` uses `disabled={currentPage >= totalPages || loading}` which is correct (Next is disabled when on the last page).
 - **Location:** `src/modules/roof-runner/pages/Jobs.tsx`
 - **User action:** Click Next at page 1.
 - **Current behavior:** Button disabled or no-op.
@@ -270,7 +270,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-019 — EagleView tab unreachable from UI but render branch exists
 - **Severity:** P2
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — removed the dead `activeTab === 'EagleView'` render branch and commented out the now-unused `EagleViewMeasurement` import (preserved as a comment for re-enablement).
 - **Location:** `src/modules/roof-runner/pages/Measurements.tsx` lines 455-464 (commented), 494 (handled in switch)
 - **User action:** N/A — no way to reach.
 - **Current behavior:** Switch in render still has `case 'EagleView'` but tab button is commented out.
@@ -284,7 +284,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-020 — Measurement search input doesn't filter
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — added `measurementSearch` state, controlled value, and case-insensitive filter on `address` + `reference_id`. Also shows a "no matches" empty state.
 - **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 421-426
 - **User action:** Type into "Search measurement reports" input.
 - **Current behavior:** No filtering occurs.
@@ -294,7 +294,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-021 — Template search input doesn't filter
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — added `templateSearch` state + filter on template name with no-match empty state.
 - **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 705-710
 - **User action:** Type into "Search templates" input.
 - **Current behavior:** No filtering.
@@ -358,7 +358,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-027 — Date filters hardcoded to 2024-2026 range
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — replaced hardcoded `'2024-03-15'`/`'2026-06-15'` with computed last-90-days defaults using lazy `useState` initializers.
 - **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx` ~line 112
 - **User action:** Open Work Orders.
 - **Current behavior:** Default date filter is 2024-03-15 to 2026-06-15.
@@ -454,13 +454,8 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-036 — Campaign filters don't reset pagination
 - **Severity:** P1
-- **Status:** Open
-- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Campaigns tab)
-- **User action:** On page 2, change filter.
-- **Current behavior:** Stays at page 2 even though filtered list may be shorter.
-- **Expected behavior:** Reset to page 1 on filter change.
-- **Fix:** Call `setCurrentPage(1)` in `loadCampaigns`.
-- **Complexity:** Trivial
+- **Status:** Won't fix (Wave 1) — not applicable. `MarketingDashboard.tsx` `CampaignsTab` uses a static `useState([...])` array and does not implement pagination at all (no `currentPage` state, no `loadCampaigns` function). Finding was inferred against a different file/codebase.
+- **Notes:** Should the Campaigns tab gain real pagination later, this finding becomes valid again.
 
 ### UXA-037 — Analytics platform errors silently disappear
 - **Severity:** P1
@@ -485,13 +480,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-039 — LocalFilesTab imported but never rendered
 - **Severity:** P1
-- **Status:** Open
-- **Location:** `src/modules/roof-runner/pages/FileManager.tsx`
-- **User action:** Click "Local Files" tab.
-- **Current behavior:** Tab switches state but no content appears.
-- **Expected behavior:** Local files content renders.
-- **Fix:** Add `{activeTab === 'local-files' && <LocalFilesTab />}` after the my-cloud branch.
-- **Complexity:** Trivial
+- **Status:** Fixed (Wave 1) — refined the actual gap. `LocalFilesTab` *was* rendered at line 479, but the page-level `if (!connection && (activeTab === 'my-cloud' || activeTab === 'local-files'))` short-circuit forced ALL users without a cloud connection into the "Connect Your Cloud Drive" empty state — including users who explicitly clicked "Local Files." Tightened the gate to `activeTab === 'my-cloud'` only, updated copy on the empty state to mention Local Files, and added a "Use Local Files Instead" button so users can opt out of cloud entirely.
 
 ---
 
@@ -499,7 +488,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-040 — "Generate Report Now" button on Audit tab does nothing
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 1, stub variant) — wired `onClick` to a clear "Marketing audit generation is coming soon" alert. Full audit-generation flow tracked separately as Wave 3 follow-up if backend support lands.
 - **Location:** `src/modules/roof-runner/pages/Reporting.tsx` line ~63
 - **User action:** Click "Generate Report Now" on the marketing audit hero.
 - **Current behavior:** No effect (no onClick).
@@ -509,7 +498,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-041 — Custom Reports tab commented out but render case still exists
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — uncommented the Custom Reports tab definition. The default `case` in the tab switch already routes to `<UnifiedReportsTab>` (a real 279-line component) so the tab is now reachable.
 - **Location:** `src/modules/roof-runner/pages/Reporting.tsx` lines 40-41 and 105-107
 - **User action:** N/A — tab not visible.
 - **Current behavior:** `// { id: 'custom-reports', ...}` commented in tabs array; case in switch defaults to `<UnifiedReportsTab>`.
@@ -537,7 +526,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-043 — ChatterMate widget fails silently
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — added `chattermateLoadFailed` state set by the script `onerror` handler. When the widget fails to load the card now renders an explicit amber notice ("Chat is unavailable right now…") directing users to Email Support / Knowledge Base instead of the misleading "To enable widget" instructions.
 - **Location:** `src/modules/roof-runner/pages/Support.tsx` lines 49-59
 - **User action:** Visit Support, expect chat widget.
 - **Current behavior:** If CDN unreachable, the script `onerror` logs to console and disappears. No fallback UI.
@@ -551,7 +540,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-044 — Billing route + tab commented out
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 1) — uncommented `<Route path="billing" …>` in SettingsRouter (and removed a stray `c` typo after the closing `*/`) plus uncommented the `billing` tab definition in SettingsLayout. Backing `Billing` component is real (70 lines).
 - **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` line ~21, `src/modules/roof-runner/components/settings/SettingsLayout.tsx` line ~21
 - **User action:** Want to manage billing / subscription.
 - **Current behavior:** No Billing tab visible; manual `/settings/billing` 404s.
@@ -561,23 +550,11 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-045 — Audit Logs route + tab commented out
 - **Severity:** P0
-- **Status:** Open
-- **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` line ~31, `SettingsLayout.tsx` line ~23
-- **User action:** Want to view audit log.
-- **Current behavior:** Tab hidden, route returns nothing.
-- **Expected behavior:** Audit Logs tab visible.
-- **Fix:** Uncomment route + tab.
-- **Complexity:** Trivial
+- **Status:** Fixed (Wave 1) — only the tab was commented; the route at SettingsRouter.tsx:31 was already uncommented. Uncommented the tab definition. Backing `AuditLogs` component is real (74 lines).
 
 ### UXA-046 — Permissions and Staff/Roles routes both render same component
 - **Severity:** P1
-- **Status:** Open
-- **Location:** `src/modules/roof-runner/pages/SettingsRouter.tsx` lines 26 and 30
-- **User action:** Click Permissions OR Staff → Roles.
-- **Current behavior:** Both render `<StaffManagement initialTab="roles" />`.
-- **Expected behavior:** They should be the same destination; remove the duplicate route OR redirect one to the other.
-- **Fix:** Remove `path="permissions"` route, or keep it as a `<Navigate to="staff/roles" replace />` for backwards compat.
-- **Complexity:** Trivial
+- **Status:** Won't fix (Wave 1) — intentional aliasing. SettingsLayout has separate sidebar entries for "Staff Management" (`/staff`) and "Permissions" (`/permissions`); both URLs are user-reachable and meaningful. Treating one as a `Navigate` would change the URL the user sees on click, which is worse UX than two routes pointing at the same component.
 
 ### UXA-047 — Business Info form persistence unclear [Verify]
 - **Severity:** P1

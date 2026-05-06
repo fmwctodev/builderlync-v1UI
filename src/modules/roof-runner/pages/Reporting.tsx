@@ -37,7 +37,7 @@ const Reporting: React.FC = () => {
   }, [searchParams]);
 
   const tabs = [
-    // { id: 'custom-reports', label: 'Reports', icon: FileText },
+    { id: 'custom-reports', label: 'Reports', icon: FileText },
     { id: 'ai-reporting', label: 'AI Reporting', icon: BarChart3 },
     { id: 'google-ads', label: 'Google Ads', icon: BarChart3 },
     { id: 'facebook-ads', label: 'Meta Ads', icon: BarChart3 },
@@ -60,7 +60,12 @@ const Reporting: React.FC = () => {
             <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-12 text-center text-white shadow-xl">
               <h1 className="text-4xl font-bold mb-4">Generate Marketing Audit</h1>
               <h2 className="text-4xl font-bold mb-8">Report for <span className="text-emerald-300">Free!</span></h2>
-              <button className="bg-white text-primary-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-all shadow-lg hover:scale-105">
+              <button
+                onClick={() => {
+                  alert('Marketing audit generation is coming soon. We’ll email you when it’s ready to run on your account.');
+                }}
+                className="bg-white text-primary-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-lg mb-12 transition-all shadow-lg hover:scale-105"
+              >
                 Generate Report Now
               </button>
               <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
