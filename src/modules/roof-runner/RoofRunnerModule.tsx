@@ -40,7 +40,10 @@ import ContactProfile from './pages/ContactProfile';
 import WorkOrders from './pages/WorkOrders';
 import Opportunities from './pages/Opportunities';
 import FileManager from './pages/FileManager';
-import Marketing from './pages/Marketing';
+// Marketing route now points at the new Sierra Marketing dashboard
+// (built in v1UI). The old `roof-runner/pages/Marketing.tsx` from the
+// unified production build is no longer wired into routing.
+import SierraMarketingDashboard from '../marketing/pages/SierraMarketingDashboard';
 import Reputation from './pages/Reputation';
 import PlatformAnalyticsDetail from './pages/PlatformAnalyticsDetail';
 import { GoogleAnalyticsPage } from './pages/GoogleAnalyticsPage';
@@ -188,7 +191,7 @@ export function RoofRunnerModule() {
           <Route path="work-orders" element={<WorkOrders />} />
           <Route path="automation" element={<FeatureFlag flag="automation-tab" fallback={<Navigate to="../dashboard" replace />}><Automations /></FeatureFlag>} />
           <Route path="opportunities" element={<Opportunities />} />
-          <Route path="marketing" element={<Marketing />} />
+          <Route path="marketing" element={<RouteErrorBoundary moduleName="Sierra Marketing"><SierraMarketingDashboard /></RouteErrorBoundary>} />
           <Route path="marketing/analytics/google-analytics" element={<GoogleAnalyticsPage />} />
           <Route path="marketing/analytics/google-business" element={<GoogleBusinessPage />} />
           <Route path="marketing/analytics/google-ads" element={<GoogleAdsPage />} />
