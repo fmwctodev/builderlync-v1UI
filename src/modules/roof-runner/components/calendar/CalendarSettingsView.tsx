@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, ChevronDown, ChevronRight, MoreVertical, Pencil, Share2, X as XIcon, Code, X } from 'lucide-react';
 import { getCalendars, getCalendarGroups, createCalendarGroup, deleteCalendar, Calendar, CalendarGroup } from '../../../../shared/store/services/calendarsApi';
 import { format } from 'date-fns';
+import { ServiceMenuPanel, RoomsPanel, EquipmentPanel } from './CalendarSettingsPanels';
 
 interface CalendarSettingsViewProps {
   onNewCalendar: () => void;
@@ -280,7 +281,8 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
             </div>
           </div>
 
-          {/* Filters and Search */}
+          {/* Filters and Search — Calendars tab only */}
+          {activeTab === 'calendars' && (
           <div className="px-6 py-4">
             <div className="flex items-center gap-4">
               <select
@@ -328,9 +330,11 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
               </button>
             </div>
           </div>
+          )}
         </div>
 
-        {/* Table */}
+        {/* Table — Calendars tab only */}
+        {activeTab === 'calendars' && (
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -436,6 +440,16 @@ const CalendarSettingsView: React.FC<CalendarSettingsViewProps> = ({ onNewCalend
             </div>
           )}
         </div>
+        )}
+
+        {/* Service Menu tab — UXA-001 fix */}
+        {activeTab === 'service-menu' && <ServiceMenuPanel />}
+
+        {/* Rooms tab — UXA-001 fix */}
+        {activeTab === 'rooms' && <RoomsPanel />}
+
+        {/* Equipment tab — UXA-001 fix */}
+        {activeTab === 'equipment' && <EquipmentPanel />}
       </div>
 
       {showNewGroupModal && (

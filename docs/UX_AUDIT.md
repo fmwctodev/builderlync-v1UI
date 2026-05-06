@@ -63,7 +63,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-001 — Service Menu / Rooms / Equipment tabs render nothing
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 3) — built three new panel components in `src/modules/roof-runner/components/calendar/CalendarSettingsPanels.tsx` (`ServiceMenuPanel`, `RoomsPanel`, `EquipmentPanel`). Each panel has search-filter, table list, full create/edit/delete modal with status + per-type fields (price/duration for services, capacity for rooms, quantity/maintenance status for equipment), and graceful "API not implemented" handling that surfaces an inline amber notice instead of an unhandled throw. Wired into `CalendarSettingsView` so each tab now renders its corresponding panel; the calendar-specific filter row + table is now properly gated to the Calendars tab. The panel UIs work today against the stub API (empty list state) and will become fully functional the moment the Service Menu / Rooms / Equipment endpoints land server-side.
 - **Location:** `src/modules/roof-runner/components/calendar/CalendarSettingsView.tsx`, around line 195+
 - **User action:** Open Calendar → Calendar Settings → click "Service Menu", "Rooms", or "Equipment" tab.
 - **Current behavior:** Tab button highlights, but the content area continues to show the Calendars table.
@@ -84,7 +84,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-003 — "Advanced Filters" button on Appointments list does nothing
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 3) — built a real Advanced Filters modal with start date, end date, and status dropdown. Filters apply on click of "Apply Filters" and propagate into `filteredAppointments` via a `useMemo` that runs the filter pipeline (search + advanced filters + sort). The filter chip badge updates with active filter count. Includes "Clear all" button.
 - **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~85
 - **User action:** Click "Advanced Filters" button.
 - **Current behavior:** No effect.
@@ -94,7 +94,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-004 — "Sort by" button does nothing
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 3) — Sort by is now a real dropdown menu with five options (Newest first, Oldest first, Title A→Z, Title Z→A, Status). Selection drives the `useMemo` sort in the appointment list. Closes on outside click.
 - **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~92
 - **User action:** Click "Sort by" button.
 - **Current behavior:** No effect.
@@ -104,7 +104,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-005 — "Manage Columns" button does nothing
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 3) — Manage Columns now opens a modal listing all 7 columns with toggleable checkboxes. `#` and `Title` are marked required (always visible). Selection persists to `localStorage` under `builderlync.calendar.appointmentColumns` so it survives page reloads on a per-device basis. Both `<th>` and `<td>` cells are conditionally rendered based on the visible-columns set. The "Customize List" footer link also opens this modal.
 - **Location:** `src/modules/roof-runner/components/calendar/AppointmentListView.tsx`, line ~112
 - **User action:** Click "Manage Columns".
 - **Current behavior:** No effect.
@@ -128,7 +128,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-007 — "Add Member" modal renders empty content [Verify]
 - **Severity:** P1
-- **Status:** Verify (Wave 2) — initial scan looked in the wrong directory. Real file is at `src/shared/components/AddMemberModal.tsx` (187 lines, not empty). Re-audit in Wave 2 to confirm whether the modal actually shows a teammate list at runtime or whether the body is conditional on data that isn't loaded.
+- **Status:** Won't fix (Wave 3) — verified `src/shared/components/AddMemberModal.tsx` (187 lines) is fully built: searchQuery + searchContacts API + filtered results (excluding existing members) + role picker + addTeamMember mutation + success/error handling. The "renders empty" claim was wrong — the modal correctly renders an empty body until the user starts typing into the search field, which is the correct UX. Not a bug.
 - **Location:** `src/modules/roof-runner/components/team-messaging/` (AddMemberModal.tsx)
 - **User action:** Open Add Member modal in a Team Messaging conversation.
 - **Current behavior:** Modal opens with empty body.
@@ -176,7 +176,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-011 — Add Opportunity modal opens empty [Verify]
 - **Severity:** P0
-- **Status:** Verify
+- **Status:** Won't fix (Wave 3) — false positive. `AddOpportunityModal.tsx` is 673 lines with full form: name, value, stage, assigned to, plus all standard opportunity fields. The audit's "opens empty" claim was inferred wrong.
 - **Location:** `src/modules/roof-runner/components/opportunities/AddOpportunityModal.tsx`
 - **User action:** Click Add Opportunity in Jobs.
 - **Current behavior:** Modal opens with no form fields visible.
