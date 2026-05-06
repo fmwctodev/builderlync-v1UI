@@ -49,6 +49,16 @@ const QxoSupplyView: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Listen for navigateToProducts dispatched by parent MaterialOrders page
+  // (mirrors the same pattern in SRSSupplyView / ABCSupplyView)
+  useEffect(() => {
+    const handleNavigateToProducts = () => {
+      setCurrentView('products');
+    };
+    window.addEventListener('navigateToProducts', handleNavigateToProducts);
+    return () => window.removeEventListener('navigateToProducts', handleNavigateToProducts);
+  }, []);
+
   useEffect(() => {
     const loadSelection = () => {
       const savedBranch = localStorage.getItem('qxo_selected_branch');

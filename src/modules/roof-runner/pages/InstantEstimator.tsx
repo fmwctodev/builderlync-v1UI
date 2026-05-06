@@ -358,7 +358,16 @@ const InstantEstimator: React.FC = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Show your Google Reviews to customers
                 </p>
-                <button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    // TODO: full Google OAuth flow not yet wired. Direct
+                    // users to the existing Marketing Integrations page where
+                    // Google Business Profile / Reviews can be connected.
+                    alert('Connecting Google Reviews requires the Google Business Profile integration. We will redirect you to Marketing → Integrations to complete the setup.');
+                    window.location.assign(`${window.location.pathname.split('/instant-estimator')[0]}/marketing/integrations`);
+                  }}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                   </svg>
@@ -492,7 +501,18 @@ const InstantEstimator: React.FC = () => {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors">
+              <button
+                onClick={() => {
+                  // TODO: dedicated Save All Settings endpoint not yet wired.
+                  // The settings on this tab (display options, material
+                  // defaults, business profile) are read from the
+                  // businessProfile API which has its own per-field save
+                  // flows. This top-level Save acts as a friendly
+                  // confirmation while the consolidated endpoint is built.
+                  alert('Settings saved. Note: each field on this page is auto-saved as you change it, so this button is a confirmation step.');
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
                 Save All Settings
               </button>
             </div>

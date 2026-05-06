@@ -355,21 +355,52 @@ function OrderRow({ order, onViewOrder }: { order: OrderHistoryItem, onViewOrder
           >
             View
           </button>
-          {/* <div className="relative">
+          <div className="relative">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              aria-label="Order actions"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2"
             >
               ⋯
             </button>
             {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10">
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg">Download</button>
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Edit</button>
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg">Delete</button>
+              <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    // TODO: backend download endpoint not yet implemented
+                    alert(`Download for order ${order.orderNumber} is coming soon — backend support is being added.`);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
+                >
+                  Download
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    // TODO: order editing requires supplier-side flow
+                    alert(`Editing order ${order.orderNumber} requires going through your supplier portal. We'll surface the link here once the integration is wired.`);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    // TODO: cancel/delete requires supplier API support
+                    alert(`Deleting order ${order.orderNumber} isn't supported yet. Contact the supplier directly to cancel a placed order.`);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg"
+                >
+                  Delete
+                </button>
               </div>
             )}
-          </div> */}
+          </div>
         </div>
       </td>
     </tr>

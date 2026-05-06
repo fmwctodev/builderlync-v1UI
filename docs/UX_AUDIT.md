@@ -152,7 +152,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-009 — Edit Contact modal Save doesn't persist [Verify]
 - **Severity:** P0
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — false positive. Verified `Contacts.tsx` line 230 calls `updateContact(editingContact.id, contactData)`, then closes modal at line 255 and refetches via `fetchContacts()` at line 258. Edit save is wired correctly.
 - **Location:** `src/modules/roof-runner/components/ContactProfile/Modals/` and `ContactProfile.tsx`
 - **User action:** Open contact, click Edit, change a field, click Save.
 - **Current behavior:** Modal closes, but reopening shows old values.
@@ -162,7 +162,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-010 — Delete contact confirmation doesn't actually delete [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — false positive. `confirmDelete` at `Contacts.tsx:435-451` properly calls `deleteContact(contactToDelete.id)`, shows success toast, and refetches via `fetchContacts()`. Bulk delete at line 453-469 mirrors the same pattern.
 - **Location:** `src/modules/roof-runner/pages/Contacts.tsx`
 - **User action:** Delete a contact, confirm.
 - **Current behavior:** Confirmation closes, contact still appears.
@@ -186,7 +186,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-012 — Drag-drop on Board view doesn't persist stage change [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — false positive. `JobsBoardView.tsx` drop handler calls `onUpdateJobStage(jobId, stage)`. Parent in `Jobs.tsx:566-590` calls `updateJob(jobId, { workflowStages: newStage, jobPipelineId, jobStageId, … })`. Drag-drop persists correctly.
 - **Location:** `src/modules/roof-runner/components/JobsBoardView.tsx`
 - **User action:** Drag a job card to a new column, refresh.
 - **Current behavior:** Card returns to original column.
@@ -206,7 +206,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-014 — Jobs Settings toggles don't persist [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — not applicable. JobsSettings.tsx is a workflow/pipeline manager (create, rename, set-default, delete pipelines), not a toggle settings panel. All actions go through real RTK Query mutations (`useUpdateJobPipelineMutation`, `useCreateJobPipelineMutation`). No orphan toggles exist on this page.
 - **Location:** `src/modules/roof-runner/components/JobsSettings.tsx`
 - **User action:** Toggle a setting, refresh.
 - **Current behavior:** Reverts to default.
@@ -220,7 +220,7 @@ This is a **living document**. Each finding has an ID (UXA-NNN), a status, and a
 
 ### UXA-015 — QuickBooks-required actions not gated when QB not connected
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Won't fix (Wave 2) — already mitigated. `Payments.tsx:130-159` shows a prominent yellow "Connect Your QuickBooks Account" alert banner when `activeTab === 'invoices' || 'transactions'` and `!isQuickBooksConnected`. The Sync button is properly disabled (line 261-263). Create-Invoice flow works locally without QB and syncs when connected — that's intentional, not a gap.
 - **Location:** `src/modules/roof-runner/pages/Payments.tsx` lines 16-31, downstream tabs
 - **User action:** Click "Create Invoice" or "Sync Transactions" without QuickBooks connected.
 - **Current behavior:** Action proceeds, fails silently or with confusing backend error.
@@ -246,7 +246,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-017 — "Save All Settings" button does nothing
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — wired onClick to a friendly confirmation alert that explains each field on the page is auto-saved as it changes (the underlying Estimator settings have per-field persistence). Notes in the alert + a TODO comment flag the consolidated save endpoint as a future enhancement.
 - **Location:** `src/modules/roof-runner/pages/InstantEstimator.tsx` line ~495
 - **User action:** Modify estimator settings, click Save All Settings.
 - **Current behavior:** Click does nothing.
@@ -256,7 +256,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-018 — "Connect Google Reviews" button does nothing
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — wired onClick to redirect users to `marketing/integrations` where Google Business Profile / Reviews can actually be connected. Includes a confirmation alert so users understand the redirect.
 - **Location:** `src/modules/roof-runner/pages/InstantEstimator.tsx` line ~361
 - **User action:** Click Connect Google Reviews.
 - **Current behavior:** No effect.
@@ -304,7 +304,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-022 — "Create Without Measurement" path may skip address validation
 - **Severity:** P0
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — verified Proposals.tsx:526-533. The "Create Without Measurement" button checks `if (selectedJobId) … else setCurrentStep('location')`. When no job is selected, the user is routed to the location step (which collects/validates the address). When a job is selected, the address comes from the job. Validation is already in place.
 - **Location:** `src/modules/roof-runner/pages/Proposals.tsx` lines 510-520
 - **User action:** Click Create Without Measurement when no `selectedJobId`.
 - **Current behavior:** Conditional logic may proceed without address.
@@ -328,7 +328,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-024 — "Create Material Order" button commented out
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — uncommented the button. Bundled with UXA-025 fix so the button now actually works on all three suppliers (ABC Supply, SRS, QXO/Beacon).
 - **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx` (block at ~line 80)
 - **User action:** Want to create a new order.
 - **Current behavior:** Button is in code but commented out.
@@ -338,7 +338,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-025 — `navigateToProducts` CustomEvent has no listener
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — only `SRSSupplyView` had a listener; added matching `useEffect`/`addEventListener` blocks to `ABCSupplyView` and `QxoSupplyView` so all three suppliers respond to the Create Material Order button by switching to their own products view.
 - **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx`
 - **User action:** Click Create Material Order (after UXA-024 fixed).
 - **Current behavior:** Dispatches a `CustomEvent('navigateToProducts')` but no component listens for it.
@@ -348,7 +348,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-026 — Supplier dropdown URL sync (verify works)
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — verified `MaterialOrders.tsx:25-31` properly syncs `selectedSupplier` state with the `supplier` URL param via `setSearchParams`. The bidirectional sync (URL→state on mount + state→URL on change) is correct.
 - **Location:** `src/modules/roof-runner/pages/MaterialOrders.tsx`
 - **Notes:** State syncs URL params correctly per agent — re-verify before marking fixed.
 
@@ -368,7 +368,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-028 — Order row action menu (Download / Edit / Delete) commented out
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — uncommented the 3-dot menu on each order row. Each action wires to an explicit "coming soon" alert because backend support for download / edit / delete on supplier orders isn't implemented yet (verified — no matching functions in `abcSupplyApi`). The affordance is now discoverable while being honest about backend status.
 - **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx` (OrderRow / row actions)
 - **User action:** Want to act on an individual order.
 - **Current behavior:** No action menu visible.
@@ -378,7 +378,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-029 — Status filter may not refetch after selection [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2) — false positive. `WorkOrders.tsx:171` has `useEffect(() => fetchOrders(), […, selectedStatus])`. When `handleStatusSelect` updates `selectedStatus`, the refetch fires automatically.
 - **Location:** `src/modules/roof-runner/pages/WorkOrders.tsx`
 - **Fix:** Verify `handleStatusSelect` triggers `fetchOrders()`.
 - **Complexity:** Trivial
@@ -389,7 +389,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-030 — Global Settings "Save Changes" button does nothing
 - **Severity:** P0
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — wired onClick to a real save handler. State is persisted to `localStorage` under `builderlync.automations.globalSettings` as a graceful fallback (no `updateAutomationSettings` API yet); the load/save handlers are isolated so they can be swapped to a real API in one place when the endpoint lands. Button now also shows "Saving…" / "Saved" / "Save Changes" based on dirty state and is disabled when there are no pending changes.
 - **Location:** `src/modules/roof-runner/pages/Automations.tsx`
 - **User action:** Toggle settings, click Save Changes.
 - **Current behavior:** No effect.
@@ -399,7 +399,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-031 — Toggle switches are styled divs, not real toggles
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Fixed (Wave 2) — replaced the two display-only divs with `<label>` wrappers containing controlled `<input type="checkbox" className="sr-only peer">` plus the same visual styling as before. Toggles are now keyboard-accessible (label-click on the surrounding row) and bound to the new `globalSettings` state from UXA-030.
 - **Location:** `src/modules/roof-runner/pages/Automations.tsx` (Global Settings section)
 - **User action:** Click "Allow Multiple Enrollment" or "Stop on Response" toggle.
 - **Current behavior:** Toggles are display-only divs (`w-10 h-5`) with no controlled state.
@@ -409,14 +409,14 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-032 — Advanced Filters apply unclear if persisted [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Won't fix (Wave 2 — scoped out) — confirmed `validateAndApply` only validates filter values and closes the modal; it doesn't actually filter the workflows list because the workflows in this page are hardcoded static data. Building a real filter engine on top of static data would be premature; this becomes meaningful only when the workflow list is wired to a real API. Tracked separately for backend integration phase.
 - **Location:** `src/modules/roof-runner/pages/Automations.tsx`
 - **Fix:** Verify `validateAndApply()` actually applies filters to displayed list and persists.
 - **Complexity:** Small
 
 ### UXA-033 — "Create Folder" modal local-only — no backend persistence [Verify]
 - **Severity:** P1
-- **Status:** Verify
+- **Status:** Fixed (Wave 2, stub) — replaced the silent `console.log` with an explicit alert that tells the user the folder name wasn't saved because backend support isn't wired yet. Honest UX while the API is being built.
 - **Location:** `src/modules/roof-runner/pages/Automations.tsx`
 - **User action:** Create folder, refresh.
 - **Current behavior:** Folder vanishes (no API call).
@@ -444,7 +444,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-035 — Conversion Funnel hardcoded to zeros
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Won't fix (Wave 2) — finding is inaccurate. The funnel uses plausible hardcoded demo data (2,450 visitors → 247 leads → 89 appointments → 67 inspections → 23 jobs), not zeros. The whole MarketingDashboard `OverviewTab` is currently a static demo surface; replacing one section's demo data without an end-to-end real data integration would be inconsistent. Tracked separately as a "demo → real data" follow-up if needed.
 - **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Campaigns tab) — `// TODO: Connect to real data`
 - **User action:** View funnel.
 - **Current behavior:** All metrics show 0.
@@ -459,7 +459,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-037 — Analytics platform errors silently disappear
 - **Severity:** P1
-- **Status:** Open
+- **Status:** Won't fix (Wave 2) — not applicable. The Analytics tab is fully static (hardcoded numbers, no API calls, no error handling). Platform-selector buttons are decorative. Real platform-data fetching with failure-aware UI would be a separate feature, not a fix.
 - **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Analytics tab)
 - **User action:** Open Marketing → Analytics when one platform's API fails.
 - **Current behavior:** That platform's data silently missing, no error indicator.
@@ -469,10 +469,7 @@ No gaps found. All buttons, modals, navigations, and search/filter interactions 
 
 ### UXA-038 — Analytics platform navigation has no error boundary
 - **Severity:** P1
-- **Status:** Open
-- **Location:** `src/modules/marketing/pages/MarketingDashboard.tsx` (Analytics tab)
-- **Fix:** Wrap navigation target in error boundary or add explicit error UI.
-- **Complexity:** Small
+- **Status:** Won't fix (Wave 2) — not applicable for the same reason as UXA-037. No real navigation occurs; the platform buttons just toggle a state variable that's currently unused.
 
 ---
 

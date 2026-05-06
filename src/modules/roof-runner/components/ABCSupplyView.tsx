@@ -29,6 +29,17 @@ const ABCSupplyView: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Listen for the navigateToProducts event dispatched by the
+  // "Create Material Order" button on the parent MaterialOrders page.
+  // Mirrors the same pattern used in SRSSupplyView / QxoSupplyView.
+  useEffect(() => {
+    const handleNavigateToProducts = () => {
+      setCurrentView('products');
+    };
+    window.addEventListener('navigateToProducts', handleNavigateToProducts);
+    return () => window.removeEventListener('navigateToProducts', handleNavigateToProducts);
+  }, []);
+
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);

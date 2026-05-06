@@ -25,6 +25,57 @@ export default function Automations() {
     { field: '', condition: 'Is', value: '', error: false }
   ]);
 
+  // Global Workflow Settings — persisted to localStorage as a graceful
+  // fallback while there's no dedicated `updateAutomationSettings` API.
+  // When the API lands the load/save handlers can swap to it without
+  // changing the UI bindings.
+  const SETTINGS_KEY = 'builderlync.automations.globalSettings';
+  type AutomationGlobalSettings = {
+    allowMultipleEnrollment: boolean;
+    stopOnResponse: boolean;
+  };
+  const loadGlobalSettings = (): AutomationGlobalSettings => {
+    if (typeof window === 'undefined') {
+      return { allowMultipleEnrollment: false, stopOnResponse: true };
+    }
+    try {
+      const raw = window.localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          allowMultipleEnrollment: !!parsed.allowMultipleEnrollment,
+          stopOnResponse: parsed.stopOnResponse ?? true,
+        };
+      }
+    } catch {
+      // ignore JSON parse errors and fall through to defaults
+    }
+    return { allowMultipleEnrollment: false, stopOnResponse: true };
+  };
+  const [globalSettings, setGlobalSettings] = useState<AutomationGlobalSettings>(() => loadGlobalSettings());
+  const [savedGlobalSettings, setSavedGlobalSettings] = useState<AutomationGlobalSettings>(() => loadGlobalSettings());
+  const [savingSettings, setSavingSettings] = useState(false);
+  const settingsDirty =
+    globalSettings.allowMultipleEnrollment !== savedGlobalSettings.allowMultipleEnrollment ||
+    globalSettings.stopOnResponse !== savedGlobalSettings.stopOnResponse;
+
+  const handleSaveGlobalSettings = async () => {
+    setSavingSettings(true);
+    try {
+      // Simulate save latency for UI feedback; localStorage write is sync.
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(globalSettings));
+      }
+      setSavedGlobalSettings(globalSettings);
+    } catch (error) {
+      console.error('Failed to save automation settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   const addFilter = () => {
     setFilters([...filters, { field: '', condition: 'Is', value: '', error: false }]);
   };
@@ -563,33 +614,63 @@ export default function Automations() {
                    <h2 className="text-2xl font-bold text-gray-900">Global Workflow Settings</h2>
                    <p className="text-gray-500 mt-1 font-medium">Manage system-wide defaults for all automations</p>
                 </div>
-                <button className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm shadow-xl shadow-primary-500/20 hover:bg-primary-700 active:scale-95 transition-all">Save Changes</button>
+                <button
+                  onClick={handleSaveGlobalSettings}
+                  disabled={savingSettings || !settingsDirty}
+                  className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm shadow-xl shadow-primary-500/20 hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingSettings ? 'Saving…' : settingsDirty ? 'Save Changes' : 'Saved'}
+                </button>
              </div>
-             
+
              <div className="grid grid-cols-2 gap-8">
                 <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
                      <Settings className="w-4 h-4 text-primary-500" /> General Defaults
                    </h3>
                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      <label className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer">
                          <div>
                             <p className="text-sm font-bold text-gray-700">Allow Multiple Enrollment</p>
                             <p className="text-xs text-gray-500">Enable contacts to enter multiple times</p>
                          </div>
-                         <div className="w-10 h-5 bg-gray-200 rounded-full relative">
-                            <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                         <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={globalSettings.allowMultipleEnrollment}
+                            onChange={(e) =>
+                              setGlobalSettings((prev) => ({
+                                ...prev,
+                                allowMultipleEnrollment: e.target.checked,
+                              }))
+                            }
+                         />
+                         <div className="w-10 h-5 bg-gray-200 peer-checked:bg-primary-600 rounded-full relative transition-colors">
+                            <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-5 transition-transform"
+                                 style={{ transform: globalSettings.allowMultipleEnrollment ? 'translateX(20px)' : 'translateX(0)' }} />
                          </div>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      </label>
+                      <label className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer">
                          <div>
                             <p className="text-sm font-bold text-gray-700">Stop on Response</p>
                             <p className="text-xs text-gray-500">Halt workflow if client replies</p>
                          </div>
-                         <div className="w-10 h-5 bg-primary-600 rounded-full relative">
-                            <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                         <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={globalSettings.stopOnResponse}
+                            onChange={(e) =>
+                              setGlobalSettings((prev) => ({
+                                ...prev,
+                                stopOnResponse: e.target.checked,
+                              }))
+                            }
+                         />
+                         <div className={`w-10 h-5 rounded-full relative transition-colors ${globalSettings.stopOnResponse ? 'bg-primary-600' : 'bg-gray-200'}`}>
+                            <div className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform"
+                                 style={{ transform: globalSettings.stopOnResponse ? 'translateX(20px)' : 'translateX(2px)' }} />
                          </div>
-                      </div>
+                      </label>
                    </div>
                 </div>
              </div>
@@ -629,7 +710,10 @@ export default function Automations() {
               </button>
               <button
                 onClick={() => {
-                  console.log('Creating folder:', folderName);
+                  // TODO: backend folder creation endpoint not yet wired.
+                  // For now, surface an honest "coming soon" message instead
+                  // of silently swallowing the input.
+                  alert(`Folder creation is coming soon — your folder name "${folderName}" wasn’t saved yet because backend support isn’t wired up. Track UXA-033 in docs/UX_AUDIT.md.`);
                   setShowFolderModal(false);
                   setFolderName('');
                 }}
