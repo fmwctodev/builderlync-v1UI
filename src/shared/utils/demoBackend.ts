@@ -389,9 +389,10 @@ register('POST', '/contacts/bulk-delete', ({ body }) => {
   return { data: { success: true, deleted: ids.length } };
 });
 register('GET', '/contacts/search', ({ query }) => {
+  // Consumer: shared/services/conversationsApi.searchContacts uses raw
+  // fetch + response.json() — return the array directly, no wrapper.
   const q = (query.q || query.search || '').toLowerCase();
-  const list = demoStore.list<any>('contacts').filter((c) => c.full_name?.toLowerCase().includes(q));
-  return { data: list };
+  return demoStore.list<any>('contacts').filter((c) => c.full_name?.toLowerCase().includes(q));
 });
 
 // ---- Jobs -----------------------------------------------------------------
@@ -593,25 +594,71 @@ register('GET', '/marketing/tracking-numbers', () => ({ data: DEMO_TRACKING_NUMB
 register('GET', '/tracking-numbers', () => ({ data: DEMO_TRACKING_NUMBERS }));
 
 // ---- Conversations / Inbox -----------------------------------------------
+//
+// Note on shape: `shared/services/conversationsApi.ts` uses raw `fetch()`
+// and does `return response.json()` directly — it expects the response
+// body to BE the array (or object), not `{ data: array }`. The fetch
+// interceptor in this file passes the handler's return value straight
+// through `JSON.stringify(data)`. So these handlers return raw shapes
+// (arrays, objects) instead of the typical `{ data: ... }` wrapper.
 register('GET', '/conversations', ({ query }) => {
   let list = DEMO_CONVERSATIONS;
   if (query.channel) list = list.filter((c) => c.channel === query.channel);
   if (query.status) list = list.filter((c) => c.status === query.status);
-  return { data: list };
+  return list;
 });
-register('GET', '/conversations/:id', ({ params }) => ({ data: DEMO_CONVERSATIONS.find((c) => c.id === params.id) || DEMO_CONVERSATIONS[0] }));
+register('GET', '/conversations/:id', ({ params }) => DEMO_CONVERSATIONS.find((c) => c.id === params.id) || DEMO_CONVERSATIONS[0]);
+register('GET', '/conversations/contacts/:id', ({ params }) => {
+  // Fallback used by getConversation() to synthesize a thread from a
+  // contact when given a `conv_<contactId>` mock id.
+  const list = demoStore.list<any>('contacts');
+  return list.find((c) => String(c.id) === String(params.id)) || list[0];
+});
 register('GET', '/conversations/:id/messages', ({ params }) => {
   const conv = DEMO_CONVERSATIONS.find((c) => c.id === params.id);
-  if (!conv) return { data: [] };
+  if (!conv) return [];
   // Synthesize a simple message thread per conversation
-  return { data: [
-    { id: `msg_${params.id}_1`, conversation_id: params.id, content: 'Hi, I need help with my roof', from: 'contact', sender_name: conv.contact_name, sent_at: hoursFromNowDate(-26) },
-    { id: `msg_${params.id}_2`, conversation_id: params.id, content: 'Of course, we can help. What\'s the issue?', from: 'agent', sender_name: 'Maria Lopez', sent_at: hoursFromNowDate(-25.5) },
-    { id: `msg_${params.id}_3`, conversation_id: params.id, content: conv.last_message, from: 'contact', sender_name: conv.contact_name, sent_at: conv.last_message_at },
-  ]};
+  return [
+    { id: `msg_${params.id}_1`, conversation_id: params.id, message_type: conv.channel === 'email' ? 'email' : 'sms', direction: 'inbound', sender_id: null, content: 'Hi, I need help with my roof', is_internal: false, email_metadata: {}, sms_metadata: {}, delivery_status: 'delivered', external_id: null, created_at: hoursFromNowDate(-26), updated_at: hoursFromNowDate(-26) },
+    { id: `msg_${params.id}_2`, conversation_id: params.id, message_type: conv.channel === 'email' ? 'email' : 'sms', direction: 'outbound', sender_id: '1', content: "Of course, we can help. What's the issue?", is_internal: false, email_metadata: {}, sms_metadata: {}, delivery_status: 'delivered', external_id: null, created_at: hoursFromNowDate(-25.5), updated_at: hoursFromNowDate(-25.5) },
+    { id: `msg_${params.id}_3`, conversation_id: params.id, message_type: conv.channel === 'email' ? 'email' : 'sms', direction: 'inbound', sender_id: null, content: conv.last_message, is_internal: false, email_metadata: {}, sms_metadata: {}, delivery_status: 'delivered', external_id: null, created_at: conv.last_message_at, updated_at: conv.last_message_at },
+  ];
 });
-register('POST', '/conversations/:id/messages', ({ params, body }) => ({ data: { id: newId('msg'), conversation_id: params.id, content: body.content, from: 'agent', sender_name: 'Demo Reviewer', sent_at: nowIso() } }));
-register('GET', '/team-messaging/conversations', () => ({ data: DEMO_CONVERSATIONS.filter((c) => c.is_group) }));
+register('POST', '/conversations', ({ body }) => ({
+  id: `conv_${body.contact_id || newId('c')}_${Date.now()}`,
+  contact_id: String(body.contact_id || ''),
+  subject: null,
+  channel: body.channel || 'sms',
+  status: 'open',
+  assigned_to: null,
+  user_id: '1',
+  last_message_at: nowIso(),
+  created_at: nowIso(),
+  updated_at: nowIso(),
+}));
+register('POST', '/conversations/:id/messages', ({ params, body }) => ({
+  id: newId('msg'),
+  conversation_id: params.id,
+  message_type: body.message_type || 'sms',
+  direction: 'outbound',
+  sender_id: '1',
+  content: body.content || body.message || '',
+  is_internal: false,
+  email_metadata: {},
+  sms_metadata: {},
+  delivery_status: 'sent',
+  external_id: null,
+  created_at: nowIso(),
+  updated_at: nowIso(),
+}));
+register('POST', '/conversations/sms/send', ({ body }) => ({ success: true, message_id: newId('msg'), conversation_id: body.conversation_id }));
+register('POST', '/conversations/email/send', ({ body }) => ({ success: true, message_id: newId('msg'), conversation_id: body.conversation_id }));
+register('POST', '/conversations/:id/read', () => ({ success: true }));
+register('PATCH', '/conversations/:id/status', ({ params, body }) => {
+  const conv = DEMO_CONVERSATIONS.find((c) => c.id === params.id);
+  return { ...(conv || DEMO_CONVERSATIONS[0]), status: body.status || 'open' };
+});
+register('GET', '/team-messaging/conversations', () => DEMO_CONVERSATIONS.filter((c) => c.is_group));
 
 // ---- Reputation / Reviews -------------------------------------------------
 register('GET', '/reviews', () => ({ data: demoStore.list('reviews') }));
