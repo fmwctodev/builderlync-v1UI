@@ -38,6 +38,14 @@ import {
   DEMO_TRANSACTIONS, DEMO_OPPORTUNITIES, DEMO_CAMPAIGNS, DEMO_REVIEWS,
   DEMO_ACTIVITY, DEMO_TASKS, DEMO_NOTIFICATIONS, DEMO_TAGS,
   DEMO_CUSTOM_FIELDS,
+  DEMO_FORMS, DEMO_FUNNELS, DEMO_FORM_SUBMISSIONS,
+  DEMO_SIERRA_RECOMMENDATIONS, DEMO_SOCIAL_POSTS,
+  DEMO_ATTRIBUTION,
+  DEMO_FILE_FOLDERS, DEMO_FILES,
+  DEMO_WORKFLOW_TEMPLATES, DEMO_AUTOMATIONS,
+  DEMO_SUPPORT_TICKETS,
+  DEMO_CONVERSATIONS,
+  DEMO_CHANNELS, DEMO_TRACKING_NUMBERS,
 } from './demoFixtures';
 
 // ============================================================================
@@ -537,8 +545,73 @@ register('POST', '/campaigns/:id/duplicate', ({ params }) => {
 });
 register('DELETE', '/campaigns/:id', ({ params }) => ({ data: { success: demoStore.remove('campaigns', params.id) } }));
 
-register('GET', '/forms', () => ({ data: [] }));
-register('GET', '/funnels', () => ({ data: [] }));
+// ---- Sierra Marketing — Forms / Funnels / Submissions ---------------------
+register('GET', '/forms', () => ({ data: DEMO_FORMS }));
+register('GET', '/forms/:id', ({ params }) => ({ data: DEMO_FORMS.find((f) => f.id === params.id) || DEMO_FORMS[0] }));
+register('POST', '/forms', ({ body }) => ({ data: { ...body, id: newId('form'), submissions: 0, conversion_rate: 0, status: 'draft', created_at: nowIso(), updated_at: nowIso() } }));
+register('PUT', '/forms/:id', ({ params, body }) => ({ data: { ...DEMO_FORMS.find((f) => f.id === params.id), ...body, updated_at: nowIso() } }));
+register('DELETE', '/forms/:id', () => ({ data: { success: true } }));
+register('GET', '/forms/:id/submissions', ({ params }) => ({ data: DEMO_FORM_SUBMISSIONS.filter((s) => s.form_id === params.id) }));
+register('GET', '/form-submissions', () => ({ data: DEMO_FORM_SUBMISSIONS }));
+register('GET', '/marketing/forms', () => ({ data: DEMO_FORMS }));
+register('GET', '/marketing/funnels', () => ({ data: DEMO_FUNNELS }));
+
+register('GET', '/funnels', () => ({ data: DEMO_FUNNELS }));
+register('GET', '/funnels/:id', ({ params }) => ({ data: DEMO_FUNNELS.find((f) => f.id === params.id) || DEMO_FUNNELS[0] }));
+register('POST', '/funnels', ({ body }) => ({ data: { ...body, id: newId('funnel'), submissions: 0, appointments_booked: 0, close_rate: 0, status: 'draft', created_at: nowIso(), updated_at: nowIso() } }));
+register('PUT', '/funnels/:id', ({ params, body }) => ({ data: { ...DEMO_FUNNELS.find((f) => f.id === params.id), ...body, updated_at: nowIso() } }));
+register('DELETE', '/funnels/:id', () => ({ data: { success: true } }));
+
+// ---- Sierra Marketing — Sierra AI recommendations + Social posts ---------
+register('GET', '/sierra-actions', ({ query }) => {
+  let list = DEMO_SIERRA_RECOMMENDATIONS;
+  if (query.status) list = list.filter((r) => r.status === query.status);
+  if (query.priority) list = list.filter((r) => r.priority === query.priority);
+  return { data: list };
+});
+register('GET', '/sierra-recommendations', () => ({ data: DEMO_SIERRA_RECOMMENDATIONS }));
+register('POST', '/sierra-actions/:id/execute', ({ params }) => ({ data: { ...DEMO_SIERRA_RECOMMENDATIONS.find((r) => r.id === params.id), status: 'completed' } }));
+register('POST', '/sierra-actions/:id/dismiss', ({ params }) => ({ data: { ...DEMO_SIERRA_RECOMMENDATIONS.find((r) => r.id === params.id), status: 'dismissed' } }));
+
+register('GET', '/social-posts', ({ query }) => {
+  let list = DEMO_SOCIAL_POSTS;
+  if (query.status) list = list.filter((p) => p.status === query.status);
+  if (query.platform) list = list.filter((p) => p.platforms?.includes(query.platform));
+  return { data: list };
+});
+register('GET', '/social-posts/:id', ({ params }) => ({ data: DEMO_SOCIAL_POSTS.find((p) => p.id === params.id) || DEMO_SOCIAL_POSTS[0] }));
+register('POST', '/social-posts', ({ body }) => ({ data: { ...body, id: newId('sp'), status: 'draft', created_at: nowIso() } }));
+register('PUT', '/social-posts/:id', ({ params, body }) => ({ data: { ...DEMO_SOCIAL_POSTS.find((p) => p.id === params.id), ...body, updated_at: nowIso() } }));
+register('DELETE', '/social-posts/:id', () => ({ data: { success: true } }));
+
+// ---- Sierra Marketing — Attribution + Channels + Tracking ---------------
+register('GET', '/marketing/attribution', () => ({ data: DEMO_ATTRIBUTION }));
+register('GET', '/attribution', () => ({ data: DEMO_ATTRIBUTION }));
+register('GET', '/marketing/channels', () => ({ data: DEMO_CHANNELS }));
+register('GET', '/channels', () => ({ data: DEMO_CHANNELS }));
+register('GET', '/marketing/tracking-numbers', () => ({ data: DEMO_TRACKING_NUMBERS }));
+register('GET', '/tracking-numbers', () => ({ data: DEMO_TRACKING_NUMBERS }));
+
+// ---- Conversations / Inbox -----------------------------------------------
+register('GET', '/conversations', ({ query }) => {
+  let list = DEMO_CONVERSATIONS;
+  if (query.channel) list = list.filter((c) => c.channel === query.channel);
+  if (query.status) list = list.filter((c) => c.status === query.status);
+  return { data: list };
+});
+register('GET', '/conversations/:id', ({ params }) => ({ data: DEMO_CONVERSATIONS.find((c) => c.id === params.id) || DEMO_CONVERSATIONS[0] }));
+register('GET', '/conversations/:id/messages', ({ params }) => {
+  const conv = DEMO_CONVERSATIONS.find((c) => c.id === params.id);
+  if (!conv) return { data: [] };
+  // Synthesize a simple message thread per conversation
+  return { data: [
+    { id: `msg_${params.id}_1`, conversation_id: params.id, content: 'Hi, I need help with my roof', from: 'contact', sender_name: conv.contact_name, sent_at: hoursFromNowDate(-26) },
+    { id: `msg_${params.id}_2`, conversation_id: params.id, content: 'Of course, we can help. What\'s the issue?', from: 'agent', sender_name: 'Maria Lopez', sent_at: hoursFromNowDate(-25.5) },
+    { id: `msg_${params.id}_3`, conversation_id: params.id, content: conv.last_message, from: 'contact', sender_name: conv.contact_name, sent_at: conv.last_message_at },
+  ]};
+});
+register('POST', '/conversations/:id/messages', ({ params, body }) => ({ data: { id: newId('msg'), conversation_id: params.id, content: body.content, from: 'agent', sender_name: 'Demo Reviewer', sent_at: nowIso() } }));
+register('GET', '/team-messaging/conversations', () => ({ data: DEMO_CONVERSATIONS.filter((c) => c.is_group) }));
 
 // ---- Reputation / Reviews -------------------------------------------------
 register('GET', '/reviews', () => ({ data: demoStore.list('reviews') }));
@@ -995,18 +1068,50 @@ register('GET', '/activity', () => ({ data: demoStore.list('notifications').conc
 register('GET', '/activity-feed', () => ({ data: DEMO_ACTIVITY }));
 
 // ---- Support / tickets ----------------------------------------------------
-register('GET', '/support/tickets', () => ({ data: [], pagination: { page: 1, limit: 5, total: 0, totalPages: 1 } }));
-register('POST', '/support/tickets', ({ body }) => ({ data: { id: newId('ticket'), ticket_number: `TKT-${Math.floor(Math.random() * 10000)}`, ...body, created_at: nowIso() } }));
+register('GET', '/support/tickets', ({ query }) => {
+  const page = Number(query.page || 1);
+  const limit = Number(query.limit || 5);
+  const start = (page - 1) * limit;
+  const slice = DEMO_SUPPORT_TICKETS.slice(start, start + limit);
+  return { data: slice, pagination: { page, limit, total: DEMO_SUPPORT_TICKETS.length, totalPages: Math.max(1, Math.ceil(DEMO_SUPPORT_TICKETS.length / limit)) } };
+});
+register('GET', '/support/tickets/:id', ({ params }) => ({ data: DEMO_SUPPORT_TICKETS.find((t) => t.id === params.id) || DEMO_SUPPORT_TICKETS[0] }));
+register('POST', '/support/tickets', ({ body }) => ({ data: { id: newId('ticket'), ticket_number: `TKT-${Math.floor(1000 + Math.random() * 9000)}`, status: 'open', priority: body.priority || 'medium', ...body, created_at: nowIso(), updated_at: nowIso() } }));
 
 // ---- Files (File Manager) -------------------------------------------------
-register('GET', '/files', () => ({ data: [] }));
-register('GET', '/folders', () => ({ data: [] }));
-register('GET', '/cloud-drive/connection', () => ({ data: { connected: false } }));
+//
+// The backend files API serves through `backendFilesApi.getFolderContents()`
+// which calls `/cloud-drive/contents` returning { folders, files,
+// nextFolderPageToken, nextFilePageToken }. Provide that exact shape.
+register('GET', '/files', ({ query }) => {
+  let list = DEMO_FILES;
+  if (query.folderId) list = list.filter((f) => f.folder_id === query.folderId);
+  return { data: list };
+});
+register('GET', '/folders', () => ({ data: DEMO_FILE_FOLDERS }));
+register('GET', '/cloud-drive/contents', ({ query }) => {
+  const folderId = query.folderId || query.folder_id || null;
+  const folders = folderId ? [] : DEMO_FILE_FOLDERS;
+  const files = folderId ? DEMO_FILES.filter((f) => f.folder_id === folderId) : DEMO_FILES.filter((f) => !f.folder_id);
+  return { data: { folders, files, nextFolderPageToken: null, nextFilePageToken: null }, folders, files };
+});
+register('GET', '/cloud-drive/connection', () => ({ data: { connected: true, provider: 'google', account_email: 'demo@builderlync.com', last_sync_at: nowIso() } }));
+register('POST', '/cloud-drive/folders', ({ body }) => ({ data: { ...body, id: newId('fldr'), file_count: 0, size_mb: 0, created_at: nowIso() } }));
+register('POST', '/cloud-drive/files', ({ body }) => ({ data: { ...body, id: newId('file'), created_at: nowIso() } }));
+register('DELETE', '/cloud-drive/folders/:id', () => ({ data: { success: true } }));
+register('DELETE', '/cloud-drive/files/:id', () => ({ data: { success: true } }));
 
 // ---- Workflow templates / Automations ------------------------------------
-register('GET', '/workflow-templates', () => ({ data: [] }));
-register('GET', '/automations', () => ({ data: [] }));
-register('GET', '/workflows', () => ({ data: [] }));
+register('GET', '/workflow-templates', () => ({ data: DEMO_WORKFLOW_TEMPLATES }));
+register('GET', '/workflow-templates/:id', ({ params }) => ({ data: DEMO_WORKFLOW_TEMPLATES.find((t) => t.id === params.id) || DEMO_WORKFLOW_TEMPLATES[0] }));
+register('GET', '/automations', () => ({ data: DEMO_AUTOMATIONS }));
+register('GET', '/automations/:id', ({ params }) => ({ data: DEMO_AUTOMATIONS.find((a) => a.id === params.id) || DEMO_AUTOMATIONS[0] }));
+register('POST', '/automations', ({ body }) => ({ data: { ...body, id: newId('auto'), enrolled_count: 0, completed_count: 0, conversion_rate: 0, status: 'draft', created_at: nowIso(), updated_at: nowIso() } }));
+register('PUT', '/automations/:id', ({ params, body }) => ({ data: { ...DEMO_AUTOMATIONS.find((a) => a.id === params.id), ...body, updated_at: nowIso() } }));
+register('POST', '/automations/:id/pause', ({ params }) => ({ data: { ...DEMO_AUTOMATIONS.find((a) => a.id === params.id), status: 'paused' } }));
+register('POST', '/automations/:id/resume', ({ params }) => ({ data: { ...DEMO_AUTOMATIONS.find((a) => a.id === params.id), status: 'active' } }));
+register('DELETE', '/automations/:id', () => ({ data: { success: true } }));
+register('GET', '/workflows', () => ({ data: DEMO_AUTOMATIONS }));
 
 // ============================================================================
 // Axios adapter — installs into the central `api` instance

@@ -1,5 +1,7 @@
 import { supabase } from '../../../shared/lib/supabase';
 import type { SierraAction, SierraRecommendation, RecommendationType } from '../types/marketing';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { DEMO_SIERRA_RECOMMENDATIONS } from '../../../shared/utils/demoFixtures';
 
 const DEMO_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
 
@@ -7,6 +9,41 @@ function resolveOrgId(orgId: string | null | undefined): string {
   if (!orgId || orgId === 'dev-org-id') return DEMO_ORG_ID;
   return orgId;
 }
+
+// Map our flat DEMO_SIERRA_RECOMMENDATIONS shape onto the SierraAction /
+// SierraRecommendation interfaces the components expect.
+const buildStagingActions = (): SierraAction[] =>
+  DEMO_SIERRA_RECOMMENDATIONS.map((r) => ({
+    id: r.id,
+    org_id: DEMO_ORG_ID,
+    recommendation_id: r.id,
+    type: r.type as RecommendationType,
+    title: r.title,
+    rationale: r.reasoning,
+    expected_impact: r.impact_label,
+    confidence_score: r.confidence,
+    linked_entities: [],
+    approval_state: r.status === 'completed' ? 'approved' : r.status === 'pending' ? 'pending' : 'rejected',
+    execution_state: r.status === 'completed' ? 'completed' : 'pending',
+    executed_at: r.status === 'completed' ? r.created_at : undefined,
+    result_summary: r.status === 'completed' ? r.summary : undefined,
+    can_rollback: false,
+    created_at: r.created_at,
+  }));
+
+const buildStagingRecommendations = (): SierraRecommendation[] =>
+  DEMO_SIERRA_RECOMMENDATIONS.filter((r) => r.status === 'pending').map((r) => ({
+    id: r.id,
+    org_id: DEMO_ORG_ID,
+    type: r.type as RecommendationType,
+    title: r.title,
+    rationale: r.reasoning,
+    expected_impact: r.impact_label,
+    confidence_score: r.confidence,
+    linked_entities: [],
+    status: 'active',
+    created_at: r.created_at,
+  }));
 
 function rowToAction(row: Record<string, unknown>): SierraAction {
   return {
@@ -45,6 +82,7 @@ function rowToRecommendation(row: Record<string, unknown>): SierraRecommendation
 
 export const sierraActionsApi = {
   async getActions(orgId: string | null): Promise<SierraAction[]> {
+    if (isStagingMode()) return buildStagingActions();
     const organizationId = resolveOrgId(orgId);
     const { data, error } = await supabase
       .from('sierra_marketing_actions')
@@ -56,6 +94,7 @@ export const sierraActionsApi = {
   },
 
   async getRecommendations(orgId: string | null): Promise<SierraRecommendation[]> {
+    if (isStagingMode()) return buildStagingRecommendations();
     const organizationId = resolveOrgId(orgId);
     const { data, error } = await supabase
       .from('sierra_marketing_recommendations')

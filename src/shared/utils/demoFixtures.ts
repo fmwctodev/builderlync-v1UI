@@ -468,3 +468,225 @@ export const DEMO_CUSTOM_FIELDS = [
   { id: 'cf_3', name: 'Adjuster Contact', entity: 'job', field_type: 'text', is_required: false, options: null, position: 0, created_at: daysAgo(150) },
   { id: 'cf_4', name: 'Lead Source Detail', entity: 'contact', field_type: 'select', is_required: false, options: ['Google Ads', 'Facebook Ads', 'Referral', 'Storm Canvassing', 'Yard Sign', 'Door Knock'], position: 2, created_at: daysAgo(120) },
 ];
+
+// ============================================================================
+// Sierra Marketing — Forms (lead capture forms)
+// ============================================================================
+
+export const DEMO_FORMS = [
+  { id: 'form_1', organization_id: DEMO_ORG.id, name: 'Free Roof Inspection', form_type: 'lead_capture', status: 'active', submissions: 142, conversion_rate: 28.4, embed_url: 'https://demo.builderlync.com/forms/free-inspection', fields: [
+    { id: 'fld_1', label: 'Full Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Email', type: 'email', required: true },
+    { id: 'fld_3', label: 'Phone', type: 'phone', required: true },
+    { id: 'fld_4', label: 'Property Address', type: 'address', required: true },
+    { id: 'fld_5', label: 'When did your roof issue start?', type: 'select', required: false, options: ['Recent storm', 'Old roof needing replacement', 'Routine inspection'] },
+  ], created_at: daysAgo(90), updated_at: daysAgo(8) },
+  { id: 'form_2', organization_id: DEMO_ORG.id, name: 'Storm Damage Claim Help', form_type: 'lead_capture', status: 'active', submissions: 87, conversion_rate: 41.2, embed_url: 'https://demo.builderlync.com/forms/storm-claim', fields: [
+    { id: 'fld_1', label: 'Full Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Phone', type: 'phone', required: true },
+    { id: 'fld_3', label: 'Insurance Carrier', type: 'text', required: false },
+    { id: 'fld_4', label: 'Date of storm', type: 'date', required: false },
+  ], created_at: daysAgo(60), updated_at: daysAgo(2) },
+  { id: 'form_3', organization_id: DEMO_ORG.id, name: 'Refer a Neighbor', form_type: 'referral', status: 'active', submissions: 38, conversion_rate: 52.6, embed_url: 'https://demo.builderlync.com/forms/refer', fields: [
+    { id: 'fld_1', label: 'Your Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Neighbor Address', type: 'address', required: true },
+    { id: 'fld_3', label: 'How do you know them?', type: 'textarea', required: false },
+  ], created_at: daysAgo(30), updated_at: daysAgo(5) },
+  { id: 'form_4', organization_id: DEMO_ORG.id, name: 'Commercial Quote Request', form_type: 'lead_capture', status: 'active', submissions: 23, conversion_rate: 34.8, embed_url: 'https://demo.builderlync.com/forms/commercial', fields: [
+    { id: 'fld_1', label: 'Company Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Decision Maker', type: 'text', required: true },
+    { id: 'fld_3', label: 'Building Type', type: 'select', options: ['Office', 'Retail', 'Warehouse', 'Multi-Family', 'Other'], required: true },
+    { id: 'fld_4', label: 'Square Footage', type: 'number', required: false },
+  ], created_at: daysAgo(75), updated_at: daysAgo(15) },
+  { id: 'form_5', organization_id: DEMO_ORG.id, name: 'Maintenance Plan Sign-Up', form_type: 'subscription', status: 'draft', submissions: 0, conversion_rate: 0, embed_url: null, fields: [
+    { id: 'fld_1', label: 'Full Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Email', type: 'email', required: true },
+    { id: 'fld_3', label: 'Plan Tier', type: 'select', options: ['Annual Inspection', 'Semi-Annual + Cleaning', 'Quarterly Premium'], required: true },
+  ], created_at: daysAgo(4), updated_at: daysAgo(2) },
+  { id: 'form_6', organization_id: DEMO_ORG.id, name: 'Senior Discount Inquiry', form_type: 'lead_capture', status: 'active', submissions: 19, conversion_rate: 31.5, embed_url: 'https://demo.builderlync.com/forms/senior', fields: [
+    { id: 'fld_1', label: 'Full Name', type: 'text', required: true },
+    { id: 'fld_2', label: 'Phone', type: 'phone', required: true },
+    { id: 'fld_3', label: 'Best time to call', type: 'select', options: ['Morning', 'Afternoon', 'Evening'], required: false },
+  ], created_at: daysAgo(45), updated_at: daysAgo(20) },
+];
+
+// ============================================================================
+// Sierra Marketing — Funnels (full landing-page funnels with stats)
+// ============================================================================
+
+export const DEMO_FUNNELS = [
+  { id: 'funnel_1', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Storm Response — May 2026', funnel_type: 'storm_response', headline: 'Storm Damage? We Respond in 24 Hours', offer: 'Free storm damage inspection', form_id: 'form_2', automation_id: 'auto_1', submissions: 87, appointments_booked: 36, close_rate: 41.2, status: 'active', created_at: daysAgo(2), updated_at: daysAgo(2) },
+  { id: 'funnel_2', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Free Inspection — Plano', funnel_type: 'free_inspection', headline: 'Get a Free Roof Inspection Today', offer: 'Free inspection with no obligation', form_id: 'form_1', automation_id: 'auto_2', submissions: 142, appointments_booked: 40, close_rate: 28.4, status: 'active', created_at: daysAgo(90), updated_at: daysAgo(8) },
+  { id: 'funnel_3', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Insurance Claim Specialist', funnel_type: 'insurance_claim', headline: 'We Handle Your Insurance Claim Start to Finish', offer: 'Free damage assessment + claim assistance', form_id: 'form_2', automation_id: 'auto_3', submissions: 64, appointments_booked: 27, close_rate: 42.0, status: 'active', created_at: daysAgo(120), updated_at: daysAgo(15) },
+  { id: 'funnel_4', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Senior Discount Funnel', funnel_type: 'senior_discount', headline: 'Senior Homeowner Special — Save 10%', offer: '10% senior discount on all services', form_id: 'form_6', automation_id: null, submissions: 19, appointments_booked: 6, close_rate: 31.5, status: 'active', created_at: daysAgo(45), updated_at: daysAgo(20) },
+  { id: 'funnel_5', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Commercial Roofing — Q2', funnel_type: 'commercial', headline: 'Commercial Roofing — On Time, On Budget', offer: 'Free commercial roof assessment', form_id: 'form_4', automation_id: null, submissions: 23, appointments_booked: 8, close_rate: 34.8, status: 'active', created_at: daysAgo(75), updated_at: daysAgo(15) },
+  { id: 'funnel_6', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Refer-a-Neighbor — Q2', funnel_type: 'referral', headline: 'Help Your Neighbor, Earn $250', offer: '$250 referral bonus', form_id: 'form_3', automation_id: 'auto_4', submissions: 38, appointments_booked: 20, close_rate: 52.6, status: 'active', created_at: daysAgo(30), updated_at: daysAgo(5) },
+  { id: 'funnel_7', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: '0% Financing — Spring', funnel_type: 'financing', headline: '0% Financing for 18 Months on Any Roof', offer: '0% APR financing available', form_id: null, automation_id: null, submissions: 0, appointments_booked: 0, close_rate: 0, status: 'draft', created_at: daysAgo(3), updated_at: daysAgo(1) },
+  { id: 'funnel_8', org_id: DEMO_ORG.id, organization_id: DEMO_ORG.id, name: 'Maintenance Plan — 2026', funnel_type: 'maintenance', headline: 'Catch Problems Before They Cost You Thousands', offer: 'Annual roof health checkup', form_id: 'form_5', automation_id: null, submissions: 0, appointments_booked: 0, close_rate: 0, status: 'draft', created_at: daysAgo(4), updated_at: daysAgo(2) },
+];
+
+// ============================================================================
+// Sierra Marketing — Form submissions (rich submission history)
+// ============================================================================
+
+export const DEMO_FORM_SUBMISSIONS = [
+  { id: 'sub_1', form_id: 'form_1', form_name: 'Free Roof Inspection', submitted_at: daysAgo(0.2), data: { name: 'Tina Murphy', email: 'tm@example.com', phone: '+1 (555) 010-3020', address: '777 Lakeside Dr, Rockwall, TX' }, status: 'new', contact_id: 20 },
+  { id: 'sub_2', form_id: 'form_2', form_name: 'Storm Damage Claim Help', submitted_at: daysAgo(0.5), data: { name: 'Anish Patel', phone: '+1 (555) 010-3003', insurance_carrier: 'State Farm', date_of_storm: '2026-05-04' }, status: 'converted', contact_id: 3 },
+  { id: 'sub_3', form_id: 'form_1', form_name: 'Free Roof Inspection', submitted_at: daysAgo(1), data: { name: 'Mike Park', email: 'mp@example.com', phone: '+1 (555) 010-3011', address: '1908 Aspen Glade, Lewisville, TX' }, status: 'contacted', contact_id: 11 },
+  { id: 'sub_4', form_id: 'form_2', form_name: 'Storm Damage Claim Help', submitted_at: daysAgo(2), data: { name: 'Sara Cohen', phone: '+1 (555) 010-3012', insurance_carrier: 'Allstate', date_of_storm: '2026-05-04' }, status: 'converted', contact_id: 12 },
+  { id: 'sub_5', form_id: 'form_6', form_name: 'Senior Discount Inquiry', submitted_at: daysAgo(3), data: { name: 'Priya Singh', phone: '+1 (555) 010-3014', best_time: 'Afternoon' }, status: 'contacted', contact_id: 14 },
+  { id: 'sub_6', form_id: 'form_3', form_name: 'Refer a Neighbor', submitted_at: daysAgo(4), data: { your_name: 'Jess Walker', neighbor_address: '14 Cottonwood Cir, Plano, TX', how_known: 'Next-door neighbor — saw our completed roof' }, status: 'new', contact_id: 5 },
+  { id: 'sub_7', form_id: 'form_4', form_name: 'Commercial Quote Request', submitted_at: daysAgo(7), data: { company: 'Plano Tech Park LLC', decision_maker: 'Daniel Greene', building_type: 'Office', square_footage: 24000 }, status: 'qualified', contact_id: null },
+  { id: 'sub_8', form_id: 'form_1', form_name: 'Free Roof Inspection', submitted_at: daysAgo(8), data: { name: 'Alex Smith', email: 'asmith@example.com', phone: '+1 (555) 010-3004', address: '8821 Pine Hollow, Allen, TX' }, status: 'contacted', contact_id: 4 },
+  { id: 'sub_9', form_id: 'form_2', form_name: 'Storm Damage Claim Help', submitted_at: daysAgo(10), data: { name: 'Maria Davis', phone: '+1 (555) 010-3001', insurance_carrier: 'Farmers', date_of_storm: '2026-04-28' }, status: 'converted', contact_id: 1 },
+];
+
+// ============================================================================
+// Sierra Marketing — Sierra AI marketing recommendations
+// ============================================================================
+
+export const DEMO_SIERRA_RECOMMENDATIONS = [
+  { id: 'rec_1', type: 'budget_shift', priority: 'high', status: 'pending', title: 'Move $1,400/mo from Meta Ads to Google Ads', summary: 'Google Ads is converting 2.1× cheaper per lead this month. Reallocating budget would yield ~22 more leads with current spend.', impact_label: '+22 leads/mo', impact_value: 22, confidence: 0.91, reasoning: 'Google Ads CPL = $89.57 (94 leads / $8,420 spend). Meta Ads CPL = $62.84 but conversion-to-job rate is 12% vs Google\'s 27%. True acquisition cost favors Google.', actions: [{ label: 'Apply shift', type: 'execute' }, { label: 'Review details', type: 'navigate', target: '/marketing/analytics' }], created_at: daysAgo(0.5) },
+  { id: 'rec_2', type: 'audience_expand', priority: 'medium', status: 'pending', title: 'Launch lookalike audience from past customers', summary: 'You have 142 paid customers with full address + project value data. A 1% lookalike audience on Meta could 3× your reach with similar buyer profiles.', impact_label: '+3.2× reach', impact_value: null, confidence: 0.78, reasoning: 'Customers cluster strongly in 4 ZIP codes (75025, 75034, 75070, 75094). Meta lookalike will find similar households. Estimated CPM $4.20.', actions: [{ label: 'Build audience', type: 'execute' }, { label: 'See details', type: 'navigate', target: '/marketing/analytics' }], created_at: daysAgo(0.8) },
+  { id: 'rec_3', type: 'review_velocity', priority: 'high', status: 'pending', title: 'Send review request to 12 recently-paid customers', summary: 'You have 12 customers whose final invoice was paid 7-14 days ago. Sending a review request now (the optimal window) could lift your Google rating velocity.', impact_label: '~6 new reviews', impact_value: 6, confidence: 0.85, reasoning: 'Industry average review-request response rate at 7-14 days post-payment is 47%. With 12 eligible customers, expect ~6 new reviews.', actions: [{ label: 'Send all', type: 'execute' }, { label: 'Review list', type: 'navigate', target: '/reputation/requests' }], created_at: daysAgo(1) },
+  { id: 'rec_4', type: 'content', priority: 'medium', status: 'pending', title: 'Post hailstorm photo to Google Business Profile', summary: 'You captured a 1.75" hailstone shot on the Cohen job 2 days ago — ideal content for storm-restoration GBP posts. Local search ranks GBP profiles with recent storm content higher.', impact_label: '+12% local visibility', impact_value: null, confidence: 0.71, reasoning: 'Storm-content GBP posts in your service area drive 3× the engagement of generic posts. Algorithm rewards recency + local relevance.', actions: [{ label: 'Schedule post', type: 'navigate', target: '/marketing-suite?sierraTab=content' }], created_at: daysAgo(1.2) },
+  { id: 'rec_5', type: 'follow_up', priority: 'high', status: 'pending', title: 'Re-engage 8 quoted leads from past 14 days', summary: 'You sent 8 proposals in the past 2 weeks that haven\'t been signed or rejected. Targeted follow-up sequence converts ~22% of these.', impact_label: '~2 closed deals', impact_value: 2, confidence: 0.82, reasoning: 'Industry data: structured 3-touch follow-up (email day 3, SMS day 7, phone day 10) on aged proposals converts at 22.4%.', actions: [{ label: 'Start sequence', type: 'execute' }, { label: 'View proposals', type: 'navigate', target: '/proposals' }], created_at: daysAgo(0.3) },
+  { id: 'rec_6', type: 'creative_test', priority: 'low', status: 'completed', title: 'A/B test new headline on Free Inspection funnel', summary: 'Tested "Get a Free Roof Inspection Today" vs "Catch Roof Problems Before They Cost You Thousands". Winner posted at +18% conversion lift.', impact_label: '+18% lift', impact_value: 18, confidence: 1.0, reasoning: 'Variant B won with 95% statistical significance over 14 days at $0.94 cost per click.', actions: [], created_at: daysAgo(7) },
+];
+
+// ============================================================================
+// Sierra Marketing — Social posts (Content & Social tab)
+// ============================================================================
+
+export const DEMO_SOCIAL_POSTS = [
+  { id: 'sp_1', organization_id: DEMO_ORG.id, platforms: ['google_business', 'facebook'], status: 'scheduled', content: '⚠️ Storm Alert: 1.5"-2" hail reported in Plano + Frisco yesterday. Free 24-hr inspections available — call (555) 010-2000 or DM us. We work directly with all major insurance carriers.', media: [{ type: 'image', url: 'https://images.unsplash.com/photo-1605283176495-2a08a37b4d44?w=800', thumbnail: 'https://images.unsplash.com/photo-1605283176495-2a08a37b4d44?w=400' }], scheduled_at: hoursFromNow(4), created_at: daysAgo(0.2), updated_at: daysAgo(0.2), engagement: null },
+  { id: 'sp_2', organization_id: DEMO_ORG.id, platforms: ['google_business'], status: 'published', content: 'Just wrapped a beautiful 28-square architectural shingle replacement on the Tran residence in Murphy. Owens Corning Driftwood — looks stunning under the late-spring sun.', media: [{ type: 'image', url: 'https://images.unsplash.com/photo-1593114604024-12ee9293f5cd?w=800', thumbnail: 'https://images.unsplash.com/photo-1593114604024-12ee9293f5cd?w=400' }], scheduled_at: null, published_at: daysAgo(2), created_at: daysAgo(2), engagement: { views: 412, likes: 38, shares: 6, clicks: 11 } },
+  { id: 'sp_3', organization_id: DEMO_ORG.id, platforms: ['facebook', 'instagram'], status: 'published', content: 'Ever wondered what 1.75" hail looks like? This came down in Flower Mound 2 days ago. If you have visible roof damage from this storm, we can help with insurance documentation. No-cost claim assistance.', media: [{ type: 'image', url: 'https://images.unsplash.com/photo-1572931089-09a36b748f63?w=800', thumbnail: 'https://images.unsplash.com/photo-1572931089-09a36b748f63?w=400' }], scheduled_at: null, published_at: daysAgo(1), created_at: daysAgo(1), engagement: { views: 1842, likes: 124, shares: 38, clicks: 67 } },
+  { id: 'sp_4', organization_id: DEMO_ORG.id, platforms: ['google_business', 'facebook', 'instagram'], status: 'scheduled', content: '🏠 Spring Maintenance Tip: Clean your gutters BEFORE the next big storm. Clogged gutters during heavy rain are the #1 cause of fascia damage we see. We offer free gutter inspections.', media: [], scheduled_at: hoursFromNow(48), created_at: daysAgo(0.5) },
+  { id: 'sp_5', organization_id: DEMO_ORG.id, platforms: ['linkedin'], status: 'published', content: 'Commercial property managers — TPO membrane lifecycle is shorter than most people realize. We just completed an 84-square commercial flat-roof replacement for Bell Holdings. PM communication included daily updates with photos.', media: [{ type: 'image', url: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800', thumbnail: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=400' }], scheduled_at: null, published_at: daysAgo(5), created_at: daysAgo(5), engagement: { views: 187, likes: 12, shares: 3, clicks: 8 } },
+  { id: 'sp_6', organization_id: DEMO_ORG.id, platforms: ['google_business'], status: 'draft', content: 'New 5-star review from Anish P. — "Highly recommend if you need someone who knows insurance claims inside-out. They walked us through the entire process." Thanks Anish!', media: [], scheduled_at: null, created_at: daysAgo(0.1) },
+];
+
+// ============================================================================
+// Marketing — Attribution / Lead sources
+// ============================================================================
+
+export const DEMO_ATTRIBUTION = {
+  total_leads: 287,
+  total_revenue: 412_840,
+  by_source: [
+    { source: 'Google Ads', leads: 94, cost: 8420, cost_per_lead: 89.57, revenue: 124_500, roas: 14.78, color: '#3B82F6' },
+    { source: 'Meta Ads', leads: 67, cost: 4210, cost_per_lead: 62.84, revenue: 71_200, roas: 16.91, color: '#1877F2' },
+    { source: 'Google Organic', leads: 52, cost: 0, cost_per_lead: 0, revenue: 84_300, roas: null, color: '#34A853' },
+    { source: 'Door Knock (Storm)', leads: 41, cost: 0, cost_per_lead: 0, revenue: 62_800, roas: null, color: '#F59E0B' },
+    { source: 'Referral', leads: 23, cost: 0, cost_per_lead: 0, revenue: 48_400, roas: null, color: '#8B5CF6' },
+    { source: 'Direct Phone', leads: 10, cost: 0, cost_per_lead: 0, revenue: 21_640, roas: null, color: '#EC4899' },
+  ],
+  by_stage: [
+    { stage: 'Lead', count: 96 },
+    { stage: 'Booked Estimate', count: 64 },
+    { stage: 'Inspected', count: 48 },
+    { stage: 'Proposal Sent', count: 38 },
+    { stage: 'Signed', count: 21 },
+    { stage: 'Production', count: 12 },
+    { stage: 'Closed', count: 8 },
+  ],
+};
+
+// ============================================================================
+// File Manager — Folders + Files
+// ============================================================================
+
+export const DEMO_FILE_FOLDERS = [
+  { id: 'fldr_1', name: 'Insurance Claims', parentId: null, parent_id: null, cloudProvider: 'google', file_count: 18, size_mb: 124.6, created_at: daysAgo(120), updated_at: daysAgo(2) },
+  { id: 'fldr_2', name: 'Job Photos — 2026', parentId: null, parent_id: null, cloudProvider: 'google', file_count: 412, size_mb: 1284.2, created_at: daysAgo(125), updated_at: daysAgo(1) },
+  { id: 'fldr_3', name: 'Proposals — Sent', parentId: null, parent_id: null, cloudProvider: 'google', file_count: 38, size_mb: 84.4, created_at: daysAgo(180), updated_at: daysAgo(3) },
+  { id: 'fldr_4', name: 'Permits & Licenses', parentId: null, parent_id: null, cloudProvider: 'google', file_count: 22, size_mb: 18.4, created_at: daysAgo(240), updated_at: daysAgo(14) },
+  { id: 'fldr_5', name: 'Crew Documentation', parentId: null, parent_id: null, cloudProvider: 'google', file_count: 14, size_mb: 32.8, created_at: daysAgo(160), updated_at: daysAgo(8) },
+];
+
+export const DEMO_FILES = [
+  { id: 'file_1', filename: 'Davis-Insurance-Claim-Packet.pdf', original_filename: 'Davis-Insurance-Claim-Packet.pdf', folderId: 'fldr_1', folder_id: 'fldr_1', file_path: 'https://example.com/davis-claim.pdf', mime_type: 'application/pdf', file_size: 2_140_000, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', cloudProvider: 'google', created_at: daysAgo(2), updated_at: daysAgo(2) },
+  { id: 'file_2', filename: 'Henderson-Commercial-Proposal-Final.pdf', original_filename: 'Henderson-Commercial-Proposal-Final.pdf', folderId: 'fldr_3', folder_id: 'fldr_3', file_path: 'https://example.com/henderson-proposal.pdf', mime_type: 'application/pdf', file_size: 1_980_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(20), updated_at: daysAgo(20) },
+  { id: 'file_3', filename: 'Patel-Adjuster-Photos.zip', original_filename: 'Patel-Adjuster-Photos.zip', folderId: 'fldr_1', folder_id: 'fldr_1', file_path: 'https://example.com/patel-photos.zip', mime_type: 'application/zip', file_size: 24_400_000, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', cloudProvider: 'google', created_at: daysAgo(7), updated_at: daysAgo(7) },
+  { id: 'file_4', filename: 'Tran-Final-Invoice.pdf', original_filename: 'Tran-Final-Invoice.pdf', folderId: null, folder_id: null, file_path: 'https://example.com/tran-invoice.pdf', mime_type: 'application/pdf', file_size: 412_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(8), updated_at: daysAgo(8) },
+  { id: 'file_5', filename: 'Bell-Job-Site-Walkthrough.mov', original_filename: 'Bell-Job-Site-Walkthrough.mov', folderId: 'fldr_2', folder_id: 'fldr_2', file_path: 'https://example.com/bell-walkthrough.mov', mime_type: 'video/quicktime', file_size: 184_400_000, uploaded_by_user_id: 3, uploaded_by_name: 'Sam Chen', cloudProvider: 'google', created_at: daysAgo(45), updated_at: daysAgo(45) },
+  { id: 'file_6', filename: 'TX-Roofing-License-2026.pdf', original_filename: 'TX-Roofing-License-2026.pdf', folderId: 'fldr_4', folder_id: 'fldr_4', file_path: 'https://example.com/license.pdf', mime_type: 'application/pdf', file_size: 184_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(180), updated_at: daysAgo(180) },
+  { id: 'file_7', filename: 'OSHA-Safety-Plan.pdf', original_filename: 'OSHA-Safety-Plan.pdf', folderId: 'fldr_5', folder_id: 'fldr_5', file_path: 'https://example.com/osha.pdf', mime_type: 'application/pdf', file_size: 1_240_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(120), updated_at: daysAgo(60) },
+  { id: 'file_8', filename: 'Cohen-Hailstone-Reference.jpg', original_filename: 'Cohen-Hailstone-Reference.jpg', folderId: 'fldr_1', folder_id: 'fldr_1', file_path: 'https://example.com/hailstone.jpg', mime_type: 'image/jpeg', file_size: 1_280_000, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', cloudProvider: 'google', created_at: daysAgo(2), updated_at: daysAgo(2) },
+  { id: 'file_9', filename: 'Reilly-Multi-Property-Site-Survey.pdf', original_filename: 'Reilly-Multi-Property-Site-Survey.pdf', folderId: 'fldr_3', folder_id: 'fldr_3', file_path: 'https://example.com/reilly-survey.pdf', mime_type: 'application/pdf', file_size: 4_280_000, uploaded_by_user_id: 2, uploaded_by_name: 'Maria Lopez', cloudProvider: 'google', created_at: daysAgo(40), updated_at: daysAgo(40) },
+  { id: 'file_10', filename: 'Crew-Schedule-May-2026.xlsx', original_filename: 'Crew-Schedule-May-2026.xlsx', folderId: 'fldr_5', folder_id: 'fldr_5', file_path: 'https://example.com/schedule.xlsx', mime_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file_size: 84_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(8), updated_at: daysAgo(1) },
+  { id: 'file_11', filename: 'Material-Specs-2026.pdf', original_filename: 'Material-Specs-2026.pdf', folderId: 'fldr_5', folder_id: 'fldr_5', file_path: 'https://example.com/specs.pdf', mime_type: 'application/pdf', file_size: 2_840_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(95), updated_at: daysAgo(15) },
+  { id: 'file_12', filename: 'Plano-Permit-152-Tran.pdf', original_filename: 'Plano-Permit-152-Tran.pdf', folderId: 'fldr_4', folder_id: 'fldr_4', file_path: 'https://example.com/permit-tran.pdf', mime_type: 'application/pdf', file_size: 244_000, uploaded_by_user_id: 1, uploaded_by_name: 'Demo Reviewer', cloudProvider: 'google', created_at: daysAgo(35), updated_at: daysAgo(35) },
+];
+
+// ============================================================================
+// Automations — workflow templates + active automations
+// ============================================================================
+
+export const DEMO_WORKFLOW_TEMPLATES = [
+  { id: 'tpl_storm_response', name: 'Storm Response — Auto-Reply + Booking', description: 'Sends an instant reply to storm-damage form submissions, qualifies via SMS, and books a 24-hr inspection slot.', category: 'lead_response', icon: 'zap', estimated_setup_min: 5, popularity: 142, steps: [{ type: 'trigger', name: 'Form Submission — Storm Damage' }, { type: 'action', name: 'Send instant SMS' }, { type: 'wait', name: 'Wait 5 minutes' }, { type: 'action', name: 'Send follow-up email' }, { type: 'condition', name: 'Has phone? → Auto-call' }] },
+  { id: 'tpl_proposal_followup', name: 'Aged Proposal Follow-up Sequence', description: 'Re-engages quoted leads who haven\'t signed within 7 days. 3-touch sequence: email + SMS + call task.', category: 'sales_followup', icon: 'mail', estimated_setup_min: 10, popularity: 98, steps: [{ type: 'trigger', name: 'Proposal status = Sent (7 days)' }, { type: 'action', name: 'Send "Still considering?" email' }, { type: 'wait', name: 'Wait 4 days' }, { type: 'action', name: 'Send SMS check-in' }, { type: 'wait', name: 'Wait 3 days' }, { type: 'action', name: 'Create call task for assignee' }] },
+  { id: 'tpl_review_request', name: 'Post-Job Review Request', description: 'Sends a Google review request 7 days after the final invoice is paid. Optimal review-velocity window.', category: 'reputation', icon: 'star', estimated_setup_min: 3, popularity: 224, steps: [{ type: 'trigger', name: 'Invoice paid' }, { type: 'wait', name: 'Wait 7 days' }, { type: 'action', name: 'Send review request SMS' }, { type: 'condition', name: 'Reviewed? → Send thank-you' }] },
+  { id: 'tpl_appointment_reminder', name: 'Appointment Reminder — 24hr + 2hr', description: '24-hr and 2-hr reminders for booked estimates and inspections. Reduces no-shows by ~38%.', category: 'scheduling', icon: 'clock', estimated_setup_min: 4, popularity: 187, steps: [{ type: 'trigger', name: 'Appointment booked' }, { type: 'wait', name: 'Wait until 24hr before' }, { type: 'action', name: 'Send SMS reminder' }, { type: 'wait', name: 'Wait until 2hr before' }, { type: 'action', name: 'Send final reminder' }] },
+  { id: 'tpl_birthday', name: 'Customer Birthday Greeting', description: 'Sends a happy-birthday greeting to past customers on their birthday. Soft-touch retention.', category: 'retention', icon: 'gift', estimated_setup_min: 2, popularity: 56, steps: [{ type: 'trigger', name: 'Customer birthday' }, { type: 'action', name: 'Send branded greeting email' }] },
+  { id: 'tpl_referral_request', name: 'Referral Ask — 30 Days Post-Job', description: 'Asks satisfied customers for a referral 30 days after job completion. Target: 5-star reviews only.', category: 'sales_followup', icon: 'users', estimated_setup_min: 6, popularity: 78, steps: [{ type: 'trigger', name: 'Job completed (30 days)' }, { type: 'condition', name: 'Has 5-star review?' }, { type: 'action', name: 'Send referral-program email with $250 incentive' }] },
+  { id: 'tpl_seasonal_check', name: 'Seasonal Maintenance Check-In', description: 'Reaches out to past customers each fall + spring for inspection scheduling. Drives recurring revenue.', category: 'retention', icon: 'calendar', estimated_setup_min: 5, popularity: 61, steps: [{ type: 'trigger', name: 'Seasonal trigger (Mar 1 / Oct 1)' }, { type: 'action', name: 'Send maintenance-check email' }, { type: 'wait', name: 'Wait 5 days' }, { type: 'condition', name: 'Booked? → Stop · Else → Follow-up SMS' }] },
+  { id: 'tpl_lead_score', name: 'Lead Scoring + Routing', description: 'Auto-scores incoming leads based on form data and routes high-score leads to your top closer.', category: 'lead_response', icon: 'trending-up', estimated_setup_min: 12, popularity: 41, steps: [{ type: 'trigger', name: 'New lead created' }, { type: 'action', name: 'Calculate lead score' }, { type: 'condition', name: 'Score ≥ 75 → Route to top closer · Else → Round-robin' }] },
+];
+
+export const DEMO_AUTOMATIONS = [
+  { id: 'auto_1', name: 'Storm Response — Active', template_id: 'tpl_storm_response', status: 'active', enrolled_count: 87, completed_count: 62, conversion_rate: 41.2, last_triggered_at: hoursFromNow(-3), created_at: daysAgo(8), updated_at: daysAgo(2), folder_id: null },
+  { id: 'auto_2', name: 'Free Inspection Follow-up', template_id: 'tpl_proposal_followup', status: 'active', enrolled_count: 142, completed_count: 96, conversion_rate: 28.4, last_triggered_at: hoursFromNow(-8), created_at: daysAgo(90), updated_at: daysAgo(8), folder_id: null },
+  { id: 'auto_3', name: 'Insurance Claim Follow-up', template_id: 'tpl_proposal_followup', status: 'active', enrolled_count: 64, completed_count: 41, conversion_rate: 42.0, last_triggered_at: hoursFromNow(-12), created_at: daysAgo(120), updated_at: daysAgo(15), folder_id: null },
+  { id: 'auto_4', name: 'Refer-a-Neighbor — Active', template_id: 'tpl_referral_request', status: 'active', enrolled_count: 38, completed_count: 28, conversion_rate: 52.6, last_triggered_at: hoursFromNow(-22), created_at: daysAgo(30), updated_at: daysAgo(5), folder_id: null },
+  { id: 'auto_5', name: 'Review Request — Auto', template_id: 'tpl_review_request', status: 'active', enrolled_count: 76, completed_count: 28, conversion_rate: 36.8, last_triggered_at: hoursFromNow(-1.5), created_at: daysAgo(180), updated_at: daysAgo(20), folder_id: null },
+  { id: 'auto_6', name: 'Appointment Reminders', template_id: 'tpl_appointment_reminder', status: 'active', enrolled_count: 421, completed_count: 384, conversion_rate: null, last_triggered_at: hoursFromNow(-0.5), created_at: daysAgo(150), updated_at: daysAgo(10), folder_id: null },
+  { id: 'auto_7', name: 'Spring Maintenance Outreach', template_id: 'tpl_seasonal_check', status: 'paused', enrolled_count: 0, completed_count: 0, conversion_rate: 0, last_triggered_at: null, created_at: daysAgo(60), updated_at: daysAgo(30), folder_id: null },
+];
+
+// ============================================================================
+// Support — tickets
+// ============================================================================
+
+export const DEMO_SUPPORT_TICKETS = [
+  { id: 'tkt_1', ticket_number: 'TKT-1042', subject: 'Customer not receiving SMS reminders', message: 'A few of our recent customers reported they didn\'t get the 24-hr appointment reminder. Could be a Twilio config issue?', priority: 'high', status: 'in_progress', created_at: daysAgo(1), updated_at: daysAgo(0.2), assigned_to: 'BL Support', last_response_at: daysAgo(0.2) },
+  { id: 'tkt_2', ticket_number: 'TKT-1037', subject: 'Catalog item bulk import — feature request', message: 'Would be great to import catalog line items via CSV instead of one-at-a-time.', priority: 'medium', status: 'open', created_at: daysAgo(4), updated_at: daysAgo(4), assigned_to: 'Product Team', last_response_at: null },
+  { id: 'tkt_3', ticket_number: 'TKT-1029', subject: 'EagleView measurement order didn\'t come through', message: 'Ordered a measurement on Patel\'s house but it\'s been 4 hours and nothing in our reports list.', priority: 'high', status: 'resolved', created_at: daysAgo(8), updated_at: daysAgo(7), assigned_to: 'BL Support', last_response_at: daysAgo(7), resolution: 'EagleView API was down for ~2 hrs that morning. Report came through after restart. We\'ve added monitoring.' },
+  { id: 'tkt_4', ticket_number: 'TKT-1018', subject: 'Question about Sierra AI pricing', message: 'How does the per-minute charge work when our after-hours agent answers a call that goes 12 minutes?', priority: 'low', status: 'closed', created_at: daysAgo(15), updated_at: daysAgo(13), assigned_to: 'Account Team', last_response_at: daysAgo(13), resolution: 'Pricing reviewed: $0.18/min for inbound, billed in 1-second increments. Sent pricing PDF.' },
+];
+
+// ============================================================================
+// Conversations / Inbox (Conversations module + Sierra Marketing Channels)
+// ============================================================================
+
+export const DEMO_CONVERSATIONS = [
+  { id: 'conv_inbox_1', contact_id: 1, contact_name: 'Maria Davis', contact_phone: '+1 (555) 010-3001', last_message: 'Got the proposal — looks great. One question about the timeline…', last_message_at: hoursFromNow(-0.4), unread_count: 1, channel: 'sms', is_group: false, status: 'open' },
+  { id: 'conv_inbox_2', contact_id: 2, contact_name: 'Tom Henderson', contact_phone: '+1 (555) 010-3002', last_message: 'Signed and returned via DocuSign. When can you start?', last_message_at: hoursFromNow(-2), unread_count: 0, channel: 'email', is_group: false, status: 'open' },
+  { id: 'conv_inbox_3', contact_id: 3, contact_name: 'Anish Patel', contact_phone: '+1 (555) 010-3003', last_message: 'My adjuster will be on site tomorrow at 11am. Can your team be there?', last_message_at: hoursFromNow(-3), unread_count: 2, channel: 'sms', is_group: false, status: 'open' },
+  { id: 'conv_inbox_4', contact_id: 5, contact_name: 'Jess Walker', contact_phone: '+1 (555) 010-3005', last_message: 'Final walkthrough went great. Thanks team!', last_message_at: hoursFromNow(-26), unread_count: 0, channel: 'sms', is_group: false, status: 'closed' },
+  { id: 'conv_inbox_5', contact_id: 12, contact_name: 'Sara Cohen', contact_phone: '+1 (555) 010-3012', last_message: 'How long does the insurance claim process usually take?', last_message_at: hoursFromNow(-5), unread_count: 1, channel: 'sms', is_group: false, status: 'open' },
+  { id: 'conv_inbox_6', contact_id: 19, contact_name: 'Marcus Bell', contact_phone: '+1 (555) 010-3019', last_message: 'Final invoice paid via ACH. Looking forward to working again.', last_message_at: hoursFromNow(-72), unread_count: 0, channel: 'email', is_group: false, status: 'closed' },
+  { id: 'conv_team_1', contact_id: null, contact_name: 'Production Team', contact_phone: null, last_message: 'Materials for Patel job arrive Tuesday morning', last_message_at: hoursFromNow(-1), unread_count: 0, channel: 'team', is_group: true, status: 'open' },
+  { id: 'conv_team_2', contact_id: null, contact_name: 'Sales Team', contact_phone: null, last_message: 'New lead from Google Ads — Tina Murphy in Rockwall', last_message_at: hoursFromNow(-0.2), unread_count: 1, channel: 'team', is_group: true, status: 'open' },
+];
+
+// ============================================================================
+// Channels & Tracking (Sierra Marketing → Channels & Tracking tab)
+// ============================================================================
+
+export const DEMO_CHANNELS = [
+  { id: 'chan_google', name: 'Google Ads', status: 'connected', icon: 'google', last_sync_at: daysAgo(0.05), spend_30d: 8420, leads_30d: 94, cpl: 89.57, conversion_rate: 0.27 },
+  { id: 'chan_meta', name: 'Meta Ads (Facebook + Instagram)', status: 'connected', icon: 'meta', last_sync_at: daysAgo(0.05), spend_30d: 4210, leads_30d: 67, cpl: 62.84, conversion_rate: 0.12 },
+  { id: 'chan_tiktok', name: 'TikTok Ads', status: 'disconnected', icon: 'tiktok', last_sync_at: null, spend_30d: 0, leads_30d: 0, cpl: 0, conversion_rate: 0 },
+  { id: 'chan_gbp', name: 'Google Business Profile', status: 'connected', icon: 'gbp', last_sync_at: daysAgo(0.1), spend_30d: 0, leads_30d: 28, cpl: 0, conversion_rate: 0.31 },
+  { id: 'chan_yelp', name: 'Yelp', status: 'connected', icon: 'yelp', last_sync_at: daysAgo(2), spend_30d: 280, leads_30d: 6, cpl: 46.67, conversion_rate: 0.16 },
+  { id: 'chan_nextdoor', name: 'Nextdoor', status: 'pending', icon: 'nextdoor', last_sync_at: null, spend_30d: 0, leads_30d: 0, cpl: 0, conversion_rate: 0 },
+];
+
+export const DEMO_TRACKING_NUMBERS = [
+  { id: 'trk_1', friendly_name: 'Google Ads — Plano', phone_number: '+1 (555) 010-7701', source: 'Google Ads', calls_30d: 67, leads_30d: 22, cpl: 89.57 },
+  { id: 'trk_2', friendly_name: 'Meta Ads — Storm', phone_number: '+1 (555) 010-7702', source: 'Meta Ads', calls_30d: 41, leads_30d: 12, cpl: 62.84 },
+  { id: 'trk_3', friendly_name: 'GBP Listing', phone_number: '+1 (555) 010-7703', source: 'Google Business Profile', calls_30d: 28, leads_30d: 11, cpl: 0 },
+  { id: 'trk_4', friendly_name: 'Yelp Listing', phone_number: '+1 (555) 010-7704', source: 'Yelp', calls_30d: 8, leads_30d: 2, cpl: 46.67 },
+];

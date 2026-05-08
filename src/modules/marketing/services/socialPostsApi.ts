@@ -1,5 +1,7 @@
 import { supabase } from '../../../shared/lib/supabase';
 import type { SocialPost } from '../types/marketing';
+import { isStagingMode } from '../../../shared/utils/stagingAuth';
+import { DEMO_SOCIAL_POSTS } from '../../../shared/utils/demoFixtures';
 
 const DEMO_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
 
@@ -7,6 +9,21 @@ function resolveOrgId(orgId: string | null | undefined): string {
   if (!orgId || orgId === 'dev-org-id') return DEMO_ORG_ID;
   return orgId;
 }
+
+const buildStagingSocialPosts = (): SocialPost[] =>
+  DEMO_SOCIAL_POSTS.map((p) => ({
+    id: p.id,
+    org_id: DEMO_ORG_ID,
+    content: p.content,
+    platforms: p.platforms as any,
+    scheduled_at: (p as any).scheduled_at,
+    published_at: (p as any).published_at,
+    status: p.status as SocialPost['status'],
+    source_type: 'manual' as any,
+    source_id: undefined,
+    image_url: p.media?.[0]?.url,
+    created_at: (p as any).created_at,
+  }));
 
 function rowToPost(row: Record<string, unknown>): SocialPost {
   return {
@@ -26,6 +43,7 @@ function rowToPost(row: Record<string, unknown>): SocialPost {
 
 export const socialPostsApi = {
   async getPosts(orgId: string | null): Promise<SocialPost[]> {
+    if (isStagingMode()) return buildStagingSocialPosts();
     const organizationId = resolveOrgId(orgId);
     const { data, error } = await supabase
       .from('marketing_social_posts_ai')
